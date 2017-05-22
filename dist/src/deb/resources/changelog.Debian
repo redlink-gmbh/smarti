@@ -1,0 +1,11 @@
+@packageName@ (@version@-1) unstable; urgency=low
+
+  * Packaging upstream version @git.commit.id.describe@
+
+ -- @git.build.user.name@ <@git.build.user.email@>  @git.build.time@
+
+@packageName@ (0.0.0-1) unstable; urgency=low
+
+  * Initial Packaging
+
+ -- Jakob Frank <jakob.frank@redlink.co>  Thu, 19 May 2016 08:28:21 +0200

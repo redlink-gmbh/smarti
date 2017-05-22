@@ -1,0 +1,66 @@
+<style>
+  body{
+    position:relative;
+    display:block;
+    font-family:'Helvetica', 'Arial', sans-serif;
+    line-height:1.3em;
+    background-color: #cccccc;
+  }
+
+  body main{
+    margin: auto;
+    max-width: 21cm;
+    padding:1cm 1.5cm;
+    background-color: #ffffff;
+    border: 1px solid #aaaaaa;
+  }
+
+  #toc{
+    position:relative;
+    padding:30px 25px 10px 25px;
+    background-color:#484848;
+    box-sizing:border-box;
+  }
+
+  #toc h2{
+    margin-top:0;
+    color:#ffffff;
+  }
+
+  #toc a{
+    color:#cccccc;
+    line-height:1.5em;
+  }
+
+  ul{
+  }
+
+  li{
+  }
+
+  h2{
+    margin-top:40px;
+  }
+
+  pre{
+    background-color:#f4f4f4;
+    padding:15px 20px;
+    overflow-x: auto;
+  }
+
+  @media print{
+    body {
+      background-color: white;
+    }
+    body main{
+      padding: 0;
+      border: 0;
+    }
+    #toc,
+    #download, #download + *,
+    #more-documentation, #more-documentation + *
+    {
+      display:none;
+    }
+  }
+</style>

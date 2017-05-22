@@ -1,0 +1,32 @@
+<!--
+  ~ Copyright (c) 2016 Redlink GmbH
+  -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              http://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <localRepository/>
+    <interactiveMode>false</interactiveMode>
+    <usePluginRegistry/>
+    <offline/>
+    <pluginGroups/>
+    <servers>
+        <server>
+            <id>redlink.nexus</id>
+            <username>${env.NEXUS_USER}</username>
+            <password>${env.NEXUS_PASS}</password>
+        </server>
+        <server>
+            <id>redlink.snapshots</id>
+            <username>${env.NEXUS_DEPLOY_USER}</username>
+            <password>${env.NEXUS_DEPLOY_PASS}</password>
+        </server>
+        <server>
+            <id>redlink.releases</id>
+            <username>${env.NEXUS_DEPLOY_USER}</username>
+            <password>${env.NEXUS_DEPLOY_PASS}</password>
+        </server>
+    </servers>
+    <mirrors/>
+    <profiles/>
+</settings>

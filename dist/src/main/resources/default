@@ -1,0 +1,13 @@
+# Default-Settings for @packageName@
+
+## Where is the working dir?
+#HOME="/var/lib/@packageName@"
+
+## Which user to run with?
+#USER=@daemonUser@
+#GROUP=@daemonUser@
+
+#ARGS=""
+
+#JVM=java
+#JVM_ARGS="-Xmx2g"

@@ -1,0 +1,11 @@
+</main>
+<footer>
+</footer>
+<script>
+  var topics = document.getElementsByTagName("h2");
+  for (var i = 0; i < topics.length; i++) {
+    if (topics[i].id != "toc-heading"){
+      document.getElementById("toc-content").innerHTML = document.getElementById("toc-content").innerHTML + "<a href='#" + topics[i].id +"' target='_self'>" + topics[i].innerHTML + "</a><br>";
+    }
+  }
+</script>
