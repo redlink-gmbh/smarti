@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2017 Redlink GmbH.
  */
-package io.redlink.db.kmp.filter;
+package io.redlink.smarti.filter;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

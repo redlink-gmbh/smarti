@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2017 Redlink GmbH.
  */
-package io.redlink.db.kmp.webservice.advice;
+package io.redlink.smarti.webservice.advice;
 
-import io.redlink.db.kmp.utils.ResponseEntities;
-import io.redlink.db.kmp.utils.ResponseEntities.ResponseEntityBuilder;
+import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.utils.ResponseEntities.ResponseEntityBuilder;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;

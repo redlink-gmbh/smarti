@@ -2,7 +2,7 @@
  * Copyright (c) 2017 DB Systel GmbH.
  */
 
-package io.redlink.db.kmp.configuration;
+package io.redlink.smarti.configuration;
 
 import org.apache.catalina.connector.Connector;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;

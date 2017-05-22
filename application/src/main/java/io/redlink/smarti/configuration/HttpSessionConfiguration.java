@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2017 Redlink GmbH.
  */
-package io.redlink.db.kmp.configuration;
+package io.redlink.smarti.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

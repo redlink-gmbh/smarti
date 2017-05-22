@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016 Redlink GmbH
  */
-package io.redlink.db.kmp.webservice.advice;
+package io.redlink.smarti.webservice.advice;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

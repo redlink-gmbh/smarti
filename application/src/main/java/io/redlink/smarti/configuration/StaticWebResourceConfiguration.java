@@ -1,9 +1,9 @@
 /*
  * Copyright (c) 2016 Redlink GmbH.
  */
-package io.redlink.db.kmp.configuration;
+package io.redlink.smarti.configuration;
 
-import io.redlink.db.kmp.utils.PropertyInjectionTransformer;
+import io.redlink.smarti.utils.PropertyInjectionTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2017 Redlink GmbH.
  */
-package io.redlink.db.kmp.utils;
+package io.redlink.smarti.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;

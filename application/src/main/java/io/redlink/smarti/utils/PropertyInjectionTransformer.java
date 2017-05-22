@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2016 Redlink GmbH.
  */
-package io.redlink.db.kmp.utils;
+package io.redlink.smarti.utils;
 
 import com.google.common.collect.Sets;
 import org.apache.commons.io.FilenameUtils;

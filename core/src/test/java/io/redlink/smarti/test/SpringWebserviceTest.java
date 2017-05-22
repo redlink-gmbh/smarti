@@ -1,4 +1,4 @@
-package io.redlink.db.kmp.test;
+package io.redlink.smarti.test;
 
 import org.junit.Before;
 import org.springframework.beans.factory.annotation.Autowired;
