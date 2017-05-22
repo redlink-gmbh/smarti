@@ -21,6 +21,8 @@
         <module>application</module>
 
         <module>dist</module>
+
+        <module>lib</module>
     </modules>
 
     <prerequisites>
@@ -35,13 +37,17 @@
         <java.version>1.8</java.version>
 
         <spring.boot.version>1.5.1.RELEASE</spring.boot.version>
+        <spring.data.version>1.9.2.RELEASE</spring.data.version>
         <spring.version>4.3.6.RELEASE</spring.version>
+
         <solr.version>6.2.1</solr.version>
         <!-- solr-text-tagger version needs to be in sync with solr.version
              (see: https://github.com/OpenSextant/SolrTextTagger/blob/master/CHANGES.md) -->
         <solr.text.tagger.version>2.3</solr.text.tagger.version>
-
         <solrlib.version>0.3.0</solrlib.version>
+
+        <springfox.version>2.4.0</springfox.version>
+        <swagger.version>1.5.6</swagger.version>
 
         <!-- frontend versions -->
         <node.version>v6.9.1</node.version>

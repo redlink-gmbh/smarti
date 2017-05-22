@@ -1,0 +1,7 @@
+io.redlink.nlp.model.json.valuetype.impl.PosTagSupport
+io.redlink.nlp.model.json.valuetype.impl.NerTagSupport
+io.redlink.nlp.model.json.valuetype.impl.MorphoFeaturesSupport
+io.redlink.nlp.model.json.valuetype.impl.PhraseTagSupport
+io.redlink.nlp.model.json.valuetype.impl.DependencyRelationSupport
+io.redlink.nlp.model.json.valuetype.impl.CorefFeatureSupport
+io.redlink.nlp.model.json.valuetype.impl.SectionTagSupport
