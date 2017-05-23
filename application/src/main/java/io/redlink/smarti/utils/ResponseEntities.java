@@ -44,6 +44,10 @@ public class ResponseEntities {
     public static ResponseEntity<Map<String,Object>> conflict(String message) {
         return status(HttpStatus.CONFLICT, message);
     }
+
+    public static ResponseEntity<?> notImplemented() {
+        return status(HttpStatus.NOT_IMPLEMENTED, "Not (yet) implemented");
+    }
     
     public static class ResponseEntityBuilder {
         
