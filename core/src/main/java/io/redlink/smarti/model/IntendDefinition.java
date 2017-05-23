@@ -2,7 +2,7 @@
  * Copyright (c) 2016 - 2017 Redlink GmbH
  */
 
-package io.redlink.smarti.query;
+package io.redlink.smarti.model;
 
 import io.redlink.smarti.model.*;
 import org.apache.commons.lang3.StringUtils;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class QueryTemplateDefinition {
+public abstract class IntendDefinition {
     
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -20,7 +20,7 @@ public abstract class QueryTemplateDefinition {
     
     private final MessageTopic type;
 
-    protected QueryTemplateDefinition(MessageTopic type){
+    protected IntendDefinition(MessageTopic type){
         if(type == null){
             throw new NullPointerException("the topic MUST NOT be NULL");
         }
@@ -32,26 +32,26 @@ public abstract class QueryTemplateDefinition {
     }
     
     /**
-     * Creates a {@link QuerySlot} instance correctly setting
-     * {@link QuerySlot#isRequired()} and {@link QuerySlot#getTokenType()}
+     * Creates a {@link Slot} instance correctly setting
+     * {@link Slot#isRequired()} and {@link Slot#getTokenType()}
      * based on the template definition
      * @param role the name of the query slot to create
      * @return the initialized slot or <code>null</code> if no slot with that
-     * name is known by the {@link QueryTemplateDefinition}
+     * name is known by the {@link IntendDefinition}
      */
-    public final QuerySlot createSlot(String role){
+    public final Slot createSlot(String role){
         switch (role) {
         case TOPIC:
-            return new QuerySlot(TOPIC, Token.Type.Topic, null, true);
+            return new Slot(TOPIC, Token.Type.Topic, null, true);
         default:
             return createSlotForName(role);
         }
     }
     
-    protected abstract QuerySlot createSlotForName(String name);
+    protected abstract Slot createSlotForName(String name);
 
-    public final boolean isValid(QueryTemplate template, List<Token> tokens){
-        Optional<QuerySlot> topicSlot = template.getSlots().stream()
+    public final boolean isValid(Intend template, List<Token> tokens){
+        Optional<Slot> topicSlot = template.getSlots().stream()
             .filter(s -> TOPIC.equals(s.getRole()))
             .findFirst();
         if(topicSlot.isPresent() && topicSlot.get().getTokenIndex() >= 0){
@@ -61,7 +61,7 @@ public abstract class QueryTemplateDefinition {
         }
     }
     
-    public final boolean validateToken(List<Token> tokens, QuerySlot querySlot){
+    public final boolean validateToken(List<Token> tokens, Slot querySlot){
         return validateToken(tokens,querySlot.getTokenIndex(), querySlot.getTokenType());
     }
     
@@ -76,8 +76,8 @@ public abstract class QueryTemplateDefinition {
         }
     }
     
-    protected final boolean validateSlot(QuerySlot slot){
-        QuerySlot expected = createSlot(slot.getRole());
+    protected final boolean validateSlot(Slot slot){
+        Slot expected = createSlot(slot.getRole());
         if(expected == null){
             return true;
         } else {
@@ -85,9 +85,9 @@ public abstract class QueryTemplateDefinition {
         }
     }
     
-    protected abstract boolean validate(Collection<QuerySlot> slots, List<Token> tokens);
+    protected abstract boolean validate(Collection<Slot> slots, List<Token> tokens);
     
-    protected Set<String> getPresentAndValidSlots(Collection<QuerySlot> slots, List<Token> tokens) {
+    protected Set<String> getPresentAndValidSlots(Collection<Slot> slots, List<Token> tokens) {
         final Set<String> present = new HashSet<>();
         slots.stream()
             .filter(this::validateSlot)
@@ -96,15 +96,15 @@ public abstract class QueryTemplateDefinition {
         return present;
     }
     /**
-     * Getter for any (valid) {@link QuerySlot} part of the parsed {@link QueryTemplate}
+     * Getter for any (valid) {@link Slot} part of the parsed {@link Intend}
      * that has the parsed Role
      * @param role the role
      * @param template the query template
      * @return the Token or <code>null</code> if no valid QuerySlot is present
      */
-    public final QuerySlot getSlot(String role, QueryTemplate template) {
-        QuerySlot expected = createSlot(role); //for known token also check the type
-        final Optional<QuerySlot> slot = template.getSlots().stream()
+    public final Slot getSlot(String role, Intend template) {
+        Slot expected = createSlot(role); //for known token also check the type
+        final Optional<Slot> slot = template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
                 .filter(s -> expected == null || expected.getTokenType() == s.getTokenType())
                 .findAny();
@@ -116,13 +116,13 @@ public abstract class QueryTemplateDefinition {
     }
 
     /**
-     * Getter for all (valid) {@link QuerySlot}s part of the parsed {@link QueryTemplate}
+     * Getter for all (valid) {@link Slot}s part of the parsed {@link Intend}
      * @param role the role
      * @param template the query template
-     * @return all valid {@link QuerySlot}s with the parsed role an empty List if none
+     * @return all valid {@link Slot}s with the parsed role an empty List if none
      */
-    public final List<QuerySlot> getSlots(String role, QueryTemplate template) {
-        QuerySlot expected = createSlot(role); //for known token also check the type
+    public final List<Slot> getSlots(String role, Intend template) {
+        Slot expected = createSlot(role); //for known token also check the type
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
                 .filter(s -> expected == null || expected.getTokenType() == s.getTokenType())

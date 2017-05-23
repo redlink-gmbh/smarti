@@ -1,12 +1,12 @@
 /*
  * Copyright (c) 2016 Redlink GmbH
  */
-package io.redlink.smarti.query.template;
+package io.redlink.smarti.intend;
 
+import io.redlink.smarti.model.IntendDefinition;
 import io.redlink.smarti.model.MessageTopic;
-import io.redlink.smarti.model.QuerySlot;
+import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
-import io.redlink.smarti.query.QueryTemplateDefinition;
 import io.redlink.smarti.services.SpeakService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  */
 @Component
-public class TrainInfoTemplate extends QueryTemplateDefinition {
+public class TrainInfoIntendDefinition extends IntendDefinition {
 
     public static final String TRAIN = "train";
     public static final String DATE = "date";
@@ -30,27 +30,27 @@ public class TrainInfoTemplate extends QueryTemplateDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public TrainInfoTemplate() {
+    public TrainInfoIntendDefinition() {
         super(MessageTopic.Zuginformation);
     }
 
     @Override
-    protected QuerySlot createSlotForName(String name) {
+    protected Slot createSlotForName(String name) {
         switch (name) {
             case TRAIN:
-                return new QuerySlot(TRAIN, Token.Type.Train,
+                return new Slot(TRAIN, Token.Type.Train,
                         speakService.getMessage("slot.traininfo."+TRAIN, "Um welchen Zug geht es?"), false);
             case DATE:
-                return new QuerySlot(DATE, Token.Type.Date,
+                return new Slot(DATE, Token.Type.Date,
                         speakService.getMessage("slot.traininfo."+DATE, "Geht es um den aktuellen Zug?"), true);
             case FROM:
-                return new QuerySlot(FROM, Token.Type.Place,
+                return new Slot(FROM, Token.Type.Place,
                         speakService.getMessage("slot.traininfo."+FROM, "Wo ist der Zug abgefahren?"), false);
             case TO:
-                return new QuerySlot(TO, Token.Type.Place,
+                return new Slot(TO, Token.Type.Place,
                         speakService.getMessage("slot.traininfo."+TO, "Wohin fährt der Zug?"), false);
             case WHAT:
-                return new QuerySlot(WHAT, null,
+                return new Slot(WHAT, null,
                         speakService.getMessage("slot.traininfo."+WHAT, "Was suchst Du genau?"), false);
             default:
                 log.warn("Unknown QuerySlot '{}' requested for {}", name, getClass().getSimpleName());
@@ -59,7 +59,7 @@ public class TrainInfoTemplate extends QueryTemplateDefinition {
     }
 
     @Override
-    protected boolean validate(Collection<QuerySlot> slots, List<Token> tokens) {
+    protected boolean validate(Collection<Slot> slots, List<Token> tokens) {
         final Set<String> present = getPresentAndValidSlots(slots, tokens);
 
         return present.contains(DATE) &&

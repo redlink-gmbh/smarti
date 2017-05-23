@@ -2,12 +2,12 @@
  * Copyright (c) 2016 - 2017 Redlink GmbH
  */
 
-package io.redlink.smarti.query.template;
+package io.redlink.smarti.intend;
 
+import io.redlink.smarti.model.IntendDefinition;
 import io.redlink.smarti.model.MessageTopic;
-import io.redlink.smarti.model.QuerySlot;
+import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
-import io.redlink.smarti.query.QueryTemplateDefinition;
 import io.redlink.smarti.services.SpeakService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class PerimeterTemplate extends QueryTemplateDefinition {
+public class PerimeterIntendDefinition extends IntendDefinition {
 
     public static final String LOCATION = "location";
     public static final String START = "start";
@@ -27,24 +27,24 @@ public class PerimeterTemplate extends QueryTemplateDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public PerimeterTemplate() {
+    public PerimeterIntendDefinition() {
         super(MessageTopic.Umkreissuche);
     }
     
     @Override
-    protected QuerySlot createSlotForName(String name) {
+    protected Slot createSlotForName(String name) {
         switch (name) {
         case LOCATION:
-            return new QuerySlot(LOCATION, Token.Type.Place,
+            return new Slot(LOCATION, Token.Type.Place,
                     speakService.getMessage("slot.perimeter."+LOCATION, "Und wo genau?"), true);
         case START:
-            return new QuerySlot(START, Token.Type.Date,
+            return new Slot(START, Token.Type.Date,
                     speakService.getMessage("slot.perimeter."+START, "Ab wann?"), false);
         case END:
-            return new QuerySlot(END, Token.Type.Date,
+            return new Slot(END, Token.Type.Date,
                     speakService.getMessage("slot.perimeter."+END, "Bis wann?"), false);
         case WHAT:
-            return new QuerySlot(WHAT, null,
+            return new Slot(WHAT, null,
                     speakService.getMessage("slot.perimeter."+WHAT, "Was genau suchst Du?"), true);
         default:
             log.warn("Unknown QuerySlot '{}' requested for {}", name, getClass().getSimpleName());
@@ -53,7 +53,7 @@ public class PerimeterTemplate extends QueryTemplateDefinition {
     }
 
     @Override
-    protected boolean validate(Collection<QuerySlot> slots, List<Token> tokens) {
+    protected boolean validate(Collection<Slot> slots, List<Token> tokens) {
         final Set<String> present = getPresentAndValidSlots(slots, tokens);
         return present.contains(LOCATION) && present.contains(WHAT);
     }

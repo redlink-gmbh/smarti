@@ -10,9 +10,10 @@ import io.swagger.annotations.ApiModel;
 import org.springframework.data.annotation.PersistenceConstructor;
 
 /**
+ * A slot represents an {@link Token} with a Role in the context of an {@link Intend}.
  */
 @ApiModel
-public class QuerySlot {
+public class Slot {
 
     @JsonProperty("role")
     private String role;
@@ -28,14 +29,14 @@ public class QuerySlot {
      */
     @JsonCreator
     @PersistenceConstructor
-    public QuerySlot(@JsonProperty("role") String role, @JsonProperty("tokenType") Token.Type tokenType) {
+    public Slot(@JsonProperty("role") String role, @JsonProperty("tokenType") Token.Type tokenType) {
         this(role, tokenType, null, false);
     }
     
     /**
      * Creates an QuerySlot
      */
-    public QuerySlot(String role, Token.Type tokenType, String inquiryMessage, boolean required) {
+    public Slot(String role, Token.Type tokenType, String inquiryMessage, boolean required) {
         this.role = role;
         this.tokenType = tokenType;
         this.required = required;

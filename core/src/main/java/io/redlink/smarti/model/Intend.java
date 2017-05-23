@@ -16,7 +16,7 @@ import java.util.List;
 /**
  */
 @ApiModel
-public class QueryTemplate implements Comparable<QueryTemplate> {
+public class Intend implements Comparable<Intend> {
 
     @JsonProperty("queryType")
     @ApiModelProperty(notes = "type of the query that can be build from this template", required = true)
@@ -28,22 +28,22 @@ public class QueryTemplate implements Comparable<QueryTemplate> {
 
     @JsonProperty("querySlots")
     @ApiModelProperty(notes = "slots to fill with tokens", required = true)
-    private Collection<QuerySlot> slots;
+    private Collection<Slot> slots;
 
     @ApiModelProperty(position = 5, value = "Queries suggested/executed")
     private List<Query> queries = new ArrayList<>();
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public QueryTemplate(@JsonProperty("queryType") MessageTopic type, @JsonProperty("querySlots") Collection<QuerySlot> slots) {
+    public Intend(@JsonProperty("queryType") MessageTopic type, @JsonProperty("querySlots") Collection<Slot> slots) {
         this.type = type;
         this.slots = slots;
     }
 
     /**
-     * Comparator that sorts the {@link QueryTemplate} with the highest {@link QueryTemplate#getProbability()}
+     * Comparator that sorts the {@link Intend} with the highest {@link Intend#getProbability()}
      * first.
      */
-    public static final Comparator<QueryTemplate> CONFIDENCE_COMPARATOR = (t1, t2) -> Float.compare(t2.getProbability(), t1.getProbability());
+    public static final Comparator<Intend> CONFIDENCE_COMPARATOR = (t1, t2) -> Float.compare(t2.getProbability(), t1.getProbability());
 
     public MessageTopic getType() {
         return type;
@@ -65,7 +65,7 @@ public class QueryTemplate implements Comparable<QueryTemplate> {
         this.state = state;
     }
 
-    public Collection<QuerySlot> getSlots() {
+    public Collection<Slot> getSlots() {
         return slots;
     }
 
@@ -78,7 +78,7 @@ public class QueryTemplate implements Comparable<QueryTemplate> {
     }
 
     @Override
-    public int compareTo(QueryTemplate o) {
+    public int compareTo(Intend o) {
         return Float.compare(o.probability, probability);
     }
 }

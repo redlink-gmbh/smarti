@@ -1,12 +1,12 @@
 /*
  * Copyright (c) 2016 Redlink GmbH
  */
-package io.redlink.smarti.query.template;
+package io.redlink.smarti.intend;
 
+import io.redlink.smarti.model.IntendDefinition;
 import io.redlink.smarti.model.MessageTopic;
-import io.redlink.smarti.model.QuerySlot;
+import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
-import io.redlink.smarti.query.QueryTemplateDefinition;
 import io.redlink.smarti.services.SpeakService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  */
 @Component
-public class ProductTemplate extends QueryTemplateDefinition {
+public class ProductIntendDefinition extends IntendDefinition {
 
     public static final String PRODUCT = "product";
     public static final String WHAT = "what";
@@ -26,18 +26,18 @@ public class ProductTemplate extends QueryTemplateDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public ProductTemplate() {
+    public ProductIntendDefinition() {
         super(MessageTopic.Produkt);
     }
 
     @Override
-    protected QuerySlot createSlotForName(String name) {
+    protected Slot createSlotForName(String name) {
         switch (name) {
             case PRODUCT:
-                return new QuerySlot(PRODUCT, Token.Type.Product,
+                return new Slot(PRODUCT, Token.Type.Product,
                         speakService.getMessage("slot.product."+PRODUCT, "Was möchtest Du wissen?"), true);
             case WHAT:
-                return new QuerySlot(WHAT, null,
+                return new Slot(WHAT, null,
                         speakService.getMessage("slot.product."+WHAT, "Was suchst Du genau?"), false); //Types: Train, Attribute
             default:
                 log.warn("Unknown QuerySlot '{}' requested for {}", name, getClass().getSimpleName());
@@ -46,7 +46,7 @@ public class ProductTemplate extends QueryTemplateDefinition {
     }
 
     @Override
-    protected boolean validate(Collection<QuerySlot> slots, List<Token> tokens) {
+    protected boolean validate(Collection<Slot> slots, List<Token> tokens) {
         final Set<String> present = getPresentAndValidSlots(slots, tokens);
         return present.contains(PRODUCT);
     }

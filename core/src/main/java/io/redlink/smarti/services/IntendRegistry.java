@@ -2,12 +2,14 @@
  * Copyright (c) 2016 - 2017 Redlink GmbH
  */
 
-package io.redlink.smarti.query;
+package io.redlink.smarti.services;
 
-import io.redlink.smarti.model.MessageTopic;
-import io.redlink.smarti.model.QueryTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import io.redlink.smarti.model.Intend;
+import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.MessageTopic;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -15,15 +17,15 @@ import java.util.Iterator;
 import java.util.Map;
 
 @Service
-public class QueryTemplateRegistry {
+public class IntendRegistry {
 
-    private final Map<MessageTopic, QueryTemplateDefinition> templates;
+    private final Map<MessageTopic, IntendDefinition> templates;
     
     @Autowired
-    public QueryTemplateRegistry(Collection<QueryTemplateDefinition> templateDefinitions) {
+    public IntendRegistry(Collection<IntendDefinition> templateDefinitions) {
         templates = new EnumMap<>(MessageTopic.class);
-        for(QueryTemplateDefinition template : templateDefinitions){
-            QueryTemplateDefinition old = templates.put(template.getType(), template);
+        for(IntendDefinition template : templateDefinitions){
+            IntendDefinition old = templates.put(template.getType(), template);
             if(old != null){
                 throw new IllegalStateException("Multiple QueryTemplateDefinitions for Topic "
                         + template.getType() + "(" + old.getClass().getSimpleName()
@@ -32,12 +34,12 @@ public class QueryTemplateRegistry {
         }
     }
     
-    public QueryTemplateDefinition getTemplate(QueryTemplate qt){
+    public IntendDefinition getTemplate(Intend qt){
         return getTemplate(qt.getType());
     }
 
-    public QueryTemplateDefinition getTemplate(MessageTopic type){
-        QueryTemplateDefinition def = templates.get(type);
+    public IntendDefinition getTemplate(MessageTopic type){
+        IntendDefinition def = templates.get(type);
         if(def == null){
             for(Iterator<MessageTopic> it = type.hierarchy().iterator(); it.hasNext() && def == null;){
                 def = templates.get(it.next());
