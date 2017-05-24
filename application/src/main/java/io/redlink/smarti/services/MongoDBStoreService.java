@@ -7,8 +7,7 @@ import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.repositories.ConversationRepository;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -20,9 +19,8 @@ import java.util.regex.Pattern;
  *
  * @author Sergio Fernández
  */
-@Component("mongoDBStoreService")
-@Profile("mongodb")
-@ConditionalOnBean(ConversationRepository.class)
+@Component
+@Primary
 public class MongoDBStoreService extends StoreService {
 
     private final ConversationRepository conversationRepository;
