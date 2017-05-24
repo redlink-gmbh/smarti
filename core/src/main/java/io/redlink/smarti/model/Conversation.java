@@ -3,6 +3,7 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -25,6 +26,10 @@ public class Conversation {
     @Indexed
     private String id = UUID.randomUUID().toString();
 
+    @Indexed
+    @JsonIgnore
+    private String channelId;
+
     @ApiModelProperty(position = 0, value = "metadata")
     private ConversationMeta meta = new ConversationMeta();
 
@@ -46,6 +51,14 @@ public class Conversation {
 
     public String getId() {
         return id;
+    }
+
+    public String getChannelId() {
+        return channelId;
+    }
+
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
     }
 
     public ConversationMeta getMeta() {

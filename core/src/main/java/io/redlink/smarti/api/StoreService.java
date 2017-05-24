@@ -41,6 +41,19 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
         return listConversationIDsByHashedUser(userId);
     }
 
+    public Conversation getConversationByChannelId(String channelId) {
+        final String conversationId = mapChannelToConversationId(channelId);
+        if (conversationId != null) {
+            return get(conversationId);
+        } else {
+            final Conversation c = new Conversation();
+            c.setChannelId(channelId);
+            return store(c);
+        }
+    }
+
+    public abstract String mapChannelToConversationId(String channelId);
+
     protected abstract Collection<String> listConversationIDsByHashedUser(String hashedUserId);
 
     public abstract List<String> listTagsByInfix(String query, int limit);

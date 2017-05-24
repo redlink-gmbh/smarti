@@ -7,6 +7,7 @@ import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,9 @@ public class ConversationWebservice {
 
     @Autowired
     private StoreService storeService;
+
+    @Autowired
+    private ConversationService conversationService;
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<?> createConversation() {
@@ -64,10 +68,7 @@ public class ConversationWebservice {
             return ResponseEntity.notFound().build();
         }
 
-        conversation.getMessages().add(message);
-        // TODO: call the prepare/query methods
-
-        return ResponseEntity.ok(storeService.store(conversation));
+        return ResponseEntity.ok(conversationService.appendMessage(conversation, message));
     }
 
     @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
@@ -81,7 +82,7 @@ public class ConversationWebservice {
         }
     }
 
-    @RequestMapping(value = "{id}/query", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/intent", method = RequestMethod.GET)
     public ResponseEntity<?> query(@PathVariable("id") String id) {
         final Conversation conversation = storeService.get(id);
 
@@ -92,7 +93,7 @@ public class ConversationWebservice {
         }
     }
 
-    @RequestMapping(value = "{id}/query/{intent}/{creator}", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/intent/{intent}/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(@PathVariable("id") String id,
                                         @PathVariable("intent") String intent,
                                         @PathVariable("creator") String creator) {

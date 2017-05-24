@@ -99,6 +99,16 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
+    public String mapChannelToConversationId(String channelId) {
+        return storage.values().stream()
+                .filter(c -> Objects.equals(c.getChannelId(), channelId))
+                .filter(c -> c.getMeta().getStatus() != ConversationMeta.Status.Complete)
+                .sorted((a, b) -> a.getMeta().getStatus().compareTo(b.getMeta().getStatus()))
+                .map(Conversation::getId)
+                .findFirst().orElse(null);
+    }
+
+    @Override
     public void deleteAll() {
         storage.clear();
     }
