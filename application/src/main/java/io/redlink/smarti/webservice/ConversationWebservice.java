@@ -45,4 +45,8 @@ public class ConversationWebservice {
         return ResponseEntities.notImplemented();
     }
 
+    @RequestMapping(value = "{id}/complete", method = RequestMethod.POST)
+    public ResponseEntity<?> complete(@PathVariable("id") String id) {
+        return ResponseEntities.notImplemented();
+    }
 }

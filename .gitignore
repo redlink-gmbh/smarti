@@ -15,7 +15,7 @@ buildNumber.properties
 # specific
 application-local.properties
 .settings
-kmp.pid
+*.pid
 
 # mac related files
 .DS_Store
