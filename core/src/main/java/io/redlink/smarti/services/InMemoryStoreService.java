@@ -10,7 +10,7 @@ import io.redlink.smarti.model.ConversationMeta;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * An in-memory store for conversations.
  */
 @Component("inMemoryStoreService")
-@Profile("default")
+@ConditionalOnMissingBean(StoreService.class)
 public class InMemoryStoreService extends StoreService {
 
     private final Map<String, Conversation> storage = new ConcurrentHashMap<>();

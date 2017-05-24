@@ -26,4 +26,5 @@ public interface ConversationRepositoryCustom {
 
     List<Pair<String, Long>> findTags(long limit, long offset);
 
+    String findConversationIDByChannelID(String channelId);
 }
