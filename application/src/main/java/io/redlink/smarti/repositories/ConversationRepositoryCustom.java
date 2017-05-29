@@ -5,6 +5,7 @@
 package io.redlink.smarti.repositories;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.bson.types.ObjectId;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -16,9 +17,9 @@ import java.util.regex.Pattern;
  */
 public interface ConversationRepositoryCustom {
 
-    List<String> findConversationIDs();
+    List<ObjectId> findConversationIDs();
 
-    List<String> findConversationIDsByUser(String userId);
+    List<ObjectId> findConversationIDsByUser(String userId);
 
     List<String> findTagsByPattern(Pattern pattern, int limit);
 
@@ -26,5 +27,5 @@ public interface ConversationRepositoryCustom {
 
     List<Pair<String, Long>> findTags(long limit, long offset);
 
-    String findConversationIDByChannelID(String channelId);
+    ObjectId findConversationIDByChannelID(String channelId);
 }

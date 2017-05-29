@@ -7,6 +7,7 @@ import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.repositories.ConversationRepository;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bson.types.ObjectId;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -35,22 +36,22 @@ public class MongoDBStoreService extends StoreService {
     }
 
     @Override
-    public Collection<String> listConversationIDs() {
+    public Collection<ObjectId> listConversationIDs() {
         return conversationRepository.findConversationIDs();
     }
 
     @Override
-    public Conversation get(String conversationId) {
+    public Conversation get(ObjectId conversationId) {
         return conversationRepository.findOne(conversationId);
     }
 
     @Override
-    protected Collection<String> listConversationIDsByHashedUser(String hashedUserId) {
+    protected Collection<ObjectId> listConversationIDsByHashedUser(String hashedUserId) {
         return conversationRepository.findConversationIDsByUser(hashedUserId);
     }
 
     @Override
-    public String mapChannelToConversationId(String channelId) {
+    public ObjectId mapChannelToConversationId(String channelId) {
         return conversationRepository.findConversationIDByChannelID(channelId);
     }
 

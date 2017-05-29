@@ -4,6 +4,8 @@
 package io.redlink.smarti.api.event;
 
 import io.redlink.smarti.model.ConversationMeta;
+
+import org.bson.types.ObjectId;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -16,17 +18,17 @@ public class StoreServiceEvent extends ApplicationEvent {
     }
 
     private final Operation operation;
-    private final String conversationId;
+    private final ObjectId conversationId;
     private final ConversationMeta.Status conversationStatus;
 
-    public StoreServiceEvent(Object source, Operation operation, String conversationId, ConversationMeta.Status conversationStatus) {
+    public StoreServiceEvent(Object source, Operation operation, ObjectId conversationId, ConversationMeta.Status conversationStatus) {
         super(source);
         this.operation = operation;
         this.conversationId = conversationId;
         this.conversationStatus = conversationStatus;
     }
 
-    public String getConversationId() {
+    public ObjectId getConversationId() {
         return conversationId;
     }
 
@@ -38,15 +40,15 @@ public class StoreServiceEvent extends ApplicationEvent {
         return operation;
     }
 
-    public static  StoreServiceEvent save(String conversationId, Object source) {
+    public static  StoreServiceEvent save(ObjectId conversationId, Object source) {
         return new StoreServiceEvent(source, Operation.SAVE, conversationId, null);
     }
 
-    public static  StoreServiceEvent save(String conversationId, ConversationMeta.Status conversationStatus, Object source) {
+    public static  StoreServiceEvent save(ObjectId conversationId, ConversationMeta.Status conversationStatus, Object source) {
         return new StoreServiceEvent(source, Operation.SAVE, conversationId, conversationStatus);
     }
 
-    public static  StoreServiceEvent delete(String conversationId, Object source) {
+    public static  StoreServiceEvent delete(ObjectId conversationId, Object source) {
         return new StoreServiceEvent(source, Operation.DELETE, conversationId, null);
     }
 

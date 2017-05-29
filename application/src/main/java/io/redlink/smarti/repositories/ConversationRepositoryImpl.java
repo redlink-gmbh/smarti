@@ -10,6 +10,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -37,7 +38,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public List<String> findConversationIDs() {
+    public List<ObjectId> findConversationIDs() {
         final Query query = new Query();
         query.fields().include("id");
 
@@ -48,7 +49,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public List<String> findConversationIDsByUser(String userId) {
+    public List<ObjectId> findConversationIDsByUser(String userId) {
         final Query query = new Query();
         query.addCriteria(where("user.id").is(userId));
         query.fields().include("id");
@@ -60,7 +61,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public String findConversationIDByChannelID(String channelId) {
+    public ObjectId findConversationIDByChannelID(String channelId) {
         final Query query = new Query();
         query.addCriteria(where("channelId").is(channelId))
                 .addCriteria(where("meta.state").ne(ConversationMeta.Status.Complete));

@@ -6,6 +6,7 @@ package io.redlink.smarti.api;
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.model.Conversation;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bson.types.ObjectId;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
@@ -33,16 +34,16 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     protected abstract Conversation doStore(Conversation conversation);
 
-    public abstract Collection<String> listConversationIDs();
+    public abstract Collection<ObjectId> listConversationIDs();
 
-    public abstract Conversation get(String conversationId);
+    public abstract Conversation get(ObjectId conversationId);
 
-    public final Collection<String> listConversationIDsByUser(String userId) {
+    public final Collection<ObjectId> listConversationIDsByUser(String userId) {
         return listConversationIDsByHashedUser(userId);
     }
 
     public Conversation getConversationByChannelId(String channelId) {
-        final String conversationId = mapChannelToConversationId(channelId);
+        final ObjectId conversationId = mapChannelToConversationId(channelId);
         if (conversationId != null) {
             return get(conversationId);
         } else {
@@ -52,9 +53,9 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
         }
     }
 
-    public abstract String mapChannelToConversationId(String channelId);
+    public abstract ObjectId mapChannelToConversationId(String channelId);
 
-    protected abstract Collection<String> listConversationIDsByHashedUser(String hashedUserId);
+    protected abstract Collection<ObjectId> listConversationIDsByHashedUser(String hashedUserId);
 
     public abstract List<String> listTagsByInfix(String query, int limit);
 

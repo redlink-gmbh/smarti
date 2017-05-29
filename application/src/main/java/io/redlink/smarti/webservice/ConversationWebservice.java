@@ -8,6 +8,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.services.ConversationService;
+import io.redlink.smarti.utils.ModelUtils;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,7 @@ public class ConversationWebservice {
 
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
     public ResponseEntity<?> getConversation(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(id);
+        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -63,7 +64,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
     public ResponseEntity<?> addMessage(@PathVariable("id") String id,
                                         @RequestBody Message message) {
-        final Conversation conversation = storeService.get(id);
+        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
@@ -73,7 +74,7 @@ public class ConversationWebservice {
 
     @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
     public ResponseEntity<?> prepare(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(id);
+        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -84,7 +85,7 @@ public class ConversationWebservice {
 
     @RequestMapping(value = "{id}/intent", method = RequestMethod.GET)
     public ResponseEntity<?> query(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(id);
+        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -103,7 +104,7 @@ public class ConversationWebservice {
 
     @RequestMapping(value = "{id}/publish", method = RequestMethod.POST)
     public ResponseEntity<?> complete(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(id);
+        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
