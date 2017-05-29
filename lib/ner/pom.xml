@@ -24,6 +24,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>pos</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-model</artifactId>
             <version>${redlinknlp.version}</version>

@@ -4,12 +4,17 @@
 
 package io.redlink.reisebuddy.extractor.token.impl;
 
-import io.redlink.reisebuddy.api.QueryPreparator;
-import io.redlink.reisebuddy.model.Conversation;
-import io.redlink.reisebuddy.model.Token;
-import io.redlink.reisebuddy.model.Token.Hint;
-import io.redlink.reisebuddy.processing.ProcessingData;
 import org.springframework.stereotype.Component;
+
+import io.redlink.nlp.api.ProcessingData;
+import io.redlink.nlp.api.Processor;
+import io.redlink.nlp.model.AnalyzedText;
+import io.redlink.nlp.model.ner.NerSet;
+import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Token;
+
+import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 
 import java.util.*;
 
@@ -26,15 +31,29 @@ import java.util.*;
  *
  */
 @Component
-public class TokenFilter extends QueryPreparator {
+public class TokenFilter extends Processor {
 
     protected TokenFilter() {
-        super(Phase.post,10); //the last one
+        super("token.filter","Token Filter",Phase.post,10); //the last one
     }
 
     @Override
-    public void prepare(ProcessingData processingData) {
-        Conversation c = processingData.getConversation();
+    public Map<String, Object> getDefaultConfiguration() {
+        return Collections.emptyMap();
+    }
+    
+    @Override
+    protected void init() throws Exception {
+        //no op
+    }
+    
+    @Override
+    public void doProcessing(ProcessingData processingData) {
+        Conversation c = processingData.getAnnotation(CONVERSATION_ANNOTATION);
+        if(c == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
+            return;
+        }
         //(1) we need to find the first token created by this analysis step
         int lastAnalyzed = c.getMeta().getLastMessageAnalyzed();
         final List<Token> newTokens;

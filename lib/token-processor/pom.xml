@@ -18,6 +18,19 @@
     <description>Processes Tokens already extracted from Messages</description>
     
     <dependencies>
+       <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>smarti-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-model</artifactId>
+            <version>${redlinknlp.version}</version>
+        </dependency>
+      
+    
+    
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>

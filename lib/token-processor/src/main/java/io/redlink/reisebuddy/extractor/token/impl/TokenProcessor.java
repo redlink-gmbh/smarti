@@ -4,20 +4,28 @@
 
 package io.redlink.reisebuddy.extractor.token.impl;
 
-import io.redlink.reisebuddy.api.QueryPreparator;
+import io.redlink.nlp.api.ProcessingData;
+import io.redlink.nlp.api.Processor;
 import io.redlink.reisebuddy.extractor.token.TokenProcessingRuleset;
-import io.redlink.reisebuddy.model.*;
-import io.redlink.reisebuddy.model.Message.Origin;
-import io.redlink.reisebuddy.model.Token.Type;
-import io.redlink.reisebuddy.processing.ProcessingData;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.Message.Origin;
+import io.redlink.smarti.model.MessageTopic;
+import io.redlink.smarti.model.State;
+import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.Token.Type;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -27,7 +35,7 @@ import java.util.stream.Collectors;
  *
  */
 @Component
-public class TokenProcessor extends QueryPreparator {
+public class TokenProcessor extends Processor {
 
     /**
      * The minimum confidence for topics (currently none)
@@ -37,12 +45,22 @@ public class TokenProcessor extends QueryPreparator {
 
     @Autowired
     public TokenProcessor(Collection<TokenProcessingRuleset> rulesets) {
-        super(Phase.post);
+        super("token.processor","Token Processor",Phase.post);
         this.rulesets = rulesets;
     }
     
     @Override
-    public void prepare(ProcessingData processingData) {
+    public Map<String, Object> getDefaultConfiguration() {
+        return Collections.emptyMap();
+    }
+    
+    @Override
+    protected void init() throws Exception {
+        //No op
+    }
+    
+    @Override
+    protected void doProcessing(ProcessingData processingData) {
         //(1) filter the rule sets based on the language of the conversation
         String language = processingData.getLanguage();
         List<TokenProcessingRuleset> rulesets = this.rulesets.stream()
@@ -52,7 +70,11 @@ public class TokenProcessor extends QueryPreparator {
             return; //no ruleset for this language
         }
         
-        final Conversation conv = processingData.getConversation();
+        Conversation conv = processingData.getAnnotation(CONVERSATION_ANNOTATION);
+        if(conv == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
+            return;
+        }
         final List<Message> messages = conv.getMessages();
         final List<Token> tokens = conv.getTokens();
 

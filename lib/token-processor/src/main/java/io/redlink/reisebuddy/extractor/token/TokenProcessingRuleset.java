@@ -4,15 +4,12 @@
 
 package io.redlink.reisebuddy.extractor.token;
 
-import io.redlink.nlp.model.AnalyzedText;
-import io.redlink.nlp.model.Section;
-import io.redlink.reisebuddy.model.Message;
-import io.redlink.reisebuddy.model.MessageTopic;
-import io.redlink.reisebuddy.model.Token;
-import io.redlink.reisebuddy.model.Token.Hint;
-
 import java.util.List;
 import java.util.Set;
+
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.MessageTopic;
+import io.redlink.smarti.model.Token;
 
 /**
  * Implementations of this Interface are expected to assign

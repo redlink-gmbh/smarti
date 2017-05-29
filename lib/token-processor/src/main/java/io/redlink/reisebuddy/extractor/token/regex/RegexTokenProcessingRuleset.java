@@ -5,11 +5,12 @@
 package io.redlink.reisebuddy.extractor.token.regex;
 
 import io.redlink.reisebuddy.extractor.token.TokenProcessingRuleset;
-import io.redlink.reisebuddy.model.Message;
-import io.redlink.reisebuddy.model.MessageTopic;
-import io.redlink.reisebuddy.model.Token;
-import io.redlink.reisebuddy.model.Token.Hint;
-import io.redlink.reisebuddy.model.Token.Type;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.MessageTopic;
+import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.Token.Hint;
+import io.redlink.smarti.model.Token.Type;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
