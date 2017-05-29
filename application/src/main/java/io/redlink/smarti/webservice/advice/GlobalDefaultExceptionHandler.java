@@ -3,6 +3,7 @@
  */
 package io.redlink.smarti.webservice.advice;
 
+import io.redlink.smarti.exception.DataException;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.utils.ResponseEntities.ResponseEntityBuilder;
 import org.apache.commons.lang3.ObjectUtils;
@@ -53,6 +54,14 @@ public class GlobalDefaultExceptionHandler {
                 .build(status)
                 .message(ObjectUtils.firstNonNull(e.getMessage(),statusMessage));
 
+        //DataExceptions can provide structured information about the error that
+        //will serialized under the "data" field in the response 
+        if(e instanceof DataException<?>){
+            Object data = ((DataException<?>)e).getData();
+            if(data != null){ //data may be null
+                reb.data(data);
+            }
+        }
 
         if(writeTrace){
             reb.trace(ExceptionUtils.getStackTrace(e));
