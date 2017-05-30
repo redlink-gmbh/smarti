@@ -84,7 +84,7 @@
         
         <dependency> <!-- This only defines abstract processors for actual vocabularies -->
             <groupId>io.redlink.nlp</groupId>
-            <artifactId>nlp-truecase-de</artifactId>
+            <artifactId>ner-regex</artifactId>
             <version>${redlinknlp.version}</version>
         </dependency>
         <!-- This also provides an abstract processor that needs to be configured
@@ -104,19 +104,20 @@
         
 
         <!-- Analysis -->
-        <dependency> <!-- (1) we need to detect the language -->
+        <!-- (1) we need to detect the language -->
+        <dependency> 
             <groupId>io.redlink.nlp</groupId>
             <artifactId>langdetect</artifactId>
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
         <!-- (2) OpenNLP for German and English -->
-        <dependency> 
+        <!-- dependency> - we prefer Stanford NLP POS tagging
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-opennlp-de</artifactId>
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
-        </dependency>
+        </dependency -->
         <dependency> 
             <groupId>io.redlink.nlp</groupId>
             <artifactId>ner-opennlp-de</artifactId>
