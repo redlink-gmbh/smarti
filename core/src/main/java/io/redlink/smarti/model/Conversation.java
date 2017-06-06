@@ -7,7 +7,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -24,7 +27,7 @@ public class Conversation {
     @Id
     @ApiModelProperty(position = 0)
     @Indexed
-    private String id = UUID.randomUUID().toString();
+    private ObjectId id;
 
     @Indexed
     @JsonIgnore
@@ -49,8 +52,21 @@ public class Conversation {
     @ApiModelProperty(position = 5, value = "conversation context")
     private Context context = new Context();
 
-    public String getId() {
+    public Conversation(){
+        this(null);
+    }
+    
+    @PersistenceConstructor
+    public Conversation(ObjectId id){
+        this.id = id;
+    }
+    
+    public ObjectId getId() {
         return id;
+    }
+    
+    public void setId(ObjectId id) {
+        this.id = id;
     }
 
     public String getChannelId() {

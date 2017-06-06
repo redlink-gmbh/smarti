@@ -12,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.bson.types.ObjectId;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
 @ConditionalOnMissingBean(StoreService.class)
 public class InMemoryStoreService extends StoreService {
 
-    private final Map<String, Conversation> storage = new ConcurrentHashMap<>();
+    private final Map<ObjectId, Conversation> storage = new ConcurrentHashMap<>();
 
     @Override
     protected Conversation doStore(Conversation conversation) {
@@ -39,12 +41,12 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public Collection<String> listConversationIDs() {
+    public Collection<ObjectId> listConversationIDs() {
         return storage.keySet();
     }
 
     @Override
-    protected Collection<String> listConversationIDsByHashedUser(String hashedUserId) {
+    protected Collection<ObjectId> listConversationIDsByHashedUser(String hashedUserId) {
         return storage.entrySet().stream()
                 .filter(e -> e.getValue() != null)
                 .filter(e -> e.getValue().getUser() != null)
@@ -61,7 +63,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public Conversation get(String conversationId) {
+    public Conversation get(ObjectId conversationId) {
         return storage.get(conversationId);
     }
 
@@ -107,7 +109,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public String mapChannelToConversationId(String channelId) {
+    public ObjectId mapChannelToConversationId(String channelId) {
         return storage.values().stream()
                 .filter(c -> Objects.equals(c.getChannelId(), channelId))
                 .filter(c -> c.getMeta().getStatus() != ConversationMeta.Status.Complete)

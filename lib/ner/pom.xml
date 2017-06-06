@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2016 Redlink GmbH
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.redlink.smarti</groupId>
+        <artifactId>smarti</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../../</relativePath>
+    </parent>
+
+    <artifactId>ner</artifactId>
+    <name>Named Entity Recognition</name>
+    <description>Collects extracted Named Entiets and creates token for them</description>
+    
+    <dependencies>
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>smarti-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>pos</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-model</artifactId>
+            <version>${redlinknlp.version}</version>
+        </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+      </dependency>
+      
+      <!-- Logging -->
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+      </dependency>
+
+      <dependency>
+        <groupId>io.redlink.nlp</groupId>
+        <artifactId>nlp-opennlp-de</artifactId>
+        <version>${redlinknlp.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.redlink.nlp</groupId>
+        <artifactId>ner-opennlp-de</artifactId>
+        <version>${redlinknlp.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.redlink.nlp</groupId>
+        <artifactId>ner-regex</artifactId>
+        <version>${redlinknlp.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.redlink.nlp</groupId>
+        <artifactId>ner-regex</artifactId>
+        <version>${redlinknlp.version}</version>
+        <classifier>tests</classifier>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.redlink.nlp</groupId>
+        <artifactId>nlp-negation</artifactId>
+        <version>${redlinknlp.version}</version>
+        <scope>test</scope>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-math3</artifactId>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>    
+</project>
