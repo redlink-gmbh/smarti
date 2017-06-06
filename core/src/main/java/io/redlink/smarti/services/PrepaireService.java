@@ -54,7 +54,7 @@ public class PrepaireService {
 
     @PostConstruct
     protected void initPipeline(){
-        log.info("> configure CV analysis pipeline");
+        log.info("> configure Smarti analysis pipeline");
         Set<String> required;
         Set<String> optional;
         if(StringUtils.isNotBlank(requiredProcessors)){
@@ -111,7 +111,7 @@ public class PrepaireService {
     
     public void prepare(Conversation conversation) {
         log.debug("Preparing query for {}", conversation);
-        if(conversation.getTokens().removeAll(null)){
+        while(conversation.getTokens().remove(null)){
             log.warn("Parsed Conversation {} contained a NULL Token", conversation);
         }
         ProcessingData pd = ProcessingData.create(conversation);
@@ -127,6 +127,10 @@ public class PrepaireService {
             }
         });
         log.debug("prepared Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
+        if(log.isDebugEnabled()){
+            log.debug("Tokens: ");
+            conversation.getTokens().forEach(t -> log.debug(" - {}",t));
+        }
     }
 
     
