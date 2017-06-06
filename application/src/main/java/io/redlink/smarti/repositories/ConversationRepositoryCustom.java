@@ -4,6 +4,8 @@
 
 package io.redlink.smarti.repositories;
 
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
@@ -27,4 +29,6 @@ public interface ConversationRepositoryCustom {
     List<Pair<String, Long>> findTags(long limit, long offset);
 
     String findConversationIDByChannelID(String channelId);
+
+    Conversation appendMessage(Conversation conversation, Message message);
 }

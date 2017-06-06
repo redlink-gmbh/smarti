@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -50,6 +51,13 @@ public class InMemoryStoreService extends StoreService {
                 .filter(e -> StringUtils.equals(hashedUserId, e.getValue().getUser().getId()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Conversation appendMessage(Conversation conversation, Message message) {
+        final Conversation cc = get(conversation.getId());
+        cc.getMessages().add(message);
+        return cc;
     }
 
     @Override

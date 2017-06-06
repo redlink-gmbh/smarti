@@ -5,6 +5,7 @@ package io.redlink.smarti.api;
 
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -66,4 +67,5 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public abstract long count();
 
+    public abstract Conversation appendMessage(Conversation conversation, Message message);
 }

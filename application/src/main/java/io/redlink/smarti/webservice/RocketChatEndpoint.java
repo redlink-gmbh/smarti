@@ -50,7 +50,7 @@ public class RocketChatEndpoint {
         message.setTime(payload.getTimestamp());
         message.setOrigin(payload.isBot() ? Message.Origin.Agent : Message.Origin.User);
 
-        // TODO: Use a UserServcice to actually *store* the users
+        // TODO: Use a UserService to actually *store* the users
         final User user = new User(payload.getUserId());
         user.setDisplayName(payload.getUserName());
         message.setUser(user);
