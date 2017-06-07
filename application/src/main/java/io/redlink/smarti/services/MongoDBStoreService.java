@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -34,6 +35,11 @@ public class MongoDBStoreService extends StoreService {
     @Override
     protected Conversation doStore(Conversation conversation) {
         return conversationRepository.save(conversation);
+    }
+
+    @Override
+    public Conversation storeIfUnmodifiedSince(Conversation finalConversation, Date lastModified) {
+        return conversationRepository.saveIfNotLastModifiedAfter(finalConversation, lastModified);
     }
 
     @Override

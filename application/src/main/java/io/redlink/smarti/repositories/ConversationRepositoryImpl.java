@@ -22,6 +22,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
 import java.util.ConcurrentModificationException;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,16 +56,43 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     @Override
     public Conversation appendMessage(Conversation conversation, Message message) {
+
         final Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(conversation.getId()));
         query.addCriteria(Criteria.where("messages").size(conversation.getMessages().size()));
 
         final Update update = new Update();
-        update.addToSet("messages").value(message);
+        update.addToSet("messages", message)
+                .currentDate("lastModified");
 
         final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
         if (writeResult.getN() == 1) {
-            return mongoTemplate.findOne(Query.query(Criteria.where("_id").is(conversation.getId())), Conversation.class);
+            return mongoTemplate.findById(conversation.getId(), Conversation.class);
+        } else {
+            throw new ConcurrentModificationException();
+        }
+    }
+
+    @Override
+    public Conversation saveIfNotLastModifiedAfter(Conversation conversation, Date lastModified) {
+        final Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(conversation.getId()));
+        query.addCriteria(Criteria.where("lastModified").lte(lastModified));
+
+        final Update update = new Update();
+        update.set("channelId", conversation.getChannelId())
+                .set("meta", conversation.getMeta())
+                .set("user", conversation.getUser())
+                .set("messages", conversation.getMessages())
+                .set("tokens", conversation.getTokens())
+                .set("queryTemplates", conversation.getQueryTemplates())
+                .set("context", conversation.getContext())
+                ;
+        update.currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() == 1) {
+            return mongoTemplate.findById(conversation.getId(), Conversation.class);
         } else {
             throw new ConcurrentModificationException();
         }

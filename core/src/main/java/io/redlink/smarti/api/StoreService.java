@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,12 +22,15 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
     private ApplicationEventPublisher eventPublisher = null;
 
     public final Conversation store(Conversation conversation) {
+        conversation.setLastModified(new Date());
         final Conversation stored = doStore(conversation);
         if (eventPublisher != null) {
             eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
         }
         return stored;
     }
+
+    public abstract Conversation storeIfUnmodifiedSince(Conversation finalConversation, Date lastModified);
 
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
@@ -69,4 +73,5 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
     public abstract long count();
 
     public abstract Conversation appendMessage(Conversation conversation, Message message);
+
 }
