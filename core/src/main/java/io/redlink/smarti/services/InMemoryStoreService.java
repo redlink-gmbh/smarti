@@ -11,15 +11,11 @@ import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.bson.types.ObjectId;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,6 +37,23 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
+    public Conversation storeIfUnmodifiedSince(Conversation conversation, Date lastModified) {
+        Preconditions.checkNotNull(conversation);
+        if (lastModified == null) {
+            return this.store(conversation);
+        } else {
+            final Conversation cc = get(conversation.getId());
+            final Date ccLastModified = cc.getLastModified();
+            if (ccLastModified != null &&
+                    (ccLastModified.equals(lastModified) || ccLastModified.before(lastModified))) {
+                return this.store(conversation);
+            }
+
+            return cc;
+        }
+    }
+
+    @Override
     public Collection<ObjectId> listConversationIDs() {
         return storage.keySet();
     }
@@ -59,6 +72,7 @@ public class InMemoryStoreService extends StoreService {
     public Conversation appendMessage(Conversation conversation, Message message) {
         final Conversation cc = get(conversation.getId());
         cc.getMessages().add(message);
+        cc.setLastModified(new Date());
         return cc;
     }
 

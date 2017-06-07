@@ -8,10 +8,13 @@ import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,8 +25,13 @@ import java.util.concurrent.Executors;
 @Service
 public class ConversationService {
 
+    private final Logger log = LoggerFactory.getLogger(ConversationService.class);
+
     @Autowired
     private StoreService storeService;
+
+    @Autowired
+    private PrepareService prepareService;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -42,10 +50,19 @@ public class ConversationService {
 
         if (process) {
             final Conversation finalConversation = conversation;
+            final Date lastModified = conversation.getLastModified();
             processingExecutor.submit(() -> {
-                // TODO: call the prepare/query methods
+                try {
+                    prepareService.prepare(finalConversation);
 
-                eventPublisher.publishEvent(new ConversationProcessCompleteEvent(finalConversation));
+                    // TODO: call the prepare/query methods
+
+                    storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
+
+                    eventPublisher.publishEvent(new ConversationProcessCompleteEvent(finalConversation));
+                } catch (Throwable t) {
+                    log.error("Error during async prepare: {}", t.getMessage(), t);
+                }
             });
         }
 

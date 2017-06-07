@@ -3,6 +3,7 @@
  */
 package io.redlink.smarti.webservice;
 
+import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
@@ -66,6 +67,9 @@ public class RocketChatEndpoint {
     }
 
     public String createChannelId(String clientId, String roomId) {
+        Preconditions.checkNotNull(clientId, "Missing parameter <clientId>");
+        Preconditions.checkNotNull(roomId, "Missing parameter <roomId>");
+
         return String.format("rocket.chat/%s/%s", clientId, roomId);
     }
 
