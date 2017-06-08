@@ -58,7 +58,7 @@ public class RocketChatEndpoint {
         log.debug("{}: {}", clientId, payload);
 
         final String channelId = createChannelId(clientId, payload.getChannelId());
-        final Conversation conversation = storeService.getConversationByChannelId(channelId);
+        final Conversation conversation = storeService.getCurrentConversationByChannelId(channelId);
         final boolean isNew = conversation.getMessages().isEmpty();
 
         final Message message = new Message();
@@ -79,6 +79,7 @@ public class RocketChatEndpoint {
         }
         message.setMetadata(meta);
 
+        // TODO: we need to handle *updates* / message edits
         conversationService.appendMessage(conversation, message);
 
         if (debug && isNew) {

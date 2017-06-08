@@ -77,6 +77,15 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
+    public Conversation completeConversation(ObjectId conversationId) {
+        final Conversation conversation = storage.get(conversationId);
+        if (conversation != null) {
+            conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
+        }
+        return conversation;
+    }
+
+    @Override
     public Conversation get(ObjectId conversationId) {
         return storage.get(conversationId);
     }
@@ -123,7 +132,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public ObjectId mapChannelToConversationId(String channelId) {
+    public ObjectId mapChannelToCurrentConversationId(String channelId) {
         return storage.values().stream()
                 .filter(c -> Objects.equals(c.getChannelId(), channelId))
                 .filter(c -> c.getMeta().getStatus() != ConversationMeta.Status.Complete)

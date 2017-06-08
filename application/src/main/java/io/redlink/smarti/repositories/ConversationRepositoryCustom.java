@@ -30,9 +30,11 @@ public interface ConversationRepositoryCustom {
 
     List<Pair<String, Long>> findTags(long limit, long offset);
 
-    ObjectId findConversationIDByChannelID(String channelId);
+    ObjectId findCurrentConversationIDByChannelID(String channelId);
 
     Conversation appendMessage(Conversation conversation, Message message);
 
     Conversation saveIfNotLastModifiedAfter(Conversation finalConversation, Date lastModified);
+
+    Conversation completeConversation(ObjectId conversationId);
 }

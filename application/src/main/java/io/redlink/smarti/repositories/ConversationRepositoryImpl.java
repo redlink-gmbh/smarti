@@ -13,6 +13,7 @@ import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
@@ -94,7 +95,8 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         if (writeResult.getN() == 1) {
             return mongoTemplate.findById(conversation.getId(), Conversation.class);
         } else {
-            throw new ConcurrentModificationException();
+            throw new ConcurrentModificationException(
+                    String.format("Conversation %s has been modified after %tF_%<tT.%<tS (%tF_%<tT.%<tS)", conversation.getId(), lastModified, conversation.getLastModified()));
         }
     }
 
@@ -111,11 +113,12 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public ObjectId findConversationIDByChannelID(String channelId) {
+    public ObjectId findCurrentConversationIDByChannelID(String channelId) {
         final Query query = new Query();
         query.addCriteria(where("channelId").is(channelId))
-                .addCriteria(where("meta.state").ne(ConversationMeta.Status.Complete));
+                .addCriteria(where("meta.status").ne(ConversationMeta.Status.Complete));
         query.fields().include("id");
+        query.with(new Sort(Direction.DESC, "lastModified"));
 
         final Conversation one = mongoTemplate.findOne(query, Conversation.class);
         if (one == null) {
@@ -123,6 +126,16 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         } else {
             return one.getId();
         }
+    }
+
+    @Override
+    public Conversation completeConversation(ObjectId conversationId) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update().set("meta.status", ConversationMeta.Status.Complete);
+
+        mongoTemplate.updateFirst(query, update, Conversation.class);
+
+        return mongoTemplate.findOne(query, Conversation.class);
     }
 
     @Override

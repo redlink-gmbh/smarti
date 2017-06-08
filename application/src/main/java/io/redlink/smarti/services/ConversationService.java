@@ -74,6 +74,6 @@ public class ConversationService {
     }
 
     public Conversation completeConversation(Conversation conversation) {
-        return conversation;
+        return storeService.completeConversation(conversation.getId());
     }
 }

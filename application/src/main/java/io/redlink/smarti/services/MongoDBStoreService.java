@@ -63,8 +63,13 @@ public class MongoDBStoreService extends StoreService {
     }
 
     @Override
-    public ObjectId mapChannelToConversationId(String channelId) {
-        return conversationRepository.findConversationIDByChannelID(channelId);
+    public ObjectId mapChannelToCurrentConversationId(String channelId) {
+        return conversationRepository.findCurrentConversationIDByChannelID(channelId);
+    }
+
+    @Override
+    public Conversation completeConversation(ObjectId conversationId) {
+        return conversationRepository.completeConversation(conversationId);
     }
 
     @Override
