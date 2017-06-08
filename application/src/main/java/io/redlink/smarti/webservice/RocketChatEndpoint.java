@@ -3,12 +3,16 @@
  */
 package io.redlink.smarti.webservice;
 
+import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,7 @@ import java.util.Map;
 @RequestMapping(value = "rocket",
         consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
+@Api("rocket")
 public class RocketChatEndpoint {
 
     private Logger log = LoggerFactory.getLogger(RocketChatEndpoint.class);
@@ -37,6 +42,8 @@ public class RocketChatEndpoint {
     @Autowired
     private ConversationService conversationService;
 
+    @ApiOperation("webhook-target for rocket.chat")
+    @ApiResponse(code = 202, message = "accepted")
     @RequestMapping(value = "{clientId}", method = RequestMethod.POST)
     public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientId,
                                            @RequestBody RocketEvent payload) {
@@ -50,7 +57,7 @@ public class RocketChatEndpoint {
         message.setTime(payload.getTimestamp());
         message.setOrigin(payload.isBot() ? Message.Origin.Agent : Message.Origin.User);
 
-        // TODO: Use a UserServcice to actually *store* the users
+        // TODO: Use a UserService to actually *store* the users
         final User user = new User(payload.getUserId());
         user.setDisplayName(payload.getUserName());
         message.setUser(user);
@@ -66,6 +73,9 @@ public class RocketChatEndpoint {
     }
 
     public String createChannelId(String clientId, String roomId) {
+        Preconditions.checkNotNull(clientId, "Missing parameter <clientId>");
+        Preconditions.checkNotNull(roomId, "Missing parameter <roomId>");
+
         return String.format("rocket.chat/%s/%s", clientId, roomId);
     }
 

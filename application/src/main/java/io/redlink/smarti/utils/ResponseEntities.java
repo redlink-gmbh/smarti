@@ -37,6 +37,10 @@ public class ResponseEntities {
         return status(HttpStatus.INTERNAL_SERVER_ERROR, message);
     }
 
+    public static ResponseEntity<?> internalServerError(Exception e) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR).message(e.getMessage()).data(e).build();
+    }
+
     public static ResponseEntity<Map<String,Object>> unprocessableEntity(String message) {
         return status(HttpStatus.UNPROCESSABLE_ENTITY, message);
     }
@@ -48,7 +52,7 @@ public class ResponseEntities {
     public static ResponseEntity<?> notImplemented() {
         return status(HttpStatus.NOT_IMPLEMENTED, "Not (yet) implemented");
     }
-    
+
     public static class ResponseEntityBuilder {
         
         private final int status;

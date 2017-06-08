@@ -4,9 +4,12 @@
 
 package io.redlink.smarti.repositories;
 
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -28,4 +31,8 @@ public interface ConversationRepositoryCustom {
     List<Pair<String, Long>> findTags(long limit, long offset);
 
     ObjectId findConversationIDByChannelID(String channelId);
+
+    Conversation appendMessage(Conversation conversation, Message message);
+
+    Conversation saveIfNotLastModifiedAfter(Conversation finalConversation, Date lastModified);
 }

@@ -154,7 +154,7 @@ public class NamedEntityCollector extends Processor {
                         token.setConfidence(sumProbability(token.getConfidence(), getProbability(nerAnno)));
                     }
                 } else {
-                    log.trace(" - [{},{}] {} (tag:{}) - unmapped", start, end, chunk.getSpan(), nerTag.getType());
+                    log.warn("Unable to map NerTag[{},{}] {} (tag:{}) to a Token.Type", start, end, chunk.getSpan(), nerTag.getType());
                 }
             }
         }
@@ -173,11 +173,26 @@ public class NamedEntityCollector extends Processor {
     private float sumProbability(float prop1, float prob2){
         return (prop1 + prob2)/(1 + (prop1*prob2));
     }
-
+    /**
+     * Tries to map the {@link NerTag} to a Token {@link Type}
+     * @param nerTag the nerTag
+     * @return the TokenType
+     */
     private Type getTokenType(NerTag nerTag) {
         Token.Type type = TOKEN_TYPE_MAPPINGS.get(nerTag.getType());
         if(type == null){
-            type = TOKEN_TYPE_MAPPINGS.get(nerTag.getTag());
+            if(nerTag.getType().equals(NerTag.NAMED_ENTITY_MISC) || nerTag.getType().equals(NerTag.NAMED_ENTITY_UNKOWN)){
+                type = TOKEN_TYPE_MAPPINGS.get(nerTag.getTag());
+                if(type == null){
+                    try {
+                        type = Token.Type.valueOf(nerTag.getTag());
+                    } catch (IllegalArgumentException e) { /* tag is not a Token.Type */}
+                }
+            } else {
+                try {
+                    type = Token.Type.valueOf(nerTag.getTag());
+                } catch (IllegalArgumentException e) { /* tag is not a Token.Type */}
+            }
         }
         return type;
     }

@@ -111,10 +111,9 @@ public class NamedEntityCollectorTest {
                         new ImmutablePair<String, Hint[]>("Hamburg", new Hint[]{}),
                         new ImmutablePair<String, Hint[]>("Nürnberg", new Hint[]{Hint.negated}))));
         
-        OpenNlpPosProcessor pos = new OpenNlpPosProcessor(Collections.singleton(new LanguageGerman()));
-        OpenNlpNerProcessor ner = new OpenNlpNerProcessor(Collections.singletonList(new NerGerman()));
+        GermanTestSetup germanNlp = GermanTestSetup.getInstance();
         NegationProcessor negation = new NegationProcessor(Collections.singleton(new GermanNegationRule()));
-        REQUIRED_PREPERATORS = Arrays.asList(pos, ner, negation);
+        REQUIRED_PREPERATORS = Arrays.asList(germanNlp.getPosProcessor(), germanNlp.getNerProcessor(), negation);
         
     }
     

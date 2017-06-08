@@ -6,7 +6,7 @@ pipelines:
         script:
           - mkdir -p /data/mongo-db && mongod --dbpath=/data/mongo-db --fork --logpath /data/mongod.log
           - git remote rename origin upstream
-          - mvn -q -B -s .ci/settings.xml clean install || { git diff && exit 1; }
+          - mvn -q -B -s .ci/settings.xml -DargLine="-Xmx2g" clean install || { git diff && exit 1; }
           - git remote rename upstream origin
           - ./.ci/uploadArtifacts.sh
   branches:
@@ -15,7 +15,7 @@ pipelines:
           script:
             - mkdir -p /data/mongo-db && mongod --dbpath=/data/mongo-db --fork --logpath /data/mongod.log
             - git remote rename origin upstream
-            - mvn -q -B -s .ci/settings.xml clean install
+            - mvn -q -B -s .ci/settings.xml -DargLine="-Xmx2g" clean install
             - mvn -q -B -s .ci/settings.xml package -Dquick -Pdeb,rpm -rf :smarti-dist
             - git remote rename upstream origin
             - ./.ci/uploadArtifacts.sh
@@ -25,7 +25,7 @@ pipelines:
           script:
             - mkdir -p /data/mongo-db && mongod --dbpath=/data/mongo-db --fork --logpath /data/mongod.log
             - git remote rename origin upstream
-            - mvn -q -B -s .ci/settings.xml clean install
+            - mvn -q -B -s .ci/settings.xml -DargLine="-Xmx2g" clean install
             - mvn -q -B -s .ci/settings.xml package -Dquick -Pdeb,rpm -rf :smarti-dist
             - git remote rename upstream origin
             - ./.ci/uploadArtifacts.sh --release --checksums

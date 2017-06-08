@@ -1,28 +1,20 @@
 package io.redlink.smarti.services;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import javax.annotation.PostConstruct;
-
+import io.redlink.nlp.api.ProcessingException;
+import io.redlink.nlp.api.Processor;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.processing.ProcessingData;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import io.redlink.nlp.api.ProcessingException;
-import io.redlink.nlp.api.Processor;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.processing.ProcessingData;
+import javax.annotation.PostConstruct;
+import java.util.*;
 
 @Service
-public class PrepaireService {
+public class PrepareService {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -43,7 +35,7 @@ public class PrepaireService {
     private final List<Processor> pipeline = new ArrayList<>();
     
 
-    public PrepaireService(Optional<List<Processor>> processors) {
+    public PrepareService(Optional<List<Processor>> processors) {
         log.debug("available processors: {}", processors);
         this._processors = processors.orElse(Collections.emptyList());
 
@@ -54,7 +46,7 @@ public class PrepaireService {
 
     @PostConstruct
     protected void initPipeline(){
-        log.info("> configure CV analysis pipeline");
+        log.info("> configure Smarti analysis pipeline");
         Set<String> required;
         Set<String> optional;
         if(StringUtils.isNotBlank(requiredProcessors)){
@@ -111,7 +103,7 @@ public class PrepaireService {
     
     public void prepare(Conversation conversation) {
         log.debug("Preparing query for {}", conversation);
-        if(conversation.getTokens().removeAll(null)){
+        while(conversation.getTokens().remove(null)){
             log.warn("Parsed Conversation {} contained a NULL Token", conversation);
         }
         ProcessingData pd = ProcessingData.create(conversation);
@@ -127,6 +119,10 @@ public class PrepaireService {
             }
         });
         log.debug("prepared Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
+        if(log.isDebugEnabled()){
+            log.debug("Tokens: ");
+            conversation.getTokens().forEach(t -> log.debug(" - {}",t));
+        }
     }
 
     

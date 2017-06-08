@@ -6,8 +6,10 @@ package io.redlink.smarti.repositories;
 
 import com.google.common.collect.Lists;
 import com.mongodb.DBObject;
+import com.mongodb.WriteResult;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
@@ -15,8 +17,12 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
+import java.util.ConcurrentModificationException;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,6 +52,50 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                 mongoTemplate.find(query, Conversation.class),
                 Conversation::getId
         );
+    }
+
+    @Override
+    public Conversation appendMessage(Conversation conversation, Message message) {
+
+        final Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(conversation.getId()));
+        query.addCriteria(Criteria.where("messages").size(conversation.getMessages().size()));
+
+        final Update update = new Update();
+        update.addToSet("messages", message)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() == 1) {
+            return mongoTemplate.findById(conversation.getId(), Conversation.class);
+        } else {
+            throw new ConcurrentModificationException();
+        }
+    }
+
+    @Override
+    public Conversation saveIfNotLastModifiedAfter(Conversation conversation, Date lastModified) {
+        final Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(conversation.getId()));
+        query.addCriteria(Criteria.where("lastModified").lte(lastModified));
+
+        final Update update = new Update();
+        update.set("channelId", conversation.getChannelId())
+                .set("meta", conversation.getMeta())
+                .set("user", conversation.getUser())
+                .set("messages", conversation.getMessages())
+                .set("tokens", conversation.getTokens())
+                .set("queryTemplates", conversation.getQueryTemplates())
+                .set("context", conversation.getContext())
+                ;
+        update.currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() == 1) {
+            return mongoTemplate.findById(conversation.getId(), Conversation.class);
+        } else {
+            throw new ConcurrentModificationException();
+        }
     }
 
     @Override
