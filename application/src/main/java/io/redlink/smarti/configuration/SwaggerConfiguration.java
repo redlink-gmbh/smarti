@@ -4,6 +4,7 @@
 package io.redlink.smarti.configuration;
 
 import io.swagger.annotations.Api;
+import org.bson.types.ObjectId;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
@@ -42,7 +43,8 @@ public class SwaggerConfiguration {
                 .select()
                     .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
                     .paths(PathSelectors.any())
-                .build();
+                .build()
+                .directModelSubstitute(ObjectId.class, String.class);
     }
 
 }
