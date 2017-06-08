@@ -123,6 +123,8 @@ public class PrepareService {
             log.debug("Tokens: ");
             conversation.getTokens().forEach(t -> log.debug(" - {}",t));
         }
+        conversation.getMeta().setLastMessageAnalyzed(conversation.getTokens().size()-1);
+        log.trace("set lastMessageAnalyzed: {}", conversation.getMeta().getLastMessageAnalyzed());
     }
 
     
