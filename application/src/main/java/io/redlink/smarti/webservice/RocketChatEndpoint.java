@@ -13,6 +13,7 @@ import io.redlink.smarti.webservice.pojo.RocketEvent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,9 @@ public class RocketChatEndpoint {
     private ConversationService conversationService;
 
     @ApiOperation("webhook-target for rocket.chat")
-    @ApiResponse(code = 202, message = "accepted")
+    @ApiResponses({
+            @ApiResponse(code = 202, message = "accepted")
+    })
     @RequestMapping(value = "{clientId}", method = RequestMethod.POST)
     public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientId,
                                            @RequestBody RocketEvent payload) {
