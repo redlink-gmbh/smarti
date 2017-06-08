@@ -17,10 +17,10 @@ import java.util.List;
 @ApiModel
 public class IntentResponse {
 
-    @ApiModelProperty(position = 3, value = "Tokens extracted")
+    @ApiModelProperty(value = "Tokens extracted")
     private List<Token> tokens = new ArrayList<>();
 
-    @ApiModelProperty(position = 4, value = "Templates for possible queries")
+    @ApiModelProperty(value = "Templates for possible queries")
     private List<Intent> queryTemplates = new ArrayList<>();
 
     public List<Token> getTokens() {
