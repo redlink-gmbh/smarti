@@ -57,7 +57,7 @@ public abstract class QueryBuilder {
 
     public abstract boolean acceptTemplate(Intend t);
 
-    protected abstract void doBuildQuery(Intend template, Conversation conversation);
+    protected abstract void doBuildQuery(Intend intend, Conversation conversation);
     
     
     
