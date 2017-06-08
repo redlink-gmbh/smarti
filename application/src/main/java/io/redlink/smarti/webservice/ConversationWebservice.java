@@ -26,7 +26,6 @@ import java.util.List;
 @CrossOrigin
 @RestController
 @RequestMapping(value = "conversation",
-        consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @Api("conversation")
 public class ConversationWebservice {
@@ -55,7 +54,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "update a conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{id}", method = RequestMethod.PUT, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateConversation(@PathVariable("id") ObjectId id,
                                                 @RequestBody Conversation conversation) {
         // make sure the id is the right one
@@ -65,7 +64,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "append a message to the conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
+    @RequestMapping(value = "{id}/message", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> addMessage(@PathVariable("id") ObjectId id,
                                         @RequestBody Message message) {
         final Conversation conversation = storeService.get(id);
@@ -101,7 +100,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
-    @RequestMapping(value = "{id}/query/{intent}/{creator}", method = RequestMethod.POST)
+    @RequestMapping(value = "{id}/query/{intent}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
                                       @PathVariable("intent") String intent,
                                       @PathVariable("creator") String creator,
