@@ -71,7 +71,17 @@ public class InMemoryStoreService extends StoreService {
     @Override
     public Conversation appendMessage(Conversation conversation, Message message) {
         final Conversation cc = get(conversation.getId());
-        cc.getMessages().add(message);
+        int pos = 0;
+        do {
+            if (StringUtils.equals(cc.getMessages().get(pos).getId(), message.getId())) {
+                break;
+            }
+            pos++;
+        } while (pos < cc.getMessages().size());
+        if (pos < cc.getMessages().size()) {
+            cc.getMessages().remove(pos);
+        }
+        cc.getMessages().add(pos, message);
         cc.setLastModified(new Date());
         return cc;
     }

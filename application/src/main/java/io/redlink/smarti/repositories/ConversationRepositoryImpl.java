@@ -57,14 +57,25 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     @Override
     public Conversation appendMessage(Conversation conversation, Message message) {
+        final Query isMessageEdit = new Query(Criteria.where("_id").is(conversation.getId()))
+                .addCriteria(Criteria.where("messages._id").is(message.getId()));
 
-        final Query query = new Query();
-        query.addCriteria(Criteria.where("_id").is(conversation.getId()));
-        query.addCriteria(Criteria.where("messages").size(conversation.getMessages().size()));
+        final Query query;
+        final Update update;
+        if (mongoTemplate.exists(isMessageEdit, Conversation.class)) {
+            query = isMessageEdit;
+            update = new Update()
+                    .set("messages.$", message)
+                    .currentDate("lastModified");
+        } else {
+            query = new Query();
+            query.addCriteria(Criteria.where("_id").is(conversation.getId()));
+            query.addCriteria(Criteria.where("messages").size(conversation.getMessages().size()));
 
-        final Update update = new Update();
-        update.addToSet("messages", message)
-                .currentDate("lastModified");
+            update = new Update();
+            update.addToSet("messages", message)
+                    .currentDate("lastModified");
+        }
 
         final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
         if (writeResult.getN() == 1) {

@@ -10,13 +10,12 @@ import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
-
-import org.apache.commons.lang3.StringUtils;
 import io.redlink.smarti.webservice.pojo.RocketMessage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Webhook-Endpoint for rocket.chat
@@ -60,7 +56,7 @@ public class RocketChatEndpoint {
         log.debug("{}: {}", clientId, payload);
 
         final String channelId = createChannelId(clientId, payload.getChannelId());
-        final Conversation conversation = storeService.getCurrentConversationByChannelId(channelId);
+        Conversation conversation = storeService.getCurrentConversationByChannelId(channelId);
         final boolean isNew = conversation.getMessages().isEmpty();
 
         final Message message = new Message();
@@ -81,8 +77,7 @@ public class RocketChatEndpoint {
             message.getMetadata().put("bot_id", payload.getBot().getIdentifier());
         }
 
-        // TODO: we need to handle *updates* / message edits
-        conversationService.appendMessage(conversation, message);
+        conversation = conversationService.appendMessage(conversation, message);
 
         if (debug && isNew) {
             return ResponseEntity.ok(new RocketMessage(String.format("new conversation: `%s`", conversation.getId())));
