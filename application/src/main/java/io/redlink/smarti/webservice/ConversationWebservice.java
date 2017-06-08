@@ -8,6 +8,7 @@ import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.IntentResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.bson.types.ObjectId;
@@ -15,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 /**
@@ -85,7 +88,7 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "retrieve the intents of the conversation", response = Intend.class, responseContainer = "List")
+    @ApiOperation(value = "retrieve the intents of the conversation", response = IntentResponse.class)
     @RequestMapping(value = "{id}/intent", method = RequestMethod.GET)
     public ResponseEntity<?> query(@PathVariable("id") ObjectId id) {
         final Conversation conversation = storeService.get(id);
@@ -93,8 +96,18 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(conversation.getQueryTemplates());
+            return ResponseEntity.ok(IntentResponse.from(conversation));
         }
+    }
+
+    @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
+    @RequestMapping(value = "{id}/query/{intent}/{creator}", method = RequestMethod.POST)
+    public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
+                                      @PathVariable("intent") String intent,
+                                      @PathVariable("creator") String creator,
+                                      @RequestBody List<Slot> updatedSlots) {
+        // TODO: Implement this
+        return ResponseEntities.notImplemented();
     }
 
     @ApiOperation(value = "retrieve the results for a intent from a specific creator", response = Result.class, responseContainer = "List")

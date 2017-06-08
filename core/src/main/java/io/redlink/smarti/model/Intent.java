@@ -16,7 +16,7 @@ import java.util.List;
 /**
  */
 @ApiModel
-public class Intend implements Comparable<Intend> {
+public class Intent implements Comparable<Intent> {
 
     @JsonProperty("queryType")
     @ApiModelProperty(notes = "type of the query that can be build from this template", required = true)
@@ -34,16 +34,16 @@ public class Intend implements Comparable<Intend> {
     private List<Query> queries = new ArrayList<>();
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Intend(@JsonProperty("queryType") MessageTopic type, @JsonProperty("querySlots") Collection<Slot> slots) {
+    public Intent(@JsonProperty("queryType") MessageTopic type, @JsonProperty("querySlots") Collection<Slot> slots) {
         this.type = type;
         this.slots = slots;
     }
 
     /**
-     * Comparator that sorts the {@link Intend} with the highest {@link Intend#getProbability()}
+     * Comparator that sorts the {@link Intent} with the highest {@link Intent#getProbability()}
      * first.
      */
-    public static final Comparator<Intend> CONFIDENCE_COMPARATOR = (t1, t2) -> Float.compare(t2.getProbability(), t1.getProbability());
+    public static final Comparator<Intent> CONFIDENCE_COMPARATOR = (t1, t2) -> Float.compare(t2.getProbability(), t1.getProbability());
 
     public MessageTopic getType() {
         return type;
@@ -78,7 +78,7 @@ public class Intend implements Comparable<Intend> {
     }
 
     @Override
-    public int compareTo(Intend o) {
+    public int compareTo(Intent o) {
         return Float.compare(o.probability, probability);
     }
 }

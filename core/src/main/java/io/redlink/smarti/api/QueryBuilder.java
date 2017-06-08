@@ -3,11 +3,7 @@
  */
 package io.redlink.smarti.api;
 
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Intend;
-import io.redlink.smarti.model.IntendDefinition;
-import io.redlink.smarti.model.State;
-import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.IntendRegistry;
@@ -55,22 +51,22 @@ public abstract class QueryBuilder {
                 .forEach(t -> doBuildQuery(t, conversation));
     }
 
-    public abstract boolean acceptTemplate(Intend t);
+    public abstract boolean acceptTemplate(Intent t);
 
-    protected abstract void doBuildQuery(Intend template, Conversation conversation);
+    protected abstract void doBuildQuery(Intent template, Conversation conversation);
     
     
     
     /**
      * Getter for any (valid) {@link Token} referenced by the parsed
-     * {@link Intend} with the parsed role
+     * {@link Intent} with the parsed role
      * @param role the role
      * @param template the query template
      * @param conversation the conversation
      * @param tokenTypes the allowed types of the token
      * @return the Token or <code>null</code> if not preset or invalid
      */
-    protected Token getToken(String role, Intend template, Conversation conversation, Token.Type...tokenTypes) {
+    protected Token getToken(String role, Intent template, Conversation conversation, Token.Type...tokenTypes) {
         Set<Token.Type> types = toTypeSet(tokenTypes);
         final Optional<Token> token = template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -87,14 +83,14 @@ public abstract class QueryBuilder {
 
     /**
      * Getter for all (valid) {@link Token}s referenced by the parsed
-     * {@link Intend} with the parsed role
+     * {@link Intent} with the parsed role
      * @param role the role
      * @param template the query template
      * @param conversation the conversation
      * @param tokenTypes the allowed types of the tokens
      * @return the Token or <code>null</code> if not preset or invalid
      */
-    protected List<Token> getTokens(String role, Intend template, Conversation conversation, Token.Type...tokenTypes) {
+    protected List<Token> getTokens(String role, Intent template, Conversation conversation, Token.Type...tokenTypes) {
         final Set<Token.Type> types = toTypeSet(tokenTypes);
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -131,7 +127,7 @@ public abstract class QueryBuilder {
      * @param tokenTypes the allowed token type
      * @return {@code true} if the template has a token assigned to the provided role
      */
-    protected boolean hasToken(String role, Intend template, Conversation conversation, Token.Type...tokenTypes) {
+    protected boolean hasToken(String role, Intent template, Conversation conversation, Token.Type...tokenTypes) {
         final Set<Token.Type> types = toTypeSet(tokenTypes);
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -141,7 +137,7 @@ public abstract class QueryBuilder {
                 .findFirst().isPresent();
     }
 
-    public List<? extends Result> execute(Intend template, Conversation conversation) throws IOException {
+    public List<? extends Result> execute(Intent template, Conversation conversation) throws IOException {
         return Collections.emptyList();
     }
 

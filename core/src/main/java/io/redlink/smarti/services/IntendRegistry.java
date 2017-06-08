@@ -4,12 +4,11 @@
 
 package io.redlink.smarti.services;
 
+import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.Intent;
+import io.redlink.smarti.model.MessageTopic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import io.redlink.smarti.model.Intend;
-import io.redlink.smarti.model.IntendDefinition;
-import io.redlink.smarti.model.MessageTopic;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -34,7 +33,7 @@ public class IntendRegistry {
         }
     }
     
-    public IntendDefinition getTemplate(Intend qt){
+    public IntendDefinition getTemplate(Intent qt){
         return getTemplate(qt.getType());
     }
 
