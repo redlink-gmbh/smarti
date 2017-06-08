@@ -15,7 +15,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <!--module>nlp-model</module>-->
         <module>hasso-vocabulary-extractors</module>
         <module>keyword-interestingterms</module>
         <module>ner</module>

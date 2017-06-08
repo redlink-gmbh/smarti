@@ -89,10 +89,8 @@ public class LocationTypeAppenderTest {
                     new ImmutablePair<String, Hint[]>("Prenzlberg", new Hint[]{}))));
         
         RegexNerProcessor bhDetect = new RegexNerProcessor(Collections.singletonList(new BahnhofDetector()));
-        OpenNlpPosProcessor pos = new OpenNlpPosProcessor(Collections.singleton(new LanguageGerman()));
-        OpenNlpNerProcessor ner = new OpenNlpNerProcessor(Collections.singletonList(new NerGerman()));
-        
-        REQUIRED_PRE_PREPERATORS = Arrays.asList(pos, ner, bhDetect);
+        GermanTestSetup germanNlp = GermanTestSetup.getInstance();
+        REQUIRED_PRE_PREPERATORS = Arrays.asList(germanNlp.getPosProcessor(), germanNlp.getNerProcessor(), bhDetect);
         
         REQUIRED_POST_PREPERATORS = Arrays.asList(new NamedEntityCollector());
         
