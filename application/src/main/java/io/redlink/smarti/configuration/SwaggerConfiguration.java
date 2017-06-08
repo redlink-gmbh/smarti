@@ -14,6 +14,8 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.util.Collections;
+
 /**
  */
 @Configuration
@@ -34,7 +36,8 @@ public class SwaggerConfiguration {
                                 "hello@redlink.co"
                         ),
                         "proprietary",
-                        "http://dev.redlink.io/terms/"
+                        "http://dev.redlink.io/terms/",
+                        Collections.emptyList()
                 ))
                 .select()
                     .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
