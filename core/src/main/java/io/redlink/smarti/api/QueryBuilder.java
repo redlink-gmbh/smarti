@@ -51,9 +51,9 @@ public abstract class QueryBuilder {
                 .forEach(t -> doBuildQuery(t, conversation));
     }
 
-    public abstract boolean acceptTemplate(Intent t);
+    public abstract boolean acceptTemplate(Intent intent);
 
-    protected abstract void doBuildQuery(Intend intend, Conversation conversation);
+    protected abstract void doBuildQuery(Intent intent, Conversation conversation);
     
     
     
