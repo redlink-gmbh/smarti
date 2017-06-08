@@ -44,7 +44,7 @@
         <!-- solr-text-tagger version needs to be in sync with solr.version
              (see: https://github.com/OpenSextant/SolrTextTagger/blob/master/CHANGES.md) -->
         <solr.text.tagger.version>2.3</solr.text.tagger.version>
-        <solrlib.version>0.3.0</solrlib.version>
+        <solrlib.version>0.4.0-SNAPSHOT</solrlib.version>
         <redlinknlp.version>2.0.0-SNAPSHOT</redlinknlp.version>
 
         <springfox.version>2.4.0</springfox.version>
