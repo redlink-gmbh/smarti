@@ -3,16 +3,10 @@
  */
 package io.redlink.smarti.processor.hasso;
 
+import io.redlink.smarti.api.QueryTemplateBuilder;
+import io.redlink.smarti.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import io.redlink.smarti.api.QueryTemplateBuilder;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Intend;
-import io.redlink.smarti.model.IntendDefinition;
-import io.redlink.smarti.model.Slot;
-import io.redlink.smarti.model.State;
-import io.redlink.smarti.model.Token;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,7 +26,7 @@ public class ApplicationHelpTemplateBuilder extends QueryTemplateBuilder {
     }
 
     @Override
-    protected Set<Integer> updateTemplate(Intend template, Conversation conversation, int startMsgIdx) {
+    protected Set<Integer> updateTemplate(Intent template, Conversation conversation, int startMsgIdx) {
         final HashSet<Integer> indexes = new HashSet<>();
 
         Slot from = applicationHelpTemplate.getSlot(ApplicationHelpTemplate.SUPPORT_TYPE, template);
@@ -83,7 +77,7 @@ public class ApplicationHelpTemplateBuilder extends QueryTemplateBuilder {
     }
 
     @Override
-    protected void initializeTemplate(Intend queryTemplate) {
+    protected void initializeTemplate(Intent queryTemplate) {
         queryTemplate.getSlots().addAll(Arrays.asList(
                 applicationHelpTemplate.createSlot(ApplicationHelpTemplate.SUPPORT_TYPE),
                 applicationHelpTemplate.createSlot(ApplicationHelpTemplate.KEYWORD)

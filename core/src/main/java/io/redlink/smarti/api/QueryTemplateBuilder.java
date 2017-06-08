@@ -5,7 +5,6 @@ package io.redlink.smarti.api;
 
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
-
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ public abstract class QueryTemplateBuilder {
     private static final float MIN_TOPIC_CONF = 0;
 
     /**
-     * The {@link IntendDefinition} used for {@link Intend}s build by this {@link QueryTemplateBuilder} implementation
+     * The {@link IntendDefinition} used for {@link Intent}s build by this {@link QueryTemplateBuilder} implementation
      * @return the query template definition. MUST NOT be <code>null</code>
      */
     protected abstract IntendDefinition getDefinition();
@@ -44,12 +43,12 @@ public abstract class QueryTemplateBuilder {
      * extracted from messages with a &gt;= index as the parsed value. NOTE: that for {@link Token.Origin#Agent}
      * origin Tokens the index will be <code>-1</code>. Those tokens should also be considered.
      * @return the Integer token index of tokens used to update the template. In other words the
-     * token indexes of tokens newly referenced by {@link Slot}s of the parsed {@link Intend}
+     * token indexes of tokens newly referenced by {@link Slot}s of the parsed {@link Intent}
      */
-    protected abstract Set<Integer> updateTemplate(Intend template, Conversation conversation, int startMsgIdx);
+    protected abstract Set<Integer> updateTemplate(Intent template, Conversation conversation, int startMsgIdx);
 
     /**
-     * Requests the creation of a {@link Intend} for the {@link IntendDefinition}
+     * Requests the creation of a {@link Intent} for the {@link IntendDefinition}
      * supported by this implementation to the parsed Conversation
      * @param conversation the conversation
      * @param probability the probability of the {@link IntendDefinition#getType()}
@@ -58,7 +57,7 @@ public abstract class QueryTemplateBuilder {
      * origin Tokens the index will be <code>-1</code>. Those tokens should also be considered.
      */
     private void createTemplate(Conversation conversation, int startMsgIdx, float probability, int[] messageTokenIndexes) {
-        final Intend queryTemplate = new Intend(getDefinition().getType(), new HashSet<>());
+        final Intent queryTemplate = new Intent(getDefinition().getType(), new HashSet<>());
         queryTemplate.setProbability(probability);
 
         for (int mesageTokenIndex : messageTokenIndexes) {
@@ -76,7 +75,7 @@ public abstract class QueryTemplateBuilder {
         conversation.getQueryTemplates().add(queryTemplate);
     }
 
-    protected abstract void initializeTemplate(Intend queryTemplate);
+    protected abstract void initializeTemplate(Intent queryTemplate);
 
     /**
      * Builds and updates templates for the parsed conversation based on
@@ -85,7 +84,7 @@ public abstract class QueryTemplateBuilder {
      */
     public final void buildTemplate(Conversation conversation, int startMsgIdx) {
         //first check if we can update an existing query templates
-        for(Intend template : conversation.getQueryTemplates()){
+        for(Intent template : conversation.getQueryTemplates()){
             if(getDefinition().getType() == template.getType()){// &&
                     //TODO: Maybe we would like to update valid templates
                     //!getDefinition().isValid(template, conversation.getTokens())){
@@ -138,7 +137,7 @@ public abstract class QueryTemplateBuilder {
      * @param queryTemplate
      * @param tokens
      */
-    protected final void debugQueryTemplate(Intend queryTemplate, List<Token> tokens) {
+    protected final void debugQueryTemplate(Intent queryTemplate, List<Token> tokens) {
         if(log.isDebugEnabled()){
             log.debug("Built QueryTemplate for {}",queryTemplate.getType());
             for(Slot slot : queryTemplate.getSlots()){

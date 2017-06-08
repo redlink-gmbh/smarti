@@ -44,6 +44,7 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -81,7 +82,7 @@
             <version>${solrlib.version}</version>
             <scope>runtime</scope>
         </dependency>
-        
+
         <dependency> <!-- This only defines abstract processors for actual vocabularies -->
             <groupId>io.redlink.nlp</groupId>
             <artifactId>ner-regex</artifactId>
@@ -89,7 +90,7 @@
         </dependency>
         <!-- This also provides an abstract processor that needs to be configured
              against an actual Solr Core with an MLT handler -->
-        <dependency> 
+        <dependency>
             <groupId>io.redlink.smarti</groupId>
             <artifactId>keyword-interestingterms</artifactId>
             <version>${project.version}</version>
@@ -100,12 +101,12 @@
             <artifactId>token-processor</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
-        
+
+
 
         <!-- Analysis -->
         <!-- (1) we need to detect the language -->
-        <dependency> 
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>langdetect</artifactId>
             <version>${redlinknlp.version}</version>
@@ -118,26 +119,26 @@
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency -->
-        <dependency> 
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>ner-opennlp-de</artifactId>
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency> 
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-opennlp-en</artifactId>
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency> 
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>ner-opennlp-en</artifactId>
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
         <!-- (3) StanfordNLP for German and English -->
-        <dependency> 
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-stanfordnlp-de</artifactId>
             <version>${redlinknlp.version}</version>
@@ -155,7 +156,7 @@
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
-        
+
 
         <!-- (4) Stemmer Stopword marking, Negetion Detection -->
         <dependency> <!-- Use the Lucene stemmer variant as the other conflicts with Solrlib -->
@@ -176,7 +177,7 @@
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
-        
+
         <!-- (5) Hasso Processors -->
         <dependency>
             <groupId>io.redlink.smarti</groupId>
@@ -208,7 +209,7 @@
         </dependency>
 
         <!-- END Analysis dependencies -->
-        
+
         <dependency>
             <groupId>io.redlink.smarti</groupId>
             <artifactId>smarti-core</artifactId>
@@ -277,7 +278,7 @@
                     <!-- repackage -->
                     <classifier>exec</classifier>
                     <mainClass>io.redlink.smarti.Application</mainClass>
-                    
+
                     <!-- jars that requires to be unpacked -->
                     <requiresUnpack>
                         <!-- dependency> - not sure why -
@@ -300,7 +301,7 @@
                         <name>${project.parent.name}</name>
                         <description>${project.parent.description}</description>
                     </additionalProperties>
-                    
+
                 </configuration>
             </plugin>
         </plugins>

@@ -4,7 +4,6 @@
 
 package io.redlink.smarti.model;
 
-import io.redlink.smarti.model.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ public abstract class IntendDefinition {
     
     protected abstract Slot createSlotForName(String name);
 
-    public final boolean isValid(Intend template, List<Token> tokens){
+    public final boolean isValid(Intent template, List<Token> tokens){
         Optional<Slot> topicSlot = template.getSlots().stream()
             .filter(s -> TOPIC.equals(s.getRole()))
             .findFirst();
@@ -96,13 +95,13 @@ public abstract class IntendDefinition {
         return present;
     }
     /**
-     * Getter for any (valid) {@link Slot} part of the parsed {@link Intend}
+     * Getter for any (valid) {@link Slot} part of the parsed {@link Intent}
      * that has the parsed Role
      * @param role the role
      * @param template the query template
      * @return the Token or <code>null</code> if no valid QuerySlot is present
      */
-    public final Slot getSlot(String role, Intend template) {
+    public final Slot getSlot(String role, Intent template) {
         Slot expected = createSlot(role); //for known token also check the type
         final Optional<Slot> slot = template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -116,12 +115,12 @@ public abstract class IntendDefinition {
     }
 
     /**
-     * Getter for all (valid) {@link Slot}s part of the parsed {@link Intend}
+     * Getter for all (valid) {@link Slot}s part of the parsed {@link Intent}
      * @param role the role
      * @param template the query template
      * @return all valid {@link Slot}s with the parsed role an empty List if none
      */
-    public final List<Slot> getSlots(String role, Intend template) {
+    public final List<Slot> getSlots(String role, Intent template) {
         Slot expected = createSlot(role); //for known token also check the type
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
