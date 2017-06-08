@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<enumsConfig>
+    <enum name="type">
+        <value>conversation</value>
+        <value>message</value>
+    </enum>
+</enumsConfig>

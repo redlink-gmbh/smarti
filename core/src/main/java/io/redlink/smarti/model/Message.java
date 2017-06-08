@@ -3,6 +3,9 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -23,6 +26,8 @@ public class Message implements Comparable<Message> {
         Agent
     }
 
+    @ApiModelProperty("the id of the message")
+    private String id;
     @ApiModelProperty
     private Date time = new Date();
     @ApiModelProperty("origin of the message")
@@ -37,8 +42,17 @@ public class Message implements Comparable<Message> {
     @ApiModelProperty(value = "votes for this message - how often this message was considered helpful")
     private int votes = 0;
     @ApiModelProperty(value = "message metadata")
-    private Map<String, String> metadata = new HashMap<>();
+    @JsonInclude(content=Include.NON_EMPTY) //exclude if empty
+    private final Map<String, String> metadata = new HashMap<>();
 
+    public String getId() {
+        return id;
+    }
+    
+    public void setId(String id) {
+        this.id = id;
+    }
+    
     public Date getTime() {
         return time;
     }
@@ -89,10 +103,6 @@ public class Message implements Comparable<Message> {
 
     public Map<String, String> getMetadata() {
         return metadata;
-    }
-
-    public void setMetadata(Map<String, String> metadata) {
-        this.metadata = metadata;
     }
 
     @Override

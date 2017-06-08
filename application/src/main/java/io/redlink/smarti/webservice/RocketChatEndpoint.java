@@ -10,6 +10,8 @@ import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
+
+import org.apache.commons.lang3.StringUtils;
 import io.redlink.smarti.webservice.pojo.RocketMessage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -62,6 +64,7 @@ public class RocketChatEndpoint {
         final boolean isNew = conversation.getMessages().isEmpty();
 
         final Message message = new Message();
+        message.setId(payload.getMessageId());
         message.setContent(payload.getText());
         message.setTime(payload.getTimestamp());
         message.setOrigin(payload.isBot() ? Message.Origin.Agent : Message.Origin.User);
@@ -71,13 +74,12 @@ public class RocketChatEndpoint {
         user.setDisplayName(payload.getUserName());
         message.setUser(user);
 
-        final Map<String,String> meta = new HashMap<>();
-        meta.put("message_id", payload.getMessageId());
-        meta.put("trigger_word", payload.getTriggerWord());
-        if (payload.isBot()) {
-            meta.put("bot_id", payload.getBot().getIdentifier());
+        if(StringUtils.isNoneBlank(payload.getTriggerWord())){
+            message.getMetadata().put("trigger_word", payload.getTriggerWord());
         }
-        message.setMetadata(meta);
+        if (payload.isBot()) {
+            message.getMetadata().put("bot_id", payload.getBot().getIdentifier());
+        }
 
         // TODO: we need to handle *updates* / message edits
         conversationService.appendMessage(conversation, message);

@@ -200,6 +200,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- (7) Releated Conversation -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>query-conversation</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- END Analysis dependencies -->
 
         <dependency>
@@ -273,9 +281,13 @@
 
                     <!-- jars that requires to be unpacked -->
                     <requiresUnpack>
-                        <dependency> <!-- for the entityidx solr config -->
+                        <!-- dependency> - not sure why -
                             <groupId>io.redlink.smarti</groupId>
                             <artifactId>smarti-core</artifactId>
+                        </dependency -->
+                        <dependency> <!-- for the conversation solr config -->
+                            <groupId>io.redlink.smarti</groupId>
+                            <artifactId>query-conversation</artifactId>
                         </dependency>
                     </requiresUnpack>
 
