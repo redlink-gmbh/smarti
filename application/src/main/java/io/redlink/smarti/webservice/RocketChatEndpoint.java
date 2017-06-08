@@ -10,6 +10,8 @@ import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,7 @@ public class RocketChatEndpoint {
         final Conversation conversation = storeService.getConversationByChannelId(channelId);
 
         final Message message = new Message();
+        message.setId(payload.getMessageId());
         message.setContent(payload.getText());
         message.setTime(payload.getTimestamp());
         message.setOrigin(payload.isBot() ? Message.Origin.Agent : Message.Origin.User);
@@ -56,10 +59,9 @@ public class RocketChatEndpoint {
         user.setDisplayName(payload.getUserName());
         message.setUser(user);
 
-        final Map<String,String> meta = new HashMap<>();
-        meta.put("message_id", payload.getMessageId());
-        meta.put("trigger_word", payload.getTriggerWord());
-        message.setMetadata(meta);
+        if(StringUtils.isNoneBlank(payload.getTriggerWord())){
+            message.getMetadata().put("trigger_word", payload.getTriggerWord());
+        }
 
         conversationService.appendMessage(conversation, message);
 
