@@ -5,6 +5,7 @@ package io.redlink.smarti.webservice.pojo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Date;
 
@@ -37,7 +38,8 @@ public class RocketEvent {
 
     private Date timestamp;
 
-    private boolean bot;
+    @JsonDeserialize(using = RocketBot.JacksonDeserializer.class)
+    private RocketBot bot;
 
     @JsonCreator
     public RocketEvent(@JsonProperty("message_id") String messageId) {
@@ -112,12 +114,16 @@ public class RocketEvent {
         this.timestamp = timestamp;
     }
 
-    public boolean isBot() {
+    public RocketBot getBot() {
         return bot;
     }
 
-    public void setBot(boolean bot) {
+    public void setBot(RocketBot bot) {
         this.bot = bot;
+    }
+
+    public boolean isBot() {
+        return getBot() != null;
     }
 
     @Override

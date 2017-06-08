@@ -10,6 +10,7 @@ import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
+import io.redlink.smarti.webservice.pojo.RocketMessage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -17,6 +18,7 @@ import io.swagger.annotations.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +39,9 @@ public class RocketChatEndpoint {
 
     private Logger log = LoggerFactory.getLogger(RocketChatEndpoint.class);
 
+    @Value("${smarti.debug:false}")
+    private boolean debug = false;
+
     @Autowired
     private StoreService storeService;
 
@@ -54,6 +59,7 @@ public class RocketChatEndpoint {
 
         final String channelId = createChannelId(clientId, payload.getChannelId());
         final Conversation conversation = storeService.getConversationByChannelId(channelId);
+        final boolean isNew = conversation.getMessages().isEmpty();
 
         final Message message = new Message();
         message.setContent(payload.getText());
@@ -68,11 +74,18 @@ public class RocketChatEndpoint {
         final Map<String,String> meta = new HashMap<>();
         meta.put("message_id", payload.getMessageId());
         meta.put("trigger_word", payload.getTriggerWord());
+        if (payload.isBot()) {
+            meta.put("bot_id", payload.getBot().getIdentifier());
+        }
         message.setMetadata(meta);
 
         conversationService.appendMessage(conversation, message);
 
-        return ResponseEntity.accepted().build();
+        if (debug && isNew) {
+            return ResponseEntity.ok(new RocketMessage(String.format("new conversation: `%s`", conversation.getId())));
+        } else {
+            return ResponseEntity.accepted().build();
+        }
     }
 
     public String createChannelId(String clientId, String roomId) {
