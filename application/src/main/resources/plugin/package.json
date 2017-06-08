@@ -1,0 +1,15 @@
+{
+  "name": "smarti-plugin",
+  "version": "0.0.1",
+  "description": "A plugin to display smarti results over Rocket.Chat API",
+  "main": "main.js",
+  "author": "Thomas Kurz",
+  "license": "ALv2",
+  "dependencies": {
+    "ddp.js": "^2.2.0",
+    "jquery": "3.2.1"
+  },
+  "devDependencies": {
+    "webpack": "^2.6.1"
+  }
+}
