@@ -14,8 +14,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.util.NamedList;
 
-import javax.annotation.PreDestroy;
-
 import static io.redlink.smarti.processor.keyword.intrestingterms.InterestingTermsConst.INTERESTING_TERM;
 
 import java.io.Closeable;
@@ -28,84 +26,48 @@ import java.util.Map.Entry;
  * @author westei
  *
  */
-public abstract class InterestingTermExtractor extends Processor implements Closeable {
+public abstract class InterestingTermExtractor extends Processor {
 
-    private SolrClient client;
-    
-    private ContentSectionProvider contentProvider = ContentSectionProvider.SECTIONS;
-
-    private MltConfig mltConf;
-    
-    protected InterestingTermExtractor(String name, SolrClient client) {
+    protected InterestingTermExtractor(String name) {
         super("keyword.interestingterms." + name, "Interesting Term Extractor for Solr Core " + name, Phase.extraction);
-        this.client = client;
-        setMltConfig(null); //set the default config
     }
 
+    @Override
+    public Map<String, Object> getDefaultConfiguration() {
+        return Collections.emptyMap();
+    }
+    
     /**
      * The SolrClient used by this linker
      * @return
      */
-    public final SolrClient getClient() {
-        return client;
-    }
+    protected abstract SolrClient getClient() throws SolrServerException;
 
-
-    /**
-     * Setter for the Solr Client to be used by this linker.
-     * MUST BE called before {@link #init()} is called if the client was not already parsed 
-     * by the constructor
-     * @param client the client
-     */
-    protected final void setClient(SolrClient client) {
-        this.client = client;
-    }
+    protected abstract MltConfig getMltConf();
 
     /**
-     * The similarity fields and MLT configuration
+     * Getter for the {@link ContentSectionProvider} used for linking parsed {@link AnalyzedText}s. Override this to
+     * use a different {@link ContentSectionProvider} implementation
+     * @return {@link ContentSectionProvider#SECTIONS}
      */
-    public final MltConfig getMltConf() {
-        return mltConf;
-    }
-
-    public final void setMltConfig(MltConfig conf) {
-        this.mltConf = conf == null ? MltConfig.getDefault() : conf;
-        if(!this.mltConf.isInterstingTerms()){
-            log.debug("set interstingTerms=true on parsed {}", conf);
-            this.mltConf.setInterstingTerms(true);
-        }
-    }
-
-    /**
-     * Allows to set a custom {@link ContentSectionProvider} used to determine what
-     * sections of the {@link AnalyzedText} to link with the {@link SolrClient}
-     * @param contentProvider the contentProvider or <code>null</code> to rest to
-     * the {@link ContentSectionProvider#DEFAULT}
-     */
-    public final void setContentProvider(ContentSectionProvider contentProvider) {
-        this.contentProvider = contentProvider == null ? ContentSectionProvider.DEFAULT : contentProvider;
-    }
-    /**
-     * Getter for the {@link ContentSectionProvider} used for linking parsed {@link AnalyzedText}s
-     * @return
-     */
-    public final ContentSectionProvider getContentProvider() {
-        return contentProvider;
+    protected ContentSectionProvider getContentProvider(){
+        return ContentSectionProvider.SECTIONS;
     }
 
     @Override
-    protected void init() throws Exception {
-        //lets ping the solrServer on initialization
-        log.debug("ping {}", client);
-        SolrPingResponse ping = client.ping();
-        log.debug("ping respone: {}", ping);
+    protected final void init() {
+        try (SolrClient client = getClient()){
+            //lets ping the solrServer on initialization
+            log.debug("ping {}", client);
+            SolrPingResponse ping = client.ping();
+            log.debug("ping respone: {}", ping);
+        } catch (SolrServerException | IOException e) {
+            log.warn("Unable to ping SolrClient for {} during initialization ({} - {})", getName(), e.getClass().getSimpleName(), e.getMessage());
+        }
     }
 
     @Override
     protected final void doProcessing(ProcessingData processingData) {
-        if(client == null){
-            return;
-        }
         final AnalyzedText at = NlpUtils.getOrInitAnalyzedText(processingData);
         if(at == null){ //no plain text  ... nothing to do
             return;
@@ -113,13 +75,19 @@ public abstract class InterestingTermExtractor extends Processor implements Clos
         //TODO: Think about language support
         String language = processingData.getLanguage();
         Locale locale = language == null ? Locale.ROOT : Locale.forLanguageTag(language);
-        SolrQuery mltQuery = mltConf.createMltQuery();
+        MltConfig mltConfig = getMltConf();
+        if(!mltConfig.isInterstingTerms()){
+            log.warn("enabling 'interestingTerms' on MLT configuration of {}. This is expected to be 'true' so please"
+                    + "check the MltConfig parsed by this implementation!");
+            mltConfig.setInterstingTerms(true); //we need interesting terms
+        }
+        SolrQuery mltQuery = mltConfig.createMltQuery();
         MltRequest mltRequest = new MltRequest(mltQuery, at.getSpan());
         NamedList<Object> response;
-        try {
-            response = getClient().request(mltRequest);
+        try (SolrClient client = getClient()){
+            response = client.request(mltRequest);
         } catch (SolrServerException | IOException e) {
-            log.warn("Unable to search for interesting terms for {} in {} ({}: {})", processingData, getClient(),
+            log.warn("Unable to search for interesting terms for {} with {} ({}: {})", processingData, getName(),
                     e.getClass().getSimpleName(), e.getMessage());
             log.debug("Stacktrace:", e);
             return;
@@ -205,16 +173,6 @@ public abstract class InterestingTermExtractor extends Processor implements Clos
             }
         }
         return languages;
-    }
-
-    
-    @PreDestroy
-    @Override
-    public void close() throws IOException {
-        SolrClient client = this.client;
-        this.client = null;
-        client.close();
-        
     }
     
 }

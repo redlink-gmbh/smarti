@@ -13,7 +13,6 @@ public class ConversationProcessCompleteEvent {
     private final Conversation conversation;
 
     public ConversationProcessCompleteEvent(Conversation conversation) {
-
         this.conversation = conversation;
     }
 
