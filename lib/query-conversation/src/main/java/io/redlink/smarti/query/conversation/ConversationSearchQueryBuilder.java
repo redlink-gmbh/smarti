@@ -4,7 +4,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Intend;
+import io.redlink.smarti.model.Intent;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Token;
@@ -42,8 +42,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(Intend intend, Conversation conversation) {
-        final ConversationSearchQuery searchQuery = buildQuery(intend, conversation);
+    protected QueryRequest buildSolrRequest(Intent intent, Conversation conversation) {
+        final ConversationSearchQuery searchQuery = buildQuery(intent, conversation);
         if (searchQuery == null) {
             return null;
         }
@@ -78,8 +78,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationSearchQuery buildQuery(Intend intend, Conversation conversation) {
-        final List<Token> keywords = getTokens("keyword", intend, conversation);
+    protected ConversationSearchQuery buildQuery(Intent intent, Conversation conversation) {
+        final List<Token> keywords = getTokens("keyword", intent, conversation);
         if (keywords == null || keywords.isEmpty()) return null;
 
         // TODO: Build the real query.

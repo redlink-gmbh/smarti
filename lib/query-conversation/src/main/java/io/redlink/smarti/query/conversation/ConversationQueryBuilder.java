@@ -12,7 +12,7 @@ import org.apache.solr.common.util.NamedList;
 
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Intend;
+import io.redlink.smarti.model.Intent;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.result.Result;
@@ -45,15 +45,15 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public boolean acceptTemplate(Intend intend) {
-        return ACCEPTED_TYPES.contains(intend.getType());
+    public boolean acceptTemplate(Intent intent) {
+        return ACCEPTED_TYPES.contains(intent.getType());
     }
 
     @Override
-    protected void doBuildQuery(Intend intend, Conversation conversation) {
-        final Query query = buildQuery(intend, conversation);
+    protected void doBuildQuery(Intent intent, Conversation conversation) {
+        final Query query = buildQuery(intent, conversation);
         if (query != null) {
-            intend.getQueries().add(query);
+            intent.getQueries().add(query);
         }
     }
 
@@ -71,8 +71,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public List<? extends Result> execute(Intend template, Conversation conversation) throws IOException {
-        final QueryRequest solrRequest = buildSolrRequest(template, conversation);
+    public List<? extends Result> execute(Intent intent, Conversation conversation) throws IOException {
+        final QueryRequest solrRequest = buildSolrRequest(intent, conversation);
         if (solrRequest == null) {
             return Collections.emptyList();
         }
@@ -83,7 +83,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
 
             final List<Result> results = new ArrayList<>();
             for (SolrDocument solrDocument : solrResponse.getResults()) {
-                results.add(toHassoResult(solrDocument, template.getType()));
+                results.add(toHassoResult(solrDocument, intent.getType()));
             }
             return results;
         } catch (SolrServerException e) {
@@ -91,9 +91,9 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
         }
     }
 
-    protected abstract QueryRequest buildSolrRequest(Intend intend, Conversation conversation);
+    protected abstract QueryRequest buildSolrRequest(Intent intent, Conversation conversation);
 
     protected abstract ConversationResult toHassoResult(SolrDocument solrDocument, MessageTopic type);
 
-    protected abstract Query buildQuery(Intend intend, Conversation conversation);
+    protected abstract Query buildQuery(Intent intent, Conversation conversation);
 }

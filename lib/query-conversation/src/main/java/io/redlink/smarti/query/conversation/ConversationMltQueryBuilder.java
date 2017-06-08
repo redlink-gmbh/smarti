@@ -45,7 +45,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationMltQuery buildQuery(Intend intend, Conversation conversation) {
+    protected ConversationMltQuery buildQuery(Intent intent, Conversation conversation) {
         if (conversation.getMessages().isEmpty()) return null;
 
         // FIXME: compile mlt-request content
@@ -69,8 +69,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(Intend intend, Conversation conversation) {
-        final ConversationMltQuery mltQuery = buildQuery(intend, conversation);
+    protected QueryRequest buildSolrRequest(Intent intent, Conversation conversation) {
+        final ConversationMltQuery mltQuery = buildQuery(intent, conversation);
         if (mltQuery == null) {
             return null;
         }
