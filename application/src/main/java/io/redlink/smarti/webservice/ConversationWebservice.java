@@ -4,19 +4,18 @@
 package io.redlink.smarti.webservice;
 
 import io.redlink.smarti.api.StoreService;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.ConversationMeta;
-import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ConversationService;
-import io.redlink.smarti.utils.ModelUtils;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Objects;
 
 /**
  *
@@ -40,9 +39,10 @@ public class ConversationWebservice {
         return ResponseEntity.ok(storeService.store(new Conversation()));
     }
 
+    @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
-    public ResponseEntity<?> getConversation(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
+    public ResponseEntity<?> getConversation(@PathVariable("id") ObjectId id) {
+        final Conversation conversation = storeService.get(id);
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -51,20 +51,21 @@ public class ConversationWebservice {
         }
     }
 
+    @ApiOperation(value = "update a conversation", response = Conversation.class)
     @RequestMapping(value = "{id}", method = RequestMethod.PUT)
-    public ResponseEntity<?> updateConversation(@PathVariable("id") String id,
+    public ResponseEntity<?> updateConversation(@PathVariable("id") ObjectId id,
                                                 @RequestBody Conversation conversation) {
-        if (Objects.equals(conversation.getId(), id)) {
-            return ResponseEntity.ok(storeService.store(conversation));
-        } else {
-            return ResponseEntities.badRequest("request-url and content do not match");
-        }
+        // make sure the id is the right one
+        conversation.setId(id);
+        // todo: some additional checks?
+        return ResponseEntity.ok(storeService.store(conversation));
     }
 
+    @ApiOperation(value = "append a message to the conversation", response = Conversation.class)
     @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
-    public ResponseEntity<?> addMessage(@PathVariable("id") String id,
+    public ResponseEntity<?> addMessage(@PathVariable("id") ObjectId id,
                                         @RequestBody Message message) {
-        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
+        final Conversation conversation = storeService.get(id);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
@@ -72,9 +73,10 @@ public class ConversationWebservice {
         return ResponseEntity.ok(conversationService.appendMessage(conversation, message));
     }
 
+    @ApiOperation(value = "retrieve the analysis result of the conversation", response = Token.class, responseContainer = "List")
     @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
-    public ResponseEntity<?> prepare(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
+    public ResponseEntity<?> prepare(@PathVariable("id") ObjectId id) {
+        final Conversation conversation = storeService.get(id);
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -83,9 +85,10 @@ public class ConversationWebservice {
         }
     }
 
+    @ApiOperation(value = "retrieve the intents of the conversation", response = Intend.class, responseContainer = "List")
     @RequestMapping(value = "{id}/intent", method = RequestMethod.GET)
-    public ResponseEntity<?> query(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
+    public ResponseEntity<?> query(@PathVariable("id") ObjectId id) {
+        final Conversation conversation = storeService.get(id);
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -94,23 +97,25 @@ public class ConversationWebservice {
         }
     }
 
+    @ApiOperation(value = "retrieve the results for a intent from a specific creator", response = Result.class, responseContainer = "List")
     @RequestMapping(value = "{id}/intent/{intent}/{creator}", method = RequestMethod.GET)
-    public ResponseEntity<?> getResults(@PathVariable("id") String id,
+    public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
                                         @PathVariable("intent") String intent,
                                         @PathVariable("creator") String creator) {
         // TODO: Implement this
         return ResponseEntities.notImplemented();
     }
 
+    @ApiOperation(value = "complete a conversation and add it to indexing", response = Conversation.class)
     @RequestMapping(value = "{id}/publish", method = RequestMethod.POST)
-    public ResponseEntity<?> complete(@PathVariable("id") String id) {
-        final Conversation conversation = storeService.get(ModelUtils.parseObjectId(id, "id"));
+    public ResponseEntity<?> complete(@PathVariable("id") ObjectId id) {
+        final Conversation conversation = storeService.get(id);
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
             conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
-            return ResponseEntity.ok(storeService.store(conversation));
+            return ResponseEntity.ok(conversationService.completeConversation(conversation));
         }
     }
 }

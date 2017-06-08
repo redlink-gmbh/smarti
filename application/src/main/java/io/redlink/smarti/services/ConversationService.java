@@ -73,4 +73,7 @@ public class ConversationService {
         return appendMessage(conversation, message, true);
     }
 
+    public Conversation completeConversation(Conversation conversation) {
+        return conversation;
+    }
 }
