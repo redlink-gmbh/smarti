@@ -3,17 +3,16 @@
  */
 package io.redlink.smarti.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.QueryBuilderContainer;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.result.Result;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
@@ -84,7 +83,12 @@ public class QueryBuilderService {
     }
 
     public List<? extends Result> execute(String creator, Template template, Conversation conversation) throws IOException {
-        return getQueryBuilder(creator).execute(template, conversation);
+        final QueryBuilder queryBuilder = getQueryBuilder(creator);
+        if (queryBuilder != null) {
+            return queryBuilder.execute(template, conversation);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     public QueryBuilder getQueryBuilder(String builder) {
