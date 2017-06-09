@@ -4,12 +4,15 @@
   "description": "A plugin to display smarti results over Rocket.Chat API",
   "main": "main.js",
   "author": "Thomas Kurz",
-  "license": "ALv2",
+  "license": "Apache-2.0",
   "dependencies": {
     "ddp.js": "^2.2.0",
     "jquery": "3.2.1"
   },
   "devDependencies": {
+    "extract-text-webpack-plugin": "^2.1.2",
+    "node-sass": "^4.5.3",
+    "sass-loader": "^6.0.5",
     "webpack": "^2.6.1"
   }
 }

@@ -1,11 +1,8 @@
 javascript:(function(){
-    var container = document.getElementsByClassName('external-messages');
 
-    if(container.length == 0) return alert("Wissensbasis has to be open!");
+    var container = document.getElementsByClassName('list-view');
 
-    container[0].style.margin = '0 20px';
-
-    container[0].innerHTML = '<div>Loading</div>';
+    container[0].innerHTML = '<div>Loading ...</div>';
 
     var roomDiv = document.querySelector('[id^="chat-window-"]');
 

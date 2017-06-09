@@ -1,0 +1,110 @@
+.smarti-widget {
+    margin-bottom: 50px;
+}
+
+.smarti-widget > h2 {
+    margin-bottom: 10px;
+}
+
+.smarti-token-pills {
+    margin-bottom: 5px;
+}
+.smarti-token-pill {
+    display: inline-block;
+    padding: 5px;
+    background-color: #044B76;
+    color: white;
+    border-radius: 3px;
+    margin: 0 3px 3px 0;
+    cursor: pointer;
+}
+.smarti-widget .search-form {
+    margin-bottom: 10px;
+}
+
+.smarti-widget h3 {
+    font-style: italic;
+    font-weight: normal;
+    margin-bottom: 10px;
+}
+
+.smarti-widget .search-results li {
+
+    .result-type {
+        width: 50px;
+        float: left;
+
+        div {
+            width: 40px;
+            height: 40px;
+            background-color: #8BC34A;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 16px;
+            line-height: 20px;
+            padding-top: 10px;
+            font-weight: bold;
+            color: white;
+        }
+    }
+
+    .result-content {
+        margin-left: 50px;
+
+        .result-content-title {
+            line-height: 20px;
+
+            a {
+                font-weight: 600;
+                color: #444;
+                text-decoration: none;
+                cursor:pointer;
+            }
+
+            a:hover {
+                text-decoration: underline;
+            }
+
+            span {
+                color: #a0a0a0;
+                font-size: 12px;
+                margin-left: 10px;
+            }
+        }
+
+        p {
+            font-size: 12px;
+            line-height: 14px;
+        }
+    }
+
+    .result-type-html div {
+        background-color: #FFC107;
+    }
+
+    .result-type-pdf div {
+        background-color: #E14045;
+    }
+
+    .result-actions {
+        text-align: right;
+
+        button {
+            text-decoration: underline;
+
+            i {
+                margin-left: 3px;
+            }
+        }
+    }
+}
+
+.smarti-widget .search-results li.result-separator {
+    div {
+        /*border-top: 1px dashed #a0a0a0;*/
+        margin: 0 auto;
+        width: 30%;
+        margin-bottom: 20px;
+        margin-top:5px;
+    }
+}
