@@ -11,13 +11,17 @@ import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.TemplateResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -36,9 +40,16 @@ public class ConversationWebservice {
     @Autowired
     private ConversationService conversationService;
 
+    @ApiOperation(value = "create a conversation")
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "Created", response = Conversation.class)
+    })
     @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<?> createConversation() {
-        return ResponseEntity.ok(storeService.store(new Conversation()));
+    public ResponseEntity<?> createConversation(@RequestBody(required = false) Conversation conversation) {
+        conversation = Optional.ofNullable(conversation).orElseGet(Conversation::new);
+        // Create a new Conversation -> id must be null
+        conversation.setId(null);
+        return ResponseEntity.status(HttpStatus.CREATED).body(storeService.store(conversation));
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)

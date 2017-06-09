@@ -71,9 +71,28 @@ public class InMemoryStoreService extends StoreService {
     @Override
     public Conversation appendMessage(Conversation conversation, Message message) {
         final Conversation cc = get(conversation.getId());
-        cc.getMessages().add(message);
+        int pos = 0;
+        do {
+            if (StringUtils.equals(cc.getMessages().get(pos).getId(), message.getId())) {
+                break;
+            }
+            pos++;
+        } while (pos < cc.getMessages().size());
+        if (pos < cc.getMessages().size()) {
+            cc.getMessages().remove(pos);
+        }
+        cc.getMessages().add(pos, message);
         cc.setLastModified(new Date());
         return cc;
+    }
+
+    @Override
+    public Conversation completeConversation(ObjectId conversationId) {
+        final Conversation conversation = storage.get(conversationId);
+        if (conversation != null) {
+            conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
+        }
+        return conversation;
     }
 
     @Override
@@ -123,7 +142,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public ObjectId mapChannelToConversationId(String channelId) {
+    public ObjectId mapChannelToCurrentConversationId(String channelId) {
         return storage.values().stream()
                 .filter(c -> Objects.equals(c.getChannelId(), channelId))
                 .filter(c -> c.getMeta().getStatus() != ConversationMeta.Status.Complete)

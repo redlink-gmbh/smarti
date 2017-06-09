@@ -47,8 +47,8 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
         return listConversationIDsByHashedUser(userId);
     }
 
-    public Conversation getConversationByChannelId(String channelId) {
-        final ObjectId conversationId = mapChannelToConversationId(channelId);
+    public Conversation getCurrentConversationByChannelId(String channelId) {
+        final ObjectId conversationId = mapChannelToCurrentConversationId(channelId);
         if (conversationId != null) {
             return get(conversationId);
         } else {
@@ -58,7 +58,7 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
         }
     }
 
-    public abstract ObjectId mapChannelToConversationId(String channelId);
+    public abstract ObjectId mapChannelToCurrentConversationId(String channelId);
 
     protected abstract Collection<ObjectId> listConversationIDsByHashedUser(String hashedUserId);
 
@@ -74,4 +74,5 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public abstract Conversation appendMessage(Conversation conversation, Message message);
 
+    public abstract Conversation completeConversation(ObjectId conversationId);
 }
