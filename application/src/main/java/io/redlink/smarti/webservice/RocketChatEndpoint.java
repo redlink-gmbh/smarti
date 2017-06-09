@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 @Api("rocket")
 public class RocketChatEndpoint {
 
+    public static final String ROCKET_CHAT = "rocket.chat";
     private Logger log = LoggerFactory.getLogger(RocketChatEndpoint.class);
 
     @Value("${smarti.debug:false}")
@@ -46,17 +47,26 @@ public class RocketChatEndpoint {
     @Autowired
     private ConversationService conversationService;
 
-    @ApiOperation("webhook-target for rocket.chat")
+    @ApiOperation("webhook-target for " + ROCKET_CHAT)
     @ApiResponses({
             @ApiResponse(code = 202, message = "accepted")
     })
-    @RequestMapping(value = "{clientId}", method = RequestMethod.POST)
+    @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST)
     public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientId,
                                            @RequestBody RocketEvent payload) {
         log.debug("{}: {}", clientId, payload);
 
         final String channelId = createChannelId(clientId, payload.getChannelId());
-        Conversation conversation = storeService.getCurrentConversationByChannelId(channelId);
+        Conversation conversation = storeService.getCurrentConversationByChannelId(channelId, () -> {
+            Conversation newConversation = new Conversation();
+            newConversation.getContext().setContextType(ROCKET_CHAT);
+            newConversation.getContext().setDomain(clientId);
+            newConversation.getContext().setEnvironment("channel", payload.getChannelName());
+            newConversation.getContext().setEnvironment("channel_id", payload.getChannelId());
+            newConversation.getContext().setEnvironment("token", payload.getToken());
+            return newConversation;
+        });
+
         final boolean isNew = conversation.getMessages().isEmpty();
 
         final Message message = new Message();
@@ -90,7 +100,7 @@ public class RocketChatEndpoint {
         Preconditions.checkNotNull(clientId, "Missing parameter <clientId>");
         Preconditions.checkNotNull(roomId, "Missing parameter <roomId>");
 
-        return String.format("rocket.chat/%s/%s", clientId, roomId);
+        return String.format("%s/%s/%s", ROCKET_CHAT, clientId, roomId);
     }
 
 }
