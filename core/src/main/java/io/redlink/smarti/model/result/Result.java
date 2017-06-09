@@ -4,7 +4,6 @@
 package io.redlink.smarti.model.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.redlink.smarti.model.MessageTopic;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -17,16 +16,12 @@ public abstract class Result {
     @ApiModelProperty(required = true)
     @JsonProperty("creator")
     private String creator;
-    @ApiModelProperty(required = true)
-    @JsonProperty("topic")
-    private MessageTopic topic;
 
     @ApiModelProperty(value = "reply", notes = "a suggested answer, ready to be sent to the customer")
     private String replySuggestion;
 
-    protected Result(String creator, MessageTopic topic) {
+    protected Result(String creator) {
         this.creator = creator;
-        this.topic = topic;
     }
 
     public String getCreator() {
@@ -35,14 +30,6 @@ public abstract class Result {
 
     public void setCreator(String creator) {
         this.creator = creator;
-    }
-
-    public MessageTopic getTopic() {
-        return topic;
-    }
-
-    public void setTopic(MessageTopic topic) {
-        this.topic = topic;
     }
 
     public String getReplySuggestion() {

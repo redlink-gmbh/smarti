@@ -10,7 +10,7 @@ import io.swagger.annotations.ApiModel;
 import org.springframework.data.annotation.PersistenceConstructor;
 
 /**
- * A slot represents an {@link Token} with a Role in the context of an {@link Intent}.
+ * A slot represents an {@link Token} with a Role in the context of an {@link Template}.
  */
 @ApiModel
 public class Slot {

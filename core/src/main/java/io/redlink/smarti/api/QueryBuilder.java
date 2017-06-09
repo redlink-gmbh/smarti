@@ -6,7 +6,7 @@ package io.redlink.smarti.api;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
 import io.redlink.smarti.model.result.Result;
-import io.redlink.smarti.services.IntendRegistry;
+import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.smarti.util.QueryBuilderUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -22,9 +22,9 @@ public abstract class QueryBuilder {
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private final IntendRegistry registry;
+    private final TemplateRegistry registry;
 
-    protected QueryBuilder(IntendRegistry registry) {
+    protected QueryBuilder(TemplateRegistry registry) {
         this.registry = registry;
     }
 
@@ -44,29 +44,29 @@ public abstract class QueryBuilder {
         conversation.getQueryTemplates().stream()
                 .filter(t -> t.getState() != State.Rejected)
                 .filter(t -> {
-                    final IntendDefinition def = registry.getTemplate(t);
+                    final TemplateDefinition def = registry.getTemplate(t);
                     return def.isValid(t, conversation.getTokens());
                 })
                 .filter(this::acceptTemplate)
                 .forEach(t -> doBuildQuery(t, conversation));
     }
 
-    public abstract boolean acceptTemplate(Intent intent);
+    public abstract boolean acceptTemplate(Template intent);
 
-    protected abstract void doBuildQuery(Intent intent, Conversation conversation);
+    protected abstract void doBuildQuery(Template intent, Conversation conversation);
     
     
     
     /**
      * Getter for any (valid) {@link Token} referenced by the parsed
-     * {@link Intent} with the parsed role
+     * {@link Template} with the parsed role
      * @param role the role
      * @param template the query template
      * @param conversation the conversation
      * @param tokenTypes the allowed types of the token
      * @return the Token or <code>null</code> if not preset or invalid
      */
-    protected Token getToken(String role, Intent template, Conversation conversation, Token.Type...tokenTypes) {
+    protected Token getToken(String role, Template template, Conversation conversation, Token.Type...tokenTypes) {
         Set<Token.Type> types = toTypeSet(tokenTypes);
         final Optional<Token> token = template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -83,14 +83,14 @@ public abstract class QueryBuilder {
 
     /**
      * Getter for all (valid) {@link Token}s referenced by the parsed
-     * {@link Intent} with the parsed role
+     * {@link Template} with the parsed role
      * @param role the role
      * @param template the query template
      * @param conversation the conversation
      * @param tokenTypes the allowed types of the tokens
      * @return the Token or <code>null</code> if not preset or invalid
      */
-    protected List<Token> getTokens(String role, Intent template, Conversation conversation, Token.Type...tokenTypes) {
+    protected List<Token> getTokens(String role, Template template, Conversation conversation, Token.Type...tokenTypes) {
         final Set<Token.Type> types = toTypeSet(tokenTypes);
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -127,7 +127,7 @@ public abstract class QueryBuilder {
      * @param tokenTypes the allowed token type
      * @return {@code true} if the template has a token assigned to the provided role
      */
-    protected boolean hasToken(String role, Intent template, Conversation conversation, Token.Type...tokenTypes) {
+    protected boolean hasToken(String role, Template template, Conversation conversation, Token.Type...tokenTypes) {
         final Set<Token.Type> types = toTypeSet(tokenTypes);
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -137,7 +137,7 @@ public abstract class QueryBuilder {
                 .findFirst().isPresent();
     }
 
-    public List<? extends Result> execute(Intent template, Conversation conversation) throws IOException {
+    public List<? extends Result> execute(Template template, Conversation conversation) throws IOException {
         return Collections.emptyList();
     }
 

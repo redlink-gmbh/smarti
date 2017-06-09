@@ -4,7 +4,7 @@
 
 package io.redlink.smarti.intend;
 
-import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class TravelIntendDefinition extends IntendDefinition {
+public class TravelTemplateDefinition extends TemplateDefinition {
 
     public static final String FROM = "from";
     public static final String TO = "to";
@@ -30,8 +30,8 @@ public class TravelIntendDefinition extends IntendDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public TravelIntendDefinition() {
-        super(MessageTopic.Reiseplanung);
+    public TravelTemplateDefinition() {
+        super(MessageTopic.Reiseplanung.name());
     }
     
     @Override

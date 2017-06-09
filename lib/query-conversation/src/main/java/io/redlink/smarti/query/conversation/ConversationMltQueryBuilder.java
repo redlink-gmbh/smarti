@@ -1,7 +1,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.model.*;
-import io.redlink.smarti.services.IntendRegistry;
+import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
@@ -28,13 +28,13 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     @Autowired
     public ConversationMltQueryBuilder(SolrCoreContainer solrServer, 
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, 
-            IntendRegistry registry) {
+            TemplateRegistry registry) {
         super(CREATOR_NAME, solrServer, conversationCore, registry);
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument solrDocument, MessageTopic type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName(), type);
+    protected ConversationResult toHassoResult(SolrDocument solrDocument, String type) {
+        final ConversationResult hassoResult = new ConversationResult(getCreatorName());
         hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
         hassoResult.setContent(String.valueOf(solrDocument.getFirstValue("message")));
         hassoResult.setReplySuggestion(hassoResult.getContent());
@@ -45,7 +45,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationMltQuery buildQuery(Intent intent, Conversation conversation) {
+    protected ConversationMltQuery buildQuery(Template intent, Conversation conversation) {
         if (conversation.getMessages().isEmpty()) return null;
 
         // FIXME: compile mlt-request content
@@ -69,7 +69,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(Intent intent, Conversation conversation) {
+    protected QueryRequest buildSolrRequest(Template intent, Conversation conversation) {
         final ConversationMltQuery mltQuery = buildQuery(intent, conversation);
         if (mltQuery == null) {
             return null;
