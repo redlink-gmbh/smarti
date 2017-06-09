@@ -34,6 +34,21 @@ import java.util.Optional;
 @Api("conversation")
 public class ConversationWebservice {
 
+    private enum Vote {
+        up(1),
+        down(-1);
+
+        private final int delta;
+
+        Vote(int delta) {
+            this.delta = delta;
+        }
+
+        public int getDelta() {
+            return delta;
+        }
+    }
+
     @Autowired
     private StoreService storeService;
 
@@ -84,6 +99,19 @@ public class ConversationWebservice {
         }
 
         return ResponseEntity.ok(conversationService.appendMessage(conversation, message));
+    }
+
+    @ApiOperation(value = "up-/down-vote a message within a conversation", response = Conversation.class)
+    @RequestMapping(value = "{id}/message/{messageId}/{vote}", method = RequestMethod.PUT)
+    public ResponseEntity<?> rateMessage(@PathVariable("id") ObjectId conversationId,
+                                         @PathVariable("messageId") String messageId,
+                                         @PathVariable("vote") Vote vote) {
+        final Conversation conversation = storeService.get(conversationId);
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(conversationService.rateMessage(conversation, messageId, vote.getDelta()));
     }
 
     @ApiOperation(value = "retrieve the analysis result of the conversation", response = Token.class, responseContainer = "List")

@@ -3,13 +3,13 @@
  */
 package io.redlink.smarti.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ public class Message implements Comparable<Message> {
     @ApiModelProperty("the user who sent the message")
     private User user = null;
     @ApiModelProperty(name = "private", value = "marks a private message (not searchable)")
-    @JsonProperty("private")
+    @JsonProperty("private") @Field("private")
     private boolean _private = false;
     @ApiModelProperty(value = "votes for this message - how often this message was considered helpful")
     private int votes = 0;
