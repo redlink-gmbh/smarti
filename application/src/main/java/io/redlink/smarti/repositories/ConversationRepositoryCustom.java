@@ -37,4 +37,6 @@ public interface ConversationRepositoryCustom {
     Conversation saveIfNotLastModifiedAfter(Conversation finalConversation, Date lastModified);
 
     Conversation completeConversation(ObjectId conversationId);
+
+    Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta);
 }

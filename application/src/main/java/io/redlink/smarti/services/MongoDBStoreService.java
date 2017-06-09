@@ -73,6 +73,11 @@ public class MongoDBStoreService extends StoreService {
     }
 
     @Override
+    public Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta) {
+        return conversationRepository.adjustMessageVotes(conversationId, messageId, delta);
+    }
+
+    @Override
     public List<String> listTagsByInfix(String query, int limit) {
         final Pattern pattern = Pattern.compile(String.format(".*%s.*", Pattern.quote(query)));
         return conversationRepository.findTagsByPattern(pattern, limit);

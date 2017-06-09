@@ -81,4 +81,6 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
     public abstract Conversation appendMessage(Conversation conversation, Message message);
 
     public abstract Conversation completeConversation(ObjectId conversationId);
+
+    public abstract Conversation adjustMessageVotes(ObjectId id, String messageId, int delta);
 }

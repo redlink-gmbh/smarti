@@ -76,4 +76,8 @@ public class ConversationService {
     public Conversation completeConversation(Conversation conversation) {
         return storeService.completeConversation(conversation.getId());
     }
+
+    public Conversation rateMessage(Conversation conversation, String messageId, int delta) {
+        return storeService.adjustMessageVotes(conversation.getId(), messageId, delta);
+    }
 }

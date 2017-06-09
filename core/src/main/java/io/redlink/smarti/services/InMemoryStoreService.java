@@ -96,6 +96,20 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
+    public Conversation adjustMessageVotes(ObjectId id, String messageId, int delta) {
+        final Conversation conversation = storage.get(id);;
+        if (conversation != null) {
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (conversation) {
+                conversation.getMessages().stream()
+                        .filter(m -> StringUtils.equals(m.getId(), messageId))
+                        .forEach(m -> m.setVotes(m.getVotes() + delta));
+            }
+        }
+        return conversation;
+    }
+
+    @Override
     public Conversation get(ObjectId conversationId) {
         return storage.get(conversationId);
     }

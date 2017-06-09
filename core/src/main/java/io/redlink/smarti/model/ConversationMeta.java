@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  * Useful metadata about a conversation
  */
-@ApiModel("conversation metadata")
+@ApiModel
 public class ConversationMeta {
 
     public enum Status {

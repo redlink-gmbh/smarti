@@ -150,6 +150,18 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
+    public Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId))
+                .addCriteria(Criteria.where("messages._id").is(messageId));
+        final Update update = new Update()
+                .inc("messages.$.votes", delta);
+
+        mongoTemplate.updateFirst(query, update, Conversation.class);
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+
+    @Override
     public List<String> findTagsByPattern(Pattern pattern, int limit) {
         final Aggregation agg = newAggregation(
                 project("meta.tags"),
