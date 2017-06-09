@@ -85,4 +85,11 @@ public class Template implements Comparable<Template> {
     public int compareTo(Template o) {
         return Float.compare(o.probability, probability);
     }
+    
+    @Override
+    public String toString() {
+        return new StringBuilder(getClass().getSimpleName()).append("[type: ").append(type)
+                .append(", slots: ").append(slots).append(", state: ").append(state)
+                .append(", probability: ").append(probability).append(']').toString();
+    }
 }

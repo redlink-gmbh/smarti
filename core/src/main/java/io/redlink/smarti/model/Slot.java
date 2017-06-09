@@ -77,7 +77,7 @@ public class Slot {
 
     @Override
     public String toString() {
-        return "QuerySlot [role=" + role + ", type=" + tokenType + ", req=" + required + ", idx=" + tokenIndex + "]";
+        return "Slot [role=" + role + ", type=" + tokenType + ", req=" + required + ", idx=" + tokenIndex + "]";
     }
     
     

@@ -57,7 +57,7 @@ public class TemplateService {
     public void updateTemplates(Conversation con, int startMsgIdx) {
         log.debug("Update QueryTemplates for {} (msgIndx:  {})", con, startMsgIdx);
         final long templStart = System.currentTimeMillis();
-        templateBuilders.forEach(builder -> builder.buildTemplate(con, startMsgIdx));
+        templateBuilders.forEach(builder -> builder.updateTemplate(con, startMsgIdx));
         log.debug("Created QueryTemplates for {} in {}ms", con, System.currentTimeMillis() - templStart);
     }
 

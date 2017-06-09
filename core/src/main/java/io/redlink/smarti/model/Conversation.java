@@ -116,7 +116,7 @@ public class Conversation {
         this.tokens = tokens;
     }
 
-    public List<Template> getQueryTemplates() {
+    public List<Template> getTemplates() {
         return queryTemplates;
     }
 

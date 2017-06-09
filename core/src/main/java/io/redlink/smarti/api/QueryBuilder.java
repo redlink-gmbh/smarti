@@ -41,7 +41,7 @@ public abstract class QueryBuilder {
 
 
     public final void buildQuery(Conversation conversation) {
-        conversation.getQueryTemplates().stream()
+        conversation.getTemplates().stream()
                 .filter(t -> t.getState() != State.Rejected)
                 .filter(t -> {
                     final TemplateDefinition def = registry.getTemplate(t);

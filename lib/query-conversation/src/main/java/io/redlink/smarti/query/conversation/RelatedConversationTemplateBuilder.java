@@ -11,6 +11,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.Slot;
+import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Token;
 import io.redlink.smarti.model.Token.Type;
 
@@ -26,6 +27,9 @@ public class RelatedConversationTemplateBuilder extends TemplateBuilder {
 
     @Override
     protected Set<Integer> updateTemplate(Template template, Conversation conversation, int startMsgIdx) {
+        if(template.getState() == State.Confirmed || template.getState() == State.Rejected){
+            return null; //do not update this template
+        }
         Set<Integer> usedTokenIdxs = template.getSlots().stream()
                 .filter(s -> s.getTokenIndex() >= 0)
                 .map(Slot::getTokenIndex).collect(Collectors.toSet());

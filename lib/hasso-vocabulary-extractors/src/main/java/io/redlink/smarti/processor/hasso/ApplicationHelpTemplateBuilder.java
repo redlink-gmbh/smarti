@@ -27,6 +27,10 @@ public class ApplicationHelpTemplateBuilder extends TemplateBuilder {
 
     @Override
     protected Set<Integer> updateTemplate(Template template, Conversation conversation, int startMsgIdx) {
+        if(template.getState() == State.Confirmed || template.getState() == State.Rejected){
+            return null; //do not update this template
+        }
+
         final HashSet<Integer> indexes = new HashSet<>();
 
         Slot from = applicationHelpTemplate.getSlot(ApplicationHelpTemplate.SUPPORT_TYPE, template);

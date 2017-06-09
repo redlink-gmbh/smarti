@@ -43,7 +43,7 @@ public class TemplateResponse {
         final TemplateResponse response = new TemplateResponse();
 
         response.tokens = conversation.getTokens();
-        response.templates = conversation.getQueryTemplates();
+        response.templates = conversation.getTemplates();
 
 
         return response;
