@@ -1,0 +1,108 @@
+{
+  "tokens": [
+    {
+      "messageIdx": 0,
+      "start": 0,
+      "end": 3,
+      "origin": "System",
+      "state": "Suggested",
+      "value": "Anleitung",
+      "type": "QuestionIdentifier",
+      "hints": [],
+      "confidence": 1
+    },
+    {
+      "messageIdx": 0,
+      "start": 8,
+      "end": 11,
+      "origin": "System",
+      "state": "Suggested",
+      "value": "Deutsche Anpassungsstrategie",
+      "type": "Keyword",
+      "hints": [],
+      "confidence": 1
+    },
+    {
+      "messageIdx": 2,
+      "start": 19,
+      "end": 23,
+      "origin": "System",
+      "state": "Suggested",
+      "value": "warm",
+      "type": "Attribute",
+      "hints": [],
+      "confidence": 1
+    }
+  ],
+  "templates": [
+    {
+      "type": "related.conversation",
+      "slots": [
+        {
+          "role": "Keyword",
+          "tokenType": "Keyword",
+          "required": false,
+          "tokenIndex": 1
+        },
+        {
+          "role": "Term",
+          "tokenType": null,
+          "required": false,
+          "tokenIndex": 0
+        },
+        {
+          "role": "Term",
+          "tokenType": null,
+          "required": false,
+          "tokenIndex": 2
+        }
+      ],
+      "probability": 0,
+      "state": "Suggested",
+      "queries": [
+        {
+          "displayTitle": "Ähnliche Konversationen",
+          "confidence": 0.55,
+          "url": null,
+          "creator": "smarti",
+          "inlineResultSupport": true,
+          "state": "Suggested"
+        }
+      ]
+    },{
+      "type": "dbsearch",
+      "slots": [
+        {
+          "role": "Term",
+          "tokenType": "Keyword",
+          "required": false,
+          "tokenIndex": 1
+        },
+        {
+          "role": "Term",
+          "tokenType": null,
+          "required": false,
+          "tokenIndex": 0
+        },
+        {
+          "role": "Term",
+          "tokenType": null,
+          "required": false,
+          "tokenIndex": 2
+        }
+      ],
+      "probability": 0,
+      "state": "Suggested",
+      "queries": [
+        {
+          "displayTitle": "Ähnliche Dokumente in der DBSearch",
+          "confidence": 0.55,
+          "url": "http://dbsearch.com?q=t1",
+          "creator": "dbsearch",
+          "inlineResultSupport": false,
+          "state": "Suggested"
+        }
+      ]
+    }
+  ]
+}

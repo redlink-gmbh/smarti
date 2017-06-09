@@ -88,90 +88,35 @@
   ],
   "queryTemplates": [
     {
-      "queryType": "Reiseplanung",
+      "queryType": "Solr",
       "querySlots": [
         {
-          "role": "class",
-          "tokenType": "Product",
+          "role": "term",
           "required": false,
-          "tokenIndex": -1,
-          "inquiryMessage": "Welcher Klasse möchtest Du reisen?"
+          "inquiryMessage": "Welcher Klasse möchtest Du reisen?",
+          "creator":"user123",
+          "token":{
+            "origin": "User",
+            "value": "My Query",
+            "type": "Term"
+          }
         },
         {
-          "role": "from",
-          "tokenType": "Place",
+          "role": "term",
           "required": true,
-          "tokenIndex": 3,
+          "tokenIndex": 1,
           "inquiryMessage": "Wo möchtest Du abfahren?"
-        },
-        {
-          "role": "card",
-          "tokenType": "Product",
-          "required": false,
-          "tokenIndex": -1,
-          "inquiryMessage": "Hast Du eine Kundenkarte?"
-        },
-        {
-          "role": "to",
-          "tokenType": "Place",
-          "required": true,
-          "tokenIndex": 4,
-          "inquiryMessage": "Wohin möchtest Du?"
-        },
-        {
-          "role": "topic",
-          "tokenType": "Topic",
-          "required": true,
-          "tokenIndex": 0
-        },
-        {
-          "role": "depart",
-          "tokenType": "Date",
-          "required": false,
-          "tokenIndex": 2,
-          "inquiryMessage": "Wann willst Du los?"
-        },
-        {
-          "role": "arrive",
-          "tokenType": "Date",
-          "required": false,
-          "tokenIndex": -1,
-          "inquiryMessage": "Wann willst Du ankommen?"
         }
       ],
       "probability": 0.9800486,
       "state": "Suggested",
       "queries": [
         {
-          "displayTitle": "Flug Salzburg -> Berlin (07.06)",
-          "confidence": 0.75306565,
-          "url": "https://www.expedia.de/Flights-Search?trip=oneway&mode=search&passengers=children%3A0%2Cadults%3A1%2Cseniors%3A0%2Cinfantinlap%3AY&leg1=from%3ASalzburg%2Cto%3ABerlin%2Cdeparture%3A07.06.2017TANYT",
-          "creator": "expedia",
-          "inlineResultSupport": false,
-          "state": "Suggested"
-        },
-        {
           "displayTitle": "'Zugverbindung Salzburg Berlin'",
           "confidence": 0.2940146,
           "url": "https://www.google.de/search?q=Zugverbindung+Salzburg+Berlin",
-          "creator": "google",
+          "creator": "DBSearch",
           "inlineResultSupport": false,
-          "state": "Suggested"
-        },
-        {
-          "displayTitle": "Salzburg Hbf -> BERLIN (18:30)",
-          "confidence": 0.8471988,
-          "url": "https://www.qixxit.de/bin/abt/query-abt.exe/dn?L=vs_qixxit&protocol=https%3A&getstop=1&REQ0JourneyStopsS0G=Salzburg+Hbf&REQ0JourneyStopsS0ID=A%3D1%40O%3DSalzburg+Hbf%40X%3D13045820%40Y%3D47813048%40U%3D80%40L%3D008100002%40B%3D1%40p%3D1496186749%40&REQ0JourneyStopsS0A=255&REQ0JourneyStopsZ0G=BERLIN&REQ0JourneyStopsZ0ID=A%3D1%40O%3DBERLIN%40X%3D13386988%40Y%3D52520501%40U%3D80%40L%3D008096003%40B%3D1%40p%3D1496186749%40&REQ0JourneyStopsZ0A=255&REQ0JourneyTime=18%3A30%3A00&REQ0JourneyDate=07.06.2017&differentDateIsSet=yes",
-          "creator": "quixxit",
-          "inlineResultSupport": false,
-          "state": "Suggested"
-        },
-        {
-          "displayTitle": "Salzburg Hbf -> BERLIN (Abfahrt 18:30)",
-          "confidence": 0.941332,
-          "url": "https://reiseauskunft.bahn.de/bin/query.exe/dn?country=DEU&S=Salzburg+Hbf&REQ0JourneyStopsSID=A%3D1%40O%3DSalzburg+Hbf%40X%3D13045820%40Y%3D47813048%40U%3D80%40L%3D008100002%40B%3D1%40p%3D1496186749%40&Z=BERLIN&REQ0JourneyStopsZID=A%3D1%40O%3DBERLIN%40X%3D13386988%40Y%3D52520501%40U%3D80%40L%3D008096003%40B%3D1%40p%3D1496186749%40&timesel=depart&date=Mi%2C+07.06.17+&time=18%3A30&trip-type=single&start=1",
-          "creator": "bahn.de",
-          "inlineResultSupport": true,
           "state": "Suggested"
         }
       ]
