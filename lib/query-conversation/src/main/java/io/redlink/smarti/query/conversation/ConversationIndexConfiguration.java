@@ -1,12 +1,11 @@
 package io.redlink.smarti.query.conversation;
 
-import java.io.IOException;
-
+import io.redlink.solrlib.SimpleCoreDescriptor;
+import io.redlink.solrlib.SolrCoreDescriptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.redlink.solrlib.SimpleCoreDescriptor;
-import io.redlink.solrlib.SolrCoreDescriptor;
+import java.io.IOException;
 
 @Configuration
 public class ConversationIndexConfiguration {
@@ -16,6 +15,7 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_ID = "id";
     public static final String FIELD_TYPE = "type";
     public static final String FIELD_USER_ID = "user_id";
+    public static final String FIELD_USER_NAME = "user_name";
     public static final String FIELD_CONTEXT = "context";
     public static final String FIELD_ENVIRONMENT = "environment";
     public static final String FIELD_DOMAIN = "domain";

@@ -1,12 +1,12 @@
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.State;
+import io.redlink.smarti.model.Template;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -15,6 +15,10 @@ import org.apache.solr.common.SolrDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
+
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -35,12 +39,21 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     @Override
     protected ConversationResult toHassoResult(SolrDocument solrDocument, String type) {
         final ConversationResult hassoResult = new ConversationResult(getCreatorName());
+
         hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
-        hassoResult.setContent(String.valueOf(solrDocument.getFirstValue("message")));
+
+        hassoResult.setContent(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
         hassoResult.setReplySuggestion(hassoResult.getContent());
-        hassoResult.setConversationId(String.valueOf(solrDocument.getFieldValue("conversation_id")));
-        hassoResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("message_idx"))));
-        hassoResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("vote"))));
+
+        hassoResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
+        hassoResult.setMessageId(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_ID)));
+        hassoResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_IDX))));
+
+        hassoResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
+
+        hassoResult.setTimestamp((Date) solrDocument.getFieldValue(FIELD_TIME));
+        hassoResult.setUserName((String) solrDocument.getFieldValue(FIELD_USER_NAME));
+
         return hassoResult;
     }
 

@@ -1,32 +1,16 @@
 package io.redlink.smarti.query.conversation;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CONTEXT;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CONVERSATION_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_DOMAIN;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_END_TIME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_ENVIRONMENT;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE_COUNT;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE_IDX;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MODIFIED;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_START_TIME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TIME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_USER_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_VOTE;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-
-import javax.annotation.PostConstruct;
-
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.api.event.StoreServiceEvent;
+import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.ConversationMeta.Status;
+import io.redlink.smarti.model.Message;
+import io.redlink.solrlib.SolrCoreContainer;
+import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -44,18 +28,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
-import io.redlink.smarti.api.StoreService;
-import io.redlink.smarti.api.event.StoreServiceEvent;
-import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.ConversationMeta;
-import io.redlink.smarti.model.ConversationMeta.Status;
-import io.redlink.smarti.model.Message;
-import io.redlink.solrlib.SolrCoreContainer;
-import io.redlink.solrlib.SolrCoreDescriptor;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 @Component
 public class ConversationIndexer {
@@ -141,8 +123,8 @@ public class ConversationIndexer {
     }
     
     /**
-     * Processes update events as e.g. sent by the {@link EntityService}
-     * @param updateEvent
+     * Processes update events as e.g. sent by the {@link StoreService}
+     * @param storeEvent
      */
     @EventListener
     protected void conversationUpdated(StoreServiceEvent storeEvent){
@@ -188,7 +170,6 @@ public class ConversationIndexer {
 
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
         solrConversation.setField(FIELD_TYPE, "conversation");
-        solrConversation.setField(FIELD_USER_ID, conversation.getUser().getId());
         solrConversation.setField(FIELD_MODIFIED, conversation.getLastModified());
         addContextFields(solrConversation, conversation);
 
@@ -241,6 +222,7 @@ public class ConversationIndexer {
         solrMsg.setField(FIELD_TYPE, "message");
         if (message.getUser() != null) {
             solrMsg.setField(FIELD_USER_ID, message.getUser().getId());
+            solrMsg.setField(FIELD_USER_NAME, message.getUser().getDisplayName());
         }
         addContextFields(solrMsg, conversation);
 
