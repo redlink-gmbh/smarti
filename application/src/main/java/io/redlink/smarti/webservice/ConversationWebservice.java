@@ -140,18 +140,8 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
-    @RequestMapping(value = "{id}/query/{template}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
-                                      @PathVariable("template") String template,
-                                      @PathVariable("creator") String creator,
-                                      @RequestBody List<Slot> updatedSlots) {
-        // TODO: Implement this
-        return ResponseEntities.notImplemented();
-    }
-
     @ApiOperation(value = "retrieve the results for a template from a specific creator", response = Result.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/intent/{template}/{creator}", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/template/{template}/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
                                         @PathVariable("template") int templateIdx,
                                         @PathVariable("creator") String creator) {
@@ -168,6 +158,16 @@ public class ConversationWebservice {
         } catch (IndexOutOfBoundsException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
+    @RequestMapping(value = "{id}/query/{template}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
+                                      @PathVariable("template") String template,
+                                      @PathVariable("creator") String creator,
+                                      @RequestBody List<Slot> updatedSlots) {
+        // TODO: Implement this
+        return ResponseEntities.notImplemented();
     }
 
     @ApiOperation(value = "complete a conversation and add it to indexing", response = Conversation.class)
