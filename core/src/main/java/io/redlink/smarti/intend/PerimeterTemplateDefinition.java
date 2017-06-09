@@ -4,7 +4,7 @@
 
 package io.redlink.smarti.intend;
 
-import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-public class PerimeterIntendDefinition extends IntendDefinition {
+public class PerimeterTemplateDefinition extends TemplateDefinition {
 
     public static final String LOCATION = "location";
     public static final String START = "start";
@@ -27,8 +27,8 @@ public class PerimeterIntendDefinition extends IntendDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public PerimeterIntendDefinition() {
-        super(MessageTopic.Umkreissuche);
+    public PerimeterTemplateDefinition() {
+        super(MessageTopic.Umkreissuche.name());
     }
     
     @Override

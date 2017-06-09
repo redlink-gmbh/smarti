@@ -12,11 +12,11 @@ import org.apache.solr.common.util.NamedList;
 
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Intent;
+import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.result.Result;
-import io.redlink.smarti.services.IntendRegistry;
+import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
@@ -32,7 +32,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 
-    public ConversationQueryBuilder(String creatorName, SolrCoreContainer solrServer, SolrCoreDescriptor conversationCore, IntendRegistry registry) {
+    public ConversationQueryBuilder(String creatorName, SolrCoreContainer solrServer, SolrCoreDescriptor conversationCore, TemplateRegistry registry) {
         super(registry);
         this.creatorName = creatorName;
         this.solrServer = solrServer;
@@ -45,12 +45,12 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public boolean acceptTemplate(Intent intent) {
+    public boolean acceptTemplate(Template intent) {
         return ACCEPTED_TYPES.contains(intent.getType());
     }
 
     @Override
-    protected void doBuildQuery(Intent intent, Conversation conversation) {
+    protected void doBuildQuery(Template intent, Conversation conversation) {
         final Query query = buildQuery(intent, conversation);
         if (query != null) {
             intent.getQueries().add(query);
@@ -71,7 +71,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public List<? extends Result> execute(Intent intent, Conversation conversation) throws IOException {
+    public List<? extends Result> execute(Template intent, Conversation conversation) throws IOException {
         final QueryRequest solrRequest = buildSolrRequest(intent, conversation);
         if (solrRequest == null) {
             return Collections.emptyList();
@@ -91,9 +91,9 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
         }
     }
 
-    protected abstract QueryRequest buildSolrRequest(Intent intent, Conversation conversation);
+    protected abstract QueryRequest buildSolrRequest(Template intent, Conversation conversation);
 
-    protected abstract ConversationResult toHassoResult(SolrDocument solrDocument, MessageTopic type);
+    protected abstract ConversationResult toHassoResult(SolrDocument solrDocument, String type);
 
-    protected abstract Query buildQuery(Intent intent, Conversation conversation);
+    protected abstract Query buildQuery(Template intent, Conversation conversation);
 }

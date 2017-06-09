@@ -16,17 +16,17 @@ import java.util.List;
 /**
  */
 @ApiModel
-public class Intent implements Comparable<Intent> {
+public class Template implements Comparable<Template> {
 
-    @JsonProperty("queryType")
-    @ApiModelProperty(notes = "type of the query that can be build from this template", required = true)
-    private MessageTopic type;
+    @JsonProperty("type")
+    @ApiModelProperty(notes = "type of the template that can be build from this template", required = true)
+    private String type;
     @ApiModelProperty(notes = "probability that this template is the right one")
     private float probability;
     @ApiModelProperty(notes = "state of this template")
     private State state = State.Suggested;
 
-    @JsonProperty("querySlots")
+    @JsonProperty("slots")
     @ApiModelProperty(notes = "slots to fill with tokens", required = true)
     private Collection<Slot> slots;
 
@@ -34,18 +34,22 @@ public class Intent implements Comparable<Intent> {
     private List<Query> queries = new ArrayList<>();
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Intent(@JsonProperty("queryType") MessageTopic type, @JsonProperty("querySlots") Collection<Slot> slots) {
+    public Template(@JsonProperty("type") String type, @JsonProperty("slots") Collection<Slot> slots) {
         this.type = type;
         this.slots = slots;
     }
 
     /**
-     * Comparator that sorts the {@link Intent} with the highest {@link Intent#getProbability()}
+     * Comparator that sorts the {@link Template} with the highest {@link Template#getProbability()}
      * first.
      */
-    public static final Comparator<Intent> CONFIDENCE_COMPARATOR = (t1, t2) -> Float.compare(t2.getProbability(), t1.getProbability());
+    public static final Comparator<Template> CONFIDENCE_COMPARATOR = (t1, t2) -> Float.compare(t2.getProbability(), t1.getProbability());
 
-    public MessageTopic getType() {
+    /**
+     * Getter for the type of this template
+     * @return
+     */
+    public String getType() {
         return type;
     }
     
@@ -78,7 +82,14 @@ public class Intent implements Comparable<Intent> {
     }
 
     @Override
-    public int compareTo(Intent o) {
+    public int compareTo(Template o) {
         return Float.compare(o.probability, probability);
+    }
+    
+    @Override
+    public String toString() {
+        return new StringBuilder(getClass().getSimpleName()).append("[type: ").append(type)
+                .append(", slots: ").append(slots).append(", state: ").append(state)
+                .append(", probability: ").append(probability).append(']').toString();
     }
 }

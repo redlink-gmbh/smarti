@@ -119,11 +119,7 @@ public class PrepareService {
             }
         });
         log.debug("prepared Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
-        if(log.isDebugEnabled()){
-            log.debug("Tokens: ");
-            conversation.getTokens().forEach(t -> log.debug(" - {}",t));
-        }
-        conversation.getMeta().setLastMessageAnalyzed(conversation.getTokens().size()-1);
+        conversation.getMeta().setLastMessageAnalyzed(conversation.getMessages().size()-1);
         log.trace("set lastMessageAnalyzed: {}", conversation.getMeta().getLastMessageAnalyzed());
     }
 

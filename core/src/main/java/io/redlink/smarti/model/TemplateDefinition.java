@@ -11,22 +11,22 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class IntendDefinition {
+public abstract class TemplateDefinition {
     
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     public static final String TOPIC = "topic";
     
-    private final MessageTopic type;
+    private final String type;
 
-    protected IntendDefinition(MessageTopic type){
-        if(type == null){
-            throw new NullPointerException("the topic MUST NOT be NULL");
+    protected TemplateDefinition(String type){
+        if(StringUtils.isBlank(type)){
+            throw new IllegalArgumentException("the template type MUST NOT be NULL nor empty!");
         }
         this.type = type;
     }
     
-    public final MessageTopic getType(){
+    public final String getType(){
         return type;
     }
     
@@ -36,7 +36,7 @@ public abstract class IntendDefinition {
      * based on the template definition
      * @param role the name of the query slot to create
      * @return the initialized slot or <code>null</code> if no slot with that
-     * name is known by the {@link IntendDefinition}
+     * name is known by the {@link TemplateDefinition}
      */
     public final Slot createSlot(String role){
         switch (role) {
@@ -49,7 +49,7 @@ public abstract class IntendDefinition {
     
     protected abstract Slot createSlotForName(String name);
 
-    public final boolean isValid(Intent template, List<Token> tokens){
+    public final boolean isValid(Template template, List<Token> tokens){
         Optional<Slot> topicSlot = template.getSlots().stream()
             .filter(s -> TOPIC.equals(s.getRole()))
             .findFirst();
@@ -95,13 +95,13 @@ public abstract class IntendDefinition {
         return present;
     }
     /**
-     * Getter for any (valid) {@link Slot} part of the parsed {@link Intent}
+     * Getter for any (valid) {@link Slot} part of the parsed {@link Template}
      * that has the parsed Role
      * @param role the role
      * @param template the query template
      * @return the Token or <code>null</code> if no valid QuerySlot is present
      */
-    public final Slot getSlot(String role, Intent template) {
+    public final Slot getSlot(String role, Template template) {
         Slot expected = createSlot(role); //for known token also check the type
         final Optional<Slot> slot = template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
@@ -115,12 +115,12 @@ public abstract class IntendDefinition {
     }
 
     /**
-     * Getter for all (valid) {@link Slot}s part of the parsed {@link Intent}
+     * Getter for all (valid) {@link Slot}s part of the parsed {@link Template}
      * @param role the role
      * @param template the query template
      * @return all valid {@link Slot}s with the parsed role an empty List if none
      */
-    public final List<Slot> getSlots(String role, Intent template) {
+    public final List<Slot> getSlots(String role, Template template) {
         Slot expected = createSlot(role); //for known token also check the type
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))

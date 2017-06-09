@@ -3,7 +3,7 @@
  */
 package io.redlink.smarti.intend;
 
-import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  */
 @Component
-public class TrainInfoIntendDefinition extends IntendDefinition {
+public class TrainInfoTemplateDefinition extends TemplateDefinition {
 
     public static final String TRAIN = "train";
     public static final String DATE = "date";
@@ -30,8 +30,8 @@ public class TrainInfoIntendDefinition extends IntendDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public TrainInfoIntendDefinition() {
-        super(MessageTopic.Zuginformation);
+    public TrainInfoTemplateDefinition() {
+        super(MessageTopic.Zuginformation.name());
     }
 
     @Override

@@ -8,7 +8,7 @@ import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
-import io.redlink.smarti.webservice.pojo.IntentResponse;
+import io.redlink.smarti.webservice.pojo.TemplateResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -126,7 +126,7 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "retrieve the intents of the conversation", response = IntentResponse.class)
+    @ApiOperation(value = "retrieve the intents of the conversation", response = TemplateResponse.class)
     @RequestMapping(value = "{id}/intent", method = RequestMethod.GET)
     public ResponseEntity<?> query(@PathVariable("id") ObjectId id) {
         final Conversation conversation = storeService.get(id);
@@ -134,7 +134,7 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(IntentResponse.from(conversation));
+            return ResponseEntity.ok(TemplateResponse.from(conversation));
         }
     }
 

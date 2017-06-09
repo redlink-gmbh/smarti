@@ -16,8 +16,8 @@ public class ConversationResult extends Result {
     private String conversationId;
     private int messageIdx, votes;
 
-    public ConversationResult(String creator, MessageTopic topic) {
-        super(creator, topic);
+    public ConversationResult(String creator) {
+        super(creator);
     }
 
     public double getScore() {

@@ -52,7 +52,7 @@ public class Conversation {
     private List<Token> tokens = new ArrayList<>();
 
     @ApiModelProperty(position = 4, value = "Templates for possible queries")
-    private List<Intent> queryTemplates = new ArrayList<>();
+    private List<Template> queryTemplates = new ArrayList<>();
 
     @ApiModelProperty(position = 5, value = "conversation context")
     private Context context = new Context();
@@ -116,11 +116,11 @@ public class Conversation {
         this.tokens = tokens;
     }
 
-    public List<Intent> getQueryTemplates() {
+    public List<Template> getTemplates() {
         return queryTemplates;
     }
 
-    public void setQueryTemplates(List<Intent> queryTemplates) {
+    public void setQueryTemplates(List<Template> queryTemplates) {
         this.queryTemplates = queryTemplates;
     }
 

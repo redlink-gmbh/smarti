@@ -4,11 +4,11 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Intent;
+import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Token;
-import io.redlink.smarti.services.IntendRegistry;
+import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
@@ -37,12 +37,12 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     @Autowired
     public ConversationSearchQueryBuilder(SolrCoreContainer solrServer, 
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore,
-            IntendRegistry registry) {
+            TemplateRegistry registry) {
         super(CREATOR_NAME, solrServer, conversationCore, registry);
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(Intent intent, Conversation conversation) {
+    protected QueryRequest buildSolrRequest(Template intent, Conversation conversation) {
         final ConversationSearchQuery searchQuery = buildQuery(intent, conversation);
         if (searchQuery == null) {
             return null;
@@ -66,8 +66,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument solrDocument, MessageTopic type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName(), type);
+    protected ConversationResult toHassoResult(SolrDocument solrDocument, String type) {
+        final ConversationResult hassoResult = new ConversationResult(getCreatorName());
         hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
         hassoResult.setContent(String.valueOf(solrDocument.getFirstValue("message")));
         hassoResult.setReplySuggestion(hassoResult.getContent());
@@ -78,7 +78,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationSearchQuery buildQuery(Intent intent, Conversation conversation) {
+    protected ConversationSearchQuery buildQuery(Template intent, Conversation conversation) {
         final List<Token> keywords = getTokens("keyword", intent, conversation);
         if (keywords == null || keywords.isEmpty()) return null;
 

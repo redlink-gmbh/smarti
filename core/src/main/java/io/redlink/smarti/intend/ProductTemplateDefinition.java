@@ -3,7 +3,7 @@
  */
 package io.redlink.smarti.intend;
 
-import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  */
 @Component
-public class ProductIntendDefinition extends IntendDefinition {
+public class ProductTemplateDefinition extends TemplateDefinition {
 
     public static final String PRODUCT = "product";
     public static final String WHAT = "what";
@@ -26,8 +26,8 @@ public class ProductIntendDefinition extends IntendDefinition {
     @Autowired
     private SpeakService speakService;
 
-    public ProductIntendDefinition() {
-        super(MessageTopic.Produkt);
+    public ProductTemplateDefinition() {
+        super(MessageTopic.Produkt.name());
     }
 
     @Override

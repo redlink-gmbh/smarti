@@ -97,7 +97,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                 .set("user", conversation.getUser())
                 .set("messages", conversation.getMessages())
                 .set("tokens", conversation.getTokens())
-                .set("queryTemplates", conversation.getQueryTemplates())
+                .set("queryTemplates", conversation.getTemplates())
                 .set("context", conversation.getContext())
                 ;
         update.currentDate("lastModified");

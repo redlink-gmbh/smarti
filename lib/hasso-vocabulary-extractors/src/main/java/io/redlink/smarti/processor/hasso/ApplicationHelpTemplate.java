@@ -6,7 +6,7 @@ package io.redlink.smarti.processor.hasso;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import io.redlink.smarti.model.IntendDefinition;
+import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.MessageTopic;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
@@ -19,7 +19,7 @@ import java.util.List;
  * Created by jakob on 02.09.16.
  */
 @Component
-public class ApplicationHelpTemplate extends IntendDefinition {
+public class ApplicationHelpTemplate extends TemplateDefinition {
 
     public static final String SUPPORT_TYPE = "supportType";
     public static final String KEYWORD = "keyword";
@@ -28,7 +28,7 @@ public class ApplicationHelpTemplate extends IntendDefinition {
     private SpeakService speakService;
 
     public ApplicationHelpTemplate() {
-        super(MessageTopic.ApplicationHelp);
+        super(MessageTopic.ApplicationHelp.name());
     }
 
     @Override
