@@ -8,8 +8,9 @@ import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.Token;
-
+import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.result.Result;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,6 +42,9 @@ public class ConversationService {
 
     @Autowired
     private TemplateService templateService;
+    
+    @Autowired
+    private QueryBuilderService queryBuilderService;
     
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -63,7 +69,9 @@ public class ConversationService {
                     prepareService.prepare(finalConversation);
 
                     templateService.updateTemplates(finalConversation);
-
+                    
+                    queryBuilderService.buildQueries(finalConversation);
+                    
                     storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
 
                     if(log.isDebugEnabled()){
@@ -83,7 +91,7 @@ public class ConversationService {
 
     private void logConversation(Conversation c) {
         if(!log.isDebugEnabled()) return;
-        log.debug("Conversation[id:{} | channel: {} | modified: {}]",c.getId(), c.getChannelId(),
+        log.debug("Conversation[id:{} | channel: {} | modified: {}]", c.getId(), c.getChannelId(),
                 c.getLastModified() != null ? DateFormatUtils.ISO_DATETIME_FORMAT.format(c.getLastModified()) : "unknown");
         if(c.getUser() != null){
             log.debug(" > user[id: {}| name: {}] ", c.getUser().getId(), c.getUser().getDisplayName());
@@ -106,7 +114,11 @@ public class ConversationService {
             log.debug(" > {} templates:", c.getTemplates().size());
             AtomicInteger count = new AtomicInteger(0);
             c.getTemplates().forEach(t -> {
-                log.debug("    {}. {}",count.getAndIncrement(), t);
+                log.debug("    {}. {}", count.getAndIncrement(), t);
+                if (CollectionUtils.isNotEmpty(t.getQueries())) {
+                    log.debug("    > with {} queries", t.getQueries().size());
+                    t.getQueries().forEach(q -> log.debug("       - {}", q));
+                }
             });
         }
     }
@@ -121,5 +133,9 @@ public class ConversationService {
 
     public Conversation rateMessage(Conversation conversation, String messageId, int delta) {
         return storeService.adjustMessageVotes(conversation.getId(), messageId, delta);
+    }
+
+    public List<? extends Result> getInlineResults(Conversation conversation, Template template, String creator) throws IOException {
+        return queryBuilderService.execute(creator, template, conversation);
     }
 }

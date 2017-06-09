@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,7 @@ import java.util.Optional;
 @Api("conversation")
 public class ConversationWebservice {
 
+    @SuppressWarnings("unused")
     private enum Vote {
         up(1),
         down(-1);
@@ -127,7 +129,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "retrieve the intents of the conversation", response = TemplateResponse.class)
-    @RequestMapping(value = "{id}/intent", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/template", method = RequestMethod.GET)
     public ResponseEntity<?> query(@PathVariable("id") ObjectId id) {
         final Conversation conversation = storeService.get(id);
 
@@ -138,21 +140,32 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
-    @RequestMapping(value = "{id}/query/{intent}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
-                                      @PathVariable("intent") String intent,
-                                      @PathVariable("creator") String creator,
-                                      @RequestBody List<Slot> updatedSlots) {
-        // TODO: Implement this
-        return ResponseEntities.notImplemented();
+    @ApiOperation(value = "retrieve the results for a template from a specific creator", response = Result.class, responseContainer = "List")
+    @RequestMapping(value = "{id}/template/{template}/{creator}", method = RequestMethod.GET)
+    public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
+                                        @PathVariable("template") int templateIdx,
+                                        @PathVariable("creator") String creator) {
+        final Conversation conversation = storeService.get(id);
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            final Template template = conversation.getTemplates().get(templateIdx);
+
+            return ResponseEntity.ok(conversationService.getInlineResults(conversation, template, creator));
+        } catch (IOException e) {
+            return ResponseEntities.serviceUnavailable(e.getMessage(), e);
+        } catch (IndexOutOfBoundsException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @ApiOperation(value = "retrieve the results for a intent from a specific creator", response = Result.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/intent/{intent}/{creator}", method = RequestMethod.GET)
-    public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
-                                        @PathVariable("intent") String intent,
-                                        @PathVariable("creator") String creator) {
+    @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
+    @RequestMapping(value = "{id}/query/{template}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
+                                      @PathVariable("template") String template,
+                                      @PathVariable("creator") String creator,
+                                      @RequestBody List<Slot> updatedSlots) {
         // TODO: Implement this
         return ResponseEntities.notImplemented();
     }

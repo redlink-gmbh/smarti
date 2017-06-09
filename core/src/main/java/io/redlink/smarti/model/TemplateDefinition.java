@@ -50,10 +50,7 @@ public abstract class TemplateDefinition {
     protected abstract Slot createSlotForName(String name);
 
     public final boolean isValid(Template template, List<Token> tokens){
-        Optional<Slot> topicSlot = template.getSlots().stream()
-            .filter(s -> TOPIC.equals(s.getRole()))
-            .findFirst();
-        if(topicSlot.isPresent() && topicSlot.get().getTokenIndex() >= 0){
+        if(template != null){
             return validate(template.getSlots(), tokens);
         } else {
             return false;

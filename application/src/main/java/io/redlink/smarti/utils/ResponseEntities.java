@@ -41,7 +41,15 @@ public class ResponseEntities {
         return build(HttpStatus.INTERNAL_SERVER_ERROR).message(e.getMessage()).data(e).build();
     }
 
-    public static ResponseEntity<Map<String,Object>> unprocessableEntity(String message) {
+    public static ResponseEntity<?> serviceUnavailable(String message) {
+        return status(HttpStatus.SERVICE_UNAVAILABLE, message);
+    }
+
+    public static ResponseEntity<?> serviceUnavailable(String message, Object data) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE).message(message).data(data).build();
+    }
+
+    public static ResponseEntity<?> unprocessableEntity(String message) {
         return status(HttpStatus.UNPROCESSABLE_ENTITY, message);
     }
 
