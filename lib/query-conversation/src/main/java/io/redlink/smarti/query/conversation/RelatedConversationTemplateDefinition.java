@@ -3,18 +3,22 @@ package io.redlink.smarti.query.conversation;
 import java.util.Collection;
 import java.util.List;
 
+import org.springframework.stereotype.Component;
+
 import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Token;
 import io.redlink.smarti.model.Token.Type;
 
+@Component
 public class RelatedConversationTemplateDefinition extends TemplateDefinition {
 
+    public static final String RELATED_CONVERSATION_TYPE = "related.conversation";
     public static final String ROLE_KEYWORD = "Keyword";
     public static final String ROLE_TERM = "Term";
     
     public RelatedConversationTemplateDefinition() {
-        super("related.conversation");
+        super(RELATED_CONVERSATION_TYPE);
     }
 
     @Override

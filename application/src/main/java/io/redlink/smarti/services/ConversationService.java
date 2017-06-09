@@ -10,6 +10,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Token;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,9 @@ public class ConversationService {
     private TemplateService templateService;
     
     @Autowired
+    private QueryBuilderService queryBuilderService;
+    
+    @Autowired
     private ApplicationEventPublisher eventPublisher;
 
     private final ExecutorService processingExecutor;
@@ -63,7 +67,9 @@ public class ConversationService {
                     prepareService.prepare(finalConversation);
 
                     templateService.updateTemplates(finalConversation);
-
+                    
+                    queryBuilderService.buildQueries(finalConversation);
+                    
                     storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
 
                     if(log.isDebugEnabled()){
@@ -107,6 +113,10 @@ public class ConversationService {
             AtomicInteger count = new AtomicInteger(0);
             c.getTemplates().forEach(t -> {
                 log.debug("    {}. {}",count.getAndIncrement(), t);
+                if(CollectionUtils.isNotEmpty(t.getQueries())){
+                    log.debug("    > with {} queries", t.getQueries().size());
+                    t.getQueries().forEach(q -> log.debug("       - {}", q));
+                }
             });
         }
     }

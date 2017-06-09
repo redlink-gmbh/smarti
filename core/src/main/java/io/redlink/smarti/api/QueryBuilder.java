@@ -45,7 +45,12 @@ public abstract class QueryBuilder {
                 .filter(t -> t.getState() != State.Rejected)
                 .filter(t -> {
                     final TemplateDefinition def = registry.getTemplate(t);
-                    return def.isValid(t, conversation.getTokens());
+                    if(def != null){
+                        return def.isValid(t, conversation.getTokens());
+                    } else {
+                        log.warn("Missing TemplateDefinition for type '{}' (Template: {})",t.getType(),t.getClass().getName());
+                        return false;
+                    }
                 })
                 .filter(this::acceptTemplate)
                 .forEach(t -> doBuildQuery(t, conversation));

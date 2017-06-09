@@ -20,6 +20,8 @@ import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -27,7 +29,6 @@ import java.util.*;
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder {
 
-    private static final Set<MessageTopic> ACCEPTED_TYPES = EnumSet.of(MessageTopic.ApplicationHelp, MessageTopic.Sonstiges);
     private final String creatorName;
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
@@ -45,15 +46,19 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public boolean acceptTemplate(Template intent) {
-        return ACCEPTED_TYPES.contains(intent.getType());
+    public boolean acceptTemplate(Template template) {
+        return RELATED_CONVERSATION_TYPE.equals(template.getType()) && 
+                template.getSlots().stream() //at least a single filled slot
+                    .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
+                    .filter(s -> s.getTokenIndex() >= 0)
+                    .findAny().isPresent();
     }
 
     @Override
-    protected void doBuildQuery(Template intent, Conversation conversation) {
-        final Query query = buildQuery(intent, conversation);
+    protected void doBuildQuery(Template template, Conversation conversation) {
+        final Query query = buildQuery(template, conversation);
         if (query != null) {
-            intent.getQueries().add(query);
+            template.getQueries().add(query);
         }
     }
 
