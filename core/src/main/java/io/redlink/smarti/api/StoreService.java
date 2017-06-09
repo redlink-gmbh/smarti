@@ -14,6 +14,7 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  */
@@ -48,11 +49,16 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
     }
 
     public Conversation getCurrentConversationByChannelId(String channelId) {
+        return getCurrentConversationByChannelId(channelId, Conversation::new);
+    }
+
+    public Conversation getCurrentConversationByChannelId(String channelId, Supplier<Conversation> supplier) {
         final ObjectId conversationId = mapChannelToCurrentConversationId(channelId);
         if (conversationId != null) {
             return get(conversationId);
         } else {
-            final Conversation c = new Conversation();
+            final Conversation c = supplier.get();
+            c.setId(null);
             c.setChannelId(channelId);
             return store(c);
         }
