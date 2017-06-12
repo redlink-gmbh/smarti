@@ -58,9 +58,13 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
             return get(conversationId);
         } else {
             final Conversation c = supplier.get();
-            c.setId(null);
-            c.setChannelId(channelId);
-            return store(c);
+            if(c != null){
+                c.setId(null);
+                c.setChannelId(channelId);
+                return store(c);
+            } else {
+                return null;
+            }
         }
     }
 

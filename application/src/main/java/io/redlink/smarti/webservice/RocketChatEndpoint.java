@@ -15,6 +15,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +96,20 @@ public class RocketChatEndpoint {
             return ResponseEntity.accepted().build();
         }
     }
+    
+    @ApiOperation(value = "retrieve a conversation ID for a channel and client id", produces=MimeTypeUtils.TEXT_PLAIN_VALUE)
+    @RequestMapping(value = "{clientId}/conversationid", method = RequestMethod.GET, produces=MimeTypeUtils.TEXT_PLAIN_VALUE)
+    public ResponseEntity<?> getConversation(
+            @PathVariable(value="clientId") String clientId,
+            @RequestParam(value="channel_id", required=true) String roomId) {
+        Conversation conversation = storeService.getCurrentConversationByChannelId(createChannelId(clientId, roomId),() -> null); //do not create new conversations
+        if (conversation == null || conversation.getId() == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.ok(conversation.getId().toHexString());
+        }
+    }
+
 
     public String createChannelId(String clientId, String roomId) {
         Preconditions.checkNotNull(clientId, "Missing parameter <clientId>");
