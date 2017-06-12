@@ -21,6 +21,7 @@
         <module>pos</module>
         <module>token-processor</module>
         <module>query-conversation</module>
+        <module>query-dbsearch</module>
     </modules>
 
     <build>

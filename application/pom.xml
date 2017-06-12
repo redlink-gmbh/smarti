@@ -208,6 +208,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- (8) DB Search Related Documents -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>query-dbsearch</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- END Analysis dependencies -->
 
         <dependency>
