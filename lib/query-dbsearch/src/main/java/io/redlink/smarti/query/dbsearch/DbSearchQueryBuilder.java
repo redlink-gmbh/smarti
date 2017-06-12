@@ -7,6 +7,7 @@ import static io.redlink.smarti.query.dbsearch.DbSearchTemplateDefinition.DBSEAR
 import static io.redlink.smarti.query.dbsearch.DbSearchTemplateDefinition.ROLE_TERM;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -21,6 +22,8 @@ import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.Token.Type;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 
@@ -33,6 +36,8 @@ public class DbSearchQueryBuilder extends QueryBuilder {
     private String solrEndpoint;
 
     private final static float MIN_TERM_CONF = 0.1f;
+    
+    EnumSet<Token.Type> IGNORED_TOKEN_TYPES = EnumSet.of(Type.Date);
     
     public DbSearchQueryBuilder(TemplateRegistry registry) {
         super(registry);
@@ -80,15 +85,17 @@ public class DbSearchQueryBuilder extends QueryBuilder {
             .filter(s -> s.getTokenIndex() >= 0 && s.getTokenIndex() < conversation.getTokens().size())
             .map(s -> conversation.getTokens().get(s.getTokenIndex()))
             .filter(Objects::nonNull) //ignore null tokens
-            .filter(t -> StringUtils.isNoneBlank(t.toString())) //and tokens with empty value
+            .filter(t -> !IGNORED_TOKEN_TYPES.contains(t.getType())) //token of some types might be ignored
+            .filter(t -> t.getValue() != null) //the value MUST NOT be NULL
+            .filter(t -> StringUtils.isNoneBlank(t.getValue().toString())) //and tokens with empty value
             .filter(t -> t.getConfidence() >= MIN_TERM_CONF) //and low confidence
             .sorted((t1,t2) -> Float.compare(t2.getConfidence(),t1.getConfidence())) //sort by confidence
-            .map(t -> new StringBuilder(ClientUtils.escapeQueryChars(t.toString())) //escape the term
+            .map(t -> new StringBuilder(ClientUtils.escapeQueryChars(t.getValue().toString())) //escape the term
                     .insert(0,'"').append('"') //quote the term in case of multiple words
                     .append('^').append(t.getConfidence()).toString()) //use the confidence as boost
             .collect(Collectors.toList());
         
-        query.setTerms(queryTerms);
+        query.setFullTextTerms(queryTerms);
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
         query.setUrl(solrEndpoint + solrQuery.toQueryString());

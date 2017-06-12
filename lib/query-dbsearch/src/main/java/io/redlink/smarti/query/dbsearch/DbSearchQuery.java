@@ -24,19 +24,19 @@ public class DbSearchQuery extends Query {
         super(creator);
     }
 
-    public void setTerm(String keyword) {
+    public void setFullTextTerm(String keyword) {
         this.fullTextTerms.clear();
         this.fullTextTerms.add(keyword);
     }
-    public void addTerm(String term){
+    public void addFullTextTerms(String term){
         this.fullTextTerms.add(term);
     }
 
-    public Collection<String> getTerms() {
+    public Collection<String> getFullTextTerms() {
         return fullTextTerms;
     }
 
-    public void setTerms(Collection<String> strings) {
+    public void setFullTextTerms(Collection<String> strings) {
         fullTextTerms.clear();
         fullTextTerms.addAll(strings);
     }
