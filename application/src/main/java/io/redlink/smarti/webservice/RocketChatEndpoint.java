@@ -97,19 +97,27 @@ public class RocketChatEndpoint {
         }
     }
     
+    /**
+     * Called by rocket.chat plugins to get the conversationId for the clientId and channelId known to the plugin.
+     * The returned conversationID can later be used for calls to the {@link ConversationWebservice}
+     * @param clientId the client id
+     * @param channelId the channelId
+     * @return a <code>202</code> with the conversation id as payload or a <code>404</code> if no conversation is
+     * active for the parsed parameters.
+     */
     @ApiOperation(value = "retrieve a conversation ID for a channel and client id", produces=MimeTypeUtils.TEXT_PLAIN_VALUE)
-    @RequestMapping(value = "{clientId}/conversationid", method = RequestMethod.GET, produces=MimeTypeUtils.TEXT_PLAIN_VALUE)
+    @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET, 
+        produces=MimeTypeUtils.TEXT_PLAIN_VALUE, consumes=MimeTypeUtils.ALL_VALUE)
     public ResponseEntity<?> getConversation(
             @PathVariable(value="clientId") String clientId,
-            @RequestParam(value="channel_id", required=true) String roomId) {
-        Conversation conversation = storeService.getCurrentConversationByChannelId(createChannelId(clientId, roomId),() -> null); //do not create new conversations
+            @PathVariable(value="channelId") String channelId) {
+        Conversation conversation = storeService.getCurrentConversationByChannelId(createChannelId(clientId, channelId),() -> null); //do not create new conversations
         if (conversation == null || conversation.getId() == null) {
             return ResponseEntity.notFound().build();
         } else {
             return ResponseEntity.ok(conversation.getId().toHexString());
         }
     }
-
 
     public String createChannelId(String clientId, String roomId) {
         Preconditions.checkNotNull(clientId, "Missing parameter <clientId>");
