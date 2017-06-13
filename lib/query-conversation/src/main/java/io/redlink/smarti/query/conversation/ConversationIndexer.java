@@ -48,10 +48,10 @@ public class ConversationIndexer {
 
     public static final int MIN_COMMIT_WITHIN = 1000; //1sec
 
-    @Value("${samrti.index.conversation.commitWithin:0}") //<0 ... use default
+    @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
     private int commitWithin = DEFAULT_COMMIT_WITHIN; 
 
-    @Value("${samrti.index.conversation.message.merge-timeout:30}")
+    @Value("${smarti.index.conversation.message.merge-timeout:30}")
     private int messageMergeTimeout = 30;
 
     @Autowired

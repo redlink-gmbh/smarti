@@ -4,10 +4,12 @@
 package io.redlink.smarti.query.conversation;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 
 import io.redlink.smarti.api.QueryBuilder;
@@ -88,13 +90,25 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
 
             final List<Result> results = new ArrayList<>();
             for (SolrDocument solrDocument : solrResponse.getResults()) {
-                results.add(toHassoResult(solrDocument, intent.getType()));
+                //get the answers /TODO hacky, should me refactored (at least ordered by rating)
+                SolrQuery query = new SolrQuery("*:*");
+                query.set("fq",String.format("conversation_id:%s",solrDocument.get("conversation_id")));
+                query.set("fq",String.format("message_idx:[1 TO *]"));
+                query.setFields("*","score");
+                query.setSort("time", SolrQuery.ORDER.asc);
+                query.setRows(3);
+
+                QueryResponse answers = solrClient.query(query);
+
+                results.add(toHassoResult(solrDocument, answers.getResults(), intent.getType()));
             }
             return results;
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
     }
+
+    protected abstract ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answersResults, String type);
 
     protected abstract QueryRequest buildSolrRequest(Template intent, Conversation conversation);
 
