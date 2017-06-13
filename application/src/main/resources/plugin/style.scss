@@ -86,6 +86,10 @@
         background-color: #E14045;
     }
 
+    .result-type .result-avatar-image {
+        background-color: transparent;
+    }
+
     .result-actions {
         text-align: right;
 
@@ -97,6 +101,11 @@
             }
         }
     }
+
+    .result-avatar-image {
+        background-size: cover;
+        background-position: center center;
+    }
 }
 
 .smarti-widget .search-results li.result-separator {
@@ -107,4 +116,38 @@
         margin-bottom: 20px;
         margin-top:5px;
     }
+}
+
+.smarti-widget .result-subcontent li {
+
+    margin: 5px 0 5px 50px;
+    padding-left: 5px;
+    border-left: 3px solid #a0a0a0;
+    font-size: 12px;
+
+    .subdoc-title {
+        img {
+            width: 20px;
+            float: left;
+        }
+        a {
+            margin-left: 5px;
+            color: #444;
+            font-size: 15px;
+            line-height: 20px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        span {
+            margin-left: 5px;
+            color:#a0a0a0;
+        }
+    }
+}
+
+.smarti-widget .loading-animation {
+    position: relative;
 }

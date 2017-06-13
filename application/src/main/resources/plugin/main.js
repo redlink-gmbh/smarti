@@ -4,6 +4,10 @@ const DDP = require("ddp.js").default;
 
 function Smarti(options) {
 
+    var conversationId = undefined;
+
+    var lastupdate = undefined;
+
     options = $.extend(true,{
         DDP:{
             SocketConstructor: WebSocket
@@ -100,66 +104,53 @@ function Smarti(options) {
         }
     }
 
-    function load(success,failure) {
-        $.getJSON('https://dev.cerbot.redlink.io/9503/data/intent.json',function(data){ //TODO get from server
-            success(data);
-        });
+    function init(success,failure) {
+        //get conversation id
+        $.ajax({
+                url: options.smarti.endpoint +
+                    'rocket/' +
+                    'rocket.redlink.io/' + //TODO hard coded!
+                    options.channel +
+                    '/conversationid',
+                type: 'GET',
+                dataType: 'text'
+            }).done(function(data) {
+                conversationId = data;
+                success(data);
+            }).fail(function(err){
+                console.log(err);
+                failure(err);
+            });
     }
 
     //TODO should be done with sockets in version II
     function poll() {
-        /*$.ajax({
-            url: options.smarti.pollingEndpoint,
-            data: {channel:options.channel},
+        $.ajax({
+            url: options.smarti.endpoint + 'conversation/' + conversationId,
             success: function(data){
-                //TODO constraints
-                console.log(data);
-                pubsub('smarti.data').publish(data)
+                if(!lastupdate || lastupdate < data.lastModified) {
+                    console.log(data);
+                    lastupdate = data.lastModified;
+                    pubsub('smarti.data').publish(data)
+                }
             },
             dataType: "json",
             complete: function() {
-                //TODO uncomment
-                //setTimeout(poll,options.pollingInterval)
+                //setTimeout(poll,options.pollingInterval) TODO enable
             },
-            timeout: 30000
-        });*/
+            timeout: options.pollingInterval+1 //TODO check
+        });
     }
 
-    poll();
-
-    /*function connect(roomId, success, failure) {
-
-        function listRooms() {
-            const methodId = ddp.method("rooms/get");
-            ddp.on("result", function(message) {
-                if(message.id == methodId)
-                    console.log(message);
-                subscribe("GENERAL");
-            });
-        }
-
-        function subscribe(roomid) {
-            const subId = ddp.sub("stream-room-messages",[roomid,false]);console.log(subId);
-            ddp.on("ready", function(message) {
-                if (message.subs.includes(subId)) {
-                    console.log(message);
-                }
-            });
-        }
-
-        ddp.on("added", function(message) {
-            console.log(message);
-        });
-
-        ddp.on("changed", function(message) {
-            console.log(message);
-        });
-
-        ddp.on("removed", function(message) {
-            console.log(message);
-        });
-
-    }*/
+    function query(template,creator,success,failure) {
+        $.getJSON(options.smarti.endpoint + 'conversation/' + conversationId + '/template/' + template + '/' + creator,
+            function(data){
+                success(data);
+            }, function(err) {
+                failure({msg:err});
+            }
+        )
+    }
 
     function postMessage(msg,attachments,success,error) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments}]);
@@ -177,9 +168,11 @@ function Smarti(options) {
 
     return {
         login: login,
-        load: load,
+        init: init,
+        poll: poll,
         subscribe: function(id,func){pubsub(id).subscribe(func)},
         unsubscribe: function(id,func){pubsub(id).unsubscribe(func)},
+        query: query,
         postMessage: postMessage,
         suggestMessage: suggestMessage
     }
@@ -187,12 +180,24 @@ function Smarti(options) {
 
 function SmartiWidget(element,channel,config) {
 
+    var initialized = false;
+
+    var options = {
+        socketEndpoint: "wss://rocket.redlink.io/websocket/", //TODO make configurable
+        smartiEndpoint: 'https://dev.cerbot.redlink.io/9501/',
+        rocketBaseurl: '/',
+        channel:channel || 'GENERAL'
+    };
+
     var widgets = {
         solr:[],
         conversations:[]
     };
 
-    function SolrWidget(elem,slots,tokens,query) {
+    function SolrWidget(elem,slots,tempid,tokens,query) {
+
+        //TODO remove
+        query.url = query.url.replace(/http:\/\/dbsearch\.test\.org\/solr\/query\?/,"https://dev.cerbot.redlink.io/9502/solr/main/search?wt=json&");
 
         elem.append('<h2>' + query.displayTitle + '</h2>');
         var content = $('<div>').appendTo(elem);
@@ -208,18 +213,33 @@ function SmartiWidget(element,channel,config) {
                 });
         }
 
+        //TODO should be done server side
+        function removeDuplicatesBy(keyFn, array) {
+            var mySet = new Set();
+            return array.filter(function(x) {
+                var key = keyFn(x), isNew = !mySet.has(key);
+                if (isNew) mySet.add(key);
+                return isNew;
+            });
+        }
+
         var termPills = $('<div class="smarti-token-pills">').appendTo(content);
+        var pillTokens = [];
 
         $.each(slots,function(i,slot){
             if(slot.tokenIndex != undefined && slot.tokenIndex > -1) {
-                termPills.append(createTermPill(tokens[slot.tokenIndex]));
+                pillTokens.push(tokens[slot.tokenIndex]);
             } else if(!slot.tokenIndex) {
-                termPills.append(createTermPill(slot.token));
+                pillTokens.push(slot.token);
             }
         });
 
-        function refresh(data) {
+        $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
+            termPills.append(createTermPill(t));
+        });
 
+        function refresh(slots,tokens,query) {
+            console.log('refresh SolrW');
         }
 
         var inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
@@ -251,45 +271,62 @@ function SmartiWidget(element,channel,config) {
             results.empty();
             resultCount.empty();
             loader.show();
-            $.getJSON("https://dev.cerbot.redlink.io/9503/data/solr-response.json", function(data){
-                loader.hide();
-                //hacky
-                var docs = $.map(data.response.docs.slice(0,3), function(doc) {
-                    return {
-                        source: doc.dbsearch_source_name_s + '/' + doc.dbsearch_space_name_t,
-                        title: doc.dbsearch_title_s,
-                        description: doc.dbsearch_excerpt_s,
-                        type: doc.dbsearch_doctype_s,
-                        doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),
-                        link: doc.dbsearch_link_s,
-                        date: new Date(doc.dbsearch_pub_date_tdt)
-                    }
-                });
-
-                resultCount.text('Top 3 von ' + data.response.numFound);
-
-                $.each(docs,function(i,doc){
-                    var docli = $('<li>' +
-                        '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>' +
-                        '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div><p>'+doc.description+'</p></div>' +
-                        '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
-                        (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
-                        '</li>');
-
-                    docli.find('.postAnswer').click(function(){
-                        var text = "Das habe ich dazu in " + query.creator + " gefunden.";
-                        var attachments = [{
+            $.ajax({
+                url: query.url,
+                success: function(data){ console.log(data);
+                    loader.hide();
+                    //hacky
+                    var docs = $.map(data.response.docs.slice(0,3), function(doc) {
+                        /*return {
+                            source: doc.dbsearch_source_name_s + '/' + doc.dbsearch_space_name_t,
+                            title: doc.dbsearch_title_s,
+                            description: doc.dbsearch_excerpt_s,
+                            type: doc.dbsearch_doctype_s,
+                            doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),
+                            link: doc.dbsearch_link_s,
+                            date: new Date(doc.dbsearch_pub_date_tdt)
+                        }*/
+                        return {
+                            source: doc.source,
                             title: doc.title,
-                            title_link: doc.link,
-                            thumb_url:'http://www.s-bahn-berlin.de/img/logo-db.png',//TODO should be per creator
-                            text:doc.description
-                        }];
-                        smarti.postMessage(text,attachments);
+                            description: doc.description,
+                            type: doc.type,
+                            doctype: doc.type.substring(doc.type.indexOf('/')+1).substring(doc.type.indexOf('+')).slice(0,4),
+                            link: doc.url,
+                            date: new Date(),
+                            thumb: doc.thumbnail ? 'https://dev.cerbot.redlink.io/9502/solr/main/tn/' + doc.thumbnail : undefined
+                        }
                     });
 
-                    results.append(docli);
-                })
-            })
+                    resultCount.text('Top 3 von ' + data.response.numFound);
+
+                    $.each(docs,function(i,doc){
+                        var docli = $('<li>' +
+                            (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
+                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
+                            '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
+                            (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
+                            '</li>');
+
+                        docli.find('.postAnswer').click(function(){
+                            var text = "Das habe ich dazu in " + query.displayTitle + " gefunden.";
+                            var attachments = [{
+                                title: doc.title,
+                                title_link: doc.link,
+                                thumb_url: doc.thumb ? doc.thumb : 'http://www.s-bahn-berlin.de/img/logo-db.png',//TODO should be per creator
+                                text:doc.description
+                            }];
+                            smarti.postMessage(text,attachments);
+                        });
+
+                        results.append(docli);
+                    })
+                },
+                dataType: "json",
+                failure: function(err) {
+                    console.error(err);
+                }
+            });
         }
 
         getResults();
@@ -299,12 +336,12 @@ function SmartiWidget(element,channel,config) {
         }
     }
 
-    function ConversationWidget(elem,slots,tokens,query) {
+    function ConversationWidget(elem,slots,tempid,tokens,query) {
 
         elem.append('<h2>' + query.displayTitle + '</h2>');
 
-        function refresh(data) {
-
+        function refresh() {
+            console.log('refresh Conversatrion W');
         }
 
         var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(elem);
@@ -314,43 +351,68 @@ function SmartiWidget(element,channel,config) {
             //TODO get remote
             results.empty();
             loader.show();
-            $.getJSON("https://dev.cerbot.redlink.io/9503/data/solr-response.json", function(data){
-                loader.hide();
-                //hacky
-                var docs = $.map(data.response.docs.slice(0,3), function(doc) {
-                    return {
-                        source: doc.dbsearch_source_name_s + '/' + doc.dbsearch_space_name_t,
-                        title: doc.dbsearch_title_s,
-                        description: doc.dbsearch_excerpt_s,
-                        type: doc.dbsearch_doctype_s,
-                        doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),
-                        link: doc.dbsearch_link_s,
-                        date: new Date(doc.dbsearch_pub_date_tdt)
-                    }
-                });
 
-                $.each(docs,function(i,doc){
+            smarti.query(tempid,query.creator,function(data){
+            //$.getJSON('https://dev.cerbot.redlink.io/9503/data/conversations.json', function(data){
+                console.log(data);
+                loader.hide();
+
+                function buildLink(msgid) {
+                    return "http://permalink.org?msg="+msgid;
+                }
+
+                function buildAttachments(doc) {
+                    var attachment = {
+                        author_name: doc.userName,
+                        author_link: buildLink(doc.messageId),
+                        author_icon: options.rocketBaseurl + 'avatar/' + doc.userName,
+                        //thumb_url: doc.img ? doc.img : undefined,
+                        text: doc.content,
+                        attachments: [],
+                        bot: 'assistify',
+                        ts:doc.timestamp
+                    };
+
+                    $.each(doc.answers, function(i,answer) {
+                        attachment.attachments.push(buildAttachments(answer));
+                    });
+
+                    return attachment;
+                }
+
+                $.each(data, function (i, doc) {
+                    //doc.img = 'https://pbs.twimg.com/profile_images/847117309965733888/dTaDJEjv.png';
+
+                    function getSubcontent(docs) {
+                        var result = '<ul>';
+
+                        $.each(docs, function(j,subdoc){
+                            result += '<li><div class="subdoc-title"><img src="'+options.rocketBaseurl + 'avatar/'+subdoc.userName+'">' +
+                            '<a href="'+buildLink(subdoc.messageId)+'">'+subdoc.userName+'</a><span>'+(new Date(subdoc.timestamp)).toLocaleDateString()+'</span>' +
+                            '<div class="subdoc-content">'+subdoc.content+'</div></li>'
+                        });
+
+                        return result + '</ul>'
+                    }
+
                     var docli = $('<li>' +
-                        '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>' +
-                        '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div><p>'+doc.description+'</p></div>' +
-                        '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
-                        (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
+                        '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+options.rocketBaseurl + 'avatar/'+doc.userName+'\')"></div></div>' +
+                        '<div class="result-content"><div class="result-content-title"><a href="' + buildLink(doc.messageId) + '" target="blank">' + doc.userName + '</a><span>' + (new Date(doc.timestamp)).toLocaleString() + '</span></div><p>' + doc.content + '</p></div>' +
+                        '<div class="result-subcontent">'+ getSubcontent(doc.answers) + '</div>'+
+                        '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>' +
+                        (i + 1 != data.length ? '<li class="result-separator"><div></div></li>' : '') +
                         '</li>');
 
-                    docli.find('.postAnswer').click(function(){
-                        var text = "Das habe ich dazu in " + query.creator + " gefunden.";
-                        var attachments = [{
-                            title: doc.title,
-                            title_link: doc.link,
-                            thumb_url:'http://www.s-bahn-berlin.de/img/logo-db.png',//TODO should be per creator
-                            text:doc.description
-                        }];
-                        smarti.postMessage(text,attachments);
+                    docli.find('.postAnswer').click(function () {
+                        var text = "Ich habe eine passende Konversation gefunden.";
+                        var attachments = [buildAttachments(doc)];
+                        smarti.postMessage(text, attachments);
                     });
 
                     results.append(docli);
                 })
-            })
+
+            });
         }
 
         getResults();
@@ -369,18 +431,10 @@ function SmartiWidget(element,channel,config) {
     var contentDiv = $('<div>').appendTo(mainDiv);
     var messagesDiv = $('<div>').appendTo(mainDiv);
 
-    var options = {
-        socketEndpoint: "wss://rocket.redlink.io/websocket",
-        pollingEndpoint: 'https://echo.jsontest.com/key/value',
-        channel:channel || 'GENERAL'
-    };
-
-    var initialized = false;
-
-    var smarti = Smarti({DDP:{endpoint:options.socketEndpoint},smarti:{pollingEndpoint:options.pollingEndpoint},channel:options.channel});//TODO wait for connect?
+    var smarti = Smarti({DDP:{endpoint:options.socketEndpoint},smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
-        if(initialized) refreshWidgets(data);
+        refreshWidgets(data);
     });
 
     function showError(err) {
@@ -413,33 +467,33 @@ function SmartiWidget(element,channel,config) {
     }
 
     function refreshWidgets(data) {
-        //TODO
-    }
+        if(!initialized) {
+            contentDiv.empty();
+            messagesDiv.empty();
 
-    function drawWidgets(data,success) {
+            $.each(data.templates, function(i, template){console.log(template)
+                $.each(template.queries, function(j, query) {
+                    switch(template.type) {
+                        case 'dbsearch': widgets.solr.push(new SolrWidget($('<div class="smarti-widget">').appendTo(contentDiv),template.slots,i,data.tokens,query));break;
+                        case 'related.conversation': widgets.solr.push(new ConversationWidget($('<div class="smarti-widget">').appendTo(contentDiv),template.slots,i,data.tokens,query));break;
+                    }
+                })
+            });
 
-        contentDiv.empty();
-        messagesDiv.empty();
-
-        $.each(data.templates, function(i, template){
-            $.each(template.queries, function(j, query) {
-                switch(template.type) {
-                    case 'dbsearch': widgets.solr.push(new SolrWidget($('<div class="smarti-widget">').appendTo(contentDiv),template.slots,data.tokens,query));break;
-                    case 'related.conversation': widgets.solr.push(new ConversationWidget($('<div class="smarti-widget">').appendTo(contentDiv),template.slots,data.tokens,query));break;
-                }
+            initialized = true;
+        } else {
+            $.each(widgets, function(i,wgts){
+                $.each(wgts,function(j,wgt){
+                    wgt.refresh();//TODO with data
+                })
             })
-        });
-
-        if(success) success();
+        }
     }
 
     function initialize() {
-        smarti.load(
-            function(data) {
-                drawWidgets(data, function(){
-                    initialized = true;
-                })
-            }
+        smarti.init(
+            smarti.poll, //TODO should be removed
+            showError
         )
     }
 
