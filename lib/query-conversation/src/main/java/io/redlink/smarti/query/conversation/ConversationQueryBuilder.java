@@ -96,7 +96,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
                 query.add("fq",String.format("message_idx:[1 TO *]"));
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
-                query.setRows(3);
+                //query.setRows(3);
 
                 QueryResponse answers = solrClient.query(query);
 

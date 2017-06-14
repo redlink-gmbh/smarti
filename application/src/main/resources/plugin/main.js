@@ -1,6 +1,13 @@
 require('./style.scss');
 $ = require('jquery');
+md5 = require('js-md5');
 const DDP = require("ddp.js").default;
+
+const Utils = {
+    getAvatarUrl : function(id) {
+        return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon"
+    }
+};
 
 function Smarti(options) {
 
@@ -391,9 +398,9 @@ function SmartiWidget(element,channel,config) {
 
                 function buildAttachments(doc) {
                     var attachment = {
-                        author_name: doc.userName,
-                        author_link: buildLink(doc.messageId),
-                        author_icon: options.rocketBaseurl + 'avatar/' + doc.userName,
+                        author_name: "\t",
+                        //author_link: buildLink(doc.messageId),
+                        author_icon: Utils.getAvatarUrl(doc.userName),
                         //thumb_url: doc.img ? doc.img : undefined,
                         text: doc.content,
                         attachments: [],
@@ -411,31 +418,59 @@ function SmartiWidget(element,channel,config) {
                 $.each(data, function (i, doc) {
                     //doc.img = 'https://pbs.twimg.com/profile_images/847117309965733888/dTaDJEjv.png';
 
-                    function getSubcontent(docs) {
-                        var result = '<ul>';
+                    function getSubcontent(docs,mainUser) {
+                        var result = $('<ul>');
 
                         $.each(docs, function(j,subdoc){
-                            result += '<li><div class="subdoc-title"><img src="'+options.rocketBaseurl + 'avatar/'+subdoc.userName+'">' +
-                            '<a href="'+buildLink(subdoc.messageId)+'">'+subdoc.userName+'</a><span>'+(new Date(subdoc.timestamp)).toLocaleDateString()+'</span>' +
-                            '<div class="subdoc-content">'+subdoc.content+'</div></li>'
+
+                            var liClass = mainUser == subdoc.userName ? 'question' : 'answer';
+
+                            result.append($('<li>')
+                                .addClass(liClass)
+                                .append('<div class="subdoc-title"><img src="'+Utils.getAvatarUrl(subdoc.userName)+'">' +
+                                        //'<a href="'+buildLink(subdoc.messageId)+'">'+subdoc.userName+'</a>' +
+                                        '<span>'+(new Date(subdoc.timestamp)).toLocaleDateString()+'</span></div>')
+                                    .append('<div class="subdoc-content">'+subdoc.content.replace(/\n/g, "<br />")+'</div>')
+                                    .append($('<div>').addClass('result-actions').append(
+                                        $('<button>').addClass('postMessage').click(function(){
+                                            var text = "Ich habe eine hilfreiche Nachricht gefunden";
+                                            var attachments = [buildAttachments(subdoc)];
+                                            smarti.postMessage(text, attachments);
+                                        }).append('<i class="icon-paper-plane"></i>')
+                                    ))
+                            );
                         });
 
-                        return result + '</ul>'
+                        return result;
                     }
 
-                    var docli = $('<li>' +
-                        '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+options.rocketBaseurl + 'avatar/'+doc.userName+'\')"></div></div>' +
-                        '<div class="result-content"><div class="result-content-title"><a href="' + buildLink(doc.messageId) + '" target="blank">' + doc.userName + '</a><span>' + (new Date(doc.timestamp)).toLocaleString() + '</span></div><p>' + doc.content + '</p></div>' +
-                        '<div class="result-subcontent">'+ getSubcontent(doc.answers) + '</div>'+
-                        '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>' +
-                        (i + 1 != data.length ? '<li class="result-separator"><div></div></li>' : '') +
-                        '</li>');
+                    var docli = $('<li>')
+                        .append('<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+Utils.getAvatarUrl(doc.userName)+'\')"></div></div>')
+                        .append($('<div>').addClass('result-content')
+                            .append($('<div>').addClass('result-content-title')
+                                .append('<span class="date-only">' + (new Date(doc.timestamp)).toLocaleString() + '</span>')
+                                .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e){
+                                        $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
+                                        if($(e.target).hasClass('icon-right-dir')) {
+                                            $(e.target).removeClass('icon-right-dir').addClass('icon-down-dir');
+                                        } else {
+                                            $(e.target).removeClass('icon-down-dir').addClass('icon-right-dir');
+                                        }
+                                    })
+                                ))
+                            .append('<p>' + doc.content.replace(/\n/g, "<br />") + '</p>'))
+                        .append($('<div class="result-subcontent">')
+                            .append(getSubcontent(doc.answers,doc.userName)).hide())
+                        .append($('<div>').addClass('result-actions').append(
+                            $('<button>').addClass('postAnswer').addClass('button').text('Alle '+(doc.answers.length+1)+' Nachrichten posten').click(function(){
+                                var text = "Ich habe eine passende Konversation gefunden.";
+                                var attachments = [buildAttachments(doc)];
+                                smarti.postMessage(text, attachments);
+                            }).append('<i class="icon-paper-plane"></i>')));
 
-                    docli.find('.postAnswer').click(function () {
-                        var text = "Ich habe eine passende Konversation gefunden.";
-                        var attachments = [buildAttachments(doc)];
-                        smarti.postMessage(text, attachments);
-                    });
+                        if(i + 1 != data.length) {
+                            docli.append('<li class="result-separator"><div></div></li>');
+                        }
 
                     results.append(docli);
                 })
