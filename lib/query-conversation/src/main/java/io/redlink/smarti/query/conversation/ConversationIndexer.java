@@ -128,12 +128,17 @@ public class ConversationIndexer {
      */
     @EventListener
     protected void conversationUpdated(StoreServiceEvent storeEvent){
+        log.debug("StoreServiceEvent for {}", storeEvent.getConversationId());
         if(storeEvent.getOperation() == Operation.SAVE){
             if(storeEvent.getConversationStatus() == Status.Complete){
+                log.debug("  - SAVE operation of a COMPLETED conversation");
                 indexConversation(storeService.get(storeEvent.getConversationId()), true);
             } //else we do not index uncompleted conversations
         } else if(storeEvent.getOperation() == Operation.DELETE){
+            log.debug("  - DELETE operation");
             removeConversation(storeEvent.getConversationId(), true);
+        } else {
+            log.debug("  - {} ignored", storeEvent);
         }
     }
     
