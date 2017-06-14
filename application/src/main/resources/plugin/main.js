@@ -136,7 +136,7 @@ function Smarti(options) {
             },
             dataType: "json",
             complete: function() {
-                //setTimeout(poll,options.pollingInterval) TODO enable
+                setTimeout(poll,options.pollingInterval)
             },
             timeout: options.pollingInterval+1 //TODO check
         });
@@ -196,9 +196,6 @@ function SmartiWidget(element,channel,config) {
 
     function SolrWidget(elem,slots,tempid,tokens,query) {
 
-        //TODO remove
-        query.url = query.url.replace(/http:\/\/dbsearch\.test\.org\/solr\/query\?/,"https://dev.cerbot.redlink.io/9502/solr/main/search?wt=json&");
-
         elem.append('<h2>' + query.displayTitle + '</h2>');
         var content = $('<div>').appendTo(elem);
 
@@ -208,7 +205,7 @@ function SmartiWidget(element,channel,config) {
                 .append('<i class="icon-cancel"></i>')
                 .data('token',token)
                 .click(function(){
-                    $(this).remove();
+                    $(this).hide();
                     getResults();
                 });
         }
@@ -224,22 +221,51 @@ function SmartiWidget(element,channel,config) {
         }
 
         var termPills = $('<div class="smarti-token-pills">').appendTo(content);
-        var pillTokens = [];
 
-        $.each(slots,function(i,slot){
-            if(slot.tokenIndex != undefined && slot.tokenIndex > -1) {
-                pillTokens.push(tokens[slot.tokenIndex]);
-            } else if(!slot.tokenIndex) {
-                pillTokens.push(slot.token);
-            }
-        });
+
+        function perparePillTokens(slots,tokens) {
+            var pillTokens = [];
+            $.each(slots,function(i,slot){
+                if(slot.tokenIndex != undefined && slot.tokenIndex > -1) {
+                    pillTokens.push(tokens[slot.tokenIndex]);
+                } else if(!slot.tokenIndex) {
+                    pillTokens.push(slot.token);
+                }
+            });
+            return pillTokens;
+        }
+
+
+        var pillTokens = perparePillTokens(slots,tokens);
 
         $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
             termPills.append(createTermPill(t));
         });
 
-        function refresh(slots,tokens,query) {
+        function refresh(data) {
+            var tokens = data.tokens;
+            var slots = data.templates[tempid].slots;
             console.log('refresh SolrW');
+            var pillTokens = perparePillTokens(slots,tokens);
+
+            var reload = false;
+
+            $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
+                var contained = false;
+                $.each(termPills.children(), function(j,tp){
+                    if($(tp).data('token').value == t.value) {
+                        contained = true;
+                    }
+                });
+                if(!contained) {
+                    termPills.append(createTermPill(t));
+                    reload = true;
+                }
+            });
+
+            if(reload) {
+                getResults();
+            }
         }
 
         var inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
@@ -266,8 +292,10 @@ function SmartiWidget(element,channel,config) {
         var results = $('<ul class="search-results">').appendTo(elem);
 
         function getResults() {
-            var tks = termPills.children().map(function(){return $(this).data().token.value}).get().join(" ");
+            var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
             //TODO get query string from remote
+            query.url = 'https://dev.cerbot.redlink.io/9502/solr/main/search?wt=json&q=' + tks;
+
             results.empty();
             resultCount.empty();
             loader.show();
@@ -471,7 +499,7 @@ function SmartiWidget(element,channel,config) {
             contentDiv.empty();
             messagesDiv.empty();
 
-            $.each(data.templates, function(i, template){console.log(template)
+            $.each(data.templates, function(i, template){
                 $.each(template.queries, function(j, query) {
                     switch(template.type) {
                         case 'dbsearch': widgets.solr.push(new SolrWidget($('<div class="smarti-widget">').appendTo(contentDiv),template.slots,i,data.tokens,query));break;
@@ -484,7 +512,7 @@ function SmartiWidget(element,channel,config) {
         } else {
             $.each(widgets, function(i,wgts){
                 $.each(wgts,function(j,wgt){
-                    wgt.refresh();//TODO with data
+                    wgt.refresh(data);//TODO with data
                 })
             })
         }

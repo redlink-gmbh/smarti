@@ -10,7 +10,7 @@
 
 ## Provide a smarti application and tunnel
 
-* ssh -R 9501:localhost:8984 redlink@cerbot.redlink.io
+* ssh -R 9501:localhost:8080 redlink@cerbot.redlink.io
 
 ## Provide a Solr backend for test searches  on port 8984 and tunnel
 

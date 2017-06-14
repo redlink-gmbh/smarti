@@ -92,8 +92,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
             for (SolrDocument solrDocument : solrResponse.getResults()) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
-                query.set("fq",String.format("conversation_id:%s",solrDocument.get("conversation_id")));
-                query.set("fq",String.format("message_idx:[1 TO *]"));
+                query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
+                query.add("fq",String.format("message_idx:[1 TO *]"));
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
                 query.setRows(3);
