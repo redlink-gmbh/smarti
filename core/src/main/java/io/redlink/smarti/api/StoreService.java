@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  */
 public abstract class StoreService implements ApplicationEventPublisherAware {
 
-    private ApplicationEventPublisher eventPublisher = null;
+    protected ApplicationEventPublisher eventPublisher = null;
 
     public final Conversation store(Conversation conversation) {
         conversation.setLastModified(new Date());
@@ -82,9 +82,25 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public abstract long count();
 
-    public abstract Conversation appendMessage(Conversation conversation, Message message);
+    public final Conversation appendMessage(Conversation conversation, Message message) {
+        final Conversation stored = doAppendMessage(conversation, message);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
+        }
+        return stored;
+    }
 
-    public abstract Conversation completeConversation(ObjectId conversationId);
+    protected abstract Conversation doAppendMessage(Conversation conversation, Message message);
+
+    public final Conversation completeConversation(ObjectId conversationId) {
+        final Conversation stored = doCompleteConversation(conversationId);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
+        }
+        return stored;
+    }
+
+    protected abstract Conversation doCompleteConversation(ObjectId conversationId);
 
     public abstract Conversation adjustMessageVotes(ObjectId id, String messageId, int delta);
 }

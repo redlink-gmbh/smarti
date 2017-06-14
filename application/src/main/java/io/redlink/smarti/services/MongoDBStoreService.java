@@ -58,7 +58,7 @@ public class MongoDBStoreService extends StoreService {
     }
 
     @Override
-    public Conversation appendMessage(Conversation conversation, Message message) {
+    protected Conversation doAppendMessage(Conversation conversation, Message message) {
         return conversationRepository.appendMessage(conversation, message);
     }
 
@@ -68,7 +68,7 @@ public class MongoDBStoreService extends StoreService {
     }
 
     @Override
-    public Conversation completeConversation(ObjectId conversationId) {
+    protected Conversation doCompleteConversation(ObjectId conversationId) {
         return conversationRepository.completeConversation(conversationId);
     }
 

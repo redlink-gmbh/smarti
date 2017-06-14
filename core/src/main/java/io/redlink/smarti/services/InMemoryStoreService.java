@@ -69,7 +69,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public Conversation appendMessage(Conversation conversation, Message message) {
+    protected Conversation doAppendMessage(Conversation conversation, Message message) {
         final Conversation cc = get(conversation.getId());
         int pos = 0;
         do {
@@ -87,7 +87,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public Conversation completeConversation(ObjectId conversationId) {
+    protected Conversation doCompleteConversation(ObjectId conversationId) {
         final Conversation conversation = storage.get(conversationId);
         if (conversation != null) {
             conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
