@@ -5,6 +5,8 @@ package io.redlink.smarti.processor.hasso;
 
 import io.redlink.nlp.model.ner.NerTag;
 import io.redlink.nlp.regex.ner.csv.CsvVocabularyNerDetector;
+import io.redlink.nlp.regex.ner.vocab.VocabularyDetector.CaseSensitivity;
+
 import org.springframework.stereotype.Component;
 
 import java.io.InputStreamReader;
@@ -21,7 +23,7 @@ public class QuestionIdentifierVocab extends CsvVocabularyNerDetector {
     private static final String VOCAB = "wordlists/QuestionIdentifier.csv";
 
     public QuestionIdentifierVocab() {
-        super("QuestionIdentifier", new NerTag("QuestionIdentifier"), Locale.GERMAN, false);
+        super("QuestionIdentifier", new NerTag("QuestionIdentifier", NerTag.NAMED_ENTITY_MISC), Locale.GERMAN, CaseSensitivity.smart);
     }
     
     //TODO: HINT functionality removed
