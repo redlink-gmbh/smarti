@@ -310,6 +310,7 @@
                                 BSD License
                                 |BSD|BSD 3-Clause License|New BSD License|New BSD license
                                 |The BSD License
+                                |The New BSD License
                             </licenseMerge>
                             <licenseMerge>
                                 BSD-style License
@@ -317,12 +318,13 @@
                             <licenseMerge>
                                 Common Development and Distribution License (CDDL) v1.1
                                 |CDDL 1.1
-                                |CDDL License
-                                |CDDL or GPLv2 with exceptions|CDDL + GPLv2 with classpath exception
+                                |Dual license consisting of the CDDL v1.1 and GPL v2
                             </licenseMerge>
                             <licenseMerge>
                                 Common Development and Distribution License (CDDL) v1.0
                                 |CDDL 1.0|CDDL, v1.0|CDDL 1.0 license
+                                |CDDL License
+                                |CDDL/GPLv2+CE|CDDL or GPLv2 with exceptions|CDDL + GPLv2 with classpath exception
                             </licenseMerge>
                             <licenseMerge>
                                 GPL 2.0 with Classpath Exception
@@ -338,6 +340,7 @@
                                 |LGPL, v2.1 or later|LGPL, version 2.1|LGPL 2.1 license
                                 |GNU Lesser General Public License (LGPL), Version 2.1
                                 |GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1
+                                |The GNU Lesser General Public License, Version 2.1
                             </licenseMerge>
                             <licenseMerge>
                                 LGPL 3.0
@@ -356,6 +359,16 @@
                             <licenseMerge>
                                 Eclipse Public License Version 1.0
                                 |Eclipse Public License - v 1.0
+                                |EPL 1.0 license
+                            </licenseMerge>
+                            <licenseMerge>
+                                Public Domain
+                                |The SAX License
+                            </licenseMerge>
+                            <!-- These are critical licenses -->
+                            <licenseMerge>
+                                GPL 3.0
+                                |GNU General Public License Version 3
                             </licenseMerge>
                         </licenseMerges>
                     </configuration>
