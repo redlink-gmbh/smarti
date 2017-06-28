@@ -80,7 +80,16 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public abstract Conversation appendMessage(Conversation conversation, Message message);
 
-    public abstract Conversation completeConversation(ObjectId conversationId);
+    public final Conversation completeConversation(ObjectId conversationId) {
+        Conversation c = doCompleteConversation(conversationId);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(c.getId(), c.getMeta().getStatus(), this));
+        }
+        return c;
+    };
+
+    protected abstract Conversation doCompleteConversation(ObjectId conversationId);
+
 
     public abstract Conversation adjustMessageVotes(ObjectId id, String messageId, int delta);
 }

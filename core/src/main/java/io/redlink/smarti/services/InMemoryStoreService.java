@@ -87,7 +87,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public Conversation completeConversation(ObjectId conversationId) {
+    protected Conversation doCompleteConversation(ObjectId conversationId) {
         final Conversation conversation = storage.get(conversationId);
         if (conversation != null) {
             conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
