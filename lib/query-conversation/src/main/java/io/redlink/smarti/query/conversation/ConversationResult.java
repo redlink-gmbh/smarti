@@ -5,7 +5,9 @@ package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.model.result.Result;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by jakob on 10.02.17.
@@ -18,6 +20,7 @@ public class ConversationResult extends Result {
     private String userName;
     private int messageIdx, votes;
     private Date timestamp;
+    private List<ConversationResult> answers = new ArrayList<>();
 
     public ConversationResult(String creator) {
         super(creator);
@@ -85,5 +88,17 @@ public class ConversationResult extends Result {
 
     public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public List<ConversationResult> getAnswers() {
+        return answers;
+    }
+
+    public void setAnswers(List<ConversationResult> answers) {
+        this.answers = answers;
+    }
+
+    public void addAnswer(ConversationResult answer) {
+        answers.add(answer);
     }
 }

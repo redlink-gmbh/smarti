@@ -17,6 +17,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -75,6 +76,15 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         hassoResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("message_idx"))));
         hassoResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("vote"))));
         return hassoResult;
+    }
+
+    @Override
+    protected ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answers, String type) {
+        ConversationResult result = toHassoResult(question, type);
+        for(SolrDocument answer : answers) {
+            result.addAnswer(toHassoResult(answer,type));
+        }
+        return result;
     }
 
     @Override

@@ -21,7 +21,7 @@ public class DbKonzernSynonymVocab extends CsvVocabularyNerDetector {
     private static final String VOCAB = "wordlists/DB-Konzern-Synonyme.csv";
 
     public DbKonzernSynonymVocab() {
-        super("DB-Konzern Synonyme", new NerTag("Keyword"), Locale.GERMAN, false, CSVFormat.DEFAULT.withDelimiter(';'));
+        super("DB-Konzern Synonyme", new NerTag("Keyword", NerTag.NAMED_ENTITY_MISC), Locale.GERMAN, CaseSensitivity.smart, CSVFormat.DEFAULT.withDelimiter(';'));
     }
 
     //TODO: removed HINT functionality

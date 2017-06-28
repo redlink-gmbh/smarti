@@ -70,6 +70,17 @@
                 font-size: 12px;
                 margin-left: 10px;
             }
+
+            span.date-only {
+                margin-left: 0;
+            }
+
+            span.toggle {
+                float: right;
+                font-size: 16px;
+                color: #444;
+                cursor: pointer;
+            }
         }
 
         p {
@@ -86,16 +97,25 @@
         background-color: #E14045;
     }
 
+    .result-type .result-avatar-image {
+        background-color: transparent;
+    }
+
     .result-actions {
         text-align: right;
 
         button {
-            text-decoration: underline;
+            margin-top: 5px;
 
             i {
                 margin-left: 3px;
             }
         }
+    }
+
+    .result-avatar-image {
+        background-size: cover;
+        background-position: center center;
     }
 }
 
@@ -107,4 +127,55 @@
         margin-bottom: 20px;
         margin-top:5px;
     }
+}
+
+.smarti-widget .result-subcontent li {
+
+    margin: 5px 0 5px 50px;
+    padding: 0 5px;
+    border-left: 3px solid #a0a0a0;
+    font-size: 12px;
+
+    .subdoc-title {
+        img {
+            width: 20px;
+            float: left;
+        }
+        a {
+            margin-left: 5px;
+            color: #444;
+            font-size: 15px;
+            line-height: 20px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        span {
+            margin: 0 5px;
+            color:#a0a0a0;
+            line-height: 22px;
+        }
+    }
+}
+
+/*.smarti-widget .result-subcontent li.answer {
+    margin-left: 80px;
+
+    img {
+        float: right;
+    }
+
+    span {
+        float: right;
+    }
+
+    div.sub-content {
+        clear: both;
+    }
+}*/
+
+.smarti-widget .loading-animation {
+    position: relative;
 }

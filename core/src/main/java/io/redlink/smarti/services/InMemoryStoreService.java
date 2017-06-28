@@ -69,7 +69,7 @@ public class InMemoryStoreService extends StoreService {
     }
 
     @Override
-    public Conversation appendMessage(Conversation conversation, Message message) {
+    protected Conversation doAppendMessage(Conversation conversation, Message message) {
         final Conversation cc = get(conversation.getId());
         int pos = 0;
         do {

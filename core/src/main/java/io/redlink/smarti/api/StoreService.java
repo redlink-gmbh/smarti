@@ -20,7 +20,7 @@ import java.util.function.Supplier;
  */
 public abstract class StoreService implements ApplicationEventPublisherAware {
 
-    private ApplicationEventPublisher eventPublisher = null;
+    protected ApplicationEventPublisher eventPublisher = null;
 
     public final Conversation store(Conversation conversation) {
         conversation.setLastModified(new Date());
@@ -58,9 +58,13 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
             return get(conversationId);
         } else {
             final Conversation c = supplier.get();
-            c.setId(null);
-            c.setChannelId(channelId);
-            return store(c);
+            if(c != null){
+                c.setId(null);
+                c.setChannelId(channelId);
+                return store(c);
+            } else {
+                return null;
+            }
         }
     }
 
@@ -78,18 +82,25 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public abstract long count();
 
-    public abstract Conversation appendMessage(Conversation conversation, Message message);
+    public final Conversation appendMessage(Conversation conversation, Message message) {
+        final Conversation stored = doAppendMessage(conversation, message);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
+        }
+        return stored;
+    }
+
+    protected abstract Conversation doAppendMessage(Conversation conversation, Message message);
 
     public final Conversation completeConversation(ObjectId conversationId) {
-        Conversation c = doCompleteConversation(conversationId);
+        final Conversation stored = doCompleteConversation(conversationId);
         if (eventPublisher != null) {
-            eventPublisher.publishEvent(StoreServiceEvent.save(c.getId(), c.getMeta().getStatus(), this));
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
         }
-        return c;
-    };
+        return stored;
+    }
 
     protected abstract Conversation doCompleteConversation(ObjectId conversationId);
-
 
     public abstract Conversation adjustMessageVotes(ObjectId id, String messageId, int delta);
 }

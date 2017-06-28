@@ -48,10 +48,10 @@ public class ConversationIndexer {
 
     public static final int MIN_COMMIT_WITHIN = 1000; //1sec
 
-    @Value("${samrti.index.conversation.commitWithin:0}") //<0 ... use default
+    @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
     private int commitWithin = DEFAULT_COMMIT_WITHIN; 
 
-    @Value("${samrti.index.conversation.message.merge-timeout:30}")
+    @Value("${smarti.index.conversation.message.merge-timeout:30}")
     private int messageMergeTimeout = 30;
 
     @Autowired
@@ -128,12 +128,17 @@ public class ConversationIndexer {
      */
     @EventListener
     protected void conversationUpdated(StoreServiceEvent storeEvent){
+        log.debug("StoreServiceEvent for {}", storeEvent.getConversationId());
         if(storeEvent.getOperation() == Operation.SAVE){
             if(storeEvent.getConversationStatus() == Status.Complete){
+                log.debug("  - SAVE operation of a COMPLETED conversation");
                 indexConversation(storeService.get(storeEvent.getConversationId()), true);
             } //else we do not index uncompleted conversations
         } else if(storeEvent.getOperation() == Operation.DELETE){
+            log.debug("  - DELETE operation");
             removeConversation(storeEvent.getConversationId(), true);
+        } else {
+            log.debug("  - {} ignored", storeEvent);
         }
     }
     
