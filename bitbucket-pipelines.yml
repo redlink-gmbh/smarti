@@ -3,6 +3,8 @@ image: redlinkgmbh/base-dev
 pipelines:
   default:
     - step:
+        caches:
+          - maven
         script:
           - mkdir -p /data/mongo-db && mongod --dbpath=/data/mongo-db --fork --logpath /data/mongod.log
           - git remote rename origin upstream
@@ -12,6 +14,8 @@ pipelines:
   branches:
     master:
       - step:
+          caches:
+            - maven
           script:
             - mkdir -p /data/mongo-db && mongod --dbpath=/data/mongo-db --fork --logpath /data/mongod.log
             - git remote rename origin upstream
