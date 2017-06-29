@@ -231,6 +231,22 @@
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- (10) SolrCores for Interesting Terms -->
+        <!-- Those require to have the ziped core in a local folder and to 
+             configure a application property pointing to that file -->
+        <dependency> <!-- German Wikipedia -->
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>solrcore-wikipedia-de</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency> <!-- Crawl of the DB and DB Systel Webpage -->
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>solrcore-crawl-systel</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        
 
         <!-- END Analysis dependencies -->
 

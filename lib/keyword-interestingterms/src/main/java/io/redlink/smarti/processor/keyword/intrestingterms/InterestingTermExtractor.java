@@ -97,6 +97,7 @@ public abstract class InterestingTermExtractor extends Processor {
             }
         }
         MltRequest mltRequest = new MltRequest(mltQuery, at.getSpan());
+        log.trace("MLT Request: query:{} | text: {}", mltQuery, at.getSpan());
         NamedList<Object> response;
         try (SolrClient client = getClient()){
             response = client.request(mltRequest);
@@ -109,6 +110,7 @@ public abstract class InterestingTermExtractor extends Processor {
         
         NamedList<Object> interestingTermList = (NamedList<Object>)response.get("interestingTerms");
         if(interestingTermList.size() < 1) { //no interesting terms
+            log.debug("No interesting Terms found");
             return;
         }
         Map<String,List<Token>> termMap = new HashMap<>();

@@ -23,6 +23,8 @@
         <module>dist</module>
 
         <module>lib</module>
+
+        <module>data</module>
     </modules>
 
     <prerequisites>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.redlink.smarti</groupId>
+        <artifactId>smarti</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../../</relativePath>
+    </parent>
+
+    <artifactId>solrcore-crawl-systel</artifactId>
+    <name>SolrCore :: DB Systel Webpage Crawl</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+    
+        <!-- SolrLib dependencies for indexing conversations -->
+        <dependency>
+            <groupId>io.redlink.solrlib</groupId>
+            <artifactId>solrlib-spring-boot-autoconfigure</artifactId>
+            <version>${solrlib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.solrlib</groupId>
+            <artifactId>solrlib-api</artifactId>
+            <version>${solrlib.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>keyword-interestingterms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>
