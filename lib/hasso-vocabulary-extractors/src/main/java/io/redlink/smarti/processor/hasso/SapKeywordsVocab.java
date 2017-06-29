@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import io.redlink.nlp.model.ner.NerTag;
 import io.redlink.nlp.regex.ner.csv.CsvVocabularyNerDetector;
-import io.redlink.nlp.regex.ner.vocab.VocabularyDetector.CaseSensitivity;
+import io.redlink.smarti.model.Token;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -22,7 +22,7 @@ public class SapKeywordsVocab extends CsvVocabularyNerDetector {
     private static final String VOCAB = "wordlists/SapKeywords.csv";
 
     public SapKeywordsVocab() {
-        super("SAP Keywords", new NerTag("Keyword", NerTag.NAMED_ENTITY_MISC), Locale.GERMAN, CaseSensitivity.smart);
+        super("SAP Keywords", new NerTag("sap-entity",Token.Type.Term.name()), Locale.GERMAN, CaseSensitivity.smart);
     }
 
     //TODO: HINT functionality removed

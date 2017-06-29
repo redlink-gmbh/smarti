@@ -13,12 +13,16 @@ import static io.redlink.smarti.processor.keyword.intrestingterms.InterestingTer
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +33,15 @@ import io.redlink.nlp.api.Processor;
 import io.redlink.nlp.api.model.Value;
 import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.Chunk;
+import io.redlink.nlp.model.NlpAnnotations;
 import io.redlink.nlp.model.Section;
 import io.redlink.nlp.model.Span;
 import io.redlink.nlp.model.Span.SpanTypeEnum;
 import io.redlink.nlp.model.phrase.PhraseCategory;
 import io.redlink.nlp.model.phrase.PhraseTag;
+import io.redlink.nlp.model.pos.LexicalCategory;
+import io.redlink.nlp.model.pos.Pos;
+import io.redlink.nlp.model.pos.PosSet;
 import io.redlink.nlp.model.util.NlpUtils;
 import io.redlink.smarti.api.QueryPreparator;
 import io.redlink.smarti.model.Conversation;
@@ -59,8 +67,18 @@ public final class InterestingPhraseCollector extends Processor {
     
     private final Logger log = LoggerFactory.getLogger(getClass());
     
+    /**
+     * We interpret {@link PosSet#NOUNS} as well as {@link Pos#Numeral} as nouns
+     */
+    private final PosSet NOUNS = PosSet.union(PosSet.NOUNS).add(Pos.Numeral);
+    private final PosSet INTERESTING_POS = PosSet.union(NOUNS, PosSet.ADJECTIVES);
+    private final PosSet CONNECTING_POS = PosSet.of(LexicalCategory.Adposition);
+    
+    private static final Set<PhraseCategory> SECTION_CATEGORIES = EnumSet.of(PhraseCategory.Sentence);
+    
+    
     private static final Set<PhraseCategory> NOUN_PHRASE_CATEGORIES = EnumSet.of(
-            PhraseCategory.NounPhrase,PhraseCategory.NounHeadedPhrase,PhraseCategory.ForeignPhrase);
+            PhraseCategory.NounPhrase,PhraseCategory.ForeignPhrase);
     
     public InterestingPhraseCollector(){
         super("keyword.interestingphrasecollector","Interesting Phrase Collector", Phase.extraction, 1); //needs to run after IterestingTermExtractor
@@ -109,99 +127,97 @@ public final class InterestingPhraseCollector extends Processor {
     }
 
     private List<Token> createPhraseTokens(Section section, int msgIdx, Message message) {
+        //int offset = section.getStart();
         //We look also at negated Chunks and mark attributes extracted form those as negated
-        Iterator<Span> spans = section.getEnclosed(EnumSet.of(SpanTypeEnum.Token, SpanTypeEnum.Chunk));
+        Iterator<Span> spans = section.getEnclosed(EnumSet.of(SpanTypeEnum.Sentence, SpanTypeEnum.Token, SpanTypeEnum.Chunk));
         log.debug("Message {} - {}: {}", msgIdx, message.getOrigin(), message.getContent());
-        List<Token> tokens = new ArrayList<>();
-        PhraseTokenData contextPhrase = null;
+        InterestingTermPhrase activePhrase = null;
+        List<InterestingTermPhrase> itPhrases = new LinkedList<>();
+        //absolute offsets to end of sections that do not allow for noun chunks to cross over
+        Set<Integer> sectionEnds = new HashSet<>(); 
+        sectionEnds.add(section.getEnd());
         while(spans.hasNext()){
             Span span = spans.next();
+            //int start = span.getStart() - offset; //start relative to the mesgIdx (as used for Tokens)
+            //int end = span.getEnd() - offset; //end relative to the mesgIdx (as used for Tokens)
             switch(span.getType()){
+            case Sentence:
+                //TODO: close existing phrases
+                sectionEnds.add(span.getEnd());
+                break;
             case Chunk:
                 Chunk phrase = (Chunk)span;
-                Value<PhraseTag> phraseAnno = phrase.getValue(PHRASE_ANNOTATION);
-                if(phraseAnno != null && //this chunk has a phrase annotation and it is a noun phrase
-                        !Collections.disjoint(NOUN_PHRASE_CATEGORIES,phraseAnno.value().getCategories())){
-                    if(contextPhrase != null){
-                        if(phrase.getStart() > contextPhrase.end){
-                            if(contextPhrase.isInterestingPhrase()){
-                                Token token = createToken(section, msgIdx, contextPhrase);
-                                tokens.add(token);
-                                log.debug("  add InterstingNounPhrase token {}", token);
-                            } else {
-                                log.debug("  ignore none interesting noun phrase {}", contextPhrase);
-                            }
-                            contextPhrase = null;
-                        } else {
-                            contextPhrase.append(phrase, phraseAnno.value());
-                        }
+                PhraseTag phraseAnno = phrase.getAnnotation(PHRASE_ANNOTATION);
+                if(phraseAnno != null){
+                    if(!Collections.disjoint(SECTION_CATEGORIES,phraseAnno.getCategories())){
+                        sectionEnds.add(span.getEnd());
                     }
-                    if(contextPhrase == null){
-                        contextPhrase = new PhraseTokenData(phrase, phraseAnno.value());
+                    if(!Collections.disjoint(NOUN_PHRASE_CATEGORIES, phraseAnno.getCategories())){
+                        log.debug(" - add sectionEnd {} for {} [phraseAnno: {}]", phrase.getEnd(), phrase.getSpan(), phraseAnno);
+                        sectionEnds.add(span.getEnd());
                     }
                 }
+                //TODO: maybe use some NounPhrase sub-types to create explicit phrases
+                //OLD code
+//                if(phraseAnno != null && //this chunk has a phrase annotation and it is a noun phrase
+//                        !Collections.disjoint(NOUN_PHRASE_CATEGORIES,phraseAnno.getCategories()) &&
+//                        //but not a phrase we want to ignore
+//                        Collections.disjoint(IGNORED_PHRASE_CATEGORIES, phraseAnno.getCategories())){
+//                    if(contextPhrase != null){
+//                        if(phrase.getStart() > contextPhrase.end){
+//                            if(contextPhrase.isInterestingPhrase()){
+//                                Token token = createToken(section, msgIdx, contextPhrase);
+//                                tokens.add(token);
+//                                log.debug("  add InterstingNounPhrase token {}", token);
+//                            } else {
+//                                log.debug("  ignore none interesting noun phrase {}", contextPhrase);
+//                            }
+//                            contextPhrase = null;
+//                        } else {
+//                            contextPhrase.append(phrase, phraseAnno);
+//                        }
+//                    }
+//                    if(contextPhrase == null){
+//                        contextPhrase = new PhraseTokenData(phrase, phraseAnno);
+//                    }
+//                }
                 break;
             case Token:
-                io.redlink.nlp.model.Token word = (io.redlink.nlp.model.Token)span;
-                boolean isNoun = NlpUtils.isNoun(word);
-                boolean inPhrase = contextPhrase != null && contextPhrase.end >= word.getEnd();
-                List<Value<String>> interestingTermAnnos = word.getValues(INTERESTING_TERM);
-                if(!interestingTermAnnos.isEmpty()){
-                    if(!inPhrase && isNoun){ //add a single word keyword
-                        Token token = createToken(section, msgIdx, word, interestingTermAnnos);
-                        tokens.add(token);
-                        log.debug("create InterestingTerm token {}", token);
-                    } else if(inPhrase){
-                        contextPhrase.addInterestingTerms(interestingTermAnnos);
+                Word word = new Word((io.redlink.nlp.model.Token)span);
+                boolean completePhrase = false;
+                if(activePhrase != null){
+                    if(word.isInteresting() || word.isConnecting()){
+                        log.debug(" - add {}  to phrase", word);
+                        activePhrase.addWord(word);
+                    } else {
+                        log.debug(" - close phrase because of word {}",word);
+                        completePhrase = true;
                     }
+                } else if(word.isInteresting()){
+                    log.debug(" - start phrase for {}", word);
+                    activePhrase = new InterestingTermPhrase(word);
                 }
-                if(contextPhrase != null && NlpUtils.isNoun(word) && 
-                        contextPhrase.end >= word.getEnd()){
-                    contextPhrase.addNoun(word);
+                if(sectionEnds.remove(word.getEnd())){
+                    log.debug(" - close phrase because of Section end");
+                    completePhrase = true;
+                }
+                if(completePhrase && activePhrase != null){
+                    activePhrase.complete();
+                    log.debug(" - completed {} phrase {}", activePhrase.isInteresting() ? "interesting" : "", activePhrase);
+                    if(activePhrase.isInteresting()){
+                        itPhrases.add(activePhrase);
+                    }
+                    activePhrase = null;
                 }
                 break;
             default:
                 throw new IllegalStateException();
             }
         }
-        if(contextPhrase != null && contextPhrase.isInterestingPhrase()){
-            Token token = createToken(section, msgIdx, contextPhrase);
-            tokens.add(token);
-            log.debug("  add InterstingNounPhrase token {}", token);
-        }
-        return tokens;
+        assert activePhrase == null; //after iterating the section spans it is expected that no active phrase is present
+        return itPhrases.stream().map(phrase -> createToken(section, msgIdx, phrase)).collect(Collectors.toList());
     }
-    /**
-     * Creates a Keyword token for a single word annotated as interesting term
-     * @param section
-     * @param msgIdx
-     * @param word
-     * @param interestingTermAnnos
-     * @return
-     */
-    private Token createToken(Section section, int msgIdx, io.redlink.nlp.model.Token word,
-            List<Value<String>> interestingTermAnnos) {
-        assert !interestingTermAnnos.isEmpty(); 
-        Token token = new Token();
-        token.setMessageIdx(msgIdx);
-        token.setStart(word.getStart() - section.getStart());
-        token.setEnd(word.getEnd() - section.getStart());
-        token.setValue(section.getSpan().substring(token.getStart(), token.getEnd()));
-        token.setType(Type.Keyword);
-        token.addHint("interestingTerm");
-        float conf = -1;
-        for(Value<String> ita : interestingTermAnnos){
-            if(conf < 0){
-                conf = (float)ita.probability();
-            } else {
-                conf = sumProbability(conf, (float)ita.probability());
-            }
-        }
-        if(conf >= 0){
-            token.setConfidence(conf);
-        }
-        return token;
-    }
+
     /**
      * Creates a Keyword token for a noun phrase containing an interesting term
      * @param section
@@ -209,95 +225,182 @@ public final class InterestingPhraseCollector extends Processor {
      * @param contextPhrase
      * @return
      */
-    private Token createToken(Section section, int msgIdx, PhraseTokenData contextPhrase) {
+    private Token createToken(Section section, int msgIdx, InterestingTermPhrase phrase) {
         Token token = new Token();
         token.setMessageIdx(msgIdx);
-        token.setStart(contextPhrase.start - section.getStart());
-        token.setEnd(contextPhrase.end - section.getStart());
+        token.setStart(phrase.getStart() - section.getStart());
+        token.setEnd(phrase.getEnd() - section.getStart());
         token.setValue(section.getSpan().substring(token.getStart(), token.getEnd()));
         token.setType(Type.Keyword);
         token.addHint("interestingTerm");
-        float conf = contextPhrase.getConfidence();
-        if(conf >= 0){
-            token.setConfidence(contextPhrase.getConfidence());
-        }
+        token.setConfidence(phrase.getConfidence().floatValue());
+        //TODO: we could add sources and ranking if the token model would allow for
         return token;
     }
     
-    final float sumProbability(float prop1, float prob2){
+    final double sumProbability(double prop1, double prob2){
         return (prop1 + prob2)/(1 + (prop1*prob2));
     }
+    
+    class Word {
+        
+        private final io.redlink.nlp.model.Token token;
+        private final boolean noun;
+        private final boolean word;
+        private final boolean interesting;
+        private final boolean connecting;
+        private final List<Value<InterestingTerm>> interestingTermAnnos;
 
-
-    class PhraseTokenData {
-        
-        final int start;
-        int end;
-        
-        final List<PhraseTag> tags = new LinkedList<>();
-        final List<io.redlink.nlp.model.Token> nouns = new LinkedList<>();
-        private final List<Value<String>> interestingTerms = new LinkedList<>();
-        
-        
-        public PhraseTokenData(Chunk phrase, PhraseTag tag) {
-            assert phrase != null;
-            assert tag != null;
-            this.start = phrase.getStart();
-            this.end = phrase.getEnd();
-            tags.add(tag);
-        }
-
-        public void append(Chunk phrase, PhraseTag tag) {
-            assert phrase != null;
-            assert tag != null;
-            assert phrase.getStart() <= end;
-            if(phrase.getEnd() > end){
-                this.end = phrase.getEnd();
-            }
-            this.tags.add(tag);
+        Word(io.redlink.nlp.model.Token token){
+            this.token = token;
+            this.word = NlpUtils.hasAlpha(token);
+            this.connecting = word && NlpUtils.isOfPos(token, CONNECTING_POS);
+            this.interesting = NlpUtils.isOfPos(token, INTERESTING_POS);
+            this.noun = interesting && NlpUtils.isOfPos(token, NOUNS);
+            this.interestingTermAnnos = token.getValues(INTERESTING_TERM);
         }
         
-        public void addNoun(io.redlink.nlp.model.Token token) {
-            assert token != null;
-            assert token.getStart() >= start;
-            assert token.getEnd() <= end;
-            nouns.add(token);
+        public io.redlink.nlp.model.Token getToken() {
+            return token;
         }
         
-        public void addInterestingTerm(Value<String> interestingTermAnno){
-            this.interestingTerms.add(interestingTermAnno);
+        public int getStart(){
+            return token.getStart();
         }
         
-        public void addInterestingTerms(List<Value<String>> interestingTermAnnos) {
-            this.interestingTerms.addAll(interestingTermAnnos);
+        public int getEnd(){
+            return token.getEnd();
         }
         
-        public boolean isInterestingPhrase(){
-            return !interestingTerms.isEmpty();
-        }
-        
-        /**
-         * The confidence based on the sum of all {@link #interestingTerms} contained in this phrase
-         * @return the confidence <code>[0..1]</code>, <code>-1</code> if unknown
-         */
-        public float getConfidence(){
-            float conf = -1f;
-            for(Value<String> ita : interestingTerms){
-                if(conf < 0){
-                    conf = (float)ita.probability();
-                } else {
-                    conf = sumProbability(conf, (float)ita.probability());
-                }
-            }
-            return conf;
+        public boolean isNoun() {
+            return noun;
         }
 
+        public boolean isWord() {
+            return word;
+        }
+
+        public boolean isInteresting() {
+            return interesting;
+        }
+
+        public boolean isConnecting() {
+            return connecting;
+        }
+        
+        public boolean hasInterestingTermAnno(){
+            return !interestingTermAnnos.isEmpty();
+        }
+
+        public List<Value<InterestingTerm>> getInterestingTermAnnos() {
+            return interestingTermAnnos;
+        }
+        
         @Override
         public String toString() {
-            return "PhraseTokenData [start=" + start + ", end=" + end + ", nouns=" + nouns + ", interestingTerms="
-                    + interestingTerms + "]";
+            return "Word[" + token.getStart() + "," + token.getEnd() + " - " + token.getSpan() + "| pos: " + token.getValues(NlpAnnotations.POS_ANNOTATION) + "]";
+        }
+        
+    }
+
+    class InterestingTermPhrase {
+        private final int start;
+        private int numWords = 0;
+        private int numNouns = 0;
+        private int lastNounIdx = 0;
+        private final List<Word> words = new LinkedList<>();
+        private boolean completed = false;
+        private Double ranking;
+        private Double confidence;
+        
+        public InterestingTermPhrase(Word word) {
+            this.start = word.getStart();
+            addWord(word);
         }
 
+        protected void addWord(Word word){
+            if(completed){
+                throw new IllegalStateException("Unable to add a word to a completed phrase");
+            }
+            if(word.isInteresting()){
+                numWords++;
+            }
+            if(word.isNoun()){
+                numNouns++;
+                lastNounIdx = words.size();
+            }
+            this.words.add(word);
+        }
+        
+        public int getStart() {
+            return start;
+        }
+        
+        public int getEnd(){
+            return words.get(lastNounIdx).getEnd();
+        }
+        
+        public String getSpan(){
+            return words.get(0).getToken().getContext().getSpan().substring(getStart(),getEnd());
+        }
+        
+        public void complete(){
+            log.debug("> complete {}", this);
+            completed = true;
+            Map<String,List<Double>> sourceConfidences = new HashMap<>();
+            words.subList(0, lastNounIdx + 1).stream()
+                    .filter(Word::isInteresting)
+                    .map(Word::getInterestingTermAnnos).flatMap(List::stream)
+                    .forEach(ita -> {
+                        String source = ita.value().getSource();
+                        List<Double> sourceConf = sourceConfidences.get(source);
+                        if(sourceConf == null){
+                            sourceConf = new ArrayList<>(4);
+                            sourceConfidences.put(source, sourceConf);
+                        }
+                        sourceConf.add(ita.probability());
+                    });
+            log.debug(" - Confidences by Source: {}", sourceConfidences);
+            Map<String,Double> avrgSourceConfidences = sourceConfidences.entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey, en -> {
+                            List<Double> confs = en.getValue();
+                            return confs.stream().reduce(0d, (a,b) -> a + b) / confs.size();
+                        }));
+            log.debug(" - avrg confidence by source: {}", avrgSourceConfidences);
+            confidence = avrgSourceConfidences.values().stream().reduce(0d, (a,b) -> sumProbability(a, b));
+            log.debug(" - confidence: {}", confidence);
+            ranking = sourceConfidences.values().stream().flatMap(List::stream)
+                    .reduce(0d, (a,b) -> b > 0d ? a+1 : a)/numWords;
+            log.debug(" - ranking: {}", ranking);
+        }
+        
+        public boolean isInteresting() {
+            if(!completed){
+                throw new IllegalStateException("The interesting state is only available for completed ItPhrases");
+            }
+            return numNouns > 0 && ranking > 0d && confidence > 0d;
+        }
+
+
+        public Double getConfidence() {
+            if(!completed){
+                throw new IllegalStateException("Confidence is only available for completed ItPhrases");
+            }
+            return confidence;
+        }
+        
+        public Double getRanking() {
+            if(!completed){
+                throw new IllegalStateException("Ranking is only available for completed ItPhrases");
+            }
+            return ranking;
+        }
+        
+        @Override
+        public String toString() {
+            return "ItPhrase[" + getStart() + ", " + getEnd() + " - " + getSpan() + "| words: " + numWords + ",nouns: " + numNouns + "]";
+        }
     }
+    
     
 }

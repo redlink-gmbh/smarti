@@ -21,25 +21,50 @@ import java.util.Set;
 public class Token {
 
     public enum Type {
+        /**
+         * A date
+         */
         Date(DateValue.class),
-        Place(String.class),
-        Train(String.class),
+        /**
+         * A Topic (typically the result of a classifier)
+         */
         Topic(MessageTopic.class),
-        Accommodation(String.class),
-        FoodAndBeverages(String.class),
-        WasTun(String.class),
-        Service(String.class),
+        /**
+         * Any other type of Named Entities
+         */
+        Entity(String.class),
+        /**
+         * Entities that represent a Location
+         */
+        Place(String.class),
+        /**
+         * Entities that representing an Organization
+         */
+        Organization(String.class),
+        /**
+         * Entities that represent Persons
+         */
+        Person(String.class),
+        /**
+         * Entities that represent products or services
+         */
         Product(String.class),
+        /**
+         * Attributes (typically adjectives)
+         */
         Attribute(String.class),
+        /**
+         * Terms as contained in Terminologies with mixed types
+         */
+        Term(String.class),
+        /**
+         * Keywords (typically results of some keyword extraction/detection)
+         */
         Keyword(String.class),
         /**
-         * HASSO
+         * Any other type of an Entity
          */
-        QuestionIdentifier(String.class),
-        /**
-         * The type to be used if the type is not known or not defined
-         */
-        Unknown(String.class),
+        Other(Object.class),
         ;
         
         private Object valueClass;
@@ -290,7 +315,7 @@ public class Token {
      * @return the type of the Token. Guaranteed to NOT <code>null</code>.
      */
     public Type getType() {
-        return type == null ? Token.Type.Unknown : type;
+        return type == null ? Token.Type.Other : type;
     }
 
     /**

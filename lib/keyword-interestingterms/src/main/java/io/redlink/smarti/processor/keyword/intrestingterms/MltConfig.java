@@ -1,15 +1,21 @@
 package io.redlink.smarti.processor.keyword.intrestingterms;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.MoreLikeThisParams;
 
 public class MltConfig {
 
-    private List<String> similarityFields;
     private int minDocFreq;
     private int minTermFreq;
     private int minWordLength;
@@ -18,6 +24,8 @@ public class MltConfig {
     private String filterQuery;
     private int maxTerms;
 
+    private Map<String, Collection<String>> langSimilarityFields = new HashMap<>();
+    
     /**
      * Returns an instance of schema configuration with <ul>
      * <li> {@link #getIdField()}: id
@@ -35,79 +43,121 @@ public class MltConfig {
         conf.minDocFreq = 1;
         conf.minTermFreq = 1;
         conf.minWordLength = 3;
-        conf.similarityFields = new LinkedList<String>(); //empty default search field
         conf.filterQuery = null; //no filter query
         conf.maxTerms = 20;
         return conf;
     }
 
-    public List<String> getSimilarityFields() {
-        return similarityFields;
+    public Map.Entry<String,Collection<String>> getSimilarityFields(String lang) {
+        return getSimilarityFields(lang, true);
+    }
+    public Map.Entry<String,Collection<String>> getSimilarityFields(String lang, boolean fallback) {
+        lang = StringUtils.lowerCase(lang, Locale.ROOT);
+        Collection<String> langFields = langSimilarityFields.get(lang);
+        if(fallback){
+            int sepIdx = StringUtils.indexOfAny(lang, '-','_');
+            if(sepIdx > 0){
+                lang = lang.substring(0, sepIdx);
+                langFields = langSimilarityFields.get(lang);
+            }
+            if(langFields == null && lang != null){
+                lang = null;
+                langFields = langSimilarityFields.get(lang);
+            }
+        } //else no fallback
+        return langFields == null ? null : new ImmutablePair<>(lang, langFields);
     }
     
-    public void addSimilarityFields(String field){
-        if(field != null){
-            similarityFields.add(field);
+    public MltConfig addSimilarityFields(String lang, String field){
+        if(StringUtils.isEmpty(field)){
+            return this;
         }
+        lang = StringUtils.lowerCase(lang, Locale.ROOT);
+        Collection<String> langFields = langSimilarityFields.get(lang);
+        if(langFields == null){
+            langFields = new LinkedHashSet<>();
+            langSimilarityFields.put(lang, langFields);
+        }
+        langFields.add(field);
+        return this;
     }
 
-    public void setSimilarityFields(List<String> similarityFields) {
-        this.similarityFields = similarityFields == null ? new LinkedList<>() : similarityFields;
+    public MltConfig setSimilarityFields(String lang, Collection<String> similarityFields) {
+        lang = StringUtils.lowerCase(lang, Locale.ROOT);
+        if(CollectionUtils.isEmpty(similarityFields)){
+            langSimilarityFields.remove(lang);
+        } else {
+            Collection<String> langFields = similarityFields.stream()
+                    .filter(StringUtils::isNoneBlank)
+                    .collect(Collectors.toCollection(() -> new LinkedHashSet<>()));
+            if(CollectionUtils.isNotEmpty(langFields)){
+                langSimilarityFields.put(lang, langFields);
+            } else {
+                langSimilarityFields.remove(lang);
+            }
+        }
+        return this;
     }
 
     public int getMinDocFreq() {
         return minDocFreq;
     }
 
-    public void setMinDocFreq(int minDocFreq) {
+    public MltConfig setMinDocFreq(int minDocFreq) {
         this.minDocFreq = minDocFreq;
+        return this;
     }
 
     public int getMinTermFreq() {
         return minTermFreq;
     }
 
-    public void setMinTermFreq(int minTermFreq) {
+    public MltConfig setMinTermFreq(int minTermFreq) {
         this.minTermFreq = minTermFreq;
+        return this;
     }
 
     public int getMinWordLength() {
         return minWordLength;
     }
 
-    public void setMinWordLength(int minWordLength) {
+    public MltConfig setMinWordLength(int minWordLength) {
         this.minWordLength = minWordLength;
+        return this;
     }
 
     public boolean isBoost() {
         return boost;
     }
 
-    public void setBoost(boolean boost) {
+    public MltConfig setBoost(boolean boost) {
         this.boost = boost;
+        return this;
     }
     
     public boolean isInterstingTerms() {
         return interstingTerms;
     }
     
-    public void setInterstingTerms(boolean interstingTerms) {
+    public MltConfig setInterstingTerms(boolean interstingTerms) {
         this.interstingTerms = interstingTerms;
+        return this;
     }
 
     public String getFilterQuery() {
         return filterQuery;
     }
 
-    public void setFilterQuery(String filterQuery) {
+    public MltConfig setFilterQuery(String filterQuery) {
         this.filterQuery = filterQuery;
+        return this;
     }
 
-    public SolrQuery createMltQuery() {
-        return initMlt(new SolrQuery());
+    public SolrQuery createMltQuery(String lang) {
+        return initMlt(new SolrQuery(), lang);
     }
         
-    public SolrQuery initMlt(SolrQuery query){
+    public SolrQuery initMlt(SolrQuery query, String lang){
         query.set(MoreLikeThisParams.MLT,true);
         query.set(MoreLikeThisParams.BOOST, boost);
         query.set(MoreLikeThisParams.INTERESTING_TERMS, interstingTerms ? 
@@ -117,11 +167,6 @@ public class MltConfig {
         query.set(MoreLikeThisParams.MIN_TERM_FREQ, minTermFreq);
         query.set(MoreLikeThisParams.MIN_WORD_LEN, minWordLength);
         query.set(MoreLikeThisParams.MAX_QUERY_TERMS, maxTerms);
-        for(String field : similarityFields){
-            if(StringUtils.isNotBlank(field)){
-                query.add(MoreLikeThisParams.SIMILARITY_FIELDS,field);
-            }
-        }
         if(filterQuery != null){
             query.addFilterQuery(filterQuery);
         }
@@ -138,7 +183,7 @@ public class MltConfig {
 
     @Override
     public String toString() {
-        return "MltConfig [boost=" + boost + ", similarityFields=" + similarityFields + ", minDocFreq=" + minDocFreq
+        return "MltConfig [boost=" + boost + ", similarityFields=" + langSimilarityFields + ", minDocFreq=" + minDocFreq
                 + ", minTermFreq=" + minTermFreq + ", minWordLength=" + minWordLength + ", maxTerms=" + maxTerms
                 + ", interstingTerms=" + interstingTerms + ", filterQuery=" + filterQuery + "]";
     }

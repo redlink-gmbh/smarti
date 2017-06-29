@@ -14,8 +14,10 @@
     <logger name="org.springframework" level="WARN" />
 
     <logger name="io.redlink" level="INFO" />
-    <logger name="io.redlink.nlp" level="INFO" />
+    <logger name="io.redlink.nlp" level="DEBUG" />
     <logger name="io.redlink.nlp.opennlp.de" level="DEBUG" />
+    
+    <logger name="io.redlink.smarti.processor.ner" level="DEBUG" />
 
     <root level="WARN">
         <appender-ref ref="STDOUT" />

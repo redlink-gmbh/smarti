@@ -9,6 +9,6 @@ public interface InterestingTermsConst {
      * string key of the term. The {@link Value#value()} is used for the importance of
      * the term relative to others marked in the same document.
      */
-    public final static Annotation<String> INTERESTING_TERM = new Annotation<>("io_redlink_keyword_interestingTerm", String.class);
+    public final static Annotation<InterestingTerm> INTERESTING_TERM = new Annotation<>("io_redlink_keyword_interestingTerm", InterestingTerm.class);
 
 }

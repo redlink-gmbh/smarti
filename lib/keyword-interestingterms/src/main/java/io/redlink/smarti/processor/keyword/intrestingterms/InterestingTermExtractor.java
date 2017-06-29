@@ -7,11 +7,14 @@ import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.NlpAnnotations;
 import io.redlink.nlp.model.Token;
 import io.redlink.nlp.model.util.NlpUtils;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
 
 import static io.redlink.smarti.processor.keyword.intrestingterms.InterestingTermsConst.INTERESTING_TERM;
@@ -81,7 +84,18 @@ public abstract class InterestingTermExtractor extends Processor {
                     + "check the MltConfig parsed by this implementation!");
             mltConfig.setInterstingTerms(true); //we need interesting terms
         }
-        SolrQuery mltQuery = mltConfig.createMltQuery();
+        Entry<String, Collection<String>> similarityFields = mltConfig.getSimilarityFields(language);
+        if(similarityFields == null){
+            log.debug("language '{}' not supported by {}", language, getName());
+            return; //nothing to do
+        }
+        log.debug("extract interestingTerms for {}[language: {}, fieldLang: {}, fields: {}]",getName(), language, similarityFields.getKey(), similarityFields.getValue());
+        SolrQuery mltQuery = mltConfig.createMltQuery(language);
+        for(String field : similarityFields.getValue()){
+            if(StringUtils.isNotBlank(field)){
+                mltQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS,field);
+            }
+        }
         MltRequest mltRequest = new MltRequest(mltQuery, at.getSpan());
         NamedList<Object> response;
         try (SolrClient client = getClient()){
@@ -127,7 +141,7 @@ public abstract class InterestingTermExtractor extends Processor {
             List<Token> termTokens = termMap.get(termName);
             if(termTokens != null){
                 for(Token token : termTokens){
-                    Value<String> value = Value.value(termName, term.getValue()/maxBoost);
+                    Value<InterestingTerm> value = Value.value(new InterestingTerm(getKey(), termName), term.getValue()/maxBoost);
                     token.addValue(INTERESTING_TERM, value);
                     log.debug("mark {} as interesting Term {}", token, value);
                 }

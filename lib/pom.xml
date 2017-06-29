@@ -17,6 +17,7 @@
     <modules>
         <module>hasso-vocabulary-extractors</module>
         <module>keyword-interestingterms</module>
+        <module>keyword-solr-mlt</module>
         <module>ner</module>
         <module>pos</module>
         <module>token-processor</module>

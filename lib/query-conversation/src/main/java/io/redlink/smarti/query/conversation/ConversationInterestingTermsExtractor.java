@@ -30,7 +30,8 @@ public final class ConversationInterestingTermsExtractor extends InterestingTerm
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
         this.mltConfig = MltConfig.getDefault();
-        mltConfig.setSimilarityFields(Arrays.asList(FIELD_INTERESTING_TERMS));
+        //TODO: multi lingual support .. currently conversations are indexed with a German language configuration
+        mltConfig.setSimilarityFields("de", Arrays.asList(FIELD_INTERESTING_TERMS));
     }
     
     @Override

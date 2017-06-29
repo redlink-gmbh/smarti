@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -73,6 +74,9 @@ public class NamedEntityCollector extends Processor {
     static {
         Map<String,Token.Type> m = new HashMap<>();
         m.put(NerTag.NAMED_ENTITY_LOCATION, Token.Type.Place);
+        m.put(NerTag.NAMED_ENTITY_PERSON, Token.Type.Person);
+        m.put(NerTag.NAMED_ENTITY_ORGANIZATION, Token.Type.Organization);
+        //m.put(NerTag.NAMED_ENTITY_EVENT, Token.Type.Event);
         TOKEN_TYPE_MAPPINGS = Collections.unmodifiableMap(m);
     }
     
@@ -167,33 +171,31 @@ public class NamedEntityCollector extends Processor {
                 for(Value<NerTag> nerAnno : nerAnnotations){
                     NerTag nerTag = nerAnno.value();
                     Token.Type type = getTokenType(nerTag);
-                    if(type != null){
-                        log.debug(" - [{},{}] {} (tag:{} | lemma: {}) - type: {}",start, end, chunk.getSpan(), nerTag.getType(), lemma, type);
-                        Token token = activeTokens.remove(type); //consume active tokens
-                        if(token == null || token.getEnd() <= start){
-                            if(token != null && token.removeHint(HINT_INTERSTING_NAMED_ENTITY)){
-                                tokens.add(token);
-                            }
-                            token = new Token();
-                            token.setMessageIdx(msgIdx);
-                            token.setStart(start);
-                            token.setEnd(end);
-                            token.setType(type);
-                            token.setValue(lemma);
-                            token.setConfidence(getProbability(nerAnno));
-                        } else { //merge existing token
-                            if(end > token.getEnd()){
-                                token.setEnd(end); //update end and value
-                                token.setValue(section.getSpan().substring(token.getStart(), end));
-                            }
-                            //also update the confidence
-                            //TODO: when merging tokens Lemmas are not supported
-                            token.setConfidence(sumProbability(token.getConfidence(), getProbability(nerAnno)));
+                    log.debug(" - [{},{}] {} (tag:{} | lemma: {}) - type: {}",start, end, chunk.getSpan(), nerTag.getType(), lemma, type);
+                    Token token = activeTokens.remove(type); //consume active tokens
+                    if(token == null || token.getEnd() <= start){
+                        if(token != null && token.removeHint(HINT_INTERSTING_NAMED_ENTITY)){
+                            tokens.add(token);
                         }
-                        activeTokens.put(type, token); //put the active token to the map
-                    } else {
-                        log.warn("Unable to map NerTag[{},{}] {} (tag:{}) to a Token.Type", start, end, chunk.getSpan(), nerTag.getType());
+                        token = new Token();
+                        token.setMessageIdx(msgIdx);
+                        token.setStart(start);
+                        token.setEnd(end);
+                        token.setType(type);
+                        token.setValue(lemma);
+                        token.setConfidence(getProbability(nerAnno));
+                        addTypeHint(token, nerTag);
+                    } else { //merge existing token
+                        if(end > token.getEnd()){
+                            token.setEnd(end); //update end and value
+                            token.setValue(section.getSpan().substring(token.getStart(), end));
+                        }
+                        //also update the confidence
+                        //TODO: when merging tokens Lemmas are not supported
+                        token.setConfidence(sumProbability(token.getConfidence(), getProbability(nerAnno)));
+                        addTypeHint(token, nerTag);
                     }
+                    activeTokens.put(type, token); //put the active token to the map
                 }
                 break;
             default:
@@ -220,25 +222,35 @@ public class NamedEntityCollector extends Processor {
     /**
      * Tries to map the {@link NerTag} to a Token {@link Type}
      * @param nerTag the nerTag
-     * @return the TokenType
+     * @return the mapped Token {@link Type} or {@link Type#Entity} if no specific mapping was present
      */
     private Type getTokenType(NerTag nerTag) {
-        Token.Type type = TOKEN_TYPE_MAPPINGS.get(nerTag.getType());
-        if(type == null){
-            if(nerTag.getType().equals(NerTag.NAMED_ENTITY_MISC) || nerTag.getType().equals(NerTag.NAMED_ENTITY_UNKOWN)){
-                type = TOKEN_TYPE_MAPPINGS.get(nerTag.getTag());
-                if(type == null){
-                    try {
-                        type = Token.Type.valueOf(nerTag.getTag());
-                    } catch (IllegalArgumentException e) { /* tag is not a Token.Type */}
-                }
-            } else {
-                try {
+        Token.Type type = TOKEN_TYPE_MAPPINGS.get(nerTag.getType()); //(1) try direct mappings
+        if(type == null && nerTag.getType() != null){
+            try { //(2) try to match the type against the Token.Type enumeration
+                type = Token.Type.valueOf(nerTag.getType());
+            } catch (IllegalArgumentException e) { /* tag is not a Token.Type */}
+        }
+        if(type == null && nerTag.getTag() != null &&
+                (nerTag.getType() == null || NerTag.NAMED_ENTITY_UNKOWN.equals(nerTag.getType()) || NerTag.NAMED_ENTITY_MISC.equals(nerTag.getType()))){
+            type = TOKEN_TYPE_MAPPINGS.get(nerTag.getTag()); //(3) try direct mappings for tag
+            if(type == null){
+                try { //(4) try to match the tag against the Token.Type enumeration
                     type = Token.Type.valueOf(nerTag.getTag());
                 } catch (IllegalArgumentException e) { /* tag is not a Token.Type */}
             }
         }
-        return type;
+        return type == null ? Token.Type.Entity : type;
+    }
+    
+    private void addTypeHint(Token token, NerTag nerTag){
+        if(StringUtils.isBlank(nerTag.getType()) || token.getType() != Token.Type.Entity){
+            if(StringUtils.isNoneBlank(nerTag.getTag())){
+                token.addHint(String.format("entity.type.%s",nerTag.getType()));
+            }
+        } else { //use the type 
+            token.addHint(String.format("entity.type.%s",nerTag.getTag()));
+        }
     }
 
 }

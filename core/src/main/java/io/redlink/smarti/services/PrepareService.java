@@ -49,6 +49,7 @@ public class PrepareService {
         log.info("> configure Smarti analysis pipeline");
         Set<String> required;
         Set<String> optional;
+        Set<String> blacklist = new HashSet<>();
         if(StringUtils.isNotBlank(requiredProcessors)){
             log.info("use configured required Processors: [{}]", requiredProcessors);
             required = new HashSet<>();
@@ -68,7 +69,11 @@ public class PrepareService {
             for(String proc : StringUtils.split(optionalProcessors, ',')){
                 proc = StringUtils.trimToNull(proc);
                 if(proc != null){
-                    optional.add(proc);
+                    if(proc.charAt(0) == '!'){
+                        blacklist.add(proc.substring(1));
+                    } else {
+                        optional.add(proc);
+                    }
                 } //else ignore
             }
         } else {
@@ -81,7 +86,7 @@ public class PrepareService {
             if(required.remove(p.getKey())){
                 pipeline.add(p);
                 log.debug("  + {} (required)", p);
-            } else if(wildcard || optional.contains(p.getKey())){
+            } else if(!blacklist.contains(p.getKey()) && (wildcard || optional.contains(p.getKey()))){
                 pipeline.add(p);
                 log.debug("  + {}", p);
             } else {

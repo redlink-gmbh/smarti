@@ -222,6 +222,16 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- (9) Solr MLP Interesting Terms -->
+        <!-- allows to configure external Solr Servier used for MLT queries
+             for interesting terms -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>keyword-solr-mlt</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- END Analysis dependencies -->
 
         <dependency>

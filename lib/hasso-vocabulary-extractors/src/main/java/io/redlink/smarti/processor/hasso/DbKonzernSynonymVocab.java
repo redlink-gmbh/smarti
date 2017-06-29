@@ -5,6 +5,8 @@ package io.redlink.smarti.processor.hasso;
 
 import io.redlink.nlp.model.ner.NerTag;
 import io.redlink.nlp.regex.ner.csv.CsvVocabularyNerDetector;
+import io.redlink.smarti.model.Token;
+
 import org.apache.commons.csv.CSVFormat;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +23,7 @@ public class DbKonzernSynonymVocab extends CsvVocabularyNerDetector {
     private static final String VOCAB = "wordlists/DB-Konzern-Synonyme.csv";
 
     public DbKonzernSynonymVocab() {
-        super("DB-Konzern Synonyme", new NerTag("Keyword", NerTag.NAMED_ENTITY_MISC), Locale.GERMAN, CaseSensitivity.smart, CSVFormat.DEFAULT.withDelimiter(';'));
+        super("DB-Konzern Synonyme", new NerTag("db-entity",Token.Type.Term.name()), Locale.GERMAN, CaseSensitivity.smart, CSVFormat.DEFAULT.withDelimiter(';'));
     }
 
     //TODO: removed HINT functionality
