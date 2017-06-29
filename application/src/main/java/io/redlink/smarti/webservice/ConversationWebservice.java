@@ -3,11 +3,14 @@
  */
 package io.redlink.smarti.webservice;
 
+import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ConversationService;
+import io.redlink.smarti.services.QueryBuilderService;
 import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.QueryUpdate;
 import io.redlink.smarti.webservice.pojo.TemplateResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -21,7 +24,6 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 
 
@@ -56,6 +58,9 @@ public class ConversationWebservice {
 
     @Autowired
     private ConversationService conversationService;
+
+    @Autowired
+    private QueryBuilderService queryBuilderService;
 
     @ApiOperation(value = "create a conversation")
     @ApiResponses({
@@ -163,11 +168,30 @@ public class ConversationWebservice {
     @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
     @RequestMapping(value = "{id}/query/{template}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
-                                      @PathVariable("template") String template,
+                                      @PathVariable("template") int templateIdx,
                                       @PathVariable("creator") String creator,
-                                      @RequestBody List<Slot> updatedSlots) {
-        // TODO: Implement this
-        return ResponseEntities.notImplemented();
+                                      @RequestBody QueryUpdate queryUpdate) {
+        //FIXME: does this really work as intended?
+        final Conversation conversation = storeService.get(id);
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            final Template template = conversation.getTemplates().get(templateIdx);
+            if (template == null) return ResponseEntity.notFound().build();
+
+            final QueryBuilder builder = queryBuilderService.getQueryBuilder(creator);
+            if (builder == null) return ResponseEntity.notFound().build();
+
+            conversation.setTokens(queryUpdate.getTokens());
+            template.setSlots(queryUpdate.getSlots());
+
+            builder.buildQuery(conversation);
+
+            return ResponseEntity.ok(template.getQueries());
+        } catch (IndexOutOfBoundsException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @ApiOperation(value = "complete a conversation and add it to indexing", response = Conversation.class)

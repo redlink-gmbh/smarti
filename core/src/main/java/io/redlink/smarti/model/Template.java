@@ -73,6 +73,10 @@ public class Template implements Comparable<Template> {
         return slots;
     }
 
+    public void setSlots(Collection<Slot> slots) {
+        this.slots = slots;
+    }
+
     public List<Query> getQueries() {
         return queries;
     }
