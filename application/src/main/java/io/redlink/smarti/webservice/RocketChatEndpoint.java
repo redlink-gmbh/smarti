@@ -10,12 +10,11 @@ import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
-import io.redlink.smarti.webservice.pojo.RocketMessage;
+import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,11 +89,7 @@ public class RocketChatEndpoint {
 
         conversation = conversationService.appendMessage(conversation, message);
 
-        if (debug && isNew) {
-            return ResponseEntity.ok(new RocketMessage(String.format("new conversation: `%s`", conversation.getId())));
-        } else {
-            return ResponseEntity.accepted().build();
-        }
+        return ResponseEntity.ok(new SmartiUpdatePing(conversation.getId(), payload.getToken()));
     }
     
     /**
