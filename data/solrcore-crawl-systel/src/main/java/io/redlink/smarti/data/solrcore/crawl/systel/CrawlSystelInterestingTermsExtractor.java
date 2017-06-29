@@ -6,8 +6,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import io.redlink.smarti.processor.keyword.intrestingterms.InterestingTermExtractor;
@@ -16,8 +15,7 @@ import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
 @Component
-@ConditionalOnBean(name=CrawlSystelIndexConfiguration.CRAWL_SYSTEL, value=SolrCoreDescriptor.class)
-@AutoConfigureAfter(SolrCoreDescriptor.class)
+@ConditionalOnProperty(name="solrcore.crawl.systel.resource")
 public final class CrawlSystelInterestingTermsExtractor extends InterestingTermExtractor {
 
     private final SolrCoreContainer solrServer;

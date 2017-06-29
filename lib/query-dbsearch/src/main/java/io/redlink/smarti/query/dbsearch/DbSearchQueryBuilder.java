@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import io.redlink.smarti.api.QueryBuilder;
@@ -30,6 +31,7 @@ import io.redlink.smarti.services.TemplateRegistry;
 /**
  */
 @Component
+@ConditionalOnProperty("dbsearch.solr")
 public class DbSearchQueryBuilder extends QueryBuilder {
 
     @Value("${dbsearch.solr}") //required

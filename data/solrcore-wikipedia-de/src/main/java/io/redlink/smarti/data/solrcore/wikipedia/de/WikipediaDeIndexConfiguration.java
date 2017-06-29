@@ -1,13 +1,11 @@
 package io.redlink.smarti.data.solrcore.wikipedia.de;
 
 import io.redlink.solrlib.SimpleCoreDescriptor;
-import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,8 +28,6 @@ public class WikipediaDeIndexConfiguration {
     
     @Bean(name=WIKIPEDIA_DE)
     @ConditionalOnProperty(name="solrcore.wikipedia.de.resource")
-    //NOTE: installing a SolrCore including data only works for EmbeddedCoreContainer
-    //@ConditionalOnBean(SolrCoreContainer.class)
     protected SolrCoreDescriptor getWikipediaDeCoreDescriptor() throws IOException {
         log.info("init CoreDescriptor with resource '{}'", wikipediaDeResource);
         SimpleCoreDescriptor cd = new SimpleCoreDescriptor(WIKIPEDIA_DE, Paths.get(wikipediaDeResource)){
