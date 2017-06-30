@@ -131,7 +131,7 @@
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
         </dependency>
-        <dependency>
+        <!-- dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-opennlp-en</artifactId>
             <version>${redlinknlp.version}</version>
@@ -142,7 +142,7 @@
             <artifactId>ner-opennlp-en</artifactId>
             <version>${redlinknlp.version}</version>
             <scope>runtime</scope>
-        </dependency>
+        </dependency -->
         <!-- (3) StanfordNLP for German and English -->
         <dependency>
             <groupId>io.redlink.nlp</groupId>
