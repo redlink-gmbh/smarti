@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
+@ConditionalOnProperty(name="solrcore.crawl.systel.resource")
 public class CrawlSystelIndexConfiguration {
     
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -27,8 +28,7 @@ public class CrawlSystelIndexConfiguration {
     private String crawlSystelResource;
     
     @Bean(name=CRAWL_SYSTEL)
-    @ConditionalOnProperty(name="solrcore.crawl.systel.resource")
-    protected SolrCoreDescriptor getWikipediaDeCoreDescriptor() throws IOException {
+    protected SolrCoreDescriptor getCrawlSystelCoreDescriptor() throws IOException {
         log.info("init CoreDescriptor with resource '{}'", crawlSystelResource);
         SimpleCoreDescriptor cd = new SimpleCoreDescriptor(CRAWL_SYSTEL, Paths.get(crawlSystelResource)){
             @Override

@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
+@ConditionalOnProperty(name="solrcore.wikipedia.de.resource")
 public class WikipediaDeIndexConfiguration {
     
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -27,7 +28,6 @@ public class WikipediaDeIndexConfiguration {
     private String wikipediaDeResource;
     
     @Bean(name=WIKIPEDIA_DE)
-    @ConditionalOnProperty(name="solrcore.wikipedia.de.resource")
     protected SolrCoreDescriptor getWikipediaDeCoreDescriptor() throws IOException {
         log.info("init CoreDescriptor with resource '{}'", wikipediaDeResource);
         SimpleCoreDescriptor cd = new SimpleCoreDescriptor(WIKIPEDIA_DE, Paths.get(wikipediaDeResource)){
