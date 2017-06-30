@@ -49,7 +49,7 @@ public class RocketChatEndpoint {
 
     @ApiOperation("webhook-target for " + ROCKET_CHAT)
     @ApiResponses({
-            @ApiResponse(code = 202, message = "accepted")
+            @ApiResponse(code = 200, message = "OK")
     })
     @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST)
     public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientId,
@@ -66,8 +66,6 @@ public class RocketChatEndpoint {
             newConversation.getContext().setEnvironment("token", payload.getToken());
             return newConversation;
         });
-
-        final boolean isNew = conversation.getMessages().isEmpty();
 
         final Message message = new Message();
         message.setId(payload.getMessageId());
@@ -97,11 +95,11 @@ public class RocketChatEndpoint {
      * The returned conversationID can later be used for calls to the {@link ConversationWebservice}
      * @param clientId the client id
      * @param channelId the channelId
-     * @return a <code>202</code> with the conversation id as payload or a <code>404</code> if no conversation is
+     * @return a <code>200</code> with the conversation id as payload or a <code>404</code> if no conversation is
      * active for the parsed parameters.
      */
     @ApiOperation(value = "retrieve a conversation ID for a channel and client id", produces=MimeTypeUtils.TEXT_PLAIN_VALUE)
-    @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET, 
+    @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET,
         produces=MimeTypeUtils.TEXT_PLAIN_VALUE, consumes=MimeTypeUtils.ALL_VALUE)
     public ResponseEntity<?> getConversation(
             @PathVariable(value="clientId") String clientId,
