@@ -40,5 +40,12 @@ public class DbSearchQuery extends Query {
         fullTextTerms.clear();
         fullTextTerms.addAll(strings);
     }
+
+    @Override
+    public String toString() {
+        return "DbSearchQuery [title=" + getDisplayTitle() + ", creator=" + getCreator() + ",fullTextTerms=" + fullTextTerms + "]";
+    }
+    
+    
 }
 

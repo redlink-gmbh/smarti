@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Query;
+import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.Token;
 import io.redlink.smarti.model.Token.Type;
@@ -37,30 +39,50 @@ public class DbSearchQueryBuilder extends QueryBuilder {
     @Value("${dbsearch.solr}") //required
     private String solrEndpoint;
 
-    private final static float MIN_TERM_CONF = 0.1f;
+    private final static float MIN_TOKEN_CONF = 0.1f;
     
-    EnumSet<Token.Type> IGNORED_TOKEN_TYPES = EnumSet.of(Type.Date);
+    EnumSet<Token.Type> IGNORED_TOKEN_TYPES = EnumSet.of(Type.Date, Type.Attribute, Type.Other);
+
+    private final String nameSuffix;
     
+    @Autowired
     public DbSearchQueryBuilder(TemplateRegistry registry) {
         super(registry);
+        nameSuffix = null;
+    }
+    
+    protected DbSearchQueryBuilder(TemplateRegistry registry, String nameSuffix) {
+        super(registry);
+        if(StringUtils.isBlank(nameSuffix)){
+            throw new IllegalArgumentException("the parsed nameSuffix MUST NOT be NULL nor empty");
+        }
+        this.nameSuffix = StringUtils.trimToNull(nameSuffix);
     }
 
     @Override
     public String getCreatorName() {
-        return "query." + DbSearchTemplateDefinition.DBSEARCH_TYPE;
+        StringBuilder name = new StringBuilder("query.")
+                .append(DbSearchTemplateDefinition.DBSEARCH_TYPE);
+        if(nameSuffix != null){
+            name.append('.').append(nameSuffix);
+        }
+        return name.toString();
+    }
+    
+    protected String getQueryTitle(){
+        return "DB Search Related";
     }
 
     @Override
     public boolean acceptTemplate(Template template) {
         return DBSEARCH_TYPE.equals(template.getType()) && 
                 template.getSlots().stream() //at least a single filled slot
-                    .filter(s -> s.getRole().equals(ROLE_TERM))
                     .filter(s -> s.getTokenIndex() >= 0)
                     .findAny().isPresent();
     }
 
     @Override
-    protected void doBuildQuery(Template template, Conversation conversation) {
+    protected final void doBuildQuery(Template template, Conversation conversation) {
         final Query query = buildQuery(template, conversation);
         if (query != null) {
             template.getQueries().add(query);
@@ -68,43 +90,69 @@ public class DbSearchQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public boolean isResultSupported() {
+    public final boolean isResultSupported() {
         return false;
     }
 
     @Override
-    public List<? extends Result> execute(Template template, Conversation conversation) throws IOException {
+    public final List<? extends Result> execute(Template template, Conversation conversation) throws IOException {
         throw new UnsupportedOperationException("This QueryBuilder does not support inline results");
     }
-    protected Query buildQuery(Template template, Conversation conversation){
-        DbSearchQuery query = new DbSearchQuery();
+    
+    protected final Query buildQuery(Template template, Conversation conversation){
+        DbSearchQuery query = new DbSearchQuery(getCreatorName());
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.setFields("*","score");
         solrQuery.setRows(10);
         
         List<String> queryTerms = template.getSlots().stream()
-            .filter(s -> ROLE_TERM.equals(s.getRole()))
-            .filter(s -> s.getTokenIndex() >= 0 && s.getTokenIndex() < conversation.getTokens().size())
+            .filter(s -> validateSlot(s,conversation))
+            .filter(s -> acceptSlot(s, conversation))
             .map(s -> conversation.getTokens().get(s.getTokenIndex()))
-            .filter(Objects::nonNull) //ignore null tokens
-            .filter(t -> !IGNORED_TOKEN_TYPES.contains(t.getType())) //token of some types might be ignored
-            .filter(t -> t.getValue() != null) //the value MUST NOT be NULL
-            .filter(t -> StringUtils.isNoneBlank(t.getValue().toString())) //and tokens with empty value
-            .filter(t -> t.getConfidence() >= MIN_TERM_CONF) //and low confidence
             .sorted((t1,t2) -> Float.compare(t2.getConfidence(),t1.getConfidence())) //sort by confidence
             .map(t -> new StringBuilder(ClientUtils.escapeQueryChars(t.getValue().toString())) //escape the term
                     .insert(0,'"').append('"') //quote the term in case of multiple words
                     .append('^').append(t.getConfidence()).toString()) //use the confidence as boost
             .collect(Collectors.toList());
-        
+        if(queryTerms.isEmpty()){ //no terms to build a query for
+            return null;
+        }
         query.setFullTextTerms(queryTerms);
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
         query.setUrl(solrEndpoint + solrQuery.toQueryString());
-        query.setDisplayTitle("DB Search Related");
+        query.setDisplayTitle(getQueryTitle());
         query.setConfidence(0.8f);
         query.setInlineResultSupport(false); //we can not query DB Search directly
         
         return query;
     }
+    
+    /**
+     * Allows sub-classes to filter slots based on custom rules. The default implementation returns <code>true</code>
+     * @param slot a slot of the template that is already validated (meaning a valid slot refering a valid token)
+     * @param conversation the conversation of the slot
+     * @return this base implementation returns <code>true</code>
+     */
+    protected boolean acceptSlot(Slot slot, Conversation conversation){
+        return true;
+    }
+    
+    /**
+     * Base implementation that checks that the slot is valid, and refers a valid {@link Token} with an
+     * high enough confidence and an none empty value
+     * @param slot the slot to validate
+     * @param conversation the conversation of the parsed SLot
+     * @return <code>true</code> if the slot can be accepted for building the query
+     */
+    private boolean validateSlot(Slot slot, Conversation conversation){
+        if(slot.getTokenIndex() >= 0 && slot.getTokenIndex() < conversation.getTokens().size()){
+            Token token = conversation.getTokens().get(slot.getTokenIndex());
+            return token != null && token.getValue() != null && token.getConfidence() >= MIN_TOKEN_CONF
+                    && StringUtils.isNoneBlank(token.getValue().toString());
+        } else {
+            return false;
+        }
+    }
+    
 }
