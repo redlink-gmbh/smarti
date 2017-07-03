@@ -70,7 +70,7 @@
     <repositories>
         <repository>
             <id>redlink.nexus</id>
-            <url>https://repo.redlink.io/mvn/content/groups/private/</url>
+            <url>https://repo.redlink.io/mvn/content/groups/public/</url>
         </repository>
     </repositories>
 
