@@ -3,8 +3,8 @@ const path = require('path');
 module.exports = {
     entry: './',
     output: {
-        filename: 'bundle.js',
-        path: path.resolve(__dirname, 'dist')
+        filename: 'rocket.chat.js',
+        path: path.resolve(__dirname, 'target/classes/public/plugin/v1/')
     },
     module: {
         rules: [{
@@ -17,7 +17,8 @@ module.exports = {
                 loader: "sass-loader" // compiles Sass to CSS
             }]
         }]
-    },node: {
+    },
+    node: {
         fs: 'empty'
     }
 };

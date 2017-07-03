@@ -20,6 +20,8 @@
 
         <module>application</module>
 
+        <module>integration/rocket-chat</module>
+
         <module>dist</module>
 
         <module>lib</module>
