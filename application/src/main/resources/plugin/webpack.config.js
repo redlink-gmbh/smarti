@@ -17,5 +17,7 @@ module.exports = {
                 loader: "sass-loader" // compiles Sass to CSS
             }]
         }]
+    },node: {
+        fs: 'empty'
     }
 };

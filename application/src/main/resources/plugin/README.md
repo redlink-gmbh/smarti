@@ -5,7 +5,7 @@
 
 ## Serve locally and tunnel
 
-* e.g. `python -m SimpleHTTPServer 9999` and ` ssh -R 9503:localhost:9999 redlink@cerbot.redlink.io`
+* e.g. `python -m SimpleHTTPServer 9999` and `ssh -R 9503:localhost:9999 redlink@cerbot.redlink.io`
 * HINT: don't forget to adapt the script url in bookmarklet
 
 ## Provide a smarti application and tunnel

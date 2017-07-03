@@ -1,5 +1,9 @@
+.widget {
+    margin: 0 20px;
+}
+
 .smarti-widget {
-    margin-bottom: 50px;
+    margin-bottom: 30px;
 }
 
 .smarti-widget > h2 {
@@ -178,4 +182,31 @@
 
 .smarti-widget .loading-animation {
     position: relative;
+}
+
+.smarti-widget .paging {
+    width:100%;
+    margin-top: 30px;
+
+    td {
+        width: 33%;
+    }
+    .pageLink span {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .pageLinkRight {
+        text-align: right;
+    }
+
+    .pageNum {
+        text-align: center;
+        font-weight: bold;
+    }
+}
+
+.widget .conversationCloseBtn {
+    margin-top:30px;
+    text-align: center;
 }

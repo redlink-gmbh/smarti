@@ -1,18 +1,19 @@
 <html>
 <head>
+    <meta charset="utf-8">
     <script src="dist/bundle.js"></script>
     <script>
         $(document).ready(function() {
             var elem = $("<div></div>").appendTo('body');
-            var widget = new SmartiWidget(elem,'GENERAL',{
+            var widget = new SmartiWidget(elem,{
+                smartiEndpoint: 'http://localhost:8080/',
+                socketEndpoint: 'ws://localhost:3000/websocket/',
+                channel: 'CYr76Lx7YCwDRZFD5',
                 inputCssSelector:'.autogrow-shadow'
             });
         });
     </script>
 </head>
 <body>
-<div class="plugintest">
-
-</div>
 </body>
 </html>
