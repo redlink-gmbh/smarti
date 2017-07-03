@@ -3,6 +3,8 @@
  */
 package io.redlink.smarti.webservice;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Conversation;
@@ -16,6 +18,13 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ConnectionBackoffStrategy;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +32,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 /**
  * Webhook-Endpoint for rocket.chat
@@ -46,6 +57,26 @@ public class RocketChatEndpoint {
 
     @Autowired
     private ConversationService conversationService;
+
+    private final HttpClientBuilder httpClientBuilder;
+
+    public RocketChatEndpoint() {
+        httpClientBuilder = HttpClientBuilder.create()
+                .setRetryHandler((exception, executionCount, context) -> executionCount < 3)
+                .setConnectionBackoffStrategy(new ConnectionBackoffStrategy() {
+                    @Override
+                    public boolean shouldBackoff(Throwable t) {
+                        return t instanceof IOException;
+                    }
+
+                    @Override
+                    public boolean shouldBackoff(HttpResponse resp) {
+                        return false;
+                    }
+                })
+                .setUserAgent("Smarti/0.0 Rocket.Chat-Endpoint/0.1");
+    }
+
 
     @ApiOperation("webhook-target for " + ROCKET_CHAT)
     @ApiResponses({
@@ -85,11 +116,32 @@ public class RocketChatEndpoint {
             message.getMetadata().put("bot_id", payload.getBot().getIdentifier());
         }
 
-        conversation = conversationService.appendMessage(conversation, message);
+        conversation = conversationService.appendMessage(conversation, message, (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
 
         return ResponseEntity.ok(new SmartiUpdatePing(conversation.getId(), payload.getToken()));
     }
-    
+
+    private void notifyRocketChat(String callbackUrl, Conversation conversation, String token) {
+        try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+            final HttpPost post = new HttpPost(callbackUrl);
+            post.setEntity(new StringEntity(
+                    toJsonString(new SmartiUpdatePing(conversation.getId(), token)),
+                    ContentType.APPLICATION_JSON
+            ));
+            httpClient.execute(post, response -> null);
+        } catch (IOException e) {
+            if (log.isDebugEnabled()) {
+                log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUrl, e.getMessage(), e);
+            } else {
+                log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUrl, e.getMessage());
+            }
+        }
+    }
+
+    private String toJsonString(SmartiUpdatePing smartiUpdatePing) throws JsonProcessingException {
+        return new ObjectMapper().writeValueAsString(smartiUpdatePing);
+    }
+
     /**
      * Called by rocket.chat plugins to get the conversationId for the clientId and channelId known to the plugin.
      * The returned conversationID can later be used for calls to the {@link ConversationWebservice}

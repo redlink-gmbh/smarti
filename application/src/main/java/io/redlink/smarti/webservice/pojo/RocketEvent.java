@@ -19,6 +19,9 @@ public class RocketEvent {
 
     private String token;
 
+    @JsonProperty("webhook_url")
+    private String callbackUrl;
+
     @JsonProperty("channel_id")
     private String channelId;
 
@@ -56,6 +59,14 @@ public class RocketEvent {
 
     public void setToken(String token) {
         this.token = token;
+    }
+
+    public String getCallbackUrl() {
+        return callbackUrl;
+    }
+
+    public void setCallbackUrl(String callbackUrl) {
+        this.callbackUrl = callbackUrl;
     }
 
     public String getChannelId() {

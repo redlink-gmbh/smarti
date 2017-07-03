@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * Conversation-related services
@@ -55,7 +56,7 @@ public class ConversationService {
         this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
     }
 
-    public Conversation appendMessage(Conversation conversation, Message message, boolean process) {
+    public Conversation appendMessage(Conversation conversation, Message message, boolean process, Consumer<Conversation> onCompleteCallback) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
 
@@ -79,7 +80,10 @@ public class ConversationService {
                     }
                     
                     eventPublisher.publishEvent(new ConversationProcessCompleteEvent(finalConversation));
-                    
+
+                    if (onCompleteCallback != null) {
+                        onCompleteCallback.accept(finalConversation);
+                    }
                 } catch (Throwable t) {
                     log.error("Error during async prepare: {}", t.getMessage(), t);
                 }
@@ -123,8 +127,12 @@ public class ConversationService {
         }
     }
 
+    public Conversation appendMessage(Conversation conversation, Message message, Consumer<Conversation> onCompleteCallback) {
+        return appendMessage(conversation, message, true, onCompleteCallback);
+    }
+
     public Conversation appendMessage(Conversation conversation, Message message) {
-        return appendMessage(conversation, message, true);
+        return appendMessage(conversation, message, true, null);
     }
 
     public Conversation completeConversation(Conversation conversation) {
