@@ -21,11 +21,17 @@ public class SmartiUpdatePing {
     private final ObjectId conversationId;
 
     @ApiModelProperty
+    private final String channelId;
+
+    @ApiModelProperty
     private final String token;
 
     @JsonCreator
-    public SmartiUpdatePing(@JsonProperty ObjectId conversationId, @JsonProperty String token) {
+    public SmartiUpdatePing(@JsonProperty ObjectId conversationId,
+                            @JsonProperty String channelId,
+                            @JsonProperty String token) {
         this.conversationId = conversationId;
+        this.channelId = channelId;
         this.token = token;
     }
 
@@ -35,5 +41,9 @@ public class SmartiUpdatePing {
 
     public String getToken() {
         return token;
+    }
+
+    public String getChannelId() {
+        return channelId;
     }
 }

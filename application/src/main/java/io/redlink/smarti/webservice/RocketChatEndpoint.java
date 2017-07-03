@@ -118,14 +118,14 @@ public class RocketChatEndpoint {
 
         conversation = conversationService.appendMessage(conversation, message, (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
 
-        return ResponseEntity.ok(new SmartiUpdatePing(conversation.getId(), payload.getToken()));
+        return ResponseEntity.ok().build();
     }
 
     private void notifyRocketChat(String callbackUrl, Conversation conversation, String token) {
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
             final HttpPost post = new HttpPost(callbackUrl);
             post.setEntity(new StringEntity(
-                    toJsonString(new SmartiUpdatePing(conversation.getId(), token)),
+                    toJsonString(new SmartiUpdatePing(conversation.getId(), conversation.getContext().getEnvironment("channel_id"), token)),
                     ContentType.APPLICATION_JSON
             ));
             httpClient.execute(post, response -> null);
