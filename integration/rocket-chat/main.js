@@ -58,8 +58,8 @@ const localize = new Localize({
         "de": "Vorherige"
     },
     "widget.db.answer.title":{
-        "en": "Das hab ich dazu in $[1] gefunden:",
-        "de": "That I found in $[1]:"
+        "de": "Das hab ich dazu in $[1] gefunden:",
+        "en": "That I found in $[1]:"
     },
     "widget.conversation.title":{
         "en":"Related Conversation",
@@ -171,7 +171,7 @@ function Smarti(options) {
         function loginRequest(params) {
             const loginId = ddp.method("login", params);
             ddp.on("result", function (message) {
-                if (message.id == loginId) { console.log("Logged in!");
+                if (message.id == loginId) {
 
                     if (message.error) return failure({code:"login.failed",args:[message.error.reason]});
 
@@ -262,6 +262,9 @@ function Smarti(options) {
 
                 pubsub('smarti.data').publish(data);
             },
+            failure: function(err) {
+                console.error('conversation does not exist on smarti:',JSON.stringify(err,null,2));
+            },
             dataType: "json"
         });
 
@@ -281,7 +284,7 @@ function Smarti(options) {
     }
 
     function post(msg,attachments,success,failure) {
-        const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments}]);
+        const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
         ddp.on("result", function(message) {
             if(message.id == methodId) {
                 if(message.error && error) {
@@ -325,33 +328,38 @@ return {
 }
 
 /**
- * TODO: refactor (modularize etc.)
+ * Generates a smarti widget and appends it to element
  * @param element
  * @param config
  * @returns {{}}
  * @constructor
  */
-function SmartiWidget(element,config) {
-
-    console.debug('init smarti widget on %s:\n%s', element, JSON.stringify(config,null,2));
+function SmartiWidget(element,_options) {
 
     var initialized = false;
 
     var options = {
-        socketEndpoint: config.socketEndpoint || "ws://localhost:3000/websocket/",
-        smartiEndpoint: config.smartiEndpoint || 'http://localhost:8080/',
-        channel:config.channel || 'GENERAL',
+        socketEndpoint: "ws://localhost:3000/websocket/",
+        smartiEndpoint: 'http://localhost:8080/',
+        channel: 'GENERAL',
         widget:{
-            'db.search': {
-                numOfResults:1
+            'query.dbsearch': {
+                numOfResults:2
+            },
+            'query.keyword': {
+                disabled:true
             }
-        }
+        },
+        lang:'de'
     };
 
-    //set display language
-    config.lang = config.lang || 'de';
+    //TODO some option checks?
 
-    localize.setLocale(config.lang);
+    $.extend(true,options,_options);
+
+    console.debug('init smarti widget:\n%s', JSON.stringify(options,null,2));
+
+    localize.setLocale(options.lang);
 
     var widgets = [];
 
@@ -492,7 +500,6 @@ function SmartiWidget(element,config) {
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
                         };*/
-                        console.log(doc.type.substring(doc.type.indexOf('/')+1).substring(doc.type.indexOf('+')));
                         return {
                             source: doc.source,
                             title: doc.title,
@@ -570,8 +577,6 @@ function SmartiWidget(element,config) {
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
         function refresh(data) {
-            console.debug('refresh db search widget:\n%s', JSON.stringify(data,null,2));
-
             getResults();
         }
 
@@ -734,7 +739,7 @@ function SmartiWidget(element,config) {
 
     }
 
-    function refreshWidgets(data) { console.log(config,data);
+    function refreshWidgets(data) {
         if(!initialized) {
             contentDiv.empty();
             messagesDiv.empty();
@@ -751,7 +756,7 @@ function SmartiWidget(element,config) {
                             constructor = ConversationWidget;break;
                     }
 
-                    if(constructor) {
+                    if(constructor && (options.widget[query.creator] ? !options.widget[query.creator].disabled : true)) {
                         var elem = $('<div class="smarti-widget">').appendTo(contentDiv);
 
                         var params = {

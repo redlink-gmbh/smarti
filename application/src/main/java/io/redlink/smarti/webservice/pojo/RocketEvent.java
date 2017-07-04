@@ -39,6 +39,8 @@ public class RocketEvent {
     @JsonProperty("trigger_word")
     private String triggerWord;
 
+    private String origin;
+
     private Date timestamp;
 
     @JsonDeserialize(using = RocketBot.JacksonDeserializer.class)
@@ -135,6 +137,14 @@ public class RocketEvent {
 
     public boolean isBot() {
         return getBot() != null;
+    }
+
+    public String getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(String origin) {
+        this.origin = origin;
     }
 
     @Override
