@@ -106,7 +106,16 @@ const Utils = {
 /**
  * Manages the interaction between Plugin and RocketChat/Smarti
  * @param options: {
- *
+ *      DDP: {
+ *          endpoint: STRING
+ *      },
+ *      smarti: {
+ *          endpoint: STRING
+ *      },
+ *      channel: STRING,
+ *      rocket: {
+ *          endpoint: STRING
+ *      }
  * }
  * @returns {
  *      login: function(success,failure,username,password),
@@ -329,9 +338,24 @@ return {
 
 /**
  * Generates a smarti widget and appends it to element
- * @param element
- * @param config
- * @returns {{}}
+ * @param element a dom element
+ * @param config: {
+ *       socketEndpoint: "ws://localhost:3000/websocket/",
+ *       smartiEndpoint: 'http://localhost:8080/',
+ *       channel: 'GENERAL',
+ *       widget:{
+ *           'query.dbsearch': {
+ *               numOfResults:2
+ *           },
+ *           'query.keyword': {
+ *               disabled:true
+ *           }
+ *       },
+ *       lang:'de'
+ *   }
+ * @returns {
+ *
+ * }
  * @constructor
  */
 function SmartiWidget(element,_options) {
@@ -353,8 +377,6 @@ function SmartiWidget(element,_options) {
         lang:'de'
     };
 
-    //TODO some option checks?
-
     $.extend(true,options,_options);
 
     console.debug('init smarti widget:\n%s', JSON.stringify(options,null,2));
@@ -363,6 +385,14 @@ function SmartiWidget(element,_options) {
 
     var widgets = [];
 
+    /**
+     * @param params
+     * @param wgt_conf
+     * @returns {
+     *      refresh: FUNCTION
+     * }
+     * @constructor
+     */
     function DBSearchWidget(params,wgt_conf) {
 
         const numOfRows = wgt_conf.numOfRows || 3;
@@ -466,9 +496,8 @@ function SmartiWidget(element,_options) {
 
         function getResults(page) {
             var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
-            params.query.url = 'http://localhost:8983/solr/main/select?wt=json&df=text&q=' + tks;
 
-            params.query.url += '&rows=' + numOfRows;
+            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
 
             if(page > 0) {
                 //append paging
@@ -489,18 +518,19 @@ function SmartiWidget(element,_options) {
                         return;
                     }
 
-                    //map to dbsearch results
+                    //map to dbsearch results TODO should be configurable
                     var docs = $.map(data.response.docs, function(doc) {
-                        /*return {
+                        return {
                             source: doc.dbsearch_source_name_s + '/' + doc.dbsearch_space_name_t,
                             title: doc.dbsearch_title_s,
                             description: doc.dbsearch_excerpt_s,
                             type: doc.dbsearch_doctype_s,
-                            doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),
+                            doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),//TODO Utils.mapDocType(doc.type)?
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
-                        };*/
-                        return {
+                        };
+                        // for RedlinKSearch endpoint
+                        /*return {
                             source: doc.source,
                             title: doc.title,
                             description: doc.description,
@@ -509,7 +539,7 @@ function SmartiWidget(element,_options) {
                             link: doc.url,
                             date: new Date(),
                             thumb: doc.thumbnail ? 'http://localhost:8983/solr/main/tn/' + doc.thumbnail : undefined
-                        }
+                        }*/
                     });
 
                     resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
@@ -527,7 +557,7 @@ function SmartiWidget(element,_options) {
                             var attachments = [{
                                 title: doc.title,
                                 title_link: doc.link,
-                                thumb_url: doc.thumb ? doc.thumb : 'http://www.s-bahn-berlin.de/img/logo-db.png',//TODO should be per creator?
+                                thumb_url: doc.thumb ? doc.thumb : undefined,
                                 text:doc.description
                             }];
                             smarti.post(text,attachments);
@@ -590,7 +620,6 @@ function SmartiWidget(element,_options) {
             loader.show();
 
             smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator},function(data){
-            //$.getJSON('https://dev.cerbot.redlink.io/9503/data/conversations.json', function(data){
 
                 loader.hide();
 
@@ -607,9 +636,7 @@ function SmartiWidget(element,_options) {
                 function buildAttachments(doc) {
                     var attachment = {
                         author_name: "\t",
-                        //author_link: buildLink(doc.messageId),
                         author_icon: Utils.getAvatarUrl(doc.userName),
-                        //thumb_url: doc.img ? doc.img : undefined,
                         text: doc.content,
                         attachments: [],
                         bot: 'assistify',
@@ -692,7 +719,6 @@ function SmartiWidget(element,_options) {
     }
 
     //Main layout
-
     element = $(element);
 
     element.empty();
@@ -797,7 +823,7 @@ function SmartiWidget(element,_options) {
         drawLogin
     );
 
-    return {}; //whatever
+    return {}; //whatever is necessary..
 }
 
 window.SmartiWidget = SmartiWidget;
