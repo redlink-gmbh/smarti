@@ -1,0 +1,116 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: @packageName@
+Source: <@project.url@>
+
+Files: *
+Copyright: 2017 redlink GmbH
+License: Redlink Software License Terms
+
+
+
+License: Redlink Software License Terms
+    REDLINK SOFTWARE LICENSE TERMS
+
+    These license terms are an agreement between RedLink GmbH (Redlink)(or based on where you  live,
+    one of its affiliates) and you. Please read them. They apply to the release or pre-release software
+    named above, which includes the media on which you received it, if any. The terms also apply
+    to any Redlink
+
+    • updates,
+    • supplements, and
+    • support services
+
+    for this software, unless other terms accompany those items. If so, those terms apply.
+
+    BY USING THE SOFTWARE, YOU ACCEPT THESE TERMS. IF YOU DO NOT ACCEPT THEM, DO NOT USE THE SOFTWARE.
+
+    If you comply with these license terms, you have the rights below.
+
+    1. INSTALLATION AND USE RIGHTS.
+
+    a. Installation and Use.
+
+    i. Redlink grants to you the limited right to use only one copy of the Software on a single
+    computer in the manner set forth in this agreement.
+    ii. You may not test the software in a live operating environment unless Redlink
+    permits you to do so under another agreement.
+
+    b. Third Party Programs. The software may include third party programs that Redlink,
+    not the third party, licenses to you under this agreement. Notices, if any, for the third
+    party program are included for your information only.
+
+    2. SCOPE OF LICENSE. The software is licensed, not sold. This agreement only gives you
+    some rights to use the software. Redlink reserves all other rights. Unless applicable law
+    gives you more rights despite this limitation, you may use the software only as expressly
+    permitted in this agreement. In doing so, you must comply with any technical limitations in
+    the software that only allow you to use it in certain ways. You may not
+
+    • work around any technical limitations in the software;
+    • reverse engineer, decompile or disassemble the software, except and only to the extent
+    that applicable law expressly permits, despite this limitation;
+    • make more copies of the software than specified in this agreement or allowed by
+    applicable law, despite this limitation;
+    • publish the software for others to copy;
+    • rent, lease or lend the software;
+    • transfer the software or this agreement to any third party; or
+    • use the software for commercial software hosting services.
+
+    3. TERM. The term of this agreement is until the release of the next version of the software, or
+    commercial release of the software, whichever is first.
+
+    4. RELEASE SOFTWARE. This software is a pre-release version. It may differ from the
+    final version of the software. We may change it for the final, commercial version.
+    We may also not release a final version.
+
+    5. FEEDBACK. If you give feedback about the software to Redlink, you give to Redlink,
+    without charge, the right to use, share and commercialize your feedback in any way and for
+    any purpose. You also give to third parties, without charge, any patent rights needed for their
+    products, technologies and services to use or interface with any specific parts of a Redlink
+    software or service that includes the feedback. You will not give feedback that is subject to a
+    license that requires Redlink to license its software or documentation to third parties
+    because we include your feedback in them. These rights survive this agreement.
+
+    6. COPYRIGHT. The SOFTWARE is owned by Redlink and is protected by copyright laws and international
+    treaty provisions. Therefore, you must treat the SOFTWARE like any other copyrighted material
+    (e.g., a book or musical recording). You may not use or copy the SOFTWARE or any accompanying
+    written materials for any purposes other than what is described in this Agreement. Redlink warrants
+    that Redlink is the sole owner of all patents, copyrights or other applicable intellectual property
+    rights in and to the SOFTWARE unless otherwise indicated in the documentation for the SOFTWARE.
+    Redlink shall defend, indemnify, and hold Licensee harmless from any third party claims, including
+    reasonable attorneys' fees, alleging that Software (including without limitation Sample Code)
+    licensed hereunder infringes or misappropriates third party intellectual property rights.
+
+    7. EXPORT RESTRICTIONS. The software is subject to European export laws and
+    regulations. You must comply with all domestic and international export laws and
+    regulations that apply to the software. These laws include restrictions on destinations, end
+    users and end use.
+
+    8. TRIAL. The trial versions of our products are intended for evaluation purposes only.
+    You may not use the trial version to develop completed applications.  This agreement is
+    protected by copyright laws and international treaty provisions. If you do not agree to
+    the terms of the license agreement, you are not allowed to use this product or any part of it.
+    Should you have any questions concerning this product, contact Redlink.
+
+    9. SUPPORT SERVICES. Because this software is “as is,” we may not provide support
+    services for it.
+
+    10. ENTIRE AGREEMENT. This agreement, and the terms for supplements, updates, Internet-
+    based services and support services that you use, are the entire agreement for the software
+    and support services.
+
+    11. APPLICABLE LAW. In the European Union, Austrian law governs the interpretation of this
+    agreement and applies to claims for breach of it, regardless of conflict of laws principles.
+
+    12. LEGAL EFFECT. This agreement describes certain legal rights. You may have other rights
+    under the laws of your country. You may also have rights with respect to the party from
+    whom you acquired the software. This agreement does not change your rights under the laws
+    of your country if the laws of your country do not permit it to do so.
+
+    13. DISCLAIMER OF WARRANTY. THE SOFTWARE IS LICENSED “AS-IS.” YOU
+    BEAR THE RISK OF USING IT. REDLINK GIVES NO EXPRESS
+    WARRANTIES, GUARANTEES OR CONDITIONS. YOU MAY HAVE
+    ADDITIONAL CONSUMER RIGHTS UNDER YOUR LOCAL LAWS WHICH THIS
+    AGREEMENT CANNOT CHANGE. TO THE EXTENT PERMITTED UNDER
+    YOUR LOCAL LAWS, REDLINK EXCLUDES THE IMPLIED WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-
+    INFRINGEMENT.

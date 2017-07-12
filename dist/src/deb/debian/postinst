@@ -1,0 +1,63 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = configure ]; then
+    # Make sure the administrative user exists
+    if ! getent passwd [[daemonUser]] > /dev/null; then
+        adduser --system --quiet --home /var/lib/[[packageName]] --no-create-home \
+            --shell /bin/bash --group --gecos "[[project.parent.name]]" [[daemonUser]]
+    fi
+    # if the user was created manually, make sure the group is there as well
+    if ! getent group [[daemonUser]] > /dev/null; then
+        addgroup --system --quiet [[daemonUser]]
+    fi
+    # make sure [[daemonUser]] is in the [[daemonUser]] group
+    if ! id -Gn [[daemonUser]] | grep -qw [[daemonUser]]; then
+        adduser --quiet [[daemonUser]] [[daemonUser]]
+    fi
+
+    # check validity of [[daemonUser]] user and group
+    if [ "`id -u [[daemonUser]]`" -eq 0 ]; then
+        echo "The [[daemonUser]] system user must not have uid 0 (root).
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+    if [ "`id -g [[daemonUser]]`" -eq 0 ]; then
+        echo "The [[daemonUser]] system user must not have root as primary group.
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+
+    # ensure home directory ownership
+    mkdir -p /var/lib/[[packageName]]
+    su -s /bin/sh [[daemonUser]] -c "test -O /var/lib/[[packageName]] &&
+            test -G /var/lib/[[packageName]]" || \
+        chown [[daemonUser]]:[[daemonUser]] /var/lib/[[packageName]]
+
+    # nicer log directory permissions
+    mkdir -p /var/log/[[packageName]]
+    chmod 1775 /var/log/[[packageName]]
+    chown root:[[daemonUser]] /var/log/[[packageName]]
+fi
+
+# Automatically added by dh_systemd_enable
+# This will only remove masks created by d-s-h on package removal.
+deb-systemd-helper unmask [[packageName]].service >/dev/null || true
+
+# was-enabled defaults to true, so new installations run enable.
+if deb-systemd-helper --quiet was-enabled [[packageName]].service; then
+    # Enables the unit on first installation, creates new
+    # symlinks on upgrades if the unit file has changed.
+    deb-systemd-helper enable [[packageName]].service >/dev/null || true
+else
+    # Update the statefile to add new symlinks (if any), which need to be
+    # cleaned up on purge. Also remove old symlinks.
+    deb-systemd-helper update-state [[packageName]].service >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_systemd_start
+if [ -d /run/systemd/system ]; then
+    systemctl --system daemon-reload >/dev/null || true
+    deb-systemd-invoke start [[packageName]].service >/dev/null || true
+fi
+# End automatically added section

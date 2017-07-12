@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+echo "Running prerm script..."
+
+if [ $1 -eq 0 ] ; then
+    # Package removal, not upgrade
+    systemctl --no-reload disable ${packageName}.service > /dev/null 2>&1 || :
+    systemctl stop ${packageName}.service > /dev/null 2>&1 || :
+fi

@@ -1,0 +1,21 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# specific
+application-local.properties
+.settings
+*.pid
+
+# mac related files
+.DS_Store

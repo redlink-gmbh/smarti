@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+echo "Running postinst script..."
+
+if [ $1 -eq 1 ] ; then
+    # Initial installation
+    systemctl preset ${packageName}.service >/dev/null 2>&1 || :
+fi

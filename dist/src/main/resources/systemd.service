@@ -1,0 +1,13 @@
+[Unit]
+Description=${project.parent.name}
+
+[Service]
+User=${daemonUser}
+Group=${daemonUser}
+EnvironmentFile=-/etc/sysconfig/${packageName}
+EnvironmentFile=-/etc/default/${packageName}
+WorkingDirectory=/var/lib/${packageName}
+ExecStart=/usr/share/${packageName}/${packageName}
+
+[Install]
+WantedBy=multi-user.target

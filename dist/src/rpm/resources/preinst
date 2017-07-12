@@ -1,0 +1,38 @@
+#!/bin/sh -e
+
+echo "Running preinst script..."
+
+if [ "$1" = "1" ]; then
+  # Perform tasks to prepare for the initial installation
+
+  # Make sure the administrative user exists
+  if ! getent passwd ${daemonUser} > /dev/null; then
+      useradd --system --home-dir /var/lib/${packageName} --no-create-home \
+          --shell /bin/bash --user-group --comment "${project.parent.name}" ${daemonUser}
+  fi
+
+  # if the user was created manually, make sure the group is there as well
+  if ! getent group ${daemonUser} > /dev/null; then
+      groupadd --system ${daemonUser}
+  fi
+
+  # make sure ${daemonUser} is in the ${daemonUser} group
+  if ! id -Gn ${daemonUser} | grep -qw ${daemonUser}; then
+      usermod -g ${daemonUser} ${daemonUser}
+  fi
+
+  # check validity of ${daemonUser} user and group
+  if [ "`id -u ${daemonUser}`" = "0" ]; then
+      echo "The ${daemonUser} system user must not have uid 0 (root).
+  Please fix this and reinstall this package." >&2
+      exit 1
+  fi
+  if [ "`id -g ${daemonUser}`" = "0" ]; then
+      echo "The ${daemonUser} system user must not have root as primary group.
+  Please fix this and reinstall this package." >&2
+      exit 1
+  fi
+
+#elif [ "$1" = "2" ]; then
+#  # Perform whatever maintenance must occur before the upgrade begins
+fi
