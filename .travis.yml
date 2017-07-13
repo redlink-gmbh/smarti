@@ -1,10 +1,12 @@
+dist: trusty
+
 language: java
 
 services:
   - mongodb
 
 jdk:
-  - oraclejdk8
+  - openjdk8
 
 install:
   - mvn -B clean install -Dquick
