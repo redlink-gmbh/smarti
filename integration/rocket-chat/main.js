@@ -537,7 +537,7 @@ function SmartiWidget(element,_options) {
 
                     //map to dbsearch results TODO should be configurable
                     var docs = $.map(data.response.docs, function(doc) {
-                        return {
+                        /*return {
                             source: doc.dbsearch_source_name_s + '/' + doc.dbsearch_space_name_t,
                             title: doc.dbsearch_title_s,
                             description: doc.dbsearch_excerpt_s,
@@ -545,9 +545,9 @@ function SmartiWidget(element,_options) {
                             doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),//TODO Utils.mapDocType(doc.type)?
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
-                        };
+                        };*/
                         // for RedlinKSearch endpoint
-                        /*return {
+                        return {
                             source: doc.source,
                             title: doc.title,
                             description: doc.description,
@@ -556,7 +556,7 @@ function SmartiWidget(element,_options) {
                             link: doc.url,
                             date: new Date(),
                             thumb: doc.thumbnail ? 'http://localhost:8983/solr/main/tn/' + doc.thumbnail : undefined
-                        }*/
+                        }
                     });
 
                     resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
