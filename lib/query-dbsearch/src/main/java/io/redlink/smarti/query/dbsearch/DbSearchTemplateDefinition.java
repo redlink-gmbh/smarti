@@ -22,8 +22,11 @@ import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.Token;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class DbSearchTemplateDefinition extends TemplateDefinition {
@@ -34,6 +37,8 @@ public class DbSearchTemplateDefinition extends TemplateDefinition {
     public static final String ROLE_ENTITY = "Entity";
     public static final String ROLE_KEYWORD = "Keyword";
     public static final String ROLE_TOPIC = "Topic";
+    
+    private final Set<String> REQUIRED_ROLES = new HashSet<>(Arrays.asList(ROLE_TERM,ROLE_ENTITY,ROLE_KEYWORD));
     
     public DbSearchTemplateDefinition() {
         super(DBSEARCH_TYPE);
@@ -59,7 +64,7 @@ public class DbSearchTemplateDefinition extends TemplateDefinition {
     @Override
     protected boolean validate(Collection<Slot> slots, List<Token> tokens) {
         return slots.stream()
-                .filter(s -> s.getRole().equals(ROLE_TERM))
+                .filter(s -> REQUIRED_ROLES.contains(s.getRole()))
                 .filter(s -> s.getTokenIndex() >= 0).findAny().isPresent();
     }
 
