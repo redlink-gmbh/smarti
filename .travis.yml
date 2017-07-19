@@ -18,3 +18,5 @@ install:
 script:
   - mvn -B -DargLine="-Xmx2g" test
 
+
+
