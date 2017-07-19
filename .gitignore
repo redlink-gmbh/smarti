@@ -9,7 +9,7 @@
 .project
 .externalToolBuilders/
 .classpath
-
+.factorypath
 
 # Maven
 target/
@@ -27,4 +27,3 @@ application-local.properties
 
 # mac related files
 .DS_Store
-
