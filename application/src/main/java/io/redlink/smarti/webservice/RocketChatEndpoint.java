@@ -31,6 +31,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ConnectionBackoffStrategy;
 import org.apache.http.client.methods.HttpPost;
@@ -71,9 +72,14 @@ public class RocketChatEndpoint {
     @Autowired
     private ConversationService conversationService;
 
-    private final HttpClientBuilder httpClientBuilder;
+    protected final HttpClientBuilder httpClientBuilder;
 
-    public RocketChatEndpoint() {
+    public RocketChatEndpoint(
+            @Value("${rocketchat.proxy.hostname:}") String proxyHostname,
+            @Value("${rocketchat.proxy.port:80}") int proxyPort,
+            @Value("${rocketchat.proxy.scheme:http}") String proxyScheme
+    ) {
+
         httpClientBuilder = HttpClientBuilder.create()
                 .setRetryHandler((exception, executionCount, context) -> executionCount < 3)
                 .setConnectionBackoffStrategy(new ConnectionBackoffStrategy() {
@@ -88,6 +94,10 @@ public class RocketChatEndpoint {
                     }
                 })
                 .setUserAgent("Smarti/0.0 Rocket.Chat-Endpoint/0.1");
+
+        if(StringUtils.isNotBlank(proxyHostname)) {
+            httpClientBuilder.setProxy(new HttpHost(proxyHostname, proxyPort, proxyScheme));
+        }
     }
 
 
