@@ -525,8 +525,12 @@ function SmartiWidget(element,_options) {
             resultCount.empty();
             resultPaging.empty();
             loader.show();
+
+            let customSuffix = RocketChat.settings.get('Assistify_AI_DBSearch_Suffix') || '';
+            customSuffix = customSuffix.replace(/\r\n|\r|\n/g, '');
+            console.log(`executeSearch ${ params.query.url }${ customSuffix }`);
             $.ajax({
-				url: params.query.url,
+				url: params.query.url + customSuffix,
 				dataType: 'jsonp',
 				jsonp: 'json.wrf',
                 failure: function(err) {
