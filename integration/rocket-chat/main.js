@@ -515,6 +515,9 @@ function SmartiWidget(element,_options) {
             var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
 
             params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
+            if (wgt_conf.suffix) {
+            		params.query.url += wgt_conf.suffix;
+            }
 
             if(page > 0) {
                 //append paging
@@ -525,6 +528,8 @@ function SmartiWidget(element,_options) {
             resultCount.empty();
             resultPaging.empty();
             loader.show();
+
+            console.log(`executeSearch ${ params.query.url }`);
             $.ajax({
                 url: params.query.url,
                 dataType: 'jsonp',
