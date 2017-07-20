@@ -1,18 +1,24 @@
 package io.redlink.smarti.model.config;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
+@JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="_class")
 public class ComponentConfiguration {
 
     private String type;
     private boolean enabled;
-    private Map<String,Object> configuration;
+    private boolean unbound;
+    private final Map<String,Object> configuration = new LinkedHashMap<>(); //use the order of params as they are added
     
     /**
      * Getter for the component type
@@ -48,11 +54,33 @@ public class ComponentConfiguration {
         this.enabled = enabled;
     }
     
+    /**
+     * If this configuration is bound to an active component.
+     * @return <code>true</code> if this configuration is bound to an active component or
+     * <code>false</code> if this configuration is not bound to a component
+     */
+    public boolean isUnbound() {
+        return unbound;
+    }
+    
+    public void setUnbound(boolean unbound) {
+        this.unbound = unbound;
+    }
+    
     @JsonAnyGetter
     protected Map<String,Object> getConfigParams() {
         return configuration;
     }
 
+    @JsonIgnore
+    public void setConfiguration(String param, Object value){
+        if(value == null){
+            configuration.remove(param);
+        } else {
+            configuration.put(param, value);
+        }
+    }
+    
     @JsonAnySetter
     protected void setConfigParam(String name, Object value) {
         configuration.put(name, value);

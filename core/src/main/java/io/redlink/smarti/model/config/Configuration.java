@@ -1,6 +1,9 @@
 package io.redlink.smarti.model.config;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -19,8 +22,8 @@ public class Configuration {
     
     private Date modified;
     
-    private SmartiConfiguration smarti;
-
+    private Map<String,List<ComponentConfiguration>> config = new HashMap<>();
+    
     public Configuration() {
         this(null);
     }
@@ -58,14 +61,12 @@ public class Configuration {
         this.modified = modified;
     }
     
-    public SmartiConfiguration getSmarti() {
-        return smarti;
+    public Map<String, List<ComponentConfiguration>> getConfig() {
+        return config;
     }
     
-    public void setSmarti(SmartiConfiguration smarti) {
-        this.smarti = smarti;
+    public void setConfig(Map<String, List<ComponentConfiguration>> config) {
+        this.config = config == null ? new HashMap<>() : config;
     }
-
-    
     
 }

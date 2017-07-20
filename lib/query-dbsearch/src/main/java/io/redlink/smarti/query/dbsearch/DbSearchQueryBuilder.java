@@ -18,8 +18,10 @@
 package io.redlink.smarti.query.dbsearch;
 
 import io.redlink.smarti.api.QueryBuilder;
+import io.redlink.smarti.api.config.Configurable;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import org.apache.commons.lang3.StringUtils;
@@ -31,8 +33,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.dbsearch.DbSearchTemplateDefinition.DBSEARCH_TYPE;
@@ -41,7 +47,7 @@ import static io.redlink.smarti.query.dbsearch.DbSearchTemplateDefinition.DBSEAR
  */
 @Component
 @ConditionalOnProperty("dbsearch.solr")
-public class DbSearchQueryBuilder extends QueryBuilder {
+public class DbSearchQueryBuilder extends QueryBuilder implements Configurable<ComponentConfiguration>{
 
     @Value("${dbsearch.solr}") //required
     private String solrEndpoint;
@@ -164,4 +170,37 @@ public class DbSearchQueryBuilder extends QueryBuilder {
         }
     }
     
+    @Override
+    public String getComponentCategory() {
+        return "queryBuilder";
+    }
+
+    @Override
+    public Class<ComponentConfiguration> getComponentType() {
+        return ComponentConfiguration.class;
+    }
+    
+    @Override
+    public String getComponentName() {
+        return getClass().getSimpleName();
+    }
+    
+    @Override
+    public ComponentConfiguration getDefaultConfiguration() {
+        ComponentConfiguration cc = new ComponentConfiguration();
+        cc.setConfiguration("solrEndpoint", solrEndpoint);
+        return cc;
+    }
+    
+    @Override
+    public boolean validate(ComponentConfiguration configuration, Set<String> missing,
+            Map<String, String> conflicting) {
+        try {
+            new URL(configuration.getConfiguration("solrEndpoint", this.solrEndpoint));
+        }catch (MalformedURLException e) {
+            conflicting.put("solrEndpoint", e.getMessage());
+            return false;
+        }
+        return true;
+    }
 }
