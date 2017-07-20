@@ -527,6 +527,11 @@ function SmartiWidget(element,_options) {
             loader.show();
             $.ajax({
                 url: params.query.url,
+                dataType: 'jsonp',
+                jsonp: 'json.wrf',
+                failure: function(err) {
+                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
+                	},
                 success: function(data){
                     loader.hide();
 
@@ -604,10 +609,6 @@ function SmartiWidget(element,_options) {
                         .append($('<td class="pageLink pageLinkRight">').append(next))
                         .appendTo(resultPaging);
 
-                },
-                dataType: "json",
-                failure: function(err) {
-                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
                 }
             });
         }
