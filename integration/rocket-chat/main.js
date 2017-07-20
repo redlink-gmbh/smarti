@@ -525,8 +525,17 @@ function SmartiWidget(element,_options) {
             resultCount.empty();
             resultPaging.empty();
             loader.show();
+
+            let customSuffix = RocketChat.settings.get('Assistify_AI_DBSearch_Suffix') || '';
+            customSuffix = customSuffix.replace(/\r\n|\r|\n/g, '');
+            console.log(`executeSearch ${ params.query.url }${ customSuffix }`);
             $.ajax({
-                url: params.query.url,
+				url: params.query.url + customSuffix,
+				dataType: 'jsonp',
+				jsonp: 'json.wrf',
+                failure: function(err) {
+                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
+                },
                 success: function(data){
                     loader.hide();
 
@@ -546,17 +555,6 @@ function SmartiWidget(element,_options) {
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
                         };
-                        // for RedlinKSearch endpoint
-                        /*return {
-                            source: doc.source,
-                            title: doc.title,
-                            description: doc.description,
-                            type: doc.type,
-                            doctype: Utils.mapDocType(doc.type),
-                            link: doc.url,
-                            date: new Date(),
-                            thumb: doc.thumbnail ? 'http://localhost:8983/solr/main/tn/' + doc.thumbnail : undefined
-                        }*/
                     });
 
                     resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
@@ -603,11 +601,6 @@ function SmartiWidget(element,_options) {
                         .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.response.numFound/numOfRows)))
                         .append($('<td class="pageLink pageLinkRight">').append(next))
                         .appendTo(resultPaging);
-
-                },
-                dataType: "json",
-                failure: function(err) {
-                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
                 }
             });
         }
