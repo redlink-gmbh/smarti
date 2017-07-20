@@ -23,7 +23,7 @@ GROUP=@daemonUser@
 
 JVMS=(/usr/lib/jvm/jre-1.8.0/bin/java /usr/bin/java8 java8 /usr/bin/java java)
 JVM=
-JVM_ARGS="-Xmx2g"
+JVM_ARGS="-Xmx4g"
 
 . /etc/init.d/functions
 

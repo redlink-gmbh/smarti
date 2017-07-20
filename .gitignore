@@ -2,6 +2,15 @@
 .idea/
 *.iml
 
+# Eclipse
+.settings/
+.loadpath
+.recommenders
+.project
+.externalToolBuilders/
+.classpath
+.factorypath
+
 # Maven
 target/
 pom.xml.tag
@@ -14,7 +23,6 @@ buildNumber.properties
 
 # specific
 application-local.properties
-.settings
 *.pid
 
 # mac related files

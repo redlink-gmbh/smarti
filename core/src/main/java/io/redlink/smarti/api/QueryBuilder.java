@@ -62,12 +62,15 @@ public abstract class QueryBuilder {
                     if(def != null){
                         return def.isValid(t, conversation.getTokens());
                     } else {
-                        log.warn("Missing TemplateDefinition for type '{}' (Template: {})",t.getType(),t.getClass().getName());
+                        log.warn("Missing TemplateDefinition for type '{}' (Template: {})", t.getType(), t.getClass().getName());
                         return false;
                     }
                 })
                 .filter(this::acceptTemplate)
-                .forEach(t -> doBuildQuery(t, conversation));
+                .forEach(t -> {
+                    log.trace("build query for {} and {} with {}", t , conversation, this);
+                    doBuildQuery(t, conversation);
+                });
     }
 
     public abstract boolean acceptTemplate(Template intent);
@@ -166,6 +169,11 @@ public abstract class QueryBuilder {
 
     public String getCreatorName() {
         return QueryBuilderUtils.getQueryBuilderName(getClass());
+    }
+    
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
     }
 
 }
