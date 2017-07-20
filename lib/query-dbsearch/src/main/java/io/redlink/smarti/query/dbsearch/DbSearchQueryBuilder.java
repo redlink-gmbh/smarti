@@ -82,10 +82,12 @@ public class DbSearchQueryBuilder extends QueryBuilder {
 
     @Override
     public boolean acceptTemplate(Template template) {
-        return DBSEARCH_TYPE.equals(template.getType()) && 
+        boolean state =  DBSEARCH_TYPE.equals(template.getType()) && 
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getTokenIndex() >= 0)
                     .findAny().isPresent();
+        log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
+        return state;
     }
 
     @Override

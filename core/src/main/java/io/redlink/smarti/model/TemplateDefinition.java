@@ -64,8 +64,11 @@ public abstract class TemplateDefinition {
 
     public final boolean isValid(Template template, List<Token> tokens){
         if(template != null){
-            return validate(template.getSlots(), tokens);
+            boolean state = validate(template.getSlots(), tokens);
+            log.trace("{} is {}valid", template, state ? "" : "in");
+            return state;
         } else {
+            log.debug("null parsed as template to isValid(..) -> return invalid state");
             return false;
         }
     }
@@ -137,5 +140,12 @@ public abstract class TemplateDefinition {
                 .filter(s -> expected == null || expected.getTokenType() == s.getTokenType())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public String toString() {
+        return "TemplateDefinition [type=" + type + "]";
+    }
+    
+    
     
 }

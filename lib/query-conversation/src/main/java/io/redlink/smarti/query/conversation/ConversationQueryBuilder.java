@@ -62,11 +62,13 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
 
     @Override
     public boolean acceptTemplate(Template template) {
-        return RELATED_CONVERSATION_TYPE.equals(template.getType()) && 
+        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) && 
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
                     .filter(s -> s.getTokenIndex() >= 0)
                     .findAny().isPresent();
+        log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
+        return state;
     }
 
     @Override
