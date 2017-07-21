@@ -362,7 +362,7 @@ return {
  *       channel: 'GENERAL',
  *       widget:{
  *           'query.dbsearch': {
- *               numOfResults:2
+ *               numOfRows:2
  *           },
  *           'query.keyword': {
  *               disabled:true
@@ -383,15 +383,15 @@ function SmartiWidget(element,_options) {
         socketEndpoint: "ws://localhost:3000/websocket/",
         smartiEndpoint: 'http://localhost:8080/',
         channel: 'GENERAL',
-        widget:{
+        widget: {
             'query.dbsearch': {
-                numOfResults:2
+            		numOfRows: 2
             },
-            'query.keyword': {
-                disabled:true
+            'query.dbsearch.keyword': {
+                disabled: true
             }
         },
-        lang:'de'
+        lang: 'de'
     };
 
     $.extend(true,options,_options);
@@ -515,6 +515,9 @@ function SmartiWidget(element,_options) {
             var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
 
             params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
+            if (wgt_conf.suffix) {
+            		params.query.url += wgt_conf.suffix;
+            }
 
             if(page > 0) {
                 //append paging
@@ -525,8 +528,15 @@ function SmartiWidget(element,_options) {
             resultCount.empty();
             resultPaging.empty();
             loader.show();
+
+            console.log(`executeSearch ${ params.query.url }`);
             $.ajax({
                 url: params.query.url,
+                dataType: 'jsonp',
+                jsonp: 'json.wrf',
+                failure: function(err) {
+                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
+                	},
                 success: function(data){
                     loader.hide();
 
@@ -546,17 +556,6 @@ function SmartiWidget(element,_options) {
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
                         };
-                        // for RedlinKSearch endpoint
-                        /*return {
-                            source: doc.source,
-                            title: doc.title,
-                            description: doc.description,
-                            type: doc.type,
-                            doctype: Utils.mapDocType(doc.type),
-                            link: doc.url,
-                            date: new Date(),
-                            thumb: doc.thumbnail ? 'http://localhost:8983/solr/main/tn/' + doc.thumbnail : undefined
-                        }*/
                     });
 
                     resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
@@ -604,10 +603,6 @@ function SmartiWidget(element,_options) {
                         .append($('<td class="pageLink pageLinkRight">').append(next))
                         .appendTo(resultPaging);
 
-                },
-                dataType: "json",
-                failure: function(err) {
-                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
                 }
             });
         }
