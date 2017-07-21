@@ -311,6 +311,10 @@ function Smarti(options) {
 
     function post(msg,attachments,success,failure) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
+
+        console.debug("smarti post(). sending conversation.post event to Piwik");
+        Piwik.getTracker().trackEvent(RocketChat.settings.get("uniqueID") + ".knowledgebase", "conversation.post", "");
+
         ddp.on("result", function(message) {
             if(message.id == methodId) {
                 if(message.error && error) {
@@ -627,6 +631,9 @@ function SmartiWidget(element,_options) {
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
         function getResults() {
+            console.debug("smarti getResults(). sending conversation.found event to Piwik");
+            Piwik.getTracker().trackEvent(RocketChat.settings.get("uniqueID") + ".knowledgebase", "conversation.found", "");
+
             //TODO get remote
             results.empty();
             loader.show();
@@ -827,6 +834,9 @@ function SmartiWidget(element,_options) {
     }
 
     function initialize() {
+        console.debug("smarti initialize(). sending dialog.start event to Piwik");
+        Piwik.getTracker().trackEvent(RocketChat.settings.get("uniqueID") + ".knowledgebase", "dialog.start", "");
+
         smarti.init(null,showError)
     }
 
