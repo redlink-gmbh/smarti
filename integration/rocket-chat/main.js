@@ -362,7 +362,7 @@ return {
  *       channel: 'GENERAL',
  *       widget:{
  *           'query.dbsearch': {
- *               numOfResults:2
+ *               numOfRows:2
  *           },
  *           'query.keyword': {
  *               disabled:true
@@ -383,15 +383,15 @@ function SmartiWidget(element,_options) {
         socketEndpoint: "ws://localhost:3000/websocket/",
         smartiEndpoint: 'http://localhost:8080/',
         channel: 'GENERAL',
-        widget:{
+        widget: {
             'query.dbsearch': {
-                numOfResults:2
+            		numOfRows: 2
             },
-            'query.keyword': {
-                disabled:true
+            'query.dbsearch.keyword': {
+                disabled: true
             }
         },
-        lang:'de'
+        lang: 'de'
     };
 
     $.extend(true,options,_options);
@@ -556,17 +556,6 @@ function SmartiWidget(element,_options) {
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
                         };
-                        // for RedlinKSearch endpoint
-                        /*return {
-                            source: doc.source,
-                            title: doc.title,
-                            description: doc.description,
-                            type: doc.type,
-                            doctype: Utils.mapDocType(doc.type),
-                            link: doc.url,
-                            date: new Date(),
-                            thumb: doc.thumbnail ? 'http://localhost:8983/solr/main/tn/' + doc.thumbnail : undefined
-                        }*/
                     });
 
                     resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
