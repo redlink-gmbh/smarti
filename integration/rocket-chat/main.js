@@ -345,6 +345,12 @@ function Smarti(options) {
     }
 }
 
+/**
+ * A tracker wrapper
+ * @param category
+ * @param onEvent the real tracker methode which is called
+ * @constructor
+ */
 function Tracker(category, onEvent) {
     function trackEvent(action, name, value) {
         if(onEvent) onEvent(category, action, name, value);
