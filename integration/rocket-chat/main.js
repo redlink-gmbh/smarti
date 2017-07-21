@@ -143,7 +143,6 @@ const Utils = {
  *      query: function(params,success,failure)
  *      post: function(msg,attachments,success,failure)
  *      suggest: function(msg,success,failure)
- *      close: function(success,failure)
  * }
  */
 function Smarti(options) {
@@ -335,18 +334,6 @@ function Smarti(options) {
         failure();
     }
 
-    //TODO reimplement
-    function close() {
-        $.ajax({
-            url: options.smarti.endpoint + 'conversation/' + conversationId + '/publish',
-            method:'POST',
-            success: function(data){
-                alert('Konversation wurde abgeschlossen');
-            },
-            dataType: "json"
-        });
-    }
-
     return {
         login: login,
         init: init,
@@ -354,8 +341,7 @@ function Smarti(options) {
         unsubscribe: function(id,func){pubsub(id).unsubscribe(func)},
         query: query,
         post: post,
-        suggest: suggest,
-        close: close
+        suggest: suggest
     }
 }
 
