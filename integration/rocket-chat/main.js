@@ -132,7 +132,8 @@ const Utils = {
  *      channel: STRING,
  *      rocket: {
  *          endpoint: STRING
- *      }
+ *      },
+ *      tracker: Tracker
  * }
  * @returns {
  *      login: function(success,failure,username,password),
@@ -150,7 +151,8 @@ function Smarti(options) {
     options = $.extend(true,{
         DDP:{
             SocketConstructor: WebSocket
-        }
+        },
+        tracker: new Tracker()
     },options);
 
     //init socket connection
@@ -313,7 +315,7 @@ function Smarti(options) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
 
         console.debug("smarti post(). sending conversation.post event to Piwik");
-        Piwik.getTracker().trackEvent(RocketChat.settings.get("uniqueID") + ".knowledgebase", "conversation.post", "");
+        options.tracker.trackEvent("conversation.post");
 
         ddp.on("result", function(message) {
             if(message.id == methodId) {
@@ -345,7 +347,7 @@ function Smarti(options) {
         });
     }
 
-return {
+    return {
         login: login,
         init: init,
         subscribe: function(id,func){pubsub(id).subscribe(func)},
@@ -354,6 +356,12 @@ return {
         post: post,
         suggest: suggest,
         close: close
+    }
+}
+
+function Tracker(category, onEvent) {
+    function trackEvent(action, name, value) {
+        if(onEvent) onEvent(category, action, name, value);
     }
 }
 
@@ -395,6 +403,10 @@ function SmartiWidget(element,_options) {
                 disabled: true
             }
         },
+        tracker: {
+            onEvent: Piwik ? Piwik.getTracker().trackEvent : function(){},
+            category: "knowledgebase"
+        },
         lang: 'de'
     };
 
@@ -403,6 +415,8 @@ function SmartiWidget(element,_options) {
     console.debug('init smarti widget:\n%s', JSON.stringify(options,null,2));
 
     localize.setLocale(options.lang);
+
+    var tracker = new Tracker(options.tracker.category,options.tracker.onEvent);
 
     var widgets = [];
 
@@ -631,8 +645,9 @@ function SmartiWidget(element,_options) {
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
         function getResults() {
-            console.debug("smarti getResults(). sending conversation.found event to Piwik");
-            Piwik.getTracker().trackEvent(RocketChat.settings.get("uniqueID") + ".knowledgebase", "conversation.found", "");
+            console.debug("smarti getResults(). sending conversation.found event to tracker");
+
+            tracker.trackEvent("conversation.found");
 
             //TODO get remote
             results.empty();
@@ -749,7 +764,7 @@ function SmartiWidget(element,_options) {
 
     //Smarti
 
-    var smarti = Smarti({DDP:{endpoint:options.socketEndpoint},smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
+    var smarti = new Smarti({DDP:{endpoint:options.socketEndpoint},tracker:tracker,smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
         refreshWidgets(data);
@@ -835,7 +850,8 @@ function SmartiWidget(element,_options) {
 
     function initialize() {
         console.debug("smarti initialize(). sending dialog.start event to Piwik");
-        Piwik.getTracker().trackEvent(RocketChat.settings.get("uniqueID") + ".knowledgebase", "dialog.start", "");
+
+        tracker.trackEvent("dialog.start");
 
         smarti.init(null,showError)
     }
