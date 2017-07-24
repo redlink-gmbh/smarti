@@ -396,7 +396,7 @@ function SmartiWidget(element,_options) {
             }
         },
         tracker: {
-            onEvent: function(){}, //Piwik ? Piwik.getTracker().trackEvent : function(){},
+            onEvent: Piwik ? Piwik.getTracker().trackEvent : function(){},
             category: "knowledgebase"
         },
         lang: 'de'
