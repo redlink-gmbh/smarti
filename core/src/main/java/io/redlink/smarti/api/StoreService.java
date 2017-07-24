@@ -18,8 +18,12 @@
 package io.redlink.smarti.api;
 
 import io.redlink.smarti.api.event.StoreServiceEvent;
+import io.redlink.smarti.exception.ConflictException;
+import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,6 +32,7 @@ import org.springframework.context.ApplicationEventPublisherAware;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -38,6 +43,22 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public final Conversation store(Conversation conversation) {
         conversation.setLastModified(new Date());
+        if(conversation.getId() != null){ //if we update an existing we need to validate the clientId value
+            Conversation persisted = get(conversation.getId());
+            if(persisted == null){
+                throw new NotFoundException(Conversation.class, conversation.getId());
+            } else {
+                if(conversation.getClientId() == null){
+                    conversation.setClientId(persisted.getClientId());
+                } else if(Objects.equals(conversation.getClientId(), persisted.getClientId())){
+                    throw new ConflictException(Conversation.class, "clientId", "The clientId MUST NOT be changed for an existing conversation!");
+                }
+            }
+        } else { //create a new conversation
+            if(StringUtils.isBlank(conversation.getClientId())){
+                throw new IllegalStateException("The clientId MUST NOT be NULL nor empty for a new conversation!");
+            }
+        }
         final Conversation stored = doStore(conversation);
         if (eventPublisher != null) {
             eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));

@@ -31,11 +31,10 @@ import org.springframework.stereotype.Component;
  *
  */
 @Component
-@ConditionalOnProperty("dbsearch.solr")
 public class DbSearchKeywordQueryBuilder extends DbSearchQueryBuilder {
 
-    public DbSearchKeywordQueryBuilder(TemplateRegistry registry) {
-        super(registry, "keyword");
+    public DbSearchKeywordQueryBuilder(DbSearchEndpointConfiguration defConf, TemplateRegistry registry) {
+        super(defConf, registry, "keyword");
     }
 
     @Override

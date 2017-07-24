@@ -1,6 +1,7 @@
 package io.redlink.smarti.model.config;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 @JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="_class")
-public class ComponentConfiguration {
+public class ComponentConfiguration implements Cloneable {
 
     private String type;
     private boolean enabled;
@@ -193,4 +194,17 @@ public class ComponentConfiguration {
         }
     }
     
+    @Override
+    public ComponentConfiguration clone() throws CloneNotSupportedException {
+        ComponentConfiguration clone = new ComponentConfiguration();
+        copyState(clone);
+        return clone;
+    }
+
+    protected final void copyState(ComponentConfiguration clone) {
+        clone.configuration.putAll(configuration);
+        clone.enabled = enabled;
+        clone.type = type;
+        clone.unbound = unbound;
+    }
 }

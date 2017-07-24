@@ -20,7 +20,10 @@ package io.redlink.smarti.webservice;
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.config.ComponentConfiguration;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.services.ConfigurationService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.services.QueryBuilderService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -75,6 +78,9 @@ public class ConversationWebservice {
 
     @Autowired
     private QueryBuilderService queryBuilderService;
+    
+    @Autowired
+    private ConfigurationService configService;
 
     @ApiOperation(value = "create a conversation")
     @ApiResponses({
@@ -186,22 +192,29 @@ public class ConversationWebservice {
                                       @PathVariable("creator") String creator,
                                       @RequestBody QueryUpdate queryUpdate) {
         //FIXME: does this really work as intended?
-        final Conversation conversation = storeService.get(id);
+        Conversation conversation = storeService.get(id);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
+        Configuration clientConf = configService.getConfiguration(conversation.getClientId());
+        if(clientConf == null){
+            return ResponseEntity.notFound().build();
+        }
+        final Template template = conversation.getTemplates().get(templateIdx);
+        if (template == null) return ResponseEntity.notFound().build();
+        final QueryBuilder builder = queryBuilderService.getQueryBuilder(creator);
+        if (builder == null) return ResponseEntity.notFound().build();
+
+        //now that we have everything perform and store the updates to the conversation
+        conversation.setTokens(queryUpdate.getTokens());
+        template.setSlots(queryUpdate.getSlots());
+        conversation = storeService.store(conversation);
+
         try {
-            final Template template = conversation.getTemplates().get(templateIdx);
-            if (template == null) return ResponseEntity.notFound().build();
-
-            final QueryBuilder builder = queryBuilderService.getQueryBuilder(creator);
-            if (builder == null) return ResponseEntity.notFound().build();
-
-            conversation.setTokens(queryUpdate.getTokens());
-            template.setSlots(queryUpdate.getSlots());
-
-            builder.buildQuery(conversation);
-
+            for(ComponentConfiguration cc : (Iterable<ComponentConfiguration>)clientConf.getConfigurations(builder)){
+                builder.buildQuery(conversation, cc);
+            }
+            storeService.storeIfUnmodifiedSince(conversation, conversation.getLastModified());
             return ResponseEntity.ok(template.getQueries());
         } catch (IndexOutOfBoundsException e) {
             return ResponseEntity.notFound().build();

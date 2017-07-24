@@ -17,8 +17,10 @@
 
 package io.redlink.smarti.api;
 
+import io.redlink.smarti.api.config.Configurable;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.smarti.util.QueryBuilderUtils;
@@ -31,17 +33,46 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
+ * A QueryBuilder is expected to build a {@link Query} for some external (or internal) service based on
+ * information consumed from a {@link Template}. Optionally it can support server side execution of
+ * built queries.
  */
-public abstract class QueryBuilder {
+public abstract class QueryBuilder<C extends ComponentConfiguration> implements Configurable<C>{
 
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
     private final TemplateRegistry registry;
+    private final Class<C> configType;
+    private String _creatorName;
 
-    protected QueryBuilder(TemplateRegistry registry) {
+    protected QueryBuilder(Class<C> configType, TemplateRegistry registry) {
+        this.configType = configType;
         this.registry = registry;
     }
 
+    @Override
+    public final String getComponentCategory() {
+        return "queryBuilder";
+    }
+    
+    @Override
+    public final Class<C> getComponentType() {
+        return configType;
+    }
+    
+    @Override
+    public final String getComponentName() {
+        if(_creatorName == null){
+            //Note: us a different variable to build to avoid concurrency issues
+            String creatorName = getCreatorName();
+            if(creatorName == null){
+                creatorName = getClass().getName();
+            }
+            _creatorName = creatorName.replace('.', '_'); //mongo does not like '.' in field names
+        }
+        return _creatorName;
+    }
+    
     public static boolean containsTokenWithType(List<Token> queryTokens, Type type) {
         return containsTokenWithType(queryTokens, type, false);
     }
@@ -54,7 +85,10 @@ public abstract class QueryBuilder {
     }
 
 
-    public final void buildQuery(Conversation conversation) {
+    public final void buildQuery(Conversation conversation, C configuration) {
+        if(conversation == null || configuration == null){
+            throw new NullPointerException();
+        }
         conversation.getTemplates().stream()
                 .filter(t -> t.getState() != State.Rejected)
                 .filter(t -> {
@@ -69,15 +103,24 @@ public abstract class QueryBuilder {
                 .filter(this::acceptTemplate)
                 .forEach(t -> {
                     log.trace("build query for {} and {} with {}", t , conversation, this);
-                    doBuildQuery(t, conversation);
+                    doBuildQuery(configuration, t, conversation);
                 });
     }
 
     public abstract boolean acceptTemplate(Template intent);
 
-    protected abstract void doBuildQuery(Template intent, Conversation conversation);
+    /**
+     * Builds the query for a template part of a conversation by using the parsed configuration
+     * @param config the configuration to use. If a query is built it shall be added to
+     * {@link Template#getQueries()}.
+     * @param intent the template 
+     * @param conversation the conversation
+     */
+    protected abstract void doBuildQuery(C config, Template intent, Conversation conversation);
     
-    
+    public String getCreatorName() {
+        return QueryBuilderUtils.getQueryBuilderName(getClass());
+    }
     
     /**
      * Getter for any (valid) {@link Token} referenced by the parsed
@@ -159,7 +202,7 @@ public abstract class QueryBuilder {
                 .findFirst().isPresent();
     }
 
-    public List<? extends Result> execute(Template template, Conversation conversation) throws IOException {
+    public List<? extends Result> execute(C config, Template template, Conversation conversation) throws IOException {
         return Collections.emptyList();
     }
 
@@ -167,13 +210,9 @@ public abstract class QueryBuilder {
         return false;
     }
 
-    public String getCreatorName() {
-        return QueryBuilderUtils.getQueryBuilderName(getClass());
-    }
-    
     @Override
     public String toString() {
-        return getClass().getSimpleName();
+        return getCreatorName();
     }
 
 }

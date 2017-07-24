@@ -19,10 +19,15 @@ package io.redlink.smarti.services;
 
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.QueryBuilderContainer;
+import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.config.ComponentConfiguration;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,30 +44,27 @@ public class QueryBuilderService {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
-    private final Map<String, QueryBuilder> builders;
-
-    public QueryBuilderService() {
-        this.builders = Collections.emptyMap();
-    }
-
-    @Autowired(required = false)
-    public QueryBuilderService(Optional<List<QueryBuilder>> builders, Optional<List<QueryBuilderContainer>> builderContainers) {
-        log.debug("QueryBuilders: {}, QueryBuilderContainer: {}", builders, builderContainers);
+    private final ConfigurationService confService;
+    
+    private final Map<String, QueryBuilder<?>> builders;
+    
+    @Autowired
+    public QueryBuilderService(ConfigurationService confService, Optional<List<QueryBuilder<?>>> builders) {
+        this.confService = confService;
+        log.debug("QueryBuilders: {}", builders);
         this.builders = new HashMap<>();
 
         builders.orElse(Collections.emptyList())
                 .forEach(this::registerBuilder);
-        builderContainers.orElse(Collections.emptyList()).stream()
-                .flatMap(c -> c.getQueryBuilders().stream())
-                .forEach(this::registerBuilder);
     }
 
-    private void registerBuilder(QueryBuilder queryBuilder) {
+    private void registerBuilder(QueryBuilder<?> queryBuilder) {
         if (this.builders.putIfAbsent(queryBuilder.getCreatorName(), queryBuilder) != null) {
             throw new IllegalArgumentException("QueryBuilder with name " + queryBuilder.getCreatorName() + " already registered!");
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void buildQueries(Conversation conversation) {
         log.debug("Building queries for {}", conversation);
         //retrieve the states for the queries
@@ -78,9 +80,23 @@ public class QueryBuilderService {
             t.setQueries(new LinkedList<>()); //remove the current queries before they are rebuilt
         });
 
-        //build the new  queries
+        Configuration clientConfig = confService.getConfiguration(conversation.getClientId());
+        
+        //build the new queries
+        //NOTE: I have no idea how to write this using generics. But the impl. checks for
+        //      types safety 
         for (QueryBuilder queryBuilder : builders.values()) {
-            queryBuilder.buildQuery(conversation);
+            List<ComponentConfiguration> builderConfigs = (List<ComponentConfiguration>)clientConfig.getConfigurations(queryBuilder);
+            for(ComponentConfiguration cc : builderConfigs){
+                log.trace("build queries [{} | {} | {}]", queryBuilder, cc, conversation);
+                try {
+                    queryBuilder.buildQuery(conversation, cc);
+                } catch (RuntimeException e) {
+                    log.warn("Failed to build Queries using {} with {} for {} ({} - {})",
+                            queryBuilder, cc, conversation, e.getClass().getSimpleName(), e.getMessage());
+                    log.debug("Stacktrace:",e);
+                }
+            }
         }
         
         //recover the state of known queries
@@ -99,7 +115,22 @@ public class QueryBuilderService {
     public List<? extends Result> execute(String creator, Template template, Conversation conversation) throws IOException {
         final QueryBuilder queryBuilder = getQueryBuilder(creator);
         if (queryBuilder != null) {
-            return queryBuilder.execute(template, conversation);
+            //FIXME: this does not support multiple configurations :(
+            //TODO: we will need to change the whole model to support the execution of queries for QueryBuilder that
+            //      support multiple configuration!
+            Configuration conf = confService.getConfiguration(conversation.getClientId());
+            if(conf == null){
+                throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
+            }
+            List<ComponentConfiguration> ccs = (List<ComponentConfiguration>)conf.getConfigurations(queryBuilder);
+            if(CollectionUtils.isNotEmpty(ccs)){
+                return queryBuilder.execute(ccs.get(0),template, conversation);
+            } else { 
+                //this should only happen when someone removes or disables a configuration between creating the query
+                //and executing it
+                throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a configuration for category '"
+                        + queryBuilder.getComponentCategory() + "' and type '" + queryBuilder.getComponentType() + "'!");
+            }
         } else {
             return Collections.emptyList();
         }

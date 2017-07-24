@@ -20,6 +20,7 @@ import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
@@ -37,19 +38,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 
 /**
  */
-public abstract class ConversationQueryBuilder extends QueryBuilder {
+public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
 
     private final String creatorName;
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 
     public ConversationQueryBuilder(String creatorName, SolrCoreContainer solrServer, SolrCoreDescriptor conversationCore, TemplateRegistry registry) {
-        super(registry);
+        super(ComponentConfiguration.class, registry);
         this.creatorName = creatorName;
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
@@ -72,8 +75,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    protected void doBuildQuery(Template template, Conversation conversation) {
-        final Query query = buildQuery(template, conversation);
+    protected void doBuildQuery(ComponentConfiguration config, Template template, Conversation conversation) {
+        final Query query = buildQuery(config, template, conversation);
         if (query != null) {
             template.getQueries().add(query);
         }
@@ -93,8 +96,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public List<? extends Result> execute(Template intent, Conversation conversation) throws IOException {
-        final QueryRequest solrRequest = buildSolrRequest(intent, conversation);
+    public List<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation) throws IOException {
+        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation);
         if (solrRequest == null) {
             return Collections.emptyList();
         }
@@ -122,12 +125,23 @@ public abstract class ConversationQueryBuilder extends QueryBuilder {
             throw new IOException(e);
         }
     }
+    
+    @Override
+    public boolean validate(ComponentConfiguration configuration, Set<String> missing,
+            Map<String, String> conflicting) {
+        return true; //no config for now
+    }
+    
+    @Override
+    public ComponentConfiguration getDefaultConfiguration() {
+        return new ComponentConfiguration(); //this queryBuilder has no config params
+    }
 
     protected abstract ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(Template intent, Conversation conversation);
+    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation);
 
     protected abstract ConversationResult toHassoResult(SolrDocument solrDocument, String type);
 
-    protected abstract Query buildQuery(Template intent, Conversation conversation);
+    protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation);
 }

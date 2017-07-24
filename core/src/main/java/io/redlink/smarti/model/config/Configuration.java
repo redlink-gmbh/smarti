@@ -1,14 +1,19 @@
 package io.redlink.smarti.model.config;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
+
+import io.redlink.smarti.api.config.Configurable;
 
 public class Configuration {
 
@@ -69,4 +74,29 @@ public class Configuration {
         this.config = config == null ? new HashMap<>() : config;
     }
     
+    /**
+     * Getter for the configurations for the parsed configurable component
+     * @param component the configurable component
+     * @return the configuration
+     */ 
+    //NOTE: this searches to the list of components. If we end up with a lot of config objects we
+    // might want to change the model to Map<String category, Map<String type, ComponentConfiguration>>
+    public <C extends ComponentConfiguration> Iterable<C> getConfigurations(Configurable<C> component){
+        return getConfigurations(component, true);
+    }
+    @SuppressWarnings("unchecked")
+    public <C extends ComponentConfiguration> Iterable<C> getConfigurations(Configurable<C> component, boolean onlyEnabled){
+        if(component == null){
+            return null;
+        }
+        List<ComponentConfiguration> catConfigs = config.get(component.getComponentCategory());
+        if(catConfigs == null){
+            return Collections.emptyList();
+        }
+        return (Iterable<C>)catConfigs.stream()
+                .filter(cc -> Objects.equals(component.getComponentName(), cc.getType()))
+                .filter(cc -> component.getComponentType().isAssignableFrom(cc.getClass()))
+                .filter(cc -> !onlyEnabled || cc.isEnabled())
+            .collect(Collectors.toList());
+    }
 }

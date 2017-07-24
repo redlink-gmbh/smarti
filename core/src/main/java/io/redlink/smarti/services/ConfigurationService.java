@@ -209,7 +209,7 @@ public class ConfigurationService {
         configurableComponents.values().stream().flatMap(m -> m.values().stream())
             .forEach(cc -> {
                 ComponentConfiguration conf = cc.getDefaultConfiguration();
-                if(conf == null) {
+                if(conf == null) { //support creation with the default constructor if getDefaultConfiguration returns NULL
                     try {
                         conf = cc.getComponentType().newInstance();
                     } catch (InstantiationException |IllegalAccessException e) {
@@ -217,9 +217,9 @@ public class ConfigurationService {
                     }
                 }
                 if(conf != null){
-                    conf.setType(cc.getComponentName());
-                    conf.setUnbound(false);
-                    conf.setEnabled(true);
+                    conf.setType(cc.getComponentName()); //enforce type tp be set to the component name
+                    conf.setUnbound(false); //this is a bound configuration as cc exists
+                    //conf.setEnabled(true); //allow for default configurations that are disabled by default
                     List<ComponentConfiguration> ccs = config.get(cc.getComponentCategory());
                     if(ccs == null){
                         ccs = new LinkedList<>();
@@ -246,7 +246,7 @@ public class ConfigurationService {
                 if(c == null){
                     try {
                         c = cc.getComponentType().newInstance();
-                    } catch (InstantiationException |IllegalAccessException e) {
+                    } catch (InstantiationException | IllegalAccessException e) {
                         log.warn("Unable to create instance of {} using default constructor", cc.getComponentType());
                         return null;
                     }

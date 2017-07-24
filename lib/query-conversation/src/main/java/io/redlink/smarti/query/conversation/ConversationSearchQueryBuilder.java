@@ -21,6 +21,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
@@ -46,7 +47,7 @@ import static io.redlink.smarti.query.conversation.ConversationIndexConfiguratio
 @Component
 public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
 
-    public static final String CREATOR_NAME = "Hasso-Search";
+    public static final String CREATOR_NAME = "query_related_search";
 
     @Autowired
     public ConversationSearchQueryBuilder(SolrCoreContainer solrServer, 
@@ -56,8 +57,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(Template intent, Conversation conversation) {
-        final ConversationSearchQuery searchQuery = buildQuery(intent, conversation);
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation) {
+        final ConversationSearchQuery searchQuery = buildQuery(conf, intent, conversation);
         if (searchQuery == null) {
             return null;
         }
@@ -101,7 +102,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationSearchQuery buildQuery(Template intent, Conversation conversation) {
+    protected ConversationSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation) {
         final List<Token> keywords = getTokens("keyword", intent, conversation);
         if (keywords == null || keywords.isEmpty()) return null;
 

@@ -51,6 +51,10 @@ public class Conversation {
     @JsonIgnore
     private String channelId;
 
+    @Indexed
+    @JsonIgnore
+    private String clientId;
+    
     @ApiModelProperty(position = 0, value = "metadata")
     private ConversationMeta meta = new ConversationMeta();
 
@@ -73,12 +77,13 @@ public class Conversation {
     private Date lastModified = null;
 
     public Conversation(){
-        this(null);
+        this(null, null);
     }
     
     @PersistenceConstructor
-    public Conversation(ObjectId id){
+    public Conversation(ObjectId id, String clientId){
         this.id = id;
+        this.clientId = clientId;
     }
     
     public ObjectId getId() {
@@ -89,6 +94,14 @@ public class Conversation {
         this.id = id;
     }
 
+    public String getClientId() {
+        return clientId;
+    }
+    
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+    
     public String getChannelId() {
         return channelId;
     }

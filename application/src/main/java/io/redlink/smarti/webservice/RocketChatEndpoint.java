@@ -24,6 +24,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
+import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
 import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
 import io.swagger.annotations.Api;
@@ -113,6 +114,7 @@ public class RocketChatEndpoint {
         final String channelId = createChannelId(clientId, payload.getChannelId());
         Conversation conversation = storeService.getCurrentConversationByChannelId(channelId, () -> {
             Conversation newConversation = new Conversation();
+            newConversation.setClientId(clientId);
             newConversation.getContext().setContextType(ROCKET_CHAT);
             newConversation.getContext().setDomain(clientId);
             newConversation.getContext().setEnvironment("channel", payload.getChannelName());
@@ -120,6 +122,9 @@ public class RocketChatEndpoint {
             newConversation.getContext().setEnvironment("token", payload.getToken());
             return newConversation;
         });
+        if(!conversation.getChannelId().equals(channelId)){
+            return ResponseEntities.conflict("clientId does not match for existing Conversation[id:" + conversation.getId()+ "]");
+        }
 
         final Message message = new Message();
         message.setId(payload.getMessageId());
