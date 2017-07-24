@@ -352,9 +352,10 @@ function Smarti(options) {
  * @constructor
  */
 function Tracker(category, onEvent) {
-    function trackEvent(action, name, value) {
+    this.trackEvent = function(action, name, value) {
         if(onEvent) onEvent(category, action, name, value);
     }
+
 }
 
 /**
