@@ -862,14 +862,14 @@ function SmartiWidget(element,_options) {
         drawLogin
     );
 
-    var onTabClose = function() {
-        tracker.trackEvent('sidebar.close');
-    };
-
     //append lightbulb close (only one handler!)
     var tabOpenButton = $('.flex-tab-container .flex-tab-bar .icon-lightbulb').parent();
-    tabOpenButton.unbind('click',onTabClose);
-    tabOpenButton.bind('click',onTabClose);
+
+    tabOpenButton.unbind('click.closeTracker');
+
+    tabOpenButton.bind('click.closeTracker', function() {
+        tracker.trackEvent('sidebar.close');
+    });
 
     return {}; //whatever is necessary..
 }
