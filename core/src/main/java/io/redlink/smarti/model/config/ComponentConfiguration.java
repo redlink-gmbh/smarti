@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
-@JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="_class")
+@JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="_class", defaultImpl=ComponentConfiguration.class)
 public class ComponentConfiguration implements Cloneable {
 
     private String type;
