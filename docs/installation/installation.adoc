@@ -1,11 +1,11 @@
-# Installation
+= Install Smarti
 
-Installation packages are provided for [Debian](https://www.debian.org/)- and [RedHat](https://www.redhat.com/)-based systems. Alternatively the application can
+Installation packages are provided for https://www.debian.org[Debian]- and (https://www.redhat.com[RedHat]-based systems. Alternatively the application can
 be started by directly launching the executable jar: `java -jar smarti-${version}-exec.jar`.
 
-## Requirements
+== Requirements
 
-**smarti** is a [Java](https://java.com/)-Application based on the [Spring Framework](https://spring.io/). 
+**smarti** is a https://java.com[Java]-Application based on the https://spring.io[Spring Framework].
 
 To run, it has the following minimal system requirements:
 
@@ -13,12 +13,12 @@ To run, it has the following minimal system requirements:
 * 4GB RAM
 * 2GB temporary Storage
 * available network-port (default: 8080)
-* [**JavaVM**](https://java.com/), version **1.8**
-* [**MongoDB**](https://www.mongodb.com/), version **>=2.6**
+* https://java.com/[**JavaVM**], version **1.8**
+* https://www.mongodb.com/[**MongoDB**], version **>=2.6**
 
 All direct runtime-dependencies such as third-party libraries are packaged with the main executable.
 
-## Changing the User
+== Changing the User
 
 When installed using one of the provided packages (`deb`, `rpm`), smarti runs as it's own system user `smarti`. This user is created during the installation 
 process if it not already exists.
@@ -48,9 +48,9 @@ To run smarti as a different user (`assistify` in this example), do the followin
 
         systemctl try-restart smarti
 
-# Configuration
+= Configuration
 
-## application.properties
+== application.properties
 `/etc/smarti/application.properties`
 
     ## logging config file
@@ -67,25 +67,25 @@ To run smarti as a different user (`assistify` in this example), do the followin
     #spring.data.mongodb.password =
     #spring.data.mongodb.username =
     
-# Monitoring / Troubleshooting
+= Monitoring / Troubleshooting
 
-## Logging
+== Logging
 
 * Working-Directory at `/var/lib/smarti/`
 * Log-Files available under `/var/lib/smarti/logs/`, a symlink to `/var/log/smarti/`
-* [Log-Configuration](http://logback.qos.ch/manual/configuration.html) under `/var/lib/smarti/logback.xml`, a 
+* http://logback.qos.ch/manual/configuration.html[Log-Configuration] under `/var/lib/smarti/logback.xml`, a
 symlink to `/etc/smarti/logback.xml`
 
 Please keep in mind, that if _smarti_ runs as a different user it probably also has a custom working directory. 
 In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).
 
-## Daemon Configuration
+== Daemon Configuration
 
 * `/etc/default/smarti`
     * JVM and JVM Options (e.g. `-Xmx2g`)
     * Program Arguments (overwriting settings from the `application.properties`)
 
-## Health-Check
+== Health-Check
 System-wide health check is available under `http://localhost:8080/system/health`.
 
 # Third-Party Dependencies and Licenses

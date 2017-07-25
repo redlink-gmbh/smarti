@@ -1,0 +1,21 @@
+= Smarti
+
+Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
+natural language components and makes this data actionable via turning it into queries for an extendable set if endpoints.
+In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.
+
+== How to install
+
+Installation packages are provided for https://www.debian.org[Debian]- and https://www.redhat.com[RedHat]-based systems. Alternatively the application can
+be started by directly launching the executable jar. Check out a detailed link:installation/installation.adoc[installation description] including system requirements.
+
+== How to integrate
+
+Currently Smarti is working with https://rocket.chat[Rocket.Chat] conversations, where it can be smoothly integrated via a https://github.com/mrsimpson/Rocket.Chat[RC plugin].
+Lookup the link:integrations/rocketchat.adoc[Rocket.Chat plugin description] for further information.
+
+== How to contribution
+
+TODO
+
+==
