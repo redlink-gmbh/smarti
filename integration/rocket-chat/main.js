@@ -351,9 +351,10 @@ function Smarti(options) {
  * @param onEvent the real tracker methode which is called
  * @constructor
  */
-function Tracker(category, onEvent) {
-    this.trackEvent = function(action, name, value) {
-        if(onEvent) onEvent(category, action, name, value);
+function Tracker(category, roomId, onEvent) {
+    this.trackEvent = function(action, value) {
+        console.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
+        if(onEvent) onEvent(category, action, roomId, value);
     }
 
 }
@@ -409,7 +410,7 @@ function SmartiWidget(element,_options) {
 
     localize.setLocale(options.lang);
 
-    var tracker = new Tracker(options.tracker.category,options.tracker.onEvent);
+    var tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
 
     var widgets = [];
 
@@ -639,8 +640,6 @@ function SmartiWidget(element,_options) {
 
         function getResults() {
             console.debug("smarti getResults(). sending conversation.found event to tracker");
-
-            tracker.trackEvent("conversation.found");
 
             //TODO get remote
             results.empty();
