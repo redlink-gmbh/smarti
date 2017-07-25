@@ -868,7 +868,9 @@ function SmartiWidget(element,_options) {
     tabOpenButton.unbind('click.closeTracker');
 
     tabOpenButton.bind('click.closeTracker', function() {
-        tracker.trackEvent('sidebar.close');
+        if($('.external-search-content').is(":visible")) {
+            tracker.trackEvent('sidebar.close');
+        }
     });
 
     return {}; //whatever is necessary..
