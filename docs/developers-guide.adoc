@@ -1,3 +1,10 @@
 = Developers Guide
 
 TODO
+
+== Release
+
+For a release, a release branch (based on develop) is created which represents the release candidate.
+If the candidate fulfills the requirements, the issues of the release are documented in the changelogs.
+Then the version number is set to the release number, the branch is merged into master and the master is tagged with the release number.
+Additionally, the version number of the develop branch is set to the new snapshot version.
