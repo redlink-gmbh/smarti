@@ -26,7 +26,7 @@ const DDP = require("ddp.js").default;
 var trackKnowlegeBaseTabCloseClick = function(){};
 
 //this is a little hacky
-$('.flex-tab-container .flex-tab-bar .icon-lightbulb').click(function(){
+$('.flex-tab-container .flex-tab-bar .icon-lightbulb').parent().click(function(){
    if(trackKnowlegeBaseTabCloseClick) trackKnowlegeBaseTabCloseClick();
 });
 
@@ -435,7 +435,6 @@ function SmartiWidget(element,_options) {
 
         function createTermPill(token) {
 
-            tracker.trackEvent("search.dbsearch.tag.add");
             return $('<div class="smarti-token-pill">')
                 .append($('<span>').text(token.value))
                 .append('<i class="icon-cancel"></i>')
@@ -520,6 +519,7 @@ function SmartiWidget(element,_options) {
                         type:'Keyword'
                     }));
                     $(this).val("");
+                    tracker.trackEvent("search.dbsearch.tag.add");
                 }
                 getResults(0);
             }
