@@ -23,6 +23,13 @@ const ld_lang = require('lodash/lang');
 
 const DDP = require("ddp.js").default;
 
+var trackKnowlegeBaseTabCloseClick = function(){};
+
+//this is a little hacky
+$('.flex-tab-container .flex-tab-bar .icon-lightbulb').click(function(){
+   if(trackKnowlegeBaseTabCloseClick) trackKnowlegeBaseTabCloseClick();
+});
+
 //multi-linguality
 const Localize = require('localize');
 const localize = new Localize({
@@ -853,6 +860,10 @@ function SmartiWidget(element,_options) {
         initialize,
         drawLogin
     );
+
+    trackKnowlegeBaseTabCloseClick = function(){
+        tracker.trackEvent('sidebar.close');
+    };
 
     return {}; //whatever is necessary..
 }
