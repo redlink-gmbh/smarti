@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Redlink GmbH
+* Copyright 2017 Redlink GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 require('./style.scss');
 $ = require('jquery');
 md5 = require('js-md5');
+
+[title="information"]
 
 const ld_lang = require('lodash/lang');
 
@@ -146,7 +148,6 @@ const Utils = {
  * }
  */
 function Smarti(options) {
-
     options = $.extend(true,{
         DDP:{
             SocketConstructor: WebSocket
@@ -275,6 +276,27 @@ function Smarti(options) {
             }
         });
 
+
+
+
+	console.log("armin start");
+                $('.tab-button[title="Wissensbasis"]').click(function() {
+                        console.debug("smarti sidebar.close"); 
+                        if ( $(".tab-button.active").length == 0 )
+                                options.tracker.trackEvent("sidebar.close");
+                        if ( $(".tab-button.active").length == 1 )
+                                options.tracker.trackEvent("sidebar.open");
+                });
+        console.log("armin postinit end");
+
+
+
+
+
+
+
+
+
     }
 
     function fetch(params) {
@@ -312,9 +334,6 @@ function Smarti(options) {
 
     function post(msg,attachments,success,failure) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
-
-        console.debug("smarti post(). sending conversation.post event to Piwik");
-        options.tracker.trackEvent("conversation.post");
 
         ddp.on("result", function(message) {
             if(message.id == methodId) {
@@ -429,6 +448,8 @@ function SmartiWidget(element,_options) {
         var content = $('<div>').appendTo(params.elem);
 
         function createTermPill(token) {
+
+            tracker.trackEvent("search.dbsearch.tag.add");
             return $('<div class="smarti-token-pill">')
                 .append($('<span>').text(token.value))
                 .append('<i class="icon-cancel"></i>')
@@ -436,12 +457,14 @@ function SmartiWidget(element,_options) {
                 .click(function(){
                     $(this).hide();
                     getResults(0);
+                    tracker.trackEvent("search.dbsearch.tag.remove");
                 });
         }
 
         //TODO should be done server side
         function removeDuplicatesBy(keyFn, array) {
             var mySet = new Set();
+
             return array.filter(function(x) {
                 var key = keyFn(x), isNew = !mySet.has(key);
                 if (isNew) mySet.add(key);
@@ -588,6 +611,7 @@ function SmartiWidget(element,_options) {
                                 text:doc.description
                             }];
                             smarti.post(text,attachments);
+                            tracker.trackEvent("conversation.part.post");
                         });
 
                         results.append(docli);
@@ -638,8 +662,6 @@ function SmartiWidget(element,_options) {
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
         function getResults() {
-            console.debug("smarti getResults(). sending conversation.found event to tracker");
-
             tracker.trackEvent("conversation.found");
 
             //TODO get remote
@@ -696,6 +718,7 @@ function SmartiWidget(element,_options) {
                                             var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             var attachments = [buildAttachments(subdoc)];
                                             smarti.post(text, attachments);
+                                            tracker.trackEvent("conversation.part.post");
                                         }).append('<i class="icon-paper-plane"></i>')
                                     ))
                             );
@@ -712,8 +735,10 @@ function SmartiWidget(element,_options) {
                                 .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e){
                                         $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
                                         if($(e.target).hasClass('icon-right-dir')) {
+                                            tracker.trackEvent("conversation.part.close");
                                             $(e.target).removeClass('icon-right-dir').addClass('icon-down-dir');
                                         } else {
+                                            tracker.trackEvent("conversation.part.open");
                                             $(e.target).removeClass('icon-down-dir').addClass('icon-right-dir');
                                         }
                                     })
@@ -726,6 +751,7 @@ function SmartiWidget(element,_options) {
                                 var text = Utils.localize({code:'widget.conversation.answer.title'});
                                 var attachments = [buildAttachments(doc)];
                                 smarti.post(text, attachments);
+                                tracker.trackEvent("conversation.post");
                             }).append('<i class="icon-paper-plane"></i>')));
 
                         if(i + 1 != data.length) {
@@ -843,10 +869,9 @@ function SmartiWidget(element,_options) {
 
     function initialize() {
         console.debug("smarti initialize(). sending dialog.start event to Piwik");
-
         tracker.trackEvent("dialog.start");
 
-        smarti.init(null,showError)
+        smarti.init(null,showError);
     }
 
     smarti.login(
