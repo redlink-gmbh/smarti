@@ -560,6 +560,8 @@ function SmartiWidget(element,_options) {
                 success: function(data){
                     loader.hide();
 
+                    tracker.trackEvent("search.dbsearch",data.response.numFound);
+
                     if(data.response.numFound == 0) {
                         resultCount.text(Utils.localize({code:'widget.db.query.no-results'}));
                         return;
@@ -597,7 +599,7 @@ function SmartiWidget(element,_options) {
                                 text:doc.description
                             }];
                             smarti.post(text,attachments);
-                            tracker.trackEvent("conversation.part.post", i);
+                            tracker.trackEvent("search.dbsearch.result.post", (page*numOfRows) + i);
                         });
 
                         results.append(docli);
@@ -607,13 +609,19 @@ function SmartiWidget(element,_options) {
                     var next = $('<span>').text(Utils.localize({code:'widget.db.query.paging.next'})).append('<i class="icon-angle-right">');;
 
                     if(page > 0) {
-                        prev.click(function(){getResults(page-1)});
+                        prev.click(function(){
+                            tracker.trackEvent("search.dbsearch.result.paging", page-1);
+                            getResults(page-1)
+                        });
                     } else {
                         prev.hide();
                     }
 
                     if((data.response.numFound/numOfRows) > (page+1)) {
-                        next.addClass('active').click(function(){getResults(page+1)});
+                        next.addClass('active').click(function(){
+                            tracker.trackEvent("search.dbsearch.result.paging", page+1);
+                            getResults(page+1)
+                        });
                     } else {
                         next.hide();
                     }
@@ -720,10 +728,10 @@ function SmartiWidget(element,_options) {
                                 .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e){
                                         $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
                                         if($(e.target).hasClass('icon-right-dir')) {
-                                            tracker.trackEvent("conversation.part.close", i);
+                                            tracker.trackEvent("conversation.part.open", i);
                                             $(e.target).removeClass('icon-right-dir').addClass('icon-down-dir');
                                         } else {
-                                            tracker.trackEvent("conversation.part.open", i);
+                                            tracker.trackEvent("conversation.part.close", i);
                                             $(e.target).removeClass('icon-down-dir').addClass('icon-right-dir');
                                         }
                                     })
