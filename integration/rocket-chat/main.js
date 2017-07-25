@@ -313,9 +313,6 @@ function Smarti(options) {
     function post(msg,attachments,success,failure) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
 
-        console.debug("smarti post(). sending conversation.post event to Piwik");
-        options.tracker.trackEvent("conversation.post");
-
         ddp.on("result", function(message) {
             if(message.id == methodId) {
                 if(message.error && error) {
@@ -430,6 +427,8 @@ function SmartiWidget(element,_options) {
         var content = $('<div>').appendTo(params.elem);
 
         function createTermPill(token) {
+
+            tracker.trackEvent("search.dbsearch.tag.add");
             return $('<div class="smarti-token-pill">')
                 .append($('<span>').text(token.value))
                 .append('<i class="icon-cancel"></i>')
@@ -437,12 +436,14 @@ function SmartiWidget(element,_options) {
                 .click(function(){
                     $(this).hide();
                     getResults(0);
+                    tracker.trackEvent("search.dbsearch.tag.remove");
                 });
         }
 
         //TODO should be done server side
         function removeDuplicatesBy(keyFn, array) {
             var mySet = new Set();
+
             return array.filter(function(x) {
                 var key = keyFn(x), isNew = !mySet.has(key);
                 if (isNew) mySet.add(key);
@@ -589,6 +590,7 @@ function SmartiWidget(element,_options) {
                                 text:doc.description
                             }];
                             smarti.post(text,attachments);
+                            tracker.trackEvent("conversation.part.post", i);
                         });
 
                         results.append(docli);
@@ -639,7 +641,6 @@ function SmartiWidget(element,_options) {
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
         function getResults() {
-            console.debug("smarti getResults(). sending conversation.found event to tracker");
 
             //TODO get remote
             results.empty();
@@ -695,6 +696,7 @@ function SmartiWidget(element,_options) {
                                             var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             var attachments = [buildAttachments(subdoc)];
                                             smarti.post(text, attachments);
+                                            tracker.trackEvent("conversation.part.post", i);
                                         }).append('<i class="icon-paper-plane"></i>')
                                     ))
                             );
@@ -711,8 +713,10 @@ function SmartiWidget(element,_options) {
                                 .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e){
                                         $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
                                         if($(e.target).hasClass('icon-right-dir')) {
+                                            tracker.trackEvent("conversation.part.close", i);
                                             $(e.target).removeClass('icon-right-dir').addClass('icon-down-dir');
                                         } else {
+                                            tracker.trackEvent("conversation.part.open", i);
                                             $(e.target).removeClass('icon-down-dir').addClass('icon-right-dir');
                                         }
                                     })
@@ -725,6 +729,7 @@ function SmartiWidget(element,_options) {
                                 var text = Utils.localize({code:'widget.conversation.answer.title'});
                                 var attachments = [buildAttachments(doc)];
                                 smarti.post(text, attachments);
+                                tracker.trackEvent("conversation.post", i);
                             }).append('<i class="icon-paper-plane"></i>')));
 
                         if(i + 1 != data.length) {
@@ -841,11 +846,7 @@ function SmartiWidget(element,_options) {
     }
 
     function initialize() {
-        console.debug("smarti initialize(). sending dialog.start event to Piwik");
-
-        tracker.trackEvent("dialog.start");
-
-        smarti.init(null,showError)
+        smarti.init(null,showError);
     }
 
     smarti.login(
