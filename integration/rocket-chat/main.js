@@ -1,5 +1,5 @@
 /*
-* Copyright 2017 Redlink GmbH
+ * Copyright 2017 Redlink GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@
 require('./style.scss');
 $ = require('jquery');
 md5 = require('js-md5');
-
-[title="information"]
 
 const ld_lang = require('lodash/lang');
 
