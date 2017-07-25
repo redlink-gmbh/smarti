@@ -3,6 +3,8 @@
 Installation packages are provided for https://www.debian.org[Debian]- and (https://www.redhat.com[RedHat]-based systems. Alternatively the application can
 be started by directly launching the executable jar: `java -jar smarti-${version}-exec.jar`.
 
+WARNING: In the current version the packages include a GPL licenced dependency (Stanford NLP), so you are not allowed to distribute packages.
+
 == Requirements
 
 **smarti** is a https://java.com[Java]-Application based on the https://spring.io[Spring Framework].
