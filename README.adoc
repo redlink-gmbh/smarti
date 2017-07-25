@@ -3,13 +3,13 @@ image::https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master[Build Status]
 = Smarti
 
 Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
-natural language components and makes this data actionable via turning it into queries for an extendable set if endpoints.
+natural language components and makes this data actionable via turning it into queries for an extendable set of endpoints.
 In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.
 
 == How to install
 
 Installation packages are provided for https://www.debian.org[Debian]- and https://www.redhat.com[RedHat]-based systems. Alternatively the application can
-be started by directly launching the executable jar. Check out a detailed link:docs/installation/installation.adoc[installation description] including system requirements.
+be started by directly launching the executable jar. Check out a detailed link:docs/installation.adoc[installation description] including system requirements.
 
 == How to integrate
 
@@ -26,11 +26,11 @@ share new ideas with us. We have various ways for contribution:
 * write code - no patch is too small. So even fixing typos helps to improve Smarti.
 
 == License
-Free use of this software is granted under the terms of the Apache License Version 2.0 License.
+Free use of this software is granted under the terms of the Apache License Version 2.0.
 See the link:LICENSE.txt[License] for more details.
 
 == Authors
-Smarti is lead by http://redink.co[Redlink] and http://assistify.de[Assistify] and was initiated in 2017.
+Smarti is lead by http://redlink.co[Redlink] and http://assistify.de[Assistify] and was initiated in 2017.
 
 == Changelog
 The link:docs/changelog.adoc[Changelog] provides a complete list of changes in older releases.

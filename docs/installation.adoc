@@ -3,7 +3,7 @@
 Installation packages are provided for https://www.debian.org[Debian]- and (https://www.redhat.com[RedHat]-based systems. Alternatively the application can
 be started by directly launching the executable jar: `java -jar smarti-${version}-exec.jar`.
 
-WARNING: In the current version the packages include a GPL licenced dependency (Stanford NLP), so you are not allowed to distribute packages.
+[red]WARNING: In the current version the packages include a https://www.gnu.org/licenses/gpl-3.0.en.html[GPL] licenced dependency (https://nlp.stanford.edu/software/[Stanford NLP]), so you are not allowed to distribute packages.
 
 == Requirements
 
