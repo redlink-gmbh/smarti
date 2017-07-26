@@ -410,7 +410,7 @@ function SmartiWidget(element,_options) {
 
     function InputField(elem) {
         this.post = function(msg) {
-            elem.text(msg);
+            elem.val(msg);
         }
     }
 
