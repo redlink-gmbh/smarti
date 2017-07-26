@@ -369,7 +369,7 @@ function Tracker(category, roomId, onEvent) {
  *           }
  *       },
  *       lang:'de',
- *       inputCssSelector: '.selector'
+ *       inputFieldSelector: '.selector'
  *   }
  * @returns {
  *
@@ -384,7 +384,7 @@ function SmartiWidget(element,_options) {
         socketEndpoint: "ws://localhost:3000/websocket/",
         smartiEndpoint: 'http://localhost:8080/',
         channel: 'GENERAL',
-        inputCssSelector: '.message-form-text.input-message', //standard value for RC
+        inputFieldSelector: '.message-form-text.input-message', //standard value for RC
         widget: {
             'query.dbsearch': {
             		numOfRows: 2
@@ -414,14 +414,13 @@ function SmartiWidget(element,_options) {
 
     function InputField(elem) {
         this.post = function(msg) {
-            console.debug('element is: ',msg);
             console.debug(`write text to element: ${msg}`);
             elem.val(msg);
         }
     }
 
     if(options.inputCssSelector) {
-        var inputFieldELement = $(options.inputCssSelector);
+        var inputFieldELement = $(options.inputFieldSelector);
         if(inputFieldELement.length) {
             messageInputField = new InputField(inputFieldELement);
         }
@@ -608,7 +607,7 @@ function SmartiWidget(element,_options) {
                                 text:doc.description
                             }];
                             if(messageInputField) {
-                                messageInputField.post(text + ':\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
+                                messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
                             } else {
                                 smarti.post(text,attachments);
                             }
@@ -727,7 +726,7 @@ function SmartiWidget(element,_options) {
                                             var attachments = [buildAttachments(subdoc)];
 
                                             if(messageInputField) {
-                                                messageInputField.post(text + ':\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, "<br />"));
+                                                messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
                                             } else {
                                                 smarti.post(text,attachments);
                                             }
@@ -766,9 +765,9 @@ function SmartiWidget(element,_options) {
                                 var attachments = [buildAttachments(doc)];
 
                                 if(messageInputField) {
-                                    text = text + ':\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, "<br />");
+                                    text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
                                     $.each(doc.answers, function(i,answer) {
-                                        text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, "<br />");
+                                        text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, " ");
                                     });
                                     messageInputField.post(text);
                                 } else {
