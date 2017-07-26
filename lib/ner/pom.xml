@@ -46,6 +46,11 @@
             <artifactId>nlp-model</artifactId>
             <version>${redlinknlp.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>ner-regex</artifactId>
+            <version>${redlinknlp.version}</version>
+        </dependency>
 
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -67,12 +72,6 @@
       <dependency>
         <groupId>io.redlink.nlp</groupId>
         <artifactId>ner-opennlp-de</artifactId>
-        <version>${redlinknlp.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.redlink.nlp</groupId>
-        <artifactId>ner-regex</artifactId>
         <version>${redlinknlp.version}</version>
         <scope>test</scope>
       </dependency>
