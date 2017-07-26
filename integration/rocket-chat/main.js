@@ -326,19 +326,13 @@ function Smarti(options) {
         });
     }
 
-    function suggest(msg,success,failure) {
-        console.error('suggestion handling is not yet implemented');
-        failure();
-    }
-
     return {
         login: login,
         init: init,
         subscribe: function(id,func){pubsub(id).subscribe(func)},
         unsubscribe: function(id,func){pubsub(id).unsubscribe(func)},
         query: query,
-        post: post,
-        suggest: suggest
+        post: post
     }
 }
 
@@ -371,7 +365,8 @@ function Tracker(category, roomId, onEvent) {
  *               disabled:true
  *           }
  *       },
- *       lang:'de'
+ *       lang:'de',
+ *       inputCssSelector: '.selector'
  *   }
  * @returns {
  *
@@ -410,6 +405,21 @@ function SmartiWidget(element,_options) {
     var tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
 
     var widgets = [];
+
+    var messageInputField = undefined;
+
+    function InputField(elem) {
+        this.post = function(msg) {
+            elem.text(msg);
+        }
+    }
+
+    if(options.inputCssSelector) {
+        var inputFieldELement = $(options.inputCssSelector);
+        if(inputFieldELement.length) {
+            messageInputField = new InputField(inputFieldELement);
+        }
+    }
 
     /**
      * @param params
@@ -591,7 +601,12 @@ function SmartiWidget(element,_options) {
                                 thumb_url: doc.thumb ? doc.thumb : undefined,
                                 text:doc.description
                             }];
-                            smarti.post(text,attachments);
+                            if(messageInputField) {
+                                messageInputField.post(text);
+                            } else {
+                                smarti.post(text,attachments);
+                            }
+
                             tracker.trackEvent("search.dbsearch.result.post", (page*numOfRows) + i);
                         });
 
@@ -701,9 +716,16 @@ function SmartiWidget(element,_options) {
                                     .append('<div class="subdoc-content">'+subdoc.content.replace(/\n/g, "<br />")+'</div>')
                                     .append($('<div>').addClass('result-actions').append(
                                         $('<button>').addClass('postMessage').click(function(){
+
                                             var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             var attachments = [buildAttachments(subdoc)];
-                                            smarti.post(text, attachments);
+
+                                            if(messageInputField) {
+                                                messageInputField.post(text);
+                                            } else {
+                                                smarti.post(text,attachments);
+                                            }
+
                                             tracker.trackEvent("conversation.part.post", i);
                                         }).append('<i class="icon-paper-plane"></i>')
                                     ))
@@ -736,7 +758,13 @@ function SmartiWidget(element,_options) {
                             $('<button>').addClass('postAnswer').addClass('button').text(Utils.localize({code:'widget.conversation.post-all',args:[doc.answers.length+1]})).click(function(){
                                 var text = Utils.localize({code:'widget.conversation.answer.title'});
                                 var attachments = [buildAttachments(doc)];
-                                smarti.post(text, attachments);
+
+                                if(messageInputField) {
+                                    messageInputField.post(text);
+                                } else {
+                                    smarti.post(text,attachments);
+                                }
+
                                 tracker.trackEvent("conversation.post", i);
                             }).append('<i class="icon-paper-plane"></i>')));
 
