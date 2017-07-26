@@ -414,6 +414,8 @@ function SmartiWidget(element,_options) {
 
     function InputField(elem) {
         this.post = function(msg) {
+            console.debug('element is: ',msg);
+            console.debug(`write text to element: ${msg}`);
             elem.val(msg);
         }
     }
