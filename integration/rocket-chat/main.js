@@ -104,6 +104,9 @@ const Utils = {
     getAvatarUrl : function(id) {
         return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon"
     },
+    getAnonymUser: function(id) {
+        return 'User-' + (parseInt(md5('redlink'+id),16)%10000); //TODO check if this works somehow...
+    },
     localize: function(obj) {
         if(obj.args && obj.args.length > 0) {
             var args_clone = ld_lang.cloneDeep(obj.args);
@@ -381,6 +384,7 @@ function SmartiWidget(element,_options) {
         socketEndpoint: "ws://localhost:3000/websocket/",
         smartiEndpoint: 'http://localhost:8080/',
         channel: 'GENERAL',
+        inputCssSelector: '.message-form-text.input-message', //standard value for RC
         widget: {
             'query.dbsearch': {
             		numOfRows: 2
@@ -602,7 +606,7 @@ function SmartiWidget(element,_options) {
                                 text:doc.description
                             }];
                             if(messageInputField) {
-                                messageInputField.post(text);
+                                messageInputField.post(text + ':\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
                             } else {
                                 smarti.post(text,attachments);
                             }
@@ -721,7 +725,7 @@ function SmartiWidget(element,_options) {
                                             var attachments = [buildAttachments(subdoc)];
 
                                             if(messageInputField) {
-                                                messageInputField.post(text);
+                                                messageInputField.post(text + ':\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, "<br />"));
                                             } else {
                                                 smarti.post(text,attachments);
                                             }
@@ -760,6 +764,10 @@ function SmartiWidget(element,_options) {
                                 var attachments = [buildAttachments(doc)];
 
                                 if(messageInputField) {
+                                    text = text + ':\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, "<br />");
+                                    $.each(doc.answers, function(i,answer) {
+                                        text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, "<br />");
+                                    });
                                     messageInputField.post(text);
                                 } else {
                                     smarti.post(text,attachments);
