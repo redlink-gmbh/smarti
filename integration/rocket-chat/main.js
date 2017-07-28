@@ -386,7 +386,7 @@ function SmartiWidget(element,_options) {
         channel: 'GENERAL',
         postings: {
             type: 'suggestText', // possible values: suggestText, postText, postRichText
-            inputFieldSelector: '.message-form-text.input-message'
+            cssInputSelector: '.message-form-text.input-message'
         },
         widget: {
             'query.dbsearch': {
@@ -397,7 +397,7 @@ function SmartiWidget(element,_options) {
             }
         },
         tracker: {
-            onEvent: Piwik ? Piwik.getTracker().trackEvent : function(){},
+            onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
             category: "knowledgebase"
         },
         lang: 'de'
@@ -423,8 +423,8 @@ function SmartiWidget(element,_options) {
     }
 
     if(options.postings && options.postings.type == 'suggestText') {
-        if(options.postings.inputCssSelector) {
-            var inputFieldELement = $(options.postings.inputFieldSelector);
+        if(options.postings.cssInputSelector) {
+            var inputFieldELement = $(options.postings.cssInputSelector);
             if(inputFieldELement.length) {
                 messageInputField = new InputField(inputFieldELement);
             } else {
