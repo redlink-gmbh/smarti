@@ -384,7 +384,10 @@ function SmartiWidget(element,_options) {
         socketEndpoint: "ws://localhost:3000/websocket/",
         smartiEndpoint: 'http://localhost:8080/',
         channel: 'GENERAL',
-        inputFieldSelector: '.message-form-text.input-message', //standard value for RC
+        postings: {
+            type: 'suggestText', // possible values: suggestText, postText, postRichText
+            cssInputSelector: '.message-form-text.input-message'
+        },
         widget: {
             'query.dbsearch': {
             		numOfRows: 2
@@ -394,7 +397,7 @@ function SmartiWidget(element,_options) {
             }
         },
         tracker: {
-            onEvent: Piwik ? Piwik.getTracker().trackEvent : function(){},
+            onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
             category: "knowledgebase"
         },
         lang: 'de'
@@ -419,10 +422,18 @@ function SmartiWidget(element,_options) {
         }
     }
 
-    if(options.inputCssSelector) {
-        var inputFieldELement = $(options.inputFieldSelector);
-        if(inputFieldELement.length) {
-            messageInputField = new InputField(inputFieldELement);
+    if(options.postings && options.postings.type == 'suggestText') {
+        if(options.postings.cssInputSelector) {
+            var inputFieldELement = $(options.postings.cssInputSelector);
+            if(inputFieldELement.length) {
+                messageInputField = new InputField(inputFieldELement);
+            } else {
+                console.warn('no element found for cssInputSelector %s, set postings.type to postText',options.postings.inputFieldSelector);
+                options.postings.type = 'postText';
+            }
+        } else {
+            console.warn('No cssInputSelector set, set postings.type to postText');
+            options.postings.type = 'postText';
         }
     }
 
@@ -606,8 +617,10 @@ function SmartiWidget(element,_options) {
                                 thumb_url: doc.thumb ? doc.thumb : undefined,
                                 text:doc.description
                             }];
-                            if(messageInputField) {
+                            if(options.postings && options.postings.type == 'suggestText') {
                                 messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
+                            } else if(options.postings && options.postings.type == 'postText') {
+                                smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
                             } else {
                                 smarti.post(text,attachments);
                             }
@@ -725,8 +738,10 @@ function SmartiWidget(element,_options) {
                                             var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             var attachments = [buildAttachments(subdoc)];
 
-                                            if(messageInputField) {
+                                            if(options.postings && options.postings.type == 'suggestText') {
                                                 messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
+                                            } else if(options.postings && options.postings.type == 'postText') {
+                                                smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
                                             } else {
                                                 smarti.post(text,attachments);
                                             }
@@ -764,12 +779,18 @@ function SmartiWidget(element,_options) {
                                 var text = Utils.localize({code:'widget.conversation.answer.title'});
                                 var attachments = [buildAttachments(doc)];
 
-                                if(messageInputField) {
+                                function createTextMessage() {
                                     text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
                                     $.each(doc.answers, function(i,answer) {
                                         text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, " ");
                                     });
-                                    messageInputField.post(text);
+                                    return text;
+                                }
+
+                                if(options.postings && options.postings.type == 'suggestText') {
+                                    messageInputField.post(createTextMessage());
+                                } else if(options.postings && options.postings.type == 'postText') {
+                                    smarti.post(createTextMessage(),[]);
                                 } else {
                                     smarti.post(text,attachments);
                                 }
