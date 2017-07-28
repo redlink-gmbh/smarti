@@ -422,7 +422,7 @@ function SmartiWidget(element,_options) {
         }
     }
 
-    if(options.postings.type == 'suggestText') {
+    if(options.postings && options.postings.type == 'suggestText') {
         if(options.postings.inputCssSelector) {
             var inputFieldELement = $(options.postings.inputFieldSelector);
             if(inputFieldELement.length) {
@@ -617,9 +617,9 @@ function SmartiWidget(element,_options) {
                                 thumb_url: doc.thumb ? doc.thumb : undefined,
                                 text:doc.description
                             }];
-                            if(options.postings.type == 'suggestText') {
+                            if(options.postings && options.postings.type == 'suggestText') {
                                 messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
-                            } else if(options.postings.type == 'postText') {
+                            } else if(options.postings && options.postings.type == 'postText') {
                                 smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
                             } else {
                                 smarti.post(text,attachments);
@@ -738,9 +738,9 @@ function SmartiWidget(element,_options) {
                                             var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             var attachments = [buildAttachments(subdoc)];
 
-                                            if(options.postings.type == 'suggestText') {
+                                            if(options.postings && options.postings.type == 'suggestText') {
                                                 messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
-                                            } else if(options.postings.type == 'postText') {
+                                            } else if(options.postings && options.postings.type == 'postText') {
                                                 smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
                                             } else {
                                                 smarti.post(text,attachments);
@@ -787,9 +787,9 @@ function SmartiWidget(element,_options) {
                                     return text;
                                 }
 
-                                if(options.postings.type == 'suggestText') {
+                                if(options.postings && options.postings.type == 'suggestText') {
                                     messageInputField.post(createTextMessage());
-                                } else if(options.postings.type == 'postText') {
+                                } else if(options.postings && options.postings.type == 'postText') {
                                     smarti.post(createTextMessage(),[]);
                                 } else {
                                     smarti.post(text,attachments);
