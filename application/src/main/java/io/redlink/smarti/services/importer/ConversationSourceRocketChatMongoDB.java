@@ -1,9 +1,12 @@
 package io.redlink.smarti.services.importer;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.bson.Document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -11,7 +14,6 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 
-import io.redlink.smarti.services.I_ImporterService;
 import io.redlink.smarti.webservice.pojo.RocketMongoConfig;
 
 public class ConversationSourceRocketChatMongoDB extends A_ConversationSource {
@@ -38,21 +40,10 @@ public class ConversationSourceRocketChatMongoDB extends A_ConversationSource {
 					Aggregates.match(Filters.regex(mongoConfig.getFilterField(), mongoConfig.getFilterValue())),
 					Aggregates.lookup(mongoConfig.getMessageCollection(), "_id", "rid", "messages"))).iterator();
 			
-			StringBuffer input = new StringBuffer();
-			input.append(I_ImporterService.JSON_RESULT_WRAPPER_START);
-			
-			while (iterator.hasNext()) {
-				Document doc = iterator.next();
-				String jsonDoc = doc.toJson();
-				input.append(jsonDoc);
-				System.out.println(jsonDoc);
-				if (iterator.hasNext()) {
-					input.append(", ");
-				}
-			}
-			input.append(I_ImporterService.JSON_RESULT_WRAPPER_END);
-			
-			return input.toString();
+			ObjectMapper mapper = new ObjectMapper();
+			String mappString = mapper.writeValueAsString(Collections.singletonMap("export", ImmutableList.copyOf(iterator)));
+
+			return mappString;
 		} finally {
 			mongoClient.close();
 		}

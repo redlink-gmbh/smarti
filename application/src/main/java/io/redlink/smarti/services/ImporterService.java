@@ -1,32 +1,27 @@
 package io.redlink.smarti.services;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 import java.io.IOException;
-import java.text.DateFormat;
+
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
 
 import org.apache.http.client.ClientProtocolException;
-import org.bson.types.ObjectId;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.importer.I_ConversationSource;
 import io.redlink.smarti.services.importer.I_ConversationTarget;
-import io.redlink.smarti.webservice.ConversationWebservice;
-import io.redlink.smarti.webservice.RocketChatEndpoint;
-import io.redlink.smarti.webservice.pojo.RocketEvent;
 
 /**
  * This service provides an Smarti importer.<p>
@@ -44,20 +39,11 @@ public class ImporterService implements I_ImporterService {
 	
 	private Logger log = LoggerFactory.getLogger(ImporterService.class);
 
-	/** A simple ISO date formatter. */
-	private static final DateFormat ISODateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-
     @Autowired
-    private ConversationWebservice conversationWebservice;
+    private ConversationService conversationService;
     
     @Autowired
-    private RocketChatEndpoint rcEndpoint;
-    
-    public ImporterService() {
-    		rcEndpoint = new RocketChatEndpoint(null, 0, null);
-    }
-	
-    long time;
+    private StoreService storeService;
     
 	/**
 	 * @see I_ImporterService#importComversation(I_ConversationSource, I_ConversationTarget)
@@ -65,27 +51,29 @@ public class ImporterService implements I_ImporterService {
 	@Override
 	public void importComversation(I_ConversationSource source, I_ConversationTarget target) throws Exception {
 
-		
 		if (source != null && target != null) {
-			time = new Date().getTime();
+			long time = new Date().getTime();
 			log.info("Start export at    : " + (new Date().getTime() - time) + " ms");
 			String export = source.exportConversations();
 			log.info("Start parsing at   : " + (new Date().getTime() - time) + " ms");
 			JSONObject eportedJSON = (JSONObject) new JSONParser().parse(export);
 			log.info("Start import at    : " + (new Date().getTime() - time) + " ms");
-			importJSON(eportedJSON, target);
+			importJSON(source, target, eportedJSON);
 			log.info("Finished import at : " + (new Date().getTime() - time) + " ms");
 		}
 	}
 
 	/**
+	 * @param source
+	 * @param target
+	 * @param export
 	 * 
-	 * @param obj
 	 * @throws IOException
 	 * @throws ClientProtocolException
-	 * @throws ParseException 
+	 * @throws ParseException
 	 */
-	private void importJSON(JSONObject export, I_ConversationTarget target) throws IOException, ClientProtocolException, ParseException {
+	@SuppressWarnings("unchecked")
+	private void importJSON(I_ConversationSource source, I_ConversationTarget target, JSONObject export) throws IOException, ClientProtocolException, ParseException {
 
 		Iterator<JSONObject> entryIterator = ((JSONArray) export.get("export")).iterator();
 		while (entryIterator.hasNext()) {
@@ -96,54 +84,45 @@ public class ImporterService implements I_ImporterService {
 
 				String channelId = (String) expEntry.get("_id");
 				String channelName = (String) expEntry.get("name");
-				RocketEvent rocketEvent = null;
-				boolean newConversation = false;
 				
 				JSONArray messages = (JSONArray) expEntry.get("messages");
 				Iterator<JSONObject> messageIterator = messages.iterator();
 
+				Message m = null;
+				Conversation conversation = null;
+				
 				while (messageIterator.hasNext()) {
 					JSONObject message = messageIterator.next();
 					Object t = message.get("t");
 					if (t == null) {
+				        conversation = storeService.getCurrentConversationByChannelId(channelId, () -> {
+				            final Conversation newConversation = new Conversation();
+				            newConversation.getContext().setContextType(source.getSourceType().toString());
+				            newConversation.getContext().setDomain(target.getClientId());
+				            newConversation.getContext().setEnvironment("channel", channelName);
+				            newConversation.getContext().setEnvironment("channel_id", channelId);
+				            newConversation.getContext().setEnvironment("token", target.getToken());
+				            return newConversation;
+				        });
 
-						rocketEvent = new RocketEvent((String) message.get("_id"));
-						rocketEvent.setBot(null);
-						rocketEvent.setToken(target.getToken());
-						rocketEvent.setChannelId(channelId);
-						rocketEvent.setChannelName(channelName);
-						rocketEvent.setText((String) message.get("msg"));
+				        m = new Message();
+				        m.setId((String) message.get("_id"));
+				        m.setContent((String) message.get("msg"));
+						m.setTime(new Date((Long) message.get("_updatedAt")));
+				        m.setOrigin(Message.Origin.User);
 
-						JSONObject user = (JSONObject) message.get("u");
-						rocketEvent.setUserId((String) user.get("_id"));
-						rocketEvent.setUserId((String) user.get("username"));
+				        // TODO: Use a UserService to actually *store* the users
+				        JSONObject user = (JSONObject) message.get("u");
+						final User userO = new User((String) user.get("_id"));
+						userO.setDisplayName((String) user.get("username"));
+						m.setUser(userO);
 
-						Date timestamp;
-						String _updatedAt;
-						Object updatedAt = message.get("_updatedAt");
-						if (updatedAt instanceof JSONObject) {
-							JSONObject jso = (JSONObject) updatedAt;
-							String dateAsString = (jso.get("$date")).toString();
-							timestamp = new Date(new Long(dateAsString));
-							_updatedAt = ISODateFormatter.format(timestamp);
-						} else {
-							_updatedAt = (String) updatedAt;
-							timestamp = ISODateFormatter.parse(_updatedAt);
-						}
-						rocketEvent.setTimestamp(timestamp);
-						rocketEvent.setCallbackUrl((String) message.get("webhook_url"));
-
-						rcEndpoint.onRocketEvent(target.getClientId(), rocketEvent);
-						log.info(rocketEvent.toString());
-						newConversation = true;
+				        conversation = conversationService.appendMessage(conversation, m);
+				        conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
+				        conversationService.completeConversation(conversation);
+						log.info(conversation.toString());
 					}
 				}
-				if (newConversation && rocketEvent != null) {
-					ResponseEntity<?> reE = rcEndpoint.getConversation(target.getClientId(), rocketEvent.getChannelId());
-					String conversationID = String.valueOf(reE.getBody());
-					conversationWebservice.complete(new ObjectId(conversationID));
-				}
-				newConversation = false;
 			}
 		}
 	}

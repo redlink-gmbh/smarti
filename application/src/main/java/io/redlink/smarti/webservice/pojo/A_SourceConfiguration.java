@@ -8,26 +8,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class A_SourceConfiguration implements I_SourceConfiguration {
-	
-	@Override
-	public JSONObject asJSON() {
 
-		try {
-			return (JSONObject) new JSONParser().parse(new ObjectMapper().writeValueAsString(this));
-		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+	@Override
+	public JSONObject asJSON() throws ParseException, JsonProcessingException {
+
+		return (JSONObject) new JSONParser().parse(toString());
 	}
-	
-	@Override
-	public String toString() {
 
-		return asJSON().toJSONString();
+	public String asString() throws JsonProcessingException {
+
+		ObjectMapper mapper = new ObjectMapper();
+		return mapper.writeValueAsString(this);
 	}
 
 }

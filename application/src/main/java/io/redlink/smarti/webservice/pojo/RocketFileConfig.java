@@ -14,6 +14,13 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 public class RocketFileConfig extends A_SourceConfiguration {
 
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("RocketFileConfig [jsonFileURL=").append(jsonFileURL).append("]");
+		return builder.toString();
+	}
+
 	@JsonProperty("json_file_url")
 	private String jsonFileURL;
 

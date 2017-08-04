@@ -42,7 +42,7 @@ public class RocketBot {
         this.identifier = identifier;
     }
 
-    public static class JacksonDeserializer extends JsonDeserializer {
+    public static class JacksonDeserializer extends JsonDeserializer<Object> {
         public RocketBot deserialize(JsonParser parser, DeserializationContext context) throws IOException, JsonProcessingException {
             if(JsonToken.START_OBJECT.equals(parser.getCurrentToken())) {
                 ObjectMapper mapper = new ObjectMapper();

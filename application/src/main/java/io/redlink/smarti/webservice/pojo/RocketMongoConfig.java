@@ -2,23 +2,23 @@ package io.redlink.smarti.webservice.pojo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-"host",
-"port",
-"dbname",
-"room_collection",
-"message_collection",
-"filter_field",
-"filter_value"
-})
 /**
  * @author Ruediger Kurz (ruediger.kurz@deutschebahn.com)
  * @since 03.08.2017
  */
 public class RocketMongoConfig extends A_SourceConfiguration {
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("RocketMongoConfig [dbname=").append(dbname).append(", filterField=").append(filterField)
+				.append(", filterValue=").append(filterValue).append(", host=").append(host)
+				.append(", messageCollection=").append(messageCollection).append(", port=").append(port)
+				.append(", roomCollection=").append(roomCollection).append("]");
+		return builder.toString();
+	}
 
 	@JsonProperty("dbname")
 	private String dbname;

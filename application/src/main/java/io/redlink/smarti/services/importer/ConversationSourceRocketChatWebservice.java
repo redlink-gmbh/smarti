@@ -2,6 +2,7 @@ package io.redlink.smarti.services.importer;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -37,17 +38,22 @@ public class ConversationSourceRocketChatWebservice extends A_ConversationSource
 
 	/**
 	 * 
-	 * @param payload
 	 * @return
+	 * 
+	 * @throws IOException
+	 * @throws ClientProtocolException
+	 * @throws IOException
+	 * @throws ClientProtocolException
+	 * @throws UnsupportedCharsetException
 	 */
-	private String getMongoRequestExport() throws IOException, ClientProtocolException {
+	private String getMongoRequestExport() throws IOException, ClientProtocolException, IOException, ClientProtocolException, UnsupportedCharsetException {
 
 		HttpPost post = new HttpPost(webserviceConfig.getRocketChatEndpoint());
 		post.addHeader("Content-Type", "application/json; charset=UTF-8");
 		post.addHeader("Accept-Encoding", "gzip,deflate,sdch");
 		post.addHeader("Accept-Language", "en-US,en;q=0.8");
 	
-		StringEntity entity = new StringEntity(getSourceConfiguration().asJSON().toJSONString(), "UTF-8");
+		StringEntity entity = new StringEntity(getSourceConfiguration().asString(), "UTF-8");
 		
 		entity.setContentType("application/json");
 		post.setEntity(entity);
@@ -61,8 +67,9 @@ public class ConversationSourceRocketChatWebservice extends A_ConversationSource
 		return null;
 	}
 	
-	
-	/** A HTTP client to use the Smarti web service. */
+	/**
+	 * A HTTP client to use the Smarti web service.<p> 
+	 */
 	private final HttpClientBuilder httpClientBuilder = HttpClientBuilder.create()
 			.setRetryHandler((exception, executionCount, context) -> executionCount < 3)
 			.setConnectionBackoffStrategy(new ConnectionBackoffStrategy() {
