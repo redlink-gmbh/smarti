@@ -49,7 +49,5 @@ public class RocketChatEndpointProxyTest {
             String responseString = IOUtils.toString(response.getEntity().getContent(), Charset.defaultCharset());
             Assert.assertEquals("foobar", responseString);
         }
-
     }
-
 }
