@@ -146,6 +146,11 @@ public class RocketChatEndpoint {
 
     private void notifyRocketChat(String callbackUrl, Conversation conversation, String token) {
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+        	
+        		if (StringUtils.isEmpty(callbackUrl)) {
+        			log.warn("Webhook URL is empty.");
+        			return;
+        		}
             final HttpPost post = new HttpPost(callbackUrl);
             post.setEntity(new StringEntity(
                     toJsonString(new SmartiUpdatePing(conversation.getId(), conversation.getContext().getEnvironment("channel_id"), token)),
