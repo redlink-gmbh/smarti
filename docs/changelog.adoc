@@ -1,11 +1,11 @@
-= Changelog
+== Changelog
 
 This document shows the changes that are introduced into Smarti with the releases.
 
-== 0.4.0 (TBD)
-=== Bug fixes
-=== Improvements and Refactoring
-=== Build and Distribution
+=== 0.4.0 (TBD)
+==== Bug fixes
+==== Improvements and Refactoring
+==== Build and Distribution
 
-== Pre 0.4.0
+=== Pre 0.4.0
 For information about older releases check the https://github.com/redlink-gmbh/smarti/commits/master[history on GitHub].
