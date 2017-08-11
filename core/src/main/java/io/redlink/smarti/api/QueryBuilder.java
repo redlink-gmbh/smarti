@@ -64,11 +64,11 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
     public final String getComponentName() {
         if(_creatorName == null){
             //Note: us a different variable to build to avoid concurrency issues
-            String creatorName = getCreatorName();
-            if(creatorName == null){
-                creatorName = getClass().getName();
+            String name = getName();
+            if(name == null){
+                name = getClass().getName();
             }
-            _creatorName = creatorName.replace('.', '_'); //mongo does not like '.' in field names
+            _creatorName = name.replace('.', '_'); //mongo does not like '.' in field names
         }
         return _creatorName;
     }
@@ -118,8 +118,30 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
      */
     protected abstract void doBuildQuery(C config, Template intent, Conversation conversation);
     
-    public String getCreatorName() {
+    /**
+     * Getter for the name of this QueryBuilder implementation (MUST BE a slug name) and unique to all
+     * query builder components
+     * @return the name (default: {@link QueryBuilderUtils#getQueryBuilderName(Class)})
+     */
+    public String getName(){
         return QueryBuilderUtils.getQueryBuilderName(getClass());
+    }
+    
+    /**
+     * Builds the creator name for this query builder and the parsed configuration (may be <code>null</code> if this
+     * {@link QueryBuilder} does not use configurations).
+     * @param config
+     * @return
+     */
+    public final String getCreatorName(C config) {
+        StringBuilder creator = new StringBuilder("queryBuilder/");
+        if(config == null){
+            creator.append(getName());
+        } else {
+            creator.append(config.getType()).append('/').append(config.getName());
+        }
+        return creator.toString();
+            
     }
     
     /**
@@ -212,7 +234,7 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
 
     @Override
     public String toString() {
-        return getCreatorName();
+        return getName();
     }
 
 }

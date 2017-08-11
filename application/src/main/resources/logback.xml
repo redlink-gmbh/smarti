@@ -22,6 +22,7 @@
 
     <logger name="org.springframework.web" level="INFO"/>
     <logger name="org.apache.solr" level="WARN"/>
+    <logger name="io.redlink.nlp" level="DEBUG"/>
     <logger name="io.redlink.smarti" level="DEBUG"/>
 
 </configuration>

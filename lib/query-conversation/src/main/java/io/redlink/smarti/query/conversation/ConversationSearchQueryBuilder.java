@@ -81,8 +81,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument solrDocument, String type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName());
+    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
+        final ConversationResult hassoResult = new ConversationResult(getCreatorName(conf));
         hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
         hassoResult.setContent(String.valueOf(solrDocument.getFirstValue("message")));
         hassoResult.setReplySuggestion(hassoResult.getContent());
@@ -93,10 +93,10 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answers, String type) {
-        ConversationResult result = toHassoResult(question, type);
+    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
+        ConversationResult result = toHassoResult(conf, question, type);
         for(SolrDocument answer : answers) {
-            result.addAnswer(toHassoResult(answer,type));
+            result.addAnswer(toHassoResult(conf, answer,type));
         }
         return result;
     }
@@ -107,7 +107,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         if (keywords == null || keywords.isEmpty()) return null;
 
         // TODO: Build the real query.
-        final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName());
+        final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName(conf));
         final List<String> strs = keywords.stream()
                 .map(Token::getValue)
                 .map(String::valueOf)

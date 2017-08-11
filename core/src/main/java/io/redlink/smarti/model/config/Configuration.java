@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
@@ -98,5 +100,25 @@ public class Configuration {
                 .filter(cc -> component.getComponentType().isAssignableFrom(cc.getClass()))
                 .filter(cc -> !onlyEnabled || cc.isEnabled())
             .collect(Collectors.toList());
+    }
+    /**
+     * Getter for the active configuration for the parsed component and name
+     * @param component the component
+     * @param name the name of the configuration
+     * @return the configuration if present
+     */
+    public <C extends ComponentConfiguration> Optional<C> getConfiguration(Configurable<C> component, String name){
+        return getConfiguration(component, name, true);
+    }
+    /**
+     * Getter for the configuration for the parsed component and name
+     * @param component the component
+     * @param name the name of the configuration
+     * @param onlyEnabled if only active configuration should be considered
+     * @return the configuration if present
+     */
+    public <C extends ComponentConfiguration> Optional<C> getConfiguration(Configurable<C> component, String name, boolean onlyEnabled){
+        return StreamSupport.stream(getConfigurations(component, onlyEnabled).spliterator(),false)
+            .filter(c -> c.getName().equals(name)).findAny();
     }
 }

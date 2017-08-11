@@ -71,16 +71,6 @@ public class DbSearchQueryBuilder extends QueryBuilder<DbSearchEndpointConfigura
         this.defaultConfig = dbSearchConfig.clone(); //sub-classes must not override the single instance spring config
     }
 
-    @Override
-    public String getCreatorName() {
-        StringBuilder name = new StringBuilder("query_")
-                .append(DbSearchTemplateDefinition.DBSEARCH_TYPE);
-        if(nameSuffix != null){
-            name.append('_').append(nameSuffix);
-        }
-        return name.toString();
-    }
-    
     protected String getQueryTitle(){
         return "DB Search Related";
     }
@@ -114,7 +104,7 @@ public class DbSearchQueryBuilder extends QueryBuilder<DbSearchEndpointConfigura
     }
     
     protected final Query buildQuery(DbSearchEndpointConfiguration config, Template template, Conversation conversation){
-        DbSearchQuery query = new DbSearchQuery(getCreatorName());
+        DbSearchQuery query = new DbSearchQuery(getCreatorName(config));
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.setFields("*","score");
         solrQuery.setRows(10);

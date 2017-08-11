@@ -56,8 +56,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument solrDocument, String type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName());
+    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
+        final ConversationResult hassoResult = new ConversationResult(getCreatorName(conf));
 
         hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
 
@@ -77,10 +77,10 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answers, String type) {
-        ConversationResult result = toHassoResult(question, type);
+    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
+        ConversationResult result = toHassoResult(conf, question, type);
         for(SolrDocument answer : answers) {
-            result.addAnswer(toHassoResult(answer,type));
+            result.addAnswer(toHassoResult(conf, answer,type));
         }
         return result;
     }
@@ -101,7 +101,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
             displayTitle += " (" + conversation.getContext().getDomain() + ")";
         }
-        return new ConversationMltQuery(getCreatorName())
+        return new ConversationMltQuery(getCreatorName(conf))
                 .setInlineResultSupport(isResultSupported())
                 .setDisplayTitle(displayTitle)
                 .setConfidence(.55f)

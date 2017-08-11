@@ -1,5 +1,9 @@
 package io.redlink.smarti.services;
 
+import static io.redlink.smarti.util.StringUtils.toSlug;
+
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -7,13 +11,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,6 +127,8 @@ public class ConfigurationService {
     private void validate(Map<String,List<ComponentConfiguration>> configuration) {
         Set<String> missing = new HashSet<>();
         Map<String,String> conflicting = new HashMap<>();
+        //set used to validate uniqueness of names
+        Set<Triple<String, String, String>> uniqueNameMap = new HashSet<>();
         //validate queryBuilder configurations
         configuration.entrySet().forEach(confCategory -> {
             //get all configurable components for the current category
@@ -124,11 +136,28 @@ public class ConfigurationService {
             AtomicInteger idx = new AtomicInteger();
             confCategory.getValue().forEach( conf -> {
                 int i = idx.getAndIncrement();
+                String pathPrefix = confCategory.getKey() + '[' + i + "].";
+                //care about initialization of Names (name == bank ? name -> slug(displayName); displayName == blank ? name -> displayName
+                if(StringUtils.isBlank(conf.getName()) && StringUtils.isBlank(conf.getDisplayName())){
+                    conflicting.put(pathPrefix + "displayName", "The displayName of a Component MUST NOT be NULL nor empty");
+                    return;
+                } 
+                if(StringUtils.isBlank(conf.getName())){
+                    conf.setName(toSlug(conf.getDisplayName()));
+                } else if(StringUtils.isBlank(conf.getDisplayName())){
+                    conf.setDisplayName(conf.getName());
+                }
+                //validate uniqueness of names within the category and type
+                if(!uniqueNameMap.add(new ImmutableTriple<>(confCategory.getKey(), conf.getType(), conf.getName()))){
+                    conflicting.put(pathPrefix + "name", "Multiple configuration for category '"+ confCategory.getKey()
+                    + "' type '" + conf.getType() + "' and name '" + conf.getName() + "'!");
+                    return;
+                }
+                //try to bind the configuration
                 Configurable cc = catConfComp.get(conf.getType());
                 if(cc == null){ //this configuration in unknown
                     conf.setUnbound(true);
                 } else {
-                    String pathPrefix = cc.getComponentCategory() + '[' + i + "].";
                     conf.setUnbound(false);
                     if(cc.getComponentType().isAssignableFrom(conf.getClass())){
                         Set<String> m = new HashSet<>();
@@ -150,7 +179,6 @@ public class ConfigurationService {
                         conflicting.put(pathPrefix, "Configuration has unexpected type '" + 
                                 conf.getClass().getName() + "' (expected: '" + cc.getComponentType().getName() + "')");
                     }
-                    
                 }
             });
         });

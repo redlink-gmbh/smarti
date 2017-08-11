@@ -20,6 +20,7 @@ package io.redlink.smarti.services;
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.QueryBuilderContainer;
 import io.redlink.smarti.exception.ConflictException;
+import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
@@ -28,6 +29,9 @@ import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +39,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -59,8 +64,8 @@ public class QueryBuilderService {
     }
 
     private void registerBuilder(QueryBuilder<?> queryBuilder) {
-        if (this.builders.putIfAbsent(queryBuilder.getCreatorName(), queryBuilder) != null) {
-            throw new IllegalArgumentException("QueryBuilder with name " + queryBuilder.getCreatorName() + " already registered!");
+        if (this.builders.putIfAbsent(queryBuilder.getName(), queryBuilder) != null) {
+            throw new IllegalArgumentException("QueryBuilder with name " + queryBuilder.getName() + " already registered!");
         }
     }
 
@@ -112,32 +117,58 @@ public class QueryBuilderService {
         });
     }
 
-    public List<? extends Result> execute(String creator, Template template, Conversation conversation) throws IOException {
-        final QueryBuilder queryBuilder = getQueryBuilder(creator);
-        if (queryBuilder != null) {
-            //FIXME: this does not support multiple configurations :(
-            //TODO: we will need to change the whole model to support the execution of queries for QueryBuilder that
-            //      support multiple configuration!
-            Configuration conf = confService.getConfiguration(conversation.getClientId());
-            if(conf == null){
-                throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
-            }
-            List<ComponentConfiguration> ccs = (List<ComponentConfiguration>)conf.getConfigurations(queryBuilder);
-            if(CollectionUtils.isNotEmpty(ccs)){
-                return queryBuilder.execute(ccs.get(0),template, conversation);
-            } else { 
-                //this should only happen when someone removes or disables a configuration between creating the query
-                //and executing it
-                throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a configuration for category '"
-                        + queryBuilder.getComponentCategory() + "' and type '" + queryBuilder.getComponentType() + "'!");
-            }
+    public List<? extends Result> execute(String creatorString, Template template, Conversation conversation) throws IOException {
+        Configuration conf = confService.getConfiguration(conversation.getClientId());
+        if(conf == null){
+            throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
+        }
+        final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> creator = getQueryBuilder(creatorString, conf);
+        if (creator != null) {
+            return creator.getKey().execute(creator.getValue(), template, conversation);
         } else {
-            return Collections.emptyList();
+            throw new NotFoundException(QueryBuilder.class, creatorString, "QueryBuilder for creator '"+ creatorString +"' not present");
         }
     }
-
-    public QueryBuilder getQueryBuilder(String builder) {
-        return builders.get(builder);
+    /**
+     * Getter for the QueryBuilder for the parsed creator string
+     * @param creator the creator string formated as '<code>queryBuilder/{queryBuilder#getName()}/{config#getName()}</code>'
+     * where '<code>{queryBuilder#getName()}</code>' is the same as '<code>{config#getType()}</code>'
+     * @return the {@link QueryBuilder} or <code>null</code> if not present
+     */
+    public QueryBuilder<?> getQueryBuilder(String creator) {
+        String[] creatorParts = StringUtils.split(creator, '/');
+        if(creatorParts.length >= 2){
+            return builders.get(creatorParts[1]);
+        } else {
+            return null;
+        }
+    }
+    /**
+     * Getter for the QueryBuilder for the parsed creator string
+     * @param creator the creator string formated as '<code>queryBuilder/{queryBuilder#getName()}/{config#getName()}</code>'
+     * where '<code>{queryBuilder#getName()}</code>' is the same as '<code>{config#getType()}</code>'
+     * @return the {@link QueryBuilder} or <code>null</code> if not present
+     */
+    public <C extends ComponentConfiguration> Entry<QueryBuilder<C>,C> getQueryBuilder(String creator, Configuration conf) {
+        String[] creatorParts = StringUtils.split(creator, '/');
+        if(creatorParts.length >= 2){
+            QueryBuilder<C> queryBuilder = (QueryBuilder<C>)builders.get(creatorParts[1]);
+            if(queryBuilder == null){
+                return null;
+            }
+            if(creatorParts.length >= 3){
+                Optional<C> config = conf.getConfiguration(queryBuilder,creatorParts[2]);
+                if(config.isPresent()){
+                    return new ImmutablePair<>(queryBuilder, config.get());
+                } else { //the referenced config was not found
+                    return null;
+                }
+            } else { //no configuration in the creator string ... so a null configuration is OK
+                return new ImmutablePair<>(queryBuilder, null);
+            }
+        } else {
+            return null;
+        }
     }
 
     public Map<String, QueryBuilder> getQueryBuilders() {

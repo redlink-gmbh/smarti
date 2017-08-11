@@ -12,13 +12,47 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 @JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="_class", defaultImpl=ComponentConfiguration.class)
+@ApiModel(value="Component Configuration",description="The configuration for a component. Configurations can have"
+        + "additional fields with arbitrary values.")
 public class ComponentConfiguration implements Cloneable {
 
+    @ApiModelProperty(value="The name of this configuration. MUST BE unique within configurations for the same type."
+            + "Typically derived from the displayName by removing spaces and none alpha numeric chars")
+    private String name;
+    
+    @ApiModelProperty(value="The display name of the component. Used to derive the name by removing spaces and none"
+            + "alpha numeric chars.")
+    private String displayName;
+    
+    @ApiModelProperty(value="the type identifies the component to consume this configuration", required=true)
     private String type;
+    @ApiModelProperty(value="if this configuration is enabled/disabled. Intended to be used for deactivating a "
+            + "configuration without deleting it.")
     private boolean enabled;
+    @ApiModelProperty(value="if <code>true</code> the configuration can not be applied as the component referenced by "
+            + "by the <code>type</code> value is not active.", readOnly=true)
     private boolean unbound;
     private final Map<String,Object> configuration = new LinkedHashMap<>(); //use the order of params as they are added
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getDisplayName() {
+        return displayName;
+    }
+    
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
     
     /**
      * Getter for the component type

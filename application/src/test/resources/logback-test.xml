@@ -28,6 +28,8 @@
 
     <logger name="io.redlink" level="INFO" />
     <logger name="io.redlink.smarti" level="DEBUG" />
+    <logger name="io.redlink.smarti.query" level="TRACE" />
+    
 
     <root level="WARN">
         <appender-ref ref="STDOUT" />

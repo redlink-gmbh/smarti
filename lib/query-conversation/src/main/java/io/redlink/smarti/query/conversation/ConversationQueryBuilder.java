@@ -47,20 +47,13 @@ import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDe
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
 
-    private final String creatorName;
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 
     public ConversationQueryBuilder(String creatorName, SolrCoreContainer solrServer, SolrCoreDescriptor conversationCore, TemplateRegistry registry) {
         super(ComponentConfiguration.class, registry);
-        this.creatorName = creatorName;
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
-    }
-
-    @Override
-    public String getCreatorName() {
-        return creatorName;
     }
 
     @Override
@@ -118,7 +111,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 QueryResponse answers = solrClient.query(query);
 
-                results.add(toHassoResult(solrDocument, answers.getResults(), intent.getType()));
+                results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
             }
             return results;
         } catch (SolrServerException e) {
@@ -137,11 +130,11 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         return new ComponentConfiguration(); //this queryBuilder has no config params
     }
 
-    protected abstract ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answersResults, String type);
+    protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
     protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation);
 
-    protected abstract ConversationResult toHassoResult(SolrDocument solrDocument, String type);
+    protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
     protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation);
 }
