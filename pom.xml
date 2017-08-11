@@ -275,7 +275,6 @@
                                 <requireJavaVersion>
                                     <version>1.8</version>
                                 </requireJavaVersion>
-                                <reactorModuleConvergence />
                                 <!-- TODO: add dependencyConvergence/ -->
                             </rules>
                         </configuration>

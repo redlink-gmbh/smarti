@@ -329,9 +329,22 @@
                             <failIfWarning>true</failIfWarning>
                             <excludedScopes>test,provided,system</excludedScopes>
                             <excludedGroups>((io|co)\.redlink\..*)</excludedGroups>
+                            <!-- Not pacakged -->
+                            <excludedArtifacts>stanford-corenlp</excludedArtifacts>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <index>true</index>
+                        <manifestEntries>
+                            <Loader-Path>BOOT-INF/lib,ext</Loader-Path>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -348,6 +361,7 @@
                     <!-- repackage -->
                     <classifier>exec</classifier>
                     <mainClass>io.redlink.smarti.Application</mainClass>
+                    <layout>ZIP</layout>
 
                     <!-- jars that requires to be unpacked -->
                     <requiresUnpack>
@@ -360,6 +374,13 @@
                             <artifactId>query-conversation</artifactId>
                         </dependency>
                     </requiresUnpack>
+                    <!-- GPL licensed, needs to be installed manually -->
+                    <excludes>
+                        <exclude>
+                            <groupId>edu.stanford.nlp</groupId>
+                            <artifactId>stanford-corenlp</artifactId>
+                        </exclude>
+                    </excludes>
 
                     <!-- build-info -->
                     <additionalProperties>

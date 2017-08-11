@@ -3,8 +3,6 @@
 Installation packages are provided for https://www.debian.org[Debian]- and (https://www.redhat.com[RedHat]-based systems. Alternatively the application can
 be started by directly launching the executable jar: `java -jar smarti-${version}-exec.jar`.
 
-WARNING: In the current version the packages include a https://www.gnu.org/licenses/gpl-3.0.en.html[GPL] licenced dependency (https://nlp.stanford.edu/software/[Stanford NLP]), so you are not allowed to distribute packages.
-
 === Requirements
 
 **smarti** is a https://java.com[Java]-Application based on the https://spring.io[Spring Framework].
@@ -49,6 +47,20 @@ To run smarti as a different user (`assistify` in this example), do the followin
 4. Restart the smarti
 
         systemctl try-restart smarti
+
+=== Additional Components
+Due to licensing-issues (e.g. https://www.gnu.org/licenses/gpl-3.0.html[GPL]), some optional dependencies are not part if the distribution pacakges.
+To enable these additional modules, you need to put the missing libraries into the `ext`-folder in the working directory.
+
+When installed with the provided `deb` or `rpm` package, this folder is located at `/var/lib/smarti/ext` and contains
+a simple readme.
+
+==== Stanford NLP
+To enable analysis based on https://nlp.stanford.edu[Stanford NLP], put these libraries into the `ext`-folder:
+
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar[stanford-corenlp-3.6.0.jar]
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar[stanford-corenlp-3.6.0-models-german.jar]
+
 
 == Configuration
 

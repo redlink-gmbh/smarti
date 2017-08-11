@@ -257,11 +257,22 @@
                                         <data>
                                             <type>template</type>
                                             <paths>
-                                                <path>/var/log/${packageName}</path>
+                                                <path>/var/lib/${packageName}</path>
+                                                <!--<path>/var/lib/${packageName}/ext</path>-->
                                             </paths>
                                             <mapper>
                                                 <type>perm</type>
                                                 <user>${daemonUser}</user>
+                                                <group>${daemonUser}</group>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.txt</src>
+                                            <dst>README.txt</dst>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./var/lib/${packageName}/ext</prefix>
                                             </mapper>
                                         </data>
                                         <data>
@@ -272,38 +283,22 @@
                                             <mapper>
                                                 <type>perm</type>
                                                 <user>${daemonUser}</user>
-                                                <group>${daemonUser}</group>
                                             </mapper>
                                         </data>
                                         <data>
                                             <type>link</type>
                                             <linkName>/var/lib/${packageName}/application.properties</linkName>
                                             <linkTarget>/etc/${packageName}/application.properties</linkTarget>
-                                            <mapper>
-                                                <type>perm</type>
-                                                <user>${daemonUser}</user>
-                                                <group>${daemonUser}</group>
-                                            </mapper>
                                         </data>
                                         <data>
                                             <type>link</type>
                                             <linkName>/var/lib/${packageName}/logback.xml</linkName>
                                             <linkTarget>/etc/${packageName}/logback.xml</linkTarget>
-                                            <mapper>
-                                                <type>perm</type>
-                                                <user>${daemonUser}</user>
-                                                <group>${daemonUser}</group>
-                                            </mapper>
                                         </data>
                                         <data>
                                             <type>link</type>
                                             <linkName>/var/lib/${packageName}/logs</linkName>
                                             <linkTarget>../../log/${packageName}</linkTarget>
-                                            <mapper>
-                                                <type>perm</type>
-                                                <user>${daemonUser}</user>
-                                                <group>${daemonUser}</group>
-                                            </mapper>
                                         </data>
                                         <!-- doc -->
                                         <data>
@@ -463,15 +458,22 @@
                                 <!-- directories -->
                                 <mapping>
                                     <directory>/var/log/${packageName}</directory>
-                                    <filemode>755</filemode>
                                     <username>${daemonUser}</username>
                                     <groupname>root</groupname>
                                 </mapping>
                                 <mapping>
                                     <directory>/var/lib/${packageName}</directory>
-                                    <filemode>755</filemode>
                                     <username>${daemonUser}</username>
                                     <groupname>${daemonUser}</groupname>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.txt</location>
+                                            <destination>README.txt</destination>
+                                        </source>
+                                    </sources>
+                                    <directory>/var/lib/${packageName}/ext</directory>
                                 </mapping>
                                 <mapping>
                                     <directory>/var/lib/${packageName}</directory>
@@ -483,8 +485,6 @@
                                             <location>../../../etc/${packageName}/logback.xml</location>
                                         </softlinkSource>
                                     </sources>
-                                    <username>${daemonUser}</username>
-                                    <groupname>${daemonUser}</groupname>
                                 </mapping>
 
                                 <!-- documentation -->
