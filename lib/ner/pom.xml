@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.3.0</version>
         <relativePath>../../</relativePath>
     </parent>
 
@@ -46,6 +46,11 @@
             <artifactId>nlp-model</artifactId>
             <version>${redlinknlp.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>ner-regex</artifactId>
+            <version>${redlinknlp.version}</version>
+        </dependency>
 
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -67,12 +72,6 @@
       <dependency>
         <groupId>io.redlink.nlp</groupId>
         <artifactId>ner-opennlp-de</artifactId>
-        <version>${redlinknlp.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>io.redlink.nlp</groupId>
-        <artifactId>ner-regex</artifactId>
         <version>${redlinknlp.version}</version>
         <scope>test</scope>
       </dependency>

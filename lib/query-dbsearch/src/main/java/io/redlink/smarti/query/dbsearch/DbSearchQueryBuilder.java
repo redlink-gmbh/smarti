@@ -139,7 +139,8 @@ public class DbSearchQueryBuilder extends QueryBuilder<DbSearchEndpointConfigura
      * @return this base implementation returns <code>true</code>
      */
     protected boolean acceptSlot(Slot slot, Conversation conversation){
-        return true;
+        //links should ne not considered
+        return !conversation.getTokens().get(slot.getTokenIndex()).hasHint("url");
     }
     
     /**

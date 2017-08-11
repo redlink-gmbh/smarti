@@ -104,6 +104,9 @@ const Utils = {
     getAvatarUrl : function(id) {
         return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon"
     },
+    getAnonymUser: function(id) {
+        return 'User-' + (parseInt(md5('redlink'+id),16)%10000); //TODO check if this works somehow...
+    },
     localize: function(obj) {
         if(obj.args && obj.args.length > 0) {
             var args_clone = ld_lang.cloneDeep(obj.args);
@@ -132,7 +135,8 @@ const Utils = {
  *      channel: STRING,
  *      rocket: {
  *          endpoint: STRING
- *      }
+ *      },
+ *      tracker: Tracker
  * }
  * @returns {
  *      login: function(success,failure,username,password),
@@ -142,7 +146,6 @@ const Utils = {
  *      query: function(params,success,failure)
  *      post: function(msg,attachments,success,failure)
  *      suggest: function(msg,success,failure)
- *      close: function(success,failure)
  * }
  */
 function Smarti(options) {
@@ -150,7 +153,8 @@ function Smarti(options) {
     options = $.extend(true,{
         DDP:{
             SocketConstructor: WebSocket
-        }
+        },
+        tracker: new Tracker()
     },options);
 
     //init socket connection
@@ -311,6 +315,7 @@ function Smarti(options) {
 
     function post(msg,attachments,success,failure) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
+
         ddp.on("result", function(message) {
             if(message.id == methodId) {
                 if(message.error && error) {
@@ -324,33 +329,28 @@ function Smarti(options) {
         });
     }
 
-    function suggest(msg,success,failure) {
-        console.error('suggestion handling is not yet implemented');
-        failure();
-    }
-
-    //TODO reimplement
-    function close() {
-        $.ajax({
-            url: options.smarti.endpoint + 'conversation/' + conversationId + '/publish',
-            method:'POST',
-            success: function(data){
-                alert('Konversation wurde abgeschlossen');
-            },
-            dataType: "json"
-        });
-    }
-
-return {
+    return {
         login: login,
         init: init,
         subscribe: function(id,func){pubsub(id).subscribe(func)},
         unsubscribe: function(id,func){pubsub(id).unsubscribe(func)},
         query: query,
-        post: post,
-        suggest: suggest,
-        close: close
+        post: post
     }
+}
+
+/**
+ * A tracker wrapper
+ * @param category
+ * @param onEvent the real tracker methode which is called
+ * @constructor
+ */
+function Tracker(category, roomId, onEvent) {
+    this.trackEvent = function(action, value) {
+        console.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
+        if(onEvent) onEvent(category, action, roomId, value);
+    }
+
 }
 
 /**
@@ -362,13 +362,14 @@ return {
  *       channel: 'GENERAL',
  *       widget:{
  *           'query.dbsearch': {
- *               numOfResults:2
+ *               numOfRows:2
  *           },
  *           'query.keyword': {
  *               disabled:true
  *           }
  *       },
- *       lang:'de'
+ *       lang:'de',
+ *       inputFieldSelector: '.selector'
  *   }
  * @returns {
  *
@@ -383,15 +384,23 @@ function SmartiWidget(element,_options) {
         socketEndpoint: "ws://localhost:3000/websocket/",
         smartiEndpoint: 'http://localhost:8080/',
         channel: 'GENERAL',
-        widget:{
+        postings: {
+            type: 'suggestText', // possible values: suggestText, postText, postRichText
+            cssInputSelector: '.message-form-text.input-message'
+        },
+        widget: {
             'query.dbsearch': {
-                numOfResults:2
+            		numOfRows: 2
             },
-            'query.keyword': {
-                disabled:true
+            'query.dbsearch.keyword': {
+                disabled: true
             }
         },
-        lang:'de'
+        tracker: {
+            onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
+            category: "knowledgebase"
+        },
+        lang: 'de'
     };
 
     $.extend(true,options,_options);
@@ -400,7 +409,33 @@ function SmartiWidget(element,_options) {
 
     localize.setLocale(options.lang);
 
+    var tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
+
     var widgets = [];
+
+    var messageInputField = undefined;
+
+    function InputField(elem) {
+        this.post = function(msg) {
+            console.debug(`write text to element: ${msg}`);
+            elem.val(msg);
+        }
+    }
+
+    if(options.postings && options.postings.type == 'suggestText') {
+        if(options.postings.cssInputSelector) {
+            var inputFieldELement = $(options.postings.cssInputSelector);
+            if(inputFieldELement.length) {
+                messageInputField = new InputField(inputFieldELement);
+            } else {
+                console.warn('no element found for cssInputSelector %s, set postings.type to postText',options.postings.inputFieldSelector);
+                options.postings.type = 'postText';
+            }
+        } else {
+            console.warn('No cssInputSelector set, set postings.type to postText');
+            options.postings.type = 'postText';
+        }
+    }
 
     /**
      * @param params
@@ -418,6 +453,7 @@ function SmartiWidget(element,_options) {
         var content = $('<div>').appendTo(params.elem);
 
         function createTermPill(token) {
+
             return $('<div class="smarti-token-pill">')
                 .append($('<span>').text(token.value))
                 .append('<i class="icon-cancel"></i>')
@@ -425,12 +461,14 @@ function SmartiWidget(element,_options) {
                 .click(function(){
                     $(this).hide();
                     getResults(0);
+                    tracker.trackEvent("search.dbsearch.tag.remove");
                 });
         }
 
         //TODO should be done server side
         function removeDuplicatesBy(keyFn, array) {
             var mySet = new Set();
+
             return array.filter(function(x) {
                 var key = keyFn(x), isNew = !mySet.has(key);
                 if (isNew) mySet.add(key);
@@ -500,6 +538,7 @@ function SmartiWidget(element,_options) {
                         type:'Keyword'
                     }));
                     $(this).val("");
+                    tracker.trackEvent("search.dbsearch.tag.add");
                 }
                 getResults(0);
             }
@@ -515,6 +554,9 @@ function SmartiWidget(element,_options) {
             var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
 
             params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
+            if (wgt_conf.suffix) {
+            		params.query.url += wgt_conf.suffix;
+            }
 
             if(page > 0) {
                 //append paging
@@ -525,10 +567,19 @@ function SmartiWidget(element,_options) {
             resultCount.empty();
             resultPaging.empty();
             loader.show();
+
+            console.log(`executeSearch ${ params.query.url }`);
             $.ajax({
                 url: params.query.url,
+                dataType: 'jsonp',
+                jsonp: 'json.wrf',
+                failure: function(err) {
+                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
+                	},
                 success: function(data){
                     loader.hide();
+
+                    tracker.trackEvent("search.dbsearch",data.response.numFound);
 
                     if(data.response.numFound == 0) {
                         resultCount.text(Utils.localize({code:'widget.db.query.no-results'}));
@@ -546,17 +597,6 @@ function SmartiWidget(element,_options) {
                             link: doc.dbsearch_link_s,
                             date: new Date(doc.dbsearch_pub_date_tdt)
                         };
-                        // for RedlinKSearch endpoint
-                        /*return {
-                            source: doc.source,
-                            title: doc.title,
-                            description: doc.description,
-                            type: doc.type,
-                            doctype: Utils.mapDocType(doc.type),
-                            link: doc.url,
-                            date: new Date(),
-                            thumb: doc.thumbnail ? 'http://localhost:8983/solr/main/tn/' + doc.thumbnail : undefined
-                        }*/
                     });
 
                     resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
@@ -577,7 +617,15 @@ function SmartiWidget(element,_options) {
                                 thumb_url: doc.thumb ? doc.thumb : undefined,
                                 text:doc.description
                             }];
-                            smarti.post(text,attachments);
+                            if(options.postings && options.postings.type == 'suggestText') {
+                                messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
+                            } else if(options.postings && options.postings.type == 'postText') {
+                                smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
+                            } else {
+                                smarti.post(text,attachments);
+                            }
+
+                            tracker.trackEvent("search.dbsearch.result.post", (page*numOfRows) + i);
                         });
 
                         results.append(docli);
@@ -587,13 +635,19 @@ function SmartiWidget(element,_options) {
                     var next = $('<span>').text(Utils.localize({code:'widget.db.query.paging.next'})).append('<i class="icon-angle-right">');;
 
                     if(page > 0) {
-                        prev.click(function(){getResults(page-1)});
+                        prev.click(function(){
+                            tracker.trackEvent("search.dbsearch.result.paging", page-1);
+                            getResults(page-1)
+                        });
                     } else {
                         prev.hide();
                     }
 
                     if((data.response.numFound/numOfRows) > (page+1)) {
-                        next.addClass('active').click(function(){getResults(page+1)});
+                        next.addClass('active').click(function(){
+                            tracker.trackEvent("search.dbsearch.result.paging", page+1);
+                            getResults(page+1)
+                        });
                     } else {
                         next.hide();
                     }
@@ -604,10 +658,6 @@ function SmartiWidget(element,_options) {
                         .append($('<td class="pageLink pageLinkRight">').append(next))
                         .appendTo(resultPaging);
 
-                },
-                dataType: "json",
-                failure: function(err) {
-                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
                 }
             });
         }
@@ -632,6 +682,7 @@ function SmartiWidget(element,_options) {
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
         function getResults() {
+
             //TODO get remote
             results.empty();
             loader.show();
@@ -683,9 +734,19 @@ function SmartiWidget(element,_options) {
                                     .append('<div class="subdoc-content">'+subdoc.content.replace(/\n/g, "<br />")+'</div>')
                                     .append($('<div>').addClass('result-actions').append(
                                         $('<button>').addClass('postMessage').click(function(){
+
                                             var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             var attachments = [buildAttachments(subdoc)];
-                                            smarti.post(text, attachments);
+
+                                            if(options.postings && options.postings.type == 'suggestText') {
+                                                messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
+                                            } else if(options.postings && options.postings.type == 'postText') {
+                                                smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
+                                            } else {
+                                                smarti.post(text,attachments);
+                                            }
+
+                                            tracker.trackEvent("conversation.part.post", i);
                                         }).append('<i class="icon-paper-plane"></i>')
                                     ))
                             );
@@ -702,8 +763,10 @@ function SmartiWidget(element,_options) {
                                 .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e){
                                         $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
                                         if($(e.target).hasClass('icon-right-dir')) {
+                                            tracker.trackEvent("conversation.part.open", i);
                                             $(e.target).removeClass('icon-right-dir').addClass('icon-down-dir');
                                         } else {
+                                            tracker.trackEvent("conversation.part.close", i);
                                             $(e.target).removeClass('icon-down-dir').addClass('icon-right-dir');
                                         }
                                     })
@@ -715,7 +778,24 @@ function SmartiWidget(element,_options) {
                             $('<button>').addClass('postAnswer').addClass('button').text(Utils.localize({code:'widget.conversation.post-all',args:[doc.answers.length+1]})).click(function(){
                                 var text = Utils.localize({code:'widget.conversation.answer.title'});
                                 var attachments = [buildAttachments(doc)];
-                                smarti.post(text, attachments);
+
+                                function createTextMessage() {
+                                    text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
+                                    $.each(doc.answers, function(i,answer) {
+                                        text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, " ");
+                                    });
+                                    return text;
+                                }
+
+                                if(options.postings && options.postings.type == 'suggestText') {
+                                    messageInputField.post(createTextMessage());
+                                } else if(options.postings && options.postings.type == 'postText') {
+                                    smarti.post(createTextMessage(),[]);
+                                } else {
+                                    smarti.post(text,attachments);
+                                }
+
+                                tracker.trackEvent("conversation.post", i);
                             }).append('<i class="icon-paper-plane"></i>')));
 
                         if(i + 1 != data.length) {
@@ -747,7 +827,7 @@ function SmartiWidget(element,_options) {
 
     //Smarti
 
-    var smarti = Smarti({DDP:{endpoint:options.socketEndpoint},smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
+    var smarti = new Smarti({DDP:{endpoint:options.socketEndpoint},tracker:tracker,smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
         refreshWidgets(data);
@@ -832,13 +912,24 @@ function SmartiWidget(element,_options) {
     }
 
     function initialize() {
-        smarti.init(null,showError)
+        smarti.init(null,showError);
     }
 
     smarti.login(
         initialize,
         drawLogin
     );
+
+    //append lightbulb close (only one handler!)
+    var tabOpenButton = $('.flex-tab-container .flex-tab-bar .icon-lightbulb').parent();
+
+    tabOpenButton.unbind('click.closeTracker');
+
+    tabOpenButton.bind('click.closeTracker', function() {
+        if($('.external-search-content').is(":visible")) {
+            tracker.trackEvent('sidebar.close');
+        }
+    });
 
     return {}; //whatever is necessary..
 }
