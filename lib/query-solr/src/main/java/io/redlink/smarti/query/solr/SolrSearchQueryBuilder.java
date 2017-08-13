@@ -18,7 +18,7 @@
 package io.redlink.smarti.query.solr;
 
 import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.intend.LatchSearchTemplate;
+import io.redlink.smarti.intend.IrLatchTemplate;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
 import io.redlink.smarti.model.result.Result;
@@ -34,7 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import static io.redlink.smarti.intend.LatchSearchTemplate.DBSEARCH_TYPE;
+import static io.redlink.smarti.intend.IrLatchTemplate.IR_LATCH;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -82,7 +82,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state =  DBSEARCH_TYPE.equals(template.getType()) && 
+        boolean state =  IR_LATCH.equals(template.getType()) && 
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getTokenIndex() >= 0)
                     .findAny().isPresent();
@@ -127,22 +127,22 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
                 final float titleBoost = 3f; //TODO: add boost for titles
                 final Collection<String> queryParams = new LinkedList<>();
                 switch (s.getRole()) {
-                case LatchSearchTemplate.ROLE_LOCATION:
+                case IrLatchTemplate.ROLE_LOCATION:
                     SpatialConfig spatial = config.getSearch().getSpatial();
                     queryParams.add(spatial.isEnabled() ?  createQueryParam(t, spatial.getLocationNameField(), 1f) : null);
                     //also search for locations in the
                     queryParams.add(spatial.isEnabled() && titleField != null ? createQueryParam(t, titleField, titleBoost) : null);
                     break;
-                case LatchSearchTemplate.ROLE_ALPHABET:
+                case IrLatchTemplate.ROLE_ALPHABET:
                     SingleFieldConfig fullText = config.getSearch().getFullText();
                     queryParams.add(fullText.isEnabled() ? createQueryParam(t, fullText.getField(), 1f) : null);
                     //also search for such tokens in the title
                     queryParams.add(titleField != null ? createQueryParam(t, titleText.getField(), titleBoost) : null);
                     break;
-                case LatchSearchTemplate.ROLE_CATEGORY:
+                case IrLatchTemplate.ROLE_CATEGORY:
                     //TODO support category filter to SolrConfig
                     break;
-                case LatchSearchTemplate.ROLE_HIERARCHY:
+                case IrLatchTemplate.ROLE_HIERARCHY:
                     //TODO: support hierarchy tokens (check if already supported by LatchTemplateBuilder
                     break;
                 default:

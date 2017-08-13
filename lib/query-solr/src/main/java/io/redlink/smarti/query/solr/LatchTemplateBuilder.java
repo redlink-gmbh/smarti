@@ -18,12 +18,12 @@
 package io.redlink.smarti.query.solr;
 
 import io.redlink.smarti.api.TemplateBuilder;
-import io.redlink.smarti.intend.LatchSearchTemplate;
+import io.redlink.smarti.intend.IrLatchTemplate;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Token.Type;
 import org.springframework.stereotype.Component;
 
-import static io.redlink.smarti.intend.LatchSearchTemplate.*;
+import static io.redlink.smarti.intend.IrLatchTemplate.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @Component
 public class LatchTemplateBuilder extends TemplateBuilder {
 
-    public static final TemplateDefinition LATCH = new LatchSearchTemplate();
+    public static final TemplateDefinition LATCH = new IrLatchTemplate();
     
     private static final Set<Type> ENTITY_TYPES = EnumSet.of(Type.Entity, Type.Place, Type.Person, Type.Organization,Type.Product);
     

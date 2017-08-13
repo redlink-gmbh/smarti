@@ -17,6 +17,7 @@
 
 package io.redlink.smarti.intend;
 
+import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Slot;
 import io.redlink.smarti.model.TemplateDefinition;
 import io.redlink.smarti.model.Token;
@@ -26,14 +27,29 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * QueryTemplate definition for LATCH information retrieval
+ * QueryTemplate for LATCH information retrieval. This template defines roles for
+ * the five dimensions of LATCH:<ol>
+ * <li>{@link #ROLE_LOCATION <b>L</b>ocation}: defines the spatial context of the search
+ * <li>{@link #ROLE_ALPHABET <b>A</b>lphabet}: the full text context for the search
+ * <li>{@link #ROLE_TIME <b>T</b>ime}: defines the temporal context of the search
+ * <li>{@link #ROLE_CATEGORY <b>C</b>ategory}: categorizations of any kinds
+ * <li>{@link #ROLE_HIERARCHY <b>H</b>ierarchy}: things like price ranges, 1-5 stars, ratings ...
+ * </ol>
+ * 
+ * {@link QueryBuilder} my use some or all of those templates. In addition they might want
+ * to use values of {@link Token}s assigned to roles different as {@link #ROLE_ALPHABET alphabet}
+ * for full text queries (e.g. the name of a location token).
+ * 
  * @author Rupert Westenthaler
  *
  */
 @Component
-public class LatchSearchTemplate extends TemplateDefinition {
+public class IrLatchTemplate extends TemplateDefinition {
 
-    public static final String DBSEARCH_TYPE = "dbsearch";
+    /**
+     * The Information Retrieval based on LATCH
+     */
+    public static final String IR_LATCH = "ir_latch";
     
     public static final String ROLE_LOCATION = "location";
     public static final String ROLE_ALPHABET = "alphabet";
@@ -44,8 +60,8 @@ public class LatchSearchTemplate extends TemplateDefinition {
      */
     public static final String ROLE_HIERARCHY = "hierarchy";
     
-    public LatchSearchTemplate() {
-        super(DBSEARCH_TYPE);
+    public IrLatchTemplate() {
+        super(IR_LATCH);
     }
 
     @Override
