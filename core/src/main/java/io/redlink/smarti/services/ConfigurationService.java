@@ -159,7 +159,7 @@ public class ConfigurationService {
                     conf.setUnbound(true);
                 } else {
                     conf.setUnbound(false);
-                    if(cc.getComponentType().isAssignableFrom(conf.getClass())){
+                    if(cc.getConfigurationType().isAssignableFrom(conf.getClass())){
                         Set<String> m = new HashSet<>();
                         Map<String,String> c = new HashMap<>();
                         if(!cc.validate(conf, m, c)){
@@ -177,7 +177,7 @@ public class ConfigurationService {
                         } //a valid config
                     } else { //config has unexpected type
                         conflicting.put(pathPrefix, "Configuration has unexpected type '" + 
-                                conf.getClass().getName() + "' (expected: '" + cc.getComponentType().getName() + "')");
+                                conf.getClass().getName() + "' (expected: '" + cc.getConfigurationType().getName() + "')");
                     }
                 }
             });
@@ -236,18 +236,8 @@ public class ConfigurationService {
         Map<String, List<ComponentConfiguration>> config = new HashMap<>();
         configurableComponents.values().stream().flatMap(m -> m.values().stream())
             .forEach(cc -> {
-                ComponentConfiguration conf = cc.getDefaultConfiguration();
-                if(conf == null) { //support creation with the default constructor if getDefaultConfiguration returns NULL
-                    try {
-                        conf = cc.getComponentType().newInstance();
-                    } catch (InstantiationException |IllegalAccessException e) {
-                        log.warn("Unable to create instance of {} using default constructor", cc.getComponentType());
-                    }
-                }
+                ComponentConfiguration conf = createDefaultConfiguration(cc, false);
                 if(conf != null){
-                    conf.setType(cc.getComponentName()); //enforce type tp be set to the component name
-                    conf.setUnbound(false); //this is a bound configuration as cc exists
-                    //conf.setEnabled(true); //allow for default configurations that are disabled by default
                     List<ComponentConfiguration> ccs = config.get(cc.getComponentCategory());
                     if(ccs == null){
                         ccs = new LinkedList<>();
@@ -267,25 +257,46 @@ public class ConfigurationService {
      */
     public ComponentConfiguration getDefaultConfiguration(String category, String type){
         Map<String,Configurable<?>> ccc = configurableComponents.get(category);
-        if(ccc != null){
-            Configurable<?> cc = ccc.get(type);
-            if(cc != null){
-                ComponentConfiguration c = cc.getDefaultConfiguration();
-                if(c == null){
-                    try {
-                        c = cc.getComponentType().newInstance();
-                    } catch (InstantiationException | IllegalAccessException e) {
-                        log.warn("Unable to create instance of {} using default constructor", cc.getComponentType());
-                        return null;
-                    }
-                }
-                c.setType(cc.getComponentName());
-                c.setUnbound(false);
-                c.setEnabled(true);
-                return c;
+        return ccc != null ? createDefaultConfiguration(ccc.get(type), true) : null;
+    }
+
+    /**
+     * Creates a default configuration for the parsed {@link Configuration} component.
+     * <p>
+     * It first calls {@link Configurable#getDefaultConfiguration(). If this
+     * returns <code>null</code> it tries to create a new instance of
+     * Configurable#getConfigurationType(). Afterwards it sets 
+     * ComponentConfiguration#getType() to Configurable#getComponentName() and
+     * also checks that ComponentConfiguration#getDisplayName() and
+     * ComponentConfiguration#getName() are correctly set. If not they are set
+     * to the defaults (Configurable#getComponentName()). Finally the enabled state
+     * is set to the parsed value
+     * @param cc the {@link Configurable} component to create a default configuration for
+     * @return the {@link ComponentConfiguration}
+     */
+    private <CT extends ComponentConfiguration> CT createDefaultConfiguration(Configurable<CT> cc, boolean enabled) {
+        if(cc == null){
+            return null;
+        }
+        CT c = cc.getDefaultConfiguration();
+        if(c == null){
+            try {
+                c = cc.getConfigurationType().newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                log.warn("Unable to create instance of {} using default constructor", cc.getConfigurationType());
+                return null;
             }
         }
-        return null;
+        c.setType(cc.getComponentName());
+        if(StringUtils.isBlank(c.getDisplayName())){
+            c.setDisplayName(cc.getComponentName());
+        }
+        if(StringUtils.isBlank(c.getName())){
+            c.setName(toSlug(c.getDisplayName()));
+        }
+        c.setUnbound(false);
+        c.setEnabled(enabled);
+        return c;
     }
 
 }

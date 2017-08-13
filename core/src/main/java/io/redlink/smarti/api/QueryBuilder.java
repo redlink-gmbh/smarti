@@ -56,7 +56,7 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
     }
     
     @Override
-    public final Class<C> getComponentType() {
+    public final Class<C> getConfigurationType() {
         return configType;
     }
     

@@ -23,7 +23,7 @@ public interface Configurable<CT extends ComponentConfiguration> {
      * The expected Java type of the configuration
      * @return the java type of the configuration
      */
-    Class<CT> getComponentType();
+    Class<CT> getConfigurationType();
     
     /**
      * The default configuration for this component

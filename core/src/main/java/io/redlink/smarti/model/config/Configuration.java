@@ -97,7 +97,7 @@ public class Configuration {
         }
         return (Iterable<C>)catConfigs.stream()
                 .filter(cc -> Objects.equals(component.getComponentName(), cc.getType()))
-                .filter(cc -> component.getComponentType().isAssignableFrom(cc.getClass()))
+                .filter(cc -> component.getConfigurationType().isAssignableFrom(cc.getClass()))
                 .filter(cc -> !onlyEnabled || cc.isEnabled())
             .collect(Collectors.toList());
     }
