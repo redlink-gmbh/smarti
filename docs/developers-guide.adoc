@@ -1,8 +1,8 @@
-= Developers Guide
+== Developers Guide
 
 TODO
 
-== Release
+=== Release
 
 For a release, a release branch (based on develop) is created which represents the release candidate.
 If the candidate fulfills the requirements, the issues of the release are documented in the changelogs.
