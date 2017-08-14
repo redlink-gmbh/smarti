@@ -237,7 +237,13 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- (8) DB Search Related Documents -->
+        <!-- (8) Solr based Information Retrieval -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>query-solr</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>io.redlink.smarti</groupId>
             <artifactId>query-dbsearch</artifactId>
@@ -374,13 +380,13 @@
                             <artifactId>query-conversation</artifactId>
                         </dependency>
                     </requiresUnpack>
-                    <!-- GPL licensed, needs to be installed manually -->
+                    <!-- GPL licensed, needs to be installed manually --> 
                     <excludes>
                         <exclude>
                             <groupId>edu.stanford.nlp</groupId>
                             <artifactId>stanford-corenlp</artifactId>
                         </exclude>
-                    </excludes>
+                    </excludes> 
 
                     <!-- build-info -->
                     <additionalProperties>
