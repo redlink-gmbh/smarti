@@ -29,13 +29,20 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  */
 public class SolrSearchQuery extends Query {
 
+    @JsonProperty("resultConfig")
     private final ResultConfig resultConfig;
+    @JsonProperty("defaults")
     private final Map<String,Object> defaults;
+    @JsonProperty("queryParams")
     private Set<String> queryParams = new LinkedHashSet<>();
+    @JsonProperty("filterQueries")
     private Set<String> filterQueries = new LinkedHashSet<>();
 
     public SolrSearchQuery(String creator, ResultConfig resultConfig, Map<String,Object> defaults) {
@@ -89,6 +96,7 @@ public class SolrSearchQuery extends Query {
         }
     }
 
+    @JsonGetter
     public final ResultConfig getResultConfig() {
         return resultConfig;
     }
@@ -96,6 +104,7 @@ public class SolrSearchQuery extends Query {
      * Additional Solr Parameters that SHOULD be parsed with the query as defaults
      * @return the solr default parameters
      */
+    @JsonGetter
     public Map<String, Object> getDefaults() {
         return defaults;
     }

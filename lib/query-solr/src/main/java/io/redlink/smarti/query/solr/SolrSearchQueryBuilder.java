@@ -25,9 +25,12 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.query.solr.SolrEndpointConfiguration.SingleFieldConfig;
 import io.redlink.smarti.query.solr.SolrEndpointConfiguration.SpatialConfig;
 import io.redlink.smarti.services.TemplateRegistry;
+
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec.StreamingUpdateHandler;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,6 +42,7 @@ import static io.redlink.smarti.intend.IrLatchTemplate.IR_LATCH;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,6 +53,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  */
@@ -77,7 +82,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
     }
 
     protected String getQueryTitle(){
-        return "DB Search Related";
+        return "Solr Search";
     }
 
     @Override
@@ -92,7 +97,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
 
     @Override
     protected final void doBuildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation) {
-        final Query query = buildQuery(config, template, conversation);
+        final SolrSearchQuery query = buildQuery(config, template, conversation);
         if (query != null) {
             template.getQueries().add(query);
         }
@@ -108,12 +113,12 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
         throw new UnsupportedOperationException("This QueryBuilder does not support inline results");
     }
     
-    protected final Query buildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation){
+    protected final SolrSearchQuery buildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation){
         SolrSearchQuery query = new SolrSearchQuery(getCreatorName(config),config.getResult(),config.getDefaults());
         SolrQuery solrQuery = new SolrQuery();
-        solrQuery.setFields("*","score");
-        solrQuery.setRows(10);
-        
+        //apply the default params parsed with the configuration to the query
+        addDefaultParams(solrQuery, config);
+
         List<String> queryTerms = template.getSlots().stream()
             .filter(s -> validateSlot(s,conversation, MIN_TOKEN_CONF))
             .filter(s -> acceptSlot(s, conversation))
@@ -151,9 +156,9 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
                 }
                 return queryParams;
             })
-            .filter(Objects::isNull) //filter null query parameter lists
+            .filter(Objects::nonNull) //filter null query parameter lists
             .flatMap(c -> c.stream()) //faltten query parameter lsits
-            .filter(Objects::isNull) //filter null query parameters
+            .filter(Objects::nonNull) //filter null query parameters
             .collect(Collectors.toList()); //collect all valid query parameters
         if(queryTerms.isEmpty()){ //no terms to build a query for
             return null;
@@ -162,11 +167,36 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
         query.setUrl(config.getSolrEndpoint() + solrQuery.toQueryString());
-        query.setDisplayTitle(getQueryTitle());
+        query.setDisplayTitle(getQueryTitle()+": " + config.getDisplayName());
         query.setConfidence(0.8f);
-        query.setInlineResultSupport(false); //we can not query DB Search directly
+        query.setInlineResultSupport(false); //not yet implemented
         
         return query;
+    }
+
+    private void addDefaultParams(SolrQuery solrQuery, SolrEndpointConfiguration config) {
+        if(MapUtils.isNotEmpty(config.getDefaults())){
+            config.getDefaults().entrySet().stream()
+            .filter(e -> StringUtils.isNoneBlank(e.getKey()) && e.getValue() != null)
+            .forEach(e -> {
+                String param = e.getKey();
+                Collection<?> values;
+                if(e.getValue() instanceof Collection){
+                    values = (Collection<?>)e.getValue();
+                } else if(e.getValue().getClass().isArray()) {
+                     values = Arrays.asList((Object[])e.getValue());
+                } else {
+                    values = Collections.singleton(e.getValue());
+                }
+                Collection<String> strValues = StreamSupport.stream(values.spliterator(), false)
+                        .map(Objects::toString) //convert values to strings
+                        .filter(StringUtils::isNoneBlank) //filter blank values
+                        .collect(Collectors.toList());
+                if(!strValues.isEmpty()){
+                    solrQuery.add(param, strValues.toArray(new String[strValues.size()]));
+                }
+            });
+        }
     }
     
     /**

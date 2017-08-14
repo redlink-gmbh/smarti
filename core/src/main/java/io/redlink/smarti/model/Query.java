@@ -17,6 +17,11 @@
 package io.redlink.smarti.model;
 
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -24,6 +29,7 @@ import io.swagger.annotations.ApiModelProperty;
  * A Query to one of the external services
  */
 @ApiModel
+@JsonTypeInfo(use=Id.CLASS, include=As.PROPERTY, property="_class", defaultImpl=Query.class)
 public class Query {
 
     @ApiModelProperty(value = "name of the service", notes = "human readable name of the query", required = true)
