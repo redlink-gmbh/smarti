@@ -50,7 +50,7 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
             } else {
                 if(conversation.getClientId() == null){
                     conversation.setClientId(persisted.getClientId());
-                } else if(Objects.equals(conversation.getClientId(), persisted.getClientId())){
+                } else if(!Objects.equals(conversation.getClientId(), persisted.getClientId())){
                     throw new ConflictException(Conversation.class, "clientId", "The clientId MUST NOT be changed for an existing conversation!");
                 }
             }
