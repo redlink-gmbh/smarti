@@ -58,7 +58,13 @@ public class ConfigurationWebservice {
                 tf.constructCollectionLikeType(List.class, 
                         ComponentConfiguration.class));
     }
-    
+
+    @ApiOperation(value = "retrieve list of the basic configurations", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
+    @RequestMapping(method = RequestMethod.GET)
+    public ResponseEntity<?> getConfigurationComponents() throws IOException {
+        return writeSmartiConfig(configService.getDefaultConfiguration());
+    }
+
     @ApiOperation(value = "retrieve the configuration for a Client", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
     @RequestMapping(value = "{client}", method = RequestMethod.GET)
     public ResponseEntity<?> getConfiguration(@PathVariable("client") String client) throws IOException {
@@ -100,7 +106,7 @@ public class ConfigurationWebservice {
         Map<String,List<ComponentConfiguration>> config;
         //FIXME: I am sure their is a Spring was to do this ...
         if(jsonData == null){
-            config = configService.getDefaultConfiguration();
+            config = configService.getEmptyConfiguration();
         } else {
             try {
                 config = objectMapper.readValue(jsonData, smartiConfigType);

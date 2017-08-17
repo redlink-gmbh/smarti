@@ -266,44 +266,93 @@ public class SolrEndpointConfiguration extends ComponentConfiguration implements
      */
     @JsonInclude(content=Include.ALWAYS) //the UI needs to know all possible properties
     public static class ResultConfig {
-        
-        private String title = "title";
-        private String description = "description";
-        private String icon = "icon";
-        private String url = "url";
-        private String keywords = "keywords";
 
-        public final String getTitle() {
-            return title;
+        private Mappings mappings = new Mappings();
+        private int numOfRows = 10;
+
+        public Mappings getMappings() {
+            return mappings;
         }
-        public final void setTitle(String title) {
-            this.title = title;
+
+        public void setMappings(Mappings mappings) {
+            this.mappings = mappings;
         }
-        public final String getDescription() {
-            return description;
+
+        public int getNumOfRows() {
+            return numOfRows;
         }
-        public final void setDescription(String description) {
-            this.description = description;
+
+        public void setNumOfRows(int numOfRows) {
+            this.numOfRows = numOfRows;
         }
-        public final String getIcon() {
-            return icon;
+
+        public static class Mappings {
+            private String source, title, description, type, doctype, link, date, thumb;
+
+            public String getSource() {
+                return source;
+            }
+
+            public void setSource(String source) {
+                this.source = source;
+            }
+
+            public String getTitle() {
+                return title;
+            }
+
+            public void setTitle(String title) {
+                this.title = title;
+            }
+
+            public String getDescription() {
+                return description;
+            }
+
+            public void setDescription(String description) {
+                this.description = description;
+            }
+
+            public String getType() {
+                return type;
+            }
+
+            public void setType(String type) {
+                this.type = type;
+            }
+
+            public String getDoctype() {
+                return doctype;
+            }
+
+            public void setDoctype(String doctype) {
+                this.doctype = doctype;
+            }
+
+            public String getLink() {
+                return link;
+            }
+
+            public void setLink(String link) {
+                this.link = link;
+            }
+
+            public String getDate() {
+                return date;
+            }
+
+            public void setDate(String date) {
+                this.date = date;
+            }
+
+            public String getThumb() {
+                return thumb;
+            }
+
+            public void setThumb(String thumb) {
+                this.thumb = thumb;
+            }
         }
-        public final void setIcon(String icon) {
-            this.icon = icon;
-        }
-        public final String getUrl() {
-            return url;
-        }
-        public final void setUrl(String url) {
-            this.url = url;
-        }
-        public final String getKeywords() {
-            return keywords;
-        }
-        public final void setKeywords(String keywords) {
-            this.keywords = keywords;
-        }
-        
     }
         
     @Override
