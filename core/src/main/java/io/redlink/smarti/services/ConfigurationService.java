@@ -232,7 +232,7 @@ public class ConfigurationService {
     }
 
 
-    public Map<String, List<ComponentConfiguration>> getDefaultConfiguration() {
+    public Configuration getDefaultConfiguration() {
         Map<String, List<ComponentConfiguration>> config = new HashMap<>();
         configurableComponents.values().stream().flatMap(m -> m.values().stream())
             .forEach(cc -> {
@@ -246,7 +246,9 @@ public class ConfigurationService {
                     ccs.add(conf);
                 }
             });
-        return config;
+        Configuration configuration = new Configuration();
+        configuration.setConfig(config);
+        return configuration;
     }
     /**
      * Creates a configuration for a specific category and type
@@ -258,6 +260,10 @@ public class ConfigurationService {
     public ComponentConfiguration getDefaultConfiguration(String category, String type){
         Map<String,Configurable<?>> ccc = configurableComponents.get(category);
         return ccc != null ? createDefaultConfiguration(ccc.get(type), true) : null;
+    }
+
+    public Map<String,List<ComponentConfiguration>> getEmptyConfiguration() {
+        return Collections.<String,List<ComponentConfiguration>>emptyMap();
     }
 
     /**

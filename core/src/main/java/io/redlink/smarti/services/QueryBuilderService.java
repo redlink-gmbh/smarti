@@ -85,11 +85,14 @@ public class QueryBuilderService {
             t.setQueries(new LinkedList<>()); //remove the current queries before they are rebuilt
         });
 
+        if(!confService.isConfiguration(conversation.getClientId())) return;
+
         Configuration clientConfig = confService.getConfiguration(conversation.getClientId());
-        
+
         //build the new queries
         //NOTE: I have no idea how to write this using generics. But the impl. checks for
-        //      types safety 
+        //      types safety
+
         for (QueryBuilder queryBuilder : builders.values()) {
             List<ComponentConfiguration> builderConfigs = (List<ComponentConfiguration>)clientConfig.getConfigurations(queryBuilder);
             for(ComponentConfiguration cc : builderConfigs){
@@ -103,7 +106,7 @@ public class QueryBuilderService {
                 }
             }
         }
-        
+
         //recover the state of known queries
         idx.set(0); //rest the template index
         conversation.getTemplates().forEach(t -> {
