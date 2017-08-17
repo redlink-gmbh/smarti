@@ -134,11 +134,11 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
      * @return
      */
     public final String getCreatorName(C config) {
-        StringBuilder creator = new StringBuilder("queryBuilder/");
+        StringBuilder creator = new StringBuilder("queryBuilder:");
         if(config == null){
             creator.append(getName());
         } else {
-            creator.append(config.getType()).append('/').append(config.getName());
+            creator.append(config.getType()).append(':').append(config.getName());
         }
         return creator.toString();
             

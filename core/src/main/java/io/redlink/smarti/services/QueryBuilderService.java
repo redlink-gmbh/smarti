@@ -136,7 +136,7 @@ public class QueryBuilderService {
      * @return the {@link QueryBuilder} or <code>null</code> if not present
      */
     public QueryBuilder<?> getQueryBuilder(String creator) {
-        String[] creatorParts = StringUtils.split(creator, '/');
+        String[] creatorParts = StringUtils.split(creator, ':');
         if(creatorParts.length >= 2){
             return builders.get(creatorParts[1]);
         } else {
@@ -150,7 +150,7 @@ public class QueryBuilderService {
      * @return the {@link QueryBuilder} or <code>null</code> if not present
      */
     public <C extends ComponentConfiguration> Entry<QueryBuilder<C>,C> getQueryBuilder(String creator, Configuration conf) {
-        String[] creatorParts = StringUtils.split(creator, '/');
+        String[] creatorParts = StringUtils.split(creator, ':');
         if(creatorParts.length >= 2){
             QueryBuilder<C> queryBuilder = (QueryBuilder<C>)builders.get(creatorParts[1]);
             if(queryBuilder == null){
