@@ -335,7 +335,7 @@
                             <failIfWarning>true</failIfWarning>
                             <excludedScopes>test,provided,system</excludedScopes>
                             <excludedGroups>((io|co)\.redlink\..*)</excludedGroups>
-                            <!-- Not pacakged
+                            <!-- Not packaged
                             <excludedArtifacts>stanford-corenlp</excludedArtifacts> -->
                         </configuration>
                     </execution>
