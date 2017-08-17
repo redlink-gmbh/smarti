@@ -55,7 +55,8 @@ public class ComponentConfiguration implements Cloneable {
     }
     
     /**
-     * Getter for the component type
+     * Getter for the component type (a slag name) - something like the lower case version of
+     * {@link Class#getSimpleName()}.
      * @return the type of the component
      */
     public String getType() {
