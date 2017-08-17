@@ -34,6 +34,8 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,6 +43,7 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.Optional;
 
 
@@ -54,6 +57,8 @@ import java.util.Optional;
 @Api("conversation")
 public class ConversationWebservice {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     @SuppressWarnings("unused")
     private enum Vote {
         up(1),
@@ -191,7 +196,6 @@ public class ConversationWebservice {
                                       @PathVariable("template") int templateIdx,
                                       @PathVariable("creator") String creator,
                                       @RequestBody QueryUpdate queryUpdate) {
-        //FIXME: does this really work as intended?
         Conversation conversation = storeService.get(id);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -200,10 +204,20 @@ public class ConversationWebservice {
         if(clientConf == null){
             return ResponseEntity.notFound().build();
         }
+        Configuration conf = configService.getConfiguration(conversation.getClientId());
+        if(conf == null){
+            log.info("Client {} of Conversation {} has no longer a configuration assigned ... returning 404 NOT FOUND",
+                    conversation.getChannelId(), conversation.getId());
+            return ResponseEntity.notFound().build();
+        }
         final Template template = conversation.getTemplates().get(templateIdx);
         if (template == null) return ResponseEntity.notFound().build();
-        final QueryBuilder builder = queryBuilderService.getQueryBuilder(creator);
-        if (builder == null) return ResponseEntity.notFound().build();
+        
+        //only update the single requested query
+        final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> builderContext = queryBuilderService.getQueryBuilder(creator,conf);
+        if (builderContext == null) {
+            return ResponseEntity.notFound().build();
+        }
 
         //now that we have everything perform and store the updates to the conversation
         conversation.setTokens(queryUpdate.getTokens());
@@ -211,9 +225,7 @@ public class ConversationWebservice {
         conversation = storeService.store(conversation);
 
         try {
-            for(ComponentConfiguration cc : (Iterable<ComponentConfiguration>)clientConf.getConfigurations(builder)){
-                builder.buildQuery(conversation, cc);
-            }
+            builderContext.getKey().buildQuery(conversation, builderContext.getValue());
             storeService.storeIfUnmodifiedSince(conversation, conversation.getLastModified());
             return ResponseEntity.ok(template.getQueries());
         } catch (IndexOutOfBoundsException e) {
