@@ -41,6 +41,7 @@
         <module>lib</module>
 
         <module>data</module>
+        <module>frontend</module>
     </modules>
 
     <licenses>

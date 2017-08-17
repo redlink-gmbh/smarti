@@ -1,0 +1,16 @@
+<h2>Clients</h2>
+<table>
+    <th>
+        <td>ID</td>
+        <td>Name</td>
+        <td>Actions</td>
+    </th>
+    <tr ng-repeat="client in clients">
+        <td ng-bind="client.id">
+        <td ng-bind="client.name">
+        <td>
+          <button onclick="edit(client.data.id)">edit</button>
+        </td>
+    </td>
+    </tr>
+</table>
