@@ -33,6 +33,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -86,17 +87,21 @@ public class ConversationService {
                     templateService.updateTemplates(finalConversation);
                     
                     queryBuilderService.buildQueries(finalConversation);
-                    
-                    storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
 
-                    if(log.isDebugEnabled()){
-                        logConversation(finalConversation);
-                    }
-                    
-                    eventPublisher.publishEvent(new ConversationProcessCompleteEvent(finalConversation));
+                    try {
+                        final Conversation storedConversation = storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
 
-                    if (onCompleteCallback != null) {
-                        onCompleteCallback.accept(finalConversation);
+                        if (log.isDebugEnabled()) {
+                            logConversation(storedConversation);
+                        }
+
+                        eventPublisher.publishEvent(new ConversationProcessCompleteEvent(storedConversation));
+
+                        if (onCompleteCallback != null) {
+                            onCompleteCallback.accept(storedConversation);
+                        }
+                    } catch (ConcurrentModificationException e) {
+                        log.debug("Conversation {} has been modified while analysis was in progress", finalConversation.getId());
                     }
                 } catch (Throwable t) {
                     log.error("Error during async prepare: {}", t.getMessage(), t);
