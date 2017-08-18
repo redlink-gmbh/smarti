@@ -2,20 +2,24 @@
 
 /**
  * @ngdoc function
- * @name smartiApp.controller:MainCtrl
+ * @name smartiApp.controller:OverviewCtrl
  * @description
- * # MainCtrl
+ * # OverviewCtrl
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('OverviewCtrl', function ($scope, ClientService) {
+  .controller('OverviewCtrl', function ($scope, $location, ClientService) {
 
-    ClientService.list().then(function(data){
-       $scope.clients = data.data;
+    ClientService.list().then(function(clients){
+       $scope.clients = clients;
     });
 
     $scope.edit = function(clientId) {
       $location.path('client/' + clientId);
-    }
+    };
+
+    $scope.createClient = function() {
+      $location.path('client');
+    };
 
   });

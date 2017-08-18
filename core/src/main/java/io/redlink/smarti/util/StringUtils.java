@@ -17,12 +17,31 @@
 
 package io.redlink.smarti.util;
 
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.Arrays;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Various String helpers
  */
 public class StringUtils {
+
+    private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
+    private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
+
+    /**
+     * provides the slug name for the parsed input
+     * @param input
+     * @return
+     */ //from https://stackoverflow.com/questions/1657193/java-code-library-for-generating-slugs-for-use-in-pretty-urls
+    public static String toSlug(String input) {
+        String nowhitespace = WHITESPACE.matcher(input).replaceAll("-");
+        String normalized = Normalizer.normalize(nowhitespace, Form.NFD);
+        String slug = NONLATIN.matcher(normalized).replaceAll("");
+        return slug.toLowerCase(Locale.ROOT);
+    }
 
     public static boolean equalsAny(String needle, String... haystack) {
         return Arrays.stream(haystack)

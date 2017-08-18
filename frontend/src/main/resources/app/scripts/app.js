@@ -11,7 +11,8 @@
 angular
   .module('smartiApp', [
     'config',
-    'ngRoute'
+    'ngRoute',
+    'ui.codemirror'
   ])
   .config(function ($routeProvider) {
     $routeProvider
@@ -20,14 +21,14 @@ angular
         controller: 'OverviewCtrl',
         controllerAs: 'overview'
       })
-      .when('/story/:id?', {
+      .when('/client/:id?', {
         templateUrl: 'views/client.html',
         controller: 'ClientCtrl',
         resolve: {
           client:function(ClientService,Client,$route){
             return $route.current.params.id ?
-              ClientService.get($route.current.params.id) :
-              new Client({});
+              ClientService.getById($route.current.params.id) :
+              new Client();
           }}
       })
       .otherwise({

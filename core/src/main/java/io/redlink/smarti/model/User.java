@@ -44,9 +44,9 @@ public class User {
     @ApiModelProperty(notes = "the hometown of the user, used as fallback for travel-inquires")
     String homeTown;
 
-    List<Recap> history;
+//    List<Recap> history;
 
-    List<Setting> temporalProfile;
+    //List<Setting> temporalProfile;
 
     public User() {
         this(UUID.randomUUID().toString());

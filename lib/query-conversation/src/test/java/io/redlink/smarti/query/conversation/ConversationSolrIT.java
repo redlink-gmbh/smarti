@@ -129,7 +129,7 @@ public class ConversationSolrIT {
 
         ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, null);
 
-        hassoMlt.doBuildQuery(null, conversation3);
+        hassoMlt.doBuildQuery(null, null, conversation3);
 
     }
 

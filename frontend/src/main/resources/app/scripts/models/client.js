@@ -8,18 +8,26 @@
  * Factory in the smartiApp.
  */
 angular.module('smartiApp')
-  .factory('Client', function ($http, ENV) {
+  .factory('Client', function ($http, $q, ENV) {
 
     function Client(data) {
 
       this.data = angular.merge({},data);
 
       this.save = function() {
-         return $http.post(ENV + 'client', this.data);
+        var deferred = $q.defer();
+
+        $http.post(ENV.serviceBaseUrl + 'client/', this.data).then(function(data){
+          deferred.resolve(new Client(data.data));
+        }, function(data){
+          deferred.reject(data.data);
+        });
+
+        return deferred.promise;
       };
 
       this.delete = function() {
-        return $http.delete(ENV + 'client', this.data);
+        return $http.delete(ENV.serviceBaseUrl + 'client/' + this.data.id);
       };
 
     }

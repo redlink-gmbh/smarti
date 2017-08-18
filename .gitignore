@@ -27,3 +27,4 @@ application-local.properties
 
 # mac related files
 .DS_Store
+solrlib

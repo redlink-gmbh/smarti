@@ -18,6 +18,7 @@
 package io.redlink.smarti.repositories;
 
 import com.google.common.collect.Lists;
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
 import io.redlink.smarti.model.Conversation;
@@ -38,6 +39,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -100,19 +102,17 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     @Override
     public Conversation saveIfNotLastModifiedAfter(Conversation conversation, Date lastModified) {
+        
         final Query query = new Query();
         query.addCriteria(Criteria.where("_id").is(conversation.getId()));
         query.addCriteria(Criteria.where("lastModified").lte(lastModified));
 
+        BasicDBObject data = new BasicDBObject();
+        mongoTemplate.getConverter().write(conversation, data);
         final Update update = new Update();
-        update.set("channelId", conversation.getChannelId())
-                .set("meta", conversation.getMeta())
-                .set("user", conversation.getUser())
-                .set("messages", conversation.getMessages())
-                .set("tokens", conversation.getTokens())
-                .set("queryTemplates", conversation.getTemplates())
-                .set("context", conversation.getContext())
-                ;
+        data.entrySet().stream()
+            .filter(e -> !Objects.equals("lastModified", e.getKey()))
+            .forEach(e -> update.set(e.getKey(), e.getValue()));
         update.currentDate("lastModified");
 
         final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);

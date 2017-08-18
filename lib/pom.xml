@@ -38,6 +38,7 @@
         <module>token-processor</module>
         <module>query-conversation</module>
         <module>query-dbsearch</module>
+        <module>query-solr</module>
     </modules>
 
     <build>

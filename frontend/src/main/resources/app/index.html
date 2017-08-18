@@ -9,6 +9,7 @@
     <!-- build:css(.) styles/vendor.css -->
     <!-- bower:css -->
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="bower_components/codemirror/lib/codemirror.css" />
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:css(.tmp) styles/main.css -->
@@ -22,7 +23,9 @@
 
     <!-- Add your site or application content here -->
     <div class="header">
-
+        <div class="container">
+            <h1>Smarti Configuration</h1>
+        </div>
     </div>
 
     <div class="container">
@@ -42,15 +45,19 @@
     <script src="bower_components/angular/angular.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
     <script src="bower_components/angular-route/angular-route.js"></script>
+    <script src="bower_components/codemirror/lib/codemirror.js"></script>
+    <script src="bower_components/angular-ui-codemirror/ui-codemirror.js"></script>
     <!-- endbower -->
+    <script src="bower_components/codemirror/mode/javascript/javascript.js"></script>
     <!-- endbuild -->
-
-        <!-- build:js({.tmp,app}) scripts/scripts.js -->
         <script src="scripts/config.js"></script>
+        <!-- build:js({.tmp,app}) scripts/scripts.js -->
         <script src="scripts/app.js"></script>
         <script src="scripts/controllers/overview.js"></script>
         <script src="scripts/services/clientservice.js"></script>
+        <script src="scripts/services/configurationservice.js"></script>
         <script src="scripts/models/client.js"></script>
+        <script src="scripts/models/configuration.js"></script>
         <script src="scripts/controllers/client.js"></script>
         <!-- endbuild -->
 </body>

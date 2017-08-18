@@ -30,7 +30,7 @@ public class QueryBuilderUtils {
     }
 
     public static String getQueryBuilderName(Class<? extends QueryBuilder> aClass) {
-        return uncapitalize(aClass.getSimpleName().replaceFirst("(?i:(query)?(builder)$)", "").replaceAll("(?i:[^a-z0-9]+)", ""));
+        return StringUtils.toSlug((aClass.getSimpleName().replaceFirst("(?i:(query)?(builder)$)", "")));
     }
 
 }

@@ -1,16 +1,21 @@
 <h2>Clients</h2>
-<table>
-    <th>
-        <td>ID</td>
-        <td>Name</td>
-        <td>Actions</td>
-    </th>
+<table class="table table-striped">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Last Update</th>
+        <th>Actions</th>
+    </tr>
     <tr ng-repeat="client in clients">
-        <td ng-bind="client.id">
-        <td ng-bind="client.name">
+        <td ng-bind="client.data.id">
+        <td ng-bind="client.data.name">
+        <td ng-bind="client.data.description">
+        <td ng-bind="client.data.lastUpdate | date : 'MMM d, y h:mm:ss a' ">
         <td>
-          <button onclick="edit(client.data.id)">edit</button>
+          <button class="btn btn-default" ng-click="edit(client.data.id)">edit</button>
         </td>
     </td>
     </tr>
 </table>
+<button class="btn btn-primary" ng-click="createClient()">Create Client</button>

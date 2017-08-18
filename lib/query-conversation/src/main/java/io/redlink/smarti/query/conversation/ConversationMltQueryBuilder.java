@@ -21,6 +21,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
@@ -45,7 +46,7 @@ import static io.redlink.smarti.query.conversation.ConversationIndexConfiguratio
 @Component
 public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
-    public static final String CREATOR_NAME = "Hasso-MLT";
+    public static final String CREATOR_NAME = "query_related_mlt";
 
     @Autowired
     public ConversationMltQueryBuilder(SolrCoreContainer solrServer, 
@@ -55,8 +56,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument solrDocument, String type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName());
+    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
+        final ConversationResult hassoResult = new ConversationResult(getCreatorName(conf));
 
         hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
 
@@ -76,16 +77,16 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationResult toHassoResult(SolrDocument question, SolrDocumentList answers, String type) {
-        ConversationResult result = toHassoResult(question, type);
+    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
+        ConversationResult result = toHassoResult(conf, question, type);
         for(SolrDocument answer : answers) {
-            result.addAnswer(toHassoResult(answer,type));
+            result.addAnswer(toHassoResult(conf, answer,type));
         }
         return result;
     }
 
     @Override
-    protected ConversationMltQuery buildQuery(Template intent, Conversation conversation) {
+    protected ConversationMltQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation) {
         if (conversation.getMessages().isEmpty()) return null;
 
         // FIXME: compile mlt-request content
@@ -100,7 +101,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
             displayTitle += " (" + conversation.getContext().getDomain() + ")";
         }
-        return new ConversationMltQuery(getCreatorName())
+        return new ConversationMltQuery(getCreatorName(conf))
                 .setInlineResultSupport(isResultSupported())
                 .setDisplayTitle(displayTitle)
                 .setConfidence(.55f)
@@ -109,8 +110,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(Template intent, Conversation conversation) {
-        final ConversationMltQuery mltQuery = buildQuery(intent, conversation);
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation) {
+        final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation);
         if (mltQuery == null) {
             return null;
         }

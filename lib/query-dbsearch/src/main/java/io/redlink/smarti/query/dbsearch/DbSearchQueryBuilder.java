@@ -26,13 +26,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.dbsearch.DbSearchTemplateDefinition.DBSEARCH_TYPE;
@@ -40,11 +44,8 @@ import static io.redlink.smarti.query.dbsearch.DbSearchTemplateDefinition.DBSEAR
 /**
  */
 @Component
-@ConditionalOnProperty("dbsearch.solr")
-public class DbSearchQueryBuilder extends QueryBuilder {
-
-    @Value("${dbsearch.solr}") //required
-    private String solrEndpoint;
+@EnableConfigurationProperties(DbSearchEndpointConfiguration.class)
+public class DbSearchQueryBuilder extends QueryBuilder<DbSearchEndpointConfiguration> {
 
     private final static float MIN_TOKEN_CONF = 0.1f;
     
@@ -52,30 +53,24 @@ public class DbSearchQueryBuilder extends QueryBuilder {
 
     private final String nameSuffix;
     
+    private final DbSearchEndpointConfiguration defaultConfig;
+    
     @Autowired
-    public DbSearchQueryBuilder(TemplateRegistry registry) {
-        super(registry);
-        nameSuffix = null;
+    public DbSearchQueryBuilder(DbSearchEndpointConfiguration dbSearchConfig, TemplateRegistry registry) {
+        this(dbSearchConfig, registry, null);
     }
     
-    protected DbSearchQueryBuilder(TemplateRegistry registry, String nameSuffix) {
-        super(registry);
-        if(StringUtils.isBlank(nameSuffix)){
+    protected DbSearchQueryBuilder(DbSearchEndpointConfiguration dbSearchConfig, TemplateRegistry registry, String nameSuffix) {
+        super(DbSearchEndpointConfiguration.class, registry);
+        //sub-classes MUST classes some name suffix!
+        if(!getClass().equals(DbSearchQueryBuilder.class) && StringUtils.isBlank(nameSuffix)){
             throw new IllegalArgumentException("the parsed nameSuffix MUST NOT be NULL nor empty");
         }
         this.nameSuffix = StringUtils.trimToNull(nameSuffix);
+        //Fixme: refactoring - we need to find an alternative to cloning
+        this.defaultConfig = dbSearchConfig.clone(); //sub-classes must not override the single instance spring config
     }
 
-    @Override
-    public String getCreatorName() {
-        StringBuilder name = new StringBuilder("query.")
-                .append(DbSearchTemplateDefinition.DBSEARCH_TYPE);
-        if(nameSuffix != null){
-            name.append('.').append(nameSuffix);
-        }
-        return name.toString();
-    }
-    
     protected String getQueryTitle(){
         return "DB Search Related";
     }
@@ -91,8 +86,8 @@ public class DbSearchQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    protected final void doBuildQuery(Template template, Conversation conversation) {
-        final Query query = buildQuery(template, conversation);
+    protected final void doBuildQuery(DbSearchEndpointConfiguration config, Template template, Conversation conversation) {
+        final Query query = buildQuery(config, template, conversation);
         if (query != null) {
             template.getQueries().add(query);
         }
@@ -104,12 +99,12 @@ public class DbSearchQueryBuilder extends QueryBuilder {
     }
 
     @Override
-    public final List<? extends Result> execute(Template template, Conversation conversation) throws IOException {
+    public final List<? extends Result> execute(DbSearchEndpointConfiguration conf, Template template, Conversation conversation) throws IOException {
         throw new UnsupportedOperationException("This QueryBuilder does not support inline results");
     }
     
-    protected final Query buildQuery(Template template, Conversation conversation){
-        DbSearchQuery query = new DbSearchQuery(getCreatorName());
+    protected final Query buildQuery(DbSearchEndpointConfiguration config, Template template, Conversation conversation){
+        DbSearchQuery query = new DbSearchQuery(getCreatorName(config));
         SolrQuery solrQuery = new SolrQuery();
         solrQuery.setFields("*","score");
         solrQuery.setRows(10);
@@ -129,7 +124,7 @@ public class DbSearchQueryBuilder extends QueryBuilder {
         query.setFullTextTerms(queryTerms);
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
-        query.setUrl(solrEndpoint + solrQuery.toQueryString());
+        query.setUrl(config.getSolrEndpoint() + solrQuery.toQueryString());
         query.setDisplayTitle(getQueryTitle());
         query.setConfidence(0.8f);
         query.setInlineResultSupport(false); //we can not query DB Search directly
@@ -165,4 +160,20 @@ public class DbSearchQueryBuilder extends QueryBuilder {
         }
     }
     
+    @Override
+    public DbSearchEndpointConfiguration getDefaultConfiguration() {
+        return defaultConfig;
+    }
+    
+    @Override
+    public boolean validate(DbSearchEndpointConfiguration configuration, Set<String> missing,
+            Map<String, String> conflicting) {
+        try {
+            new URL(configuration.getSolrEndpoint());
+        }catch (MalformedURLException e) {
+            conflicting.put("solrEndpoint", e.getMessage());
+            return false;
+        }
+        return true;
+    }
 }
