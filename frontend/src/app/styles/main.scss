@@ -1,0 +1,71 @@
+body {
+  padding: 0;
+}
+
+h1 {
+  font-size: 24px;
+}
+
+h2 {
+  font-size: 22px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+.footer {
+  margin-top: 50px;
+  text-align: center;
+}
+
+.header {
+  background-color: black;
+  color: white;
+
+  h1 {
+    margin: 5px 0;
+  }
+}
+
+.CodeMirror {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.CodeMirror-linenummer {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.config-part {
+  margin-bottom: 30px;
+}
+
+.config-component {
+  padding: 5px 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 30px;
+
+  h3 {
+    .unbound {
+      color: red;
+    }
+
+    .config-component-type {
+      color: #aaa;
+      font-family: "Courier", monospace;
+
+      &:before {
+        content: " [type:";
+      }
+
+      &:after {
+        content: "]";
+      }
+    }
+  }
+}
+
+
