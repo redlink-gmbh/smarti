@@ -171,7 +171,6 @@
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-stanfordnlp-de</artifactId>
             <version>${redlinknlp.version}</version>
-            <scope>runtime</scope>
         </dependency>
         <!-- dependency> - TODO: Not yet implemented in Redlink NLP
             <groupId>io.redlink.nlp</groupId>
@@ -183,7 +182,6 @@
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-truecase-de</artifactId>
             <version>${redlinknlp.version}</version>
-            <scope>runtime</scope>
         </dependency>
 
 

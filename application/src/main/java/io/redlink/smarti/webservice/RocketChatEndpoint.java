@@ -160,6 +160,8 @@ public class RocketChatEndpoint {
     }
 
     private void notifyRocketChat(String callbackUrl, Conversation conversation, String token) {
+        if (StringUtils.isBlank(callbackUrl)) return;
+
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
             final HttpPost post = new HttpPost(callbackUrl);
             post.setEntity(new StringEntity(
