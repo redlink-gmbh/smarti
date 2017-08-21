@@ -59,11 +59,14 @@ curl -X POST -H "content-type: application/json" "http://localhost:8080/client/c
 {
   "queryBuilder": [
     {
-      "_class": "io.redlink.smarti.query.dbsearch.DbSearchEndpointConfiguration",
-      "type": "query_dbsearch_keyword",
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
       "enabled": false,
       "unbound": false,
-      "solrEndpoint": "http://dbsearch.test.org/solr/query"
+      "solrEndpoint": "http://search.db.de/change/me",
+      [...]
     },
     [..]
   ]
@@ -84,11 +87,13 @@ The JSON serialization of a configuration has the following base attributes
 
 ```
 {
-    "_class": "io.redlink.smarti.query.dbsearch.DbSearchEndpointConfiguration",
-    "type": "query_dbsearch_keyword",
-    "enabled": false,
-    "unbound": false,
-    "solrEndpoint": "http://dbsearch.test.org/solr/query"
+  "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+  "name": "solrsearch",
+  "displayName": "solrsearch",
+  "type": "solrsearch",
+  "enabled": false,
+  "unbound": false,
+  [...]
 }
 
 ```
@@ -124,11 +129,14 @@ curl -X POST -H "content-type: application/json" "http://localhost:8080/config/c
   "queryBuilder": [
     [..],
     {
-      "_class": "io.redlink.smarti.query.dbsearch.DbSearchEndpointConfiguration",
-      "type": "query_dbsearch",
-      "enabled": true,
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
       "unbound": false,
-      "solrEndpoint": "dummy://dbsearch.test.org/solr/query/"
+      "solrEndpoint": "NOT A REAL URL",
+      ...
     }, 
     [..]
     ]
