@@ -4,6 +4,8 @@ language: java
 cache:
   directories:
   - $HOME/.m2
+  - frontend/src/bower_components
+  - frontend/src/node_modules
   - integration/rocket-chat/node_modules
 
 services:
