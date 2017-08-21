@@ -45,6 +45,12 @@ angular.module('smartiApp')
       $scope.configuration.addComponent(type,component.clone());
     };
 
+    $scope.removeComponent = function(type,component) { console.log(component);
+      if($window.confirm("Do you really want to remove component " + component.innerData.displayName)) {
+        $scope.configuration.removeComponent(type,component);
+      }
+    };
+
     $scope.editorOptions = {
       lineWrapping : true,
       lineNumbers: true,

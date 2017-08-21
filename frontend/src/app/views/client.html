@@ -27,6 +27,7 @@
         <label for="comment">Configuration:</label>
         <textarea ui-codemirror ui-codemirror-opts="editorOptions" class="form-control" rows="20" id="comment" ng-model="builder.data"></textarea>
       </div>
+      <button class="btn btn-danger" ng-click="removeComponent('queryBuilder',builder)">Remove Query Builder</button>
     </div>
     <div class="dropdown">
       <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Add Query Builder

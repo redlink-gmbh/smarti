@@ -32,7 +32,7 @@ angular.module('smartiApp')
         return $http.post(ENV.serviceBaseUrl + 'client/' + client.data.id + '/config', getJsonData());
       };
 
-      this.remove = function(type,item) {
+      this.removeComponent = function(type,item) {
         var index = this.data[type].indexOf(item);
         this.data[type].splice(index, 1);
       };
