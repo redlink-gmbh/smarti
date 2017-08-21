@@ -5,6 +5,7 @@
         <th>Name</th>
         <th>Description</th>
         <th>Last Update</th>
+        <th>Is Default</th>
         <th>Actions</th>
     </tr>
     <tr ng-repeat="client in clients">
@@ -13,7 +14,12 @@
         <td ng-bind="client.data.description">
         <td ng-bind="client.data.lastUpdate | date : 'MMM d, y h:mm:ss a' ">
         <td>
-          <button class="btn btn-default" ng-click="edit(client.data.id)">edit</button>
+          <input ng-change="saveClient(client)" type="checkbox" ng-model="client.data.defaultClient">
+        </td>
+        <td>
+          <button class="btn btn-primary" ng-click="edit(client.data.id)">edit</button>
+          <button class="btn btn-default" ng-click="clone(client.data.id)">clone</button>
+          <button class="btn btn-danger" ng-click="delete(client)">delete</button>
         </td>
     </td>
     </tr>

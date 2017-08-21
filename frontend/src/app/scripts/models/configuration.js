@@ -12,12 +12,29 @@ angular.module('smartiApp')
 
     function Configuration(data) {
 
+      var self = this;
+
       this.data = {
-        "queryBuilders": (data && data.queryBuilders) ? data.queryBuilders.map(function(d){return new ComponentConfiguration(d)}) : '{}'
+        "queryBuilder": (data && data.queryBuilder) ? data.queryBuilder.map(function(d){return new ComponentConfiguration(d)}) : []
       };
 
+      this.addComponent = function(type,component) {
+        this.data[type].push(component)
+      };
+
+      function getJsonData() {
+        return {
+          queryBuilder: self.data.queryBuilder.map(function(c){return c.getDataAsObject()})
+        }
+      }
+
       this.save = function(client) {
-        return $http.post(ENV.serviceBaseUrl + 'client/' + client.data.id + '/config', this.data);
+        return $http.post(ENV.serviceBaseUrl + 'client/' + client.data.id + '/config', getJsonData());
+      };
+
+      this.remove = function(type,item) {
+        var index = this.data[type].indexOf(item);
+        this.data[type].splice(index, 1);
       };
 
     }

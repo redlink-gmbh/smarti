@@ -92,6 +92,15 @@ public class ConfigurationService {
         }
     }
 
+    public Configuration createConfiguration(String client, Configuration basicConfiguration){
+        Configuration configuration = new Configuration();
+        configuration.setClient(client);
+        configuration.setConfig(basicConfiguration.getConfig());
+        configuration.setCreated(new Date());
+        configuration.setModified(configuration.getCreated());
+        return configRepo.save(configuration);
+    }
+
     public Configuration createConfiguration(String client){
         Configuration configuration = new Configuration();
         configuration.setClient(client);

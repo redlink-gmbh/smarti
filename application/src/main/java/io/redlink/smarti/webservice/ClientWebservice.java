@@ -59,8 +59,11 @@ public class ClientWebservice {
 
     @ApiOperation(value = "delete a client")
     @RequestMapping(value = "{id}", method = RequestMethod.DELETE)
-    public void getClient(@RequestBody Client client) throws IOException {
-        clientService.delete(client);
+    public ResponseEntity<?> deleteClient(@PathVariable("id") ObjectId id) throws IOException {
+        if(clientService.exists(id)) {
+            clientService.delete(clientService.get(id));
+            return ResponseEntity.ok().build();
+        } else return ResponseEntities.status(404, "client does not exist");
     }
 
     @ApiOperation(value = "creates/updates a client config", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")

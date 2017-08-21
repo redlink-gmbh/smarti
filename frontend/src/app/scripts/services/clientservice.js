@@ -20,11 +20,11 @@ angular.module('smartiApp')
       return deferred.promise;
     };
 
-    this.getById = function(id) {
+    this.getById = function(id,copy) {
       var deferred = $q.defer();
 
       $http.get(ENV.serviceBaseUrl + 'client/' + id).then(function(data){
-        deferred.resolve(new Client(data.data));
+        deferred.resolve(new Client(data.data,copy));
       });
 
       return deferred.promise;

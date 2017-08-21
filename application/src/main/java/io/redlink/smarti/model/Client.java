@@ -29,6 +29,8 @@ public class Client {
 
     private Date lastUpdate;
 
+    private boolean defaultClient;
+
     public ObjectId getId() {
         return id;
     }
@@ -59,5 +61,13 @@ public class Client {
 
     public void setLastUpdate(Date lastUpdate) {
         this.lastUpdate = lastUpdate;
+    }
+
+    public boolean isDefaultClient() {
+        return defaultClient;
+    }
+
+    public void setDefaultClient(boolean defaultClient) {
+        this.defaultClient = defaultClient;
     }
 }

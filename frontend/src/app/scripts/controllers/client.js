@@ -11,15 +11,24 @@ angular.module('smartiApp')
   .controller('ClientCtrl', function ($scope,$window,$location,client,ClientService,ConfigurationService) {
 
     ConfigurationService.getConfiguration(client).then(function(configuration){
+      if(client.isCopy) {
+        client.data.id = null;
+        client.data.name = null;
+        client.data.description = null;
+      }
        $scope.client = client;
        $scope.configuration = configuration;
+    });
+
+    ConfigurationService.getDefaultConfiguration().then(function(configuration){
+      $scope.defaultConfiguration = configuration;
     });
 
     $scope.saveClient = function() {
        $scope.client.save().then(function(client){
          $scope.client = client;
          $scope.configuration.save(client).then(function(){
-           $location.path('/');
+           $location.path('/').search('clone',null);
          }, function(error){
            $window.alert(error.data.message);
          });
@@ -28,10 +37,12 @@ angular.module('smartiApp')
        });
     };
 
-    $scope.loadDefaultConfiguration = function() {
-      ConfigurationService.getDefaultConfiguration().then(function(configuration){
-        $scope.configuration = configuration;
-      });
+    $scope.cancel = function() {
+      $location.path('/').search('clone',null);
+    };
+
+    $scope.addComponent = function(type,component) {
+      $scope.configuration.addComponent(type,component.clone());
     };
 
     $scope.editorOptions = {

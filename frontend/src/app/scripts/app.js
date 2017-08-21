@@ -26,9 +26,15 @@ angular
         controller: 'ClientCtrl',
         resolve: {
           client:function(ClientService,Client,$route){
-            return $route.current.params.id ?
-              ClientService.getById($route.current.params.id) :
-              new Client();
+            if($route.current.params.id) {
+              if(!$route.current.params.clone) {
+                return ClientService.getById($route.current.params.id);
+              } else {
+                return ClientService.getById($route.current.params.id,true);
+              }
+            } else {
+              return new Client();
+            }
           }}
       })
       .otherwise({

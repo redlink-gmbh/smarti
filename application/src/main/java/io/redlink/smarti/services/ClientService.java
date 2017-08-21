@@ -1,6 +1,7 @@
 package io.redlink.smarti.services;
 
 import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.repositories.ClientRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -22,7 +24,7 @@ public class ClientService {
     @Autowired
     ConfigurationService configurationService;
 
-    private static final String NAME_PATTERN = "[a-z0-9-_]+";
+    private static final String NAME_PATTERN = "[a-z0-9-_:]+";
 
     public Iterable<Client> list() {
         return clientRepository.findAll();
@@ -55,8 +57,28 @@ public class ClientService {
             }
         }
 
+        if(client.isDefaultClient()) {
+            clientRepository.save(clientRepository.findByDefaultClientTrue().stream().map(
+                    c -> {
+                        c.setDefaultClient(false);
+                        return c;
+                    }
+            ).collect(Collectors.toList()));
+        }
+
+        //create client with default config (if there is one)
         if(!configurationService.isConfiguration(client.getName())) {
-            configurationService.createConfiguration(client.getName());
+            Client c = clientRepository.findOneByDefaultClientTrue();
+            if(c != null) {
+                Configuration c_conf = configurationService.getConfiguration(c.getName());
+                if(c_conf != null) {
+                    configurationService.createConfiguration(client.getName(),c_conf);
+                } else {
+                    configurationService.createConfiguration(client.getName());
+                }
+            } else {
+                configurationService.createConfiguration(client.getName());
+            }
         }
 
         client.setLastUpdate(new Date());

@@ -10,7 +10,9 @@
 angular.module('smartiApp')
   .factory('Client', function ($http, $q, ENV) {
 
-    function Client(data) {
+    function Client(data,isCopy) {
+
+      this.isCopy = isCopy;
 
       this.data = angular.merge({},data);
 
@@ -29,6 +31,15 @@ angular.module('smartiApp')
       this.delete = function() {
         return $http.delete(ENV.serviceBaseUrl + 'client/' + this.data.id);
       };
+
+      this.copy = function() {
+
+        var data = {
+          configuration: angular.merge({},this.data.configuration)
+        };
+
+        return new Client(data);
+      }
 
     }
 

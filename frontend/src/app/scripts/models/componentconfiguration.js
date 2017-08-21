@@ -12,7 +12,36 @@ angular.module('smartiApp')
 
     function ComponentConfiguration(data) {
 
-      this.data = data ? data : '{}'; //TODO serialize + deserialize
+      var self = this;
+
+      this.innerData = {};
+
+      this._data = {};
+
+      angular.forEach(data, function(value,key){
+        switch(key) {
+          case '_class':
+          case 'name':
+          case 'displayName':
+          case 'type':
+          case 'enabled':
+          case 'unbound': self.innerData[key] = angular.copy(value);
+            break;
+          default : self._data[key] = angular.copy(value);
+        }
+      });
+
+      this.data = JSON.stringify(this._data,null,2);
+
+      this.getDataAsObject = function() {
+        var res = angular.merge(JSON.parse(this.data),this.innerData);
+        res.name = null;
+        return res;
+      };
+
+      this.clone = function(){
+        return new ComponentConfiguration(this.getDataAsObject());
+      }
 
     }
 

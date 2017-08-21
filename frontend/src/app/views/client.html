@@ -9,13 +9,35 @@
         <input type="text" class="form-control" id="description" ng-model="client.data.description">
     </div>
 </div>
-<div>
-    <h2>Components</h2>
-    <div class="form-group">
+<div class="config-part">
+    <h2>Query Builders</h2>
+    <div class="config-component" ng-repeat="builder in configuration.data.queryBuilder">
+      <h3 ng-class="{unbound : builder.innerData.unbound}">
+        <span class="config-component-name" ng-bind="builder.innerData.name"></span>
+        <span class="config-component-type" ng-bind="builder.innerData.type"></span>
+      </h3>
+      <div class="form-group">
+        <label>Name:</label>
+        <input  class="form-control" type="text" ng-model="builder.innerData.displayName">
+      </div>
+      <div class="checkbox">
+        <label><input type="checkbox" ng-model="builder.innerData.enabled"> Enabled</label>
+      </div>
+      <div class="form-group">
         <label for="comment">Configuration:</label>
-        <textarea ui-codemirror ui-codemirror-opts="editorOptions" class="form-control" rows="20" id="comment" ng-model="configuration.data"></textarea>
+        <textarea ui-codemirror ui-codemirror-opts="editorOptions" class="form-control" rows="20" id="comment" ng-model="builder.data"></textarea>
+      </div>
+    </div>
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Add Query Builder
+        <span class="caret"></span></button>
+      <ul class="dropdown-menu">
+        <li ng-repeat="builder in defaultConfiguration.data.queryBuilder"><a ng-click="addComponent('queryBuilder',builder)" ng-bind="builder.innerData.type"></a></li>
+      </ul>
     </div>
 </div>
-<button class="btn btn-danger" ng-click="saveClient()">Cancel</button>
-<button class="btn btn-default" ng-click="loadDefaultConfiguration()">Load default</button>
-<button class="btn btn-primary" ng-click="saveClient()">Save</button>
+<div>
+  <button class="btn btn-danger" ng-click="cancel()">Cancel</button>
+  <button class="btn btn-primary" ng-click="saveClient()">Save</button>
+</div>
+

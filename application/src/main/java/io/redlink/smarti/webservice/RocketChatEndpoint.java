@@ -118,7 +118,9 @@ public class RocketChatEndpoint {
         log.debug("{}: {}", clientId, payload);
 
         if(!clientService.existsByName(clientId)) {
-            throw new NotFoundException(Client.class,clientId); //TODO do we have to be downwards compatible here (create client?)
+            Client client = new Client();
+            client.setName(clientId);
+            clientService.save(client);
         }
 
         final String channelId = createChannelId(clientId, payload.getChannelId());
