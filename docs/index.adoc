@@ -11,6 +11,10 @@ In addition Smarti is able to store conversations and thus suggest similar histo
 Installation packages are provided for https://www.debian.org[Debian]- and https://www.redhat.com[RedHat]-based systems. Alternatively the application can
 be started by directly launching the executable jar. Check out a detailed <<installation.adoc#,installation description>> including system requirements.
 
+=== How to configure
+
+Smarti is configurable using either <<clientConfig.adoc#,the client API>> or the configuration UI, which can be found on the {HOST}/index.html page of the the running application.
+
 === How to integrate
 
 Currently Smarti is working with https://rocket.chat[Rocket.Chat] conversations, where it can be smoothly integrated via a https://github.com/mrsimpson/Rocket.Chat[RC plugin].
