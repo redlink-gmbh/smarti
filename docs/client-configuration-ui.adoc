@@ -4,7 +4,7 @@ Smarti includes a User Interface to maintain clients and configurations.
 
 ### Client Overview
 
-image::docs/images/overview.png[Client Overview]
+image::../images/overview.png[Client Overview]
 
 The client overview shows all existing clients with its actions.
 With *Is Default* you can mark a default client which is used as a copy base if a new client is created by issuing a message.
@@ -12,6 +12,6 @@ With *Create Client* you can create an empty client, which *clone* you can use a
 
 ### Client Single View
 
-image::docs/images/single_client.png[Single Client View]
+image::../images/single_client.png[Single Client View]
 
 The single view of a client enables you to edit basic data and to add, remove an edit query builders.
