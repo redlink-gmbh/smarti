@@ -50,31 +50,31 @@ const localize = new Localize({
         "de": "Konversations-Parameter konnten nicht geladen werden: $[1]",
         "en": "Cannot load conversation params: $[1]"
     },
-    "widget.db.query.failed":{
+    "widget.latch.query.failed":{
         "de": "Widget $[1] hat Probleme bei der Anfrage: $[2]",
         "en": "Widget $[1] has problems while quering: $[2]"
     },
-    "widget.db.query.no-results":{
+    "widget.latch.query.no-results":{
         "de":"Keine Ergbenisse",
         "en":"No results"
     },
-    "widget.db.query.header":{
+    "widget.latch.query.header":{
         "en": "$[1] results",
         "de": "$[1] Ergebnisse"
     },
-    "widget.db.query.header.paged":{
+    "widget.latch.query.header.paged":{
         "en": "Page $[1] of $[2] results",
         "de": "Seite $[1] von $[2] Ergebnissens"
     },
-    "widget.db.query.paging.next":{
+    "widget.latch.query.paging.next":{
         "en": "Next",
         "de": "Nächste"
     },
-    "widget.db.query.paging.prev":{
+    "widget.latch.query.paging.prev":{
         "en": "Previous",
         "de": "Vorherige"
     },
-    "widget.db.answer.title":{
+    "widget.latch.answer.title":{
         "de": "Das hab ich dazu in $[1] gefunden:",
         "en": "That I found in $[1]:"
     },
@@ -361,12 +361,6 @@ function Tracker(category, roomId, onEvent) {
  *       smartiEndpoint: 'http://localhost:8080/',
  *       channel: 'GENERAL',
  *       widget:{
- *           'query.dbsearch': {
- *               numOfRows:2
- *           },
- *           'query.keyword': {
- *               disabled:true
- *           }
  *       },
  *       lang:'de',
  *       inputFieldSelector: '.selector'
@@ -389,12 +383,6 @@ function SmartiWidget(element,_options) {
             cssInputSelector: '.message-form-text.input-message'
         },
         widget: {
-            'query.dbsearch': {
-            		numOfRows: 2
-            },
-            'query.dbsearch.keyword': {
-                disabled: true
-            }
         },
         tracker: {
             onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
@@ -461,7 +449,7 @@ function SmartiWidget(element,_options) {
                 .click(function(){
                     $(this).hide();
                     getResults(0);
-                    tracker.trackEvent("search.dbsearch.tag.remove");
+                    tracker.trackEvent(params.query.creator + ".tag.remove");
                 });
         }
 
@@ -499,7 +487,7 @@ function SmartiWidget(element,_options) {
 
         function refresh(data) {
 
-            console.debug('refresh db search widget:\n%s', JSON.stringify(data,null,2));
+            console.debug('refresh ir-latch search widget:\n%s', JSON.stringify(data,null,2));
 
             var tokens = data.tokens;
             var slots = data.templates[params.tempid].slots;
@@ -538,7 +526,7 @@ function SmartiWidget(element,_options) {
                         type:'Keyword'
                     }));
                     $(this).val("");
-                    tracker.trackEvent("search.dbsearch.tag.add");
+                    tracker.trackEvent(params.query.creator + ".tag.add");
                 }
                 getResults(0);
             }
@@ -580,19 +568,19 @@ function SmartiWidget(element,_options) {
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
                 failure: function(err) {
-                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
+                    console.error({code:'widget.latch.query.failed',args:[params.query.displayTitle,err.responseText]});
                 },
                 success: function(data){
                     loader.hide();
 
-                    tracker.trackEvent("search.dbsearch",data.response.numFound);
+                    tracker.trackEvent(params.query.creator + "",data.response.numFound);
 
                     if(data.response.numFound == 0) {
-                        resultCount.text(Utils.localize({code:'widget.db.query.no-results'}));
+                        resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
                         return;
                     }
 
-                    //map to dbsearch results
+                    //map to search results
                     var docs = $.map(data.response.docs, function(doc) {
                         return {
                             source: params.query.resultConfig.mappings.source ? doc[params.query.resultConfig.mappings.source] : undefined,
@@ -605,7 +593,7 @@ function SmartiWidget(element,_options) {
                         };
                     });
 
-                    resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
+                    resultCount.text(Utils.localize({code:'widget.latch.query.header',args:[data.response.numFound]}));
 
                     $.each(docs,function(i,doc){
                         var docli = $('<li>' +
@@ -616,7 +604,7 @@ function SmartiWidget(element,_options) {
                             '</li>');
 
                         docli.find('.postAnswer').click(function(){
-                            var text = Utils.localize({code:"widget.db.answer.title",args:[params.query.displayTitle]});
+                            var text = Utils.localize({code:"widget.latch.answer.title",args:[params.query.displayTitle]});
                             var attachments = [{
                                 title: doc.title,
                                 title_link: doc.link,
@@ -631,18 +619,18 @@ function SmartiWidget(element,_options) {
                                 smarti.post(text,attachments);
                             }
 
-                            tracker.trackEvent("search.dbsearch.result.post", (page*numOfRows) + i);
+                            tracker.trackEvent(params.query.creator + ".result.post", (page*numOfRows) + i);
                         });
 
                         results.append(docli);
                     });
 
-                    var prev = $('<span>').text(Utils.localize({code:'widget.db.query.paging.prev'})).prepend('<i class="icon-angle-left">');
-                    var next = $('<span>').text(Utils.localize({code:'widget.db.query.paging.next'})).append('<i class="icon-angle-right">');;
+                    var prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
+                    var next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');;
 
                     if(page > 0) {
                         prev.click(function(){
-                            tracker.trackEvent("search.dbsearch.result.paging", page-1);
+                            tracker.trackEvent(params.query.creator + ".result.paging", page-1);
                             getResults(page-1)
                         });
                     } else {
@@ -651,7 +639,7 @@ function SmartiWidget(element,_options) {
 
                     if((data.response.numFound/numOfRows) > (page+1)) {
                         next.addClass('active').click(function(){
-                            tracker.trackEvent("search.dbsearch.result.paging", page+1);
+                            tracker.trackEvent(params.query.creator + ".result.paging", page+1);
                             getResults(page+1)
                         });
                     } else {
@@ -683,230 +671,6 @@ function SmartiWidget(element,_options) {
      * }
      * @constructor
      */
-    function DBSearchWidget(params,wgt_conf) {
-
-        const numOfRows = wgt_conf.numOfRows || 3;
-
-        params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
-        var content = $('<div>').appendTo(params.elem);
-
-        function createTermPill(token) {
-
-            return $('<div class="smarti-token-pill">')
-                .append($('<span>').text(token.value))
-                .append('<i class="icon-cancel"></i>')
-                .data('token',token)
-                .click(function(){
-                    $(this).hide();
-                    getResults(0);
-                    tracker.trackEvent("search.dbsearch.tag.remove");
-                });
-        }
-
-        //TODO should be done server side
-        function removeDuplicatesBy(keyFn, array) {
-            var mySet = new Set();
-
-            return array.filter(function(x) {
-                var key = keyFn(x), isNew = !mySet.has(key);
-                if (isNew) mySet.add(key);
-                return isNew;
-            });
-        }
-
-        var termPills = $('<div class="smarti-token-pills">').appendTo(content);
-
-        function perparePillTokens(slots,tokens) {
-            var pillTokens = [];
-            $.each(slots,function(i,slot){
-                if(slot.tokenIndex != undefined && slot.tokenIndex > -1) {
-                    pillTokens.push(tokens[slot.tokenIndex]);
-                } else if(!slot.tokenIndex) {
-                    pillTokens.push(slot.token);
-                }
-            });
-            return pillTokens;
-        }
-
-
-        var pillTokens = perparePillTokens(params.slots,params.tokens);
-
-        $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
-            termPills.append(createTermPill(t));
-        });
-
-        function refresh(data) {
-
-            console.debug('refresh db search widget:\n%s', JSON.stringify(data,null,2));
-
-            var tokens = data.tokens;
-            var slots = data.templates[params.tempid].slots;
-            var pillTokens = perparePillTokens(slots,tokens);
-
-            var reload = false;
-
-            $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
-                var contained = false;
-                $.each(termPills.children(), function(j,tp){
-                    if($(tp).data('token').value == t.value) {
-                        contained = true;
-                    }
-                });
-                if(!contained) {
-                    termPills.append(createTermPill(t));
-                    reload = true;
-                }
-            });
-
-            if(reload) {
-                getResults(0);
-            }
-        }
-
-        var inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
-        var inputField = inputForm.find('input');
-
-        inputField.keypress(function(e){
-            if(e.which == 13) {
-                var val = $(this).val();
-                if(val!= undefined && val != "") {
-                    termPills.append(createTermPill({
-                        origin:'User',
-                        value:val,
-                        type:'Keyword'
-                    }));
-                    $(this).val("");
-                    tracker.trackEvent("search.dbsearch.tag.add");
-                }
-                getResults(0);
-            }
-        });
-
-        params.elem.append(inputForm);
-        var resultCount = $('<h3></h3>').appendTo(params.elem);
-        var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
-        var results = $('<ul class="search-results">').appendTo(params.elem);
-        var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
-
-        function getResults(page) {
-            var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
-
-            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
-            if (wgt_conf.suffix) {
-            		params.query.url += wgt_conf.suffix;
-            }
-
-            if(page > 0) {
-                //append paging
-                params.query.url += '&start=' + (page*numOfRows);
-            }
-
-            results.empty();
-            resultCount.empty();
-            resultPaging.empty();
-            loader.show();
-
-            console.log(`executeSearch ${ params.query.url }`);
-            $.ajax({
-                url: params.query.url,
-                dataType: 'jsonp',
-                jsonp: 'json.wrf',
-                failure: function(err) {
-                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
-                	},
-                success: function(data){
-                    loader.hide();
-
-                    tracker.trackEvent("search.dbsearch",data.response.numFound);
-
-                    if(data.response.numFound == 0) {
-                        resultCount.text(Utils.localize({code:'widget.db.query.no-results'}));
-                        return;
-                    }
-
-                    //map to dbsearch results TODO should be configurable
-                    var docs = $.map(data.response.docs, function(doc) {
-                        return {
-                            source: doc.dbsearch_source_name_s + '/' + doc.dbsearch_space_name_t,
-                            title: doc.dbsearch_title_s,
-                            description: doc.dbsearch_excerpt_s,
-                            type: doc.dbsearch_doctype_s,
-                            doctype: doc.dbsearch_content_type_aggregated_s.slice(0,4),//TODO Utils.mapDocType(doc.type)?
-                            link: doc.dbsearch_link_s,
-                            date: new Date(doc.dbsearch_pub_date_tdt)
-                        };
-                    });
-
-                    resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
-
-                    $.each(docs,function(i,doc){
-                        var docli = $('<li>' +
-                            (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
-                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
-                            '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
-                            (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
-                            '</li>');
-
-                        docli.find('.postAnswer').click(function(){
-                            var text = Utils.localize({code:"widget.db.answer.title",args:[params.query.displayTitle]});
-                            var attachments = [{
-                                title: doc.title,
-                                title_link: doc.link,
-                                thumb_url: doc.thumb ? doc.thumb : undefined,
-                                text:doc.description
-                            }];
-                            if(options.postings && options.postings.type == 'suggestText') {
-                                messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
-                            } else if(options.postings && options.postings.type == 'postText') {
-                                smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
-                            } else {
-                                smarti.post(text,attachments);
-                            }
-
-                            tracker.trackEvent("search.dbsearch.result.post", (page*numOfRows) + i);
-                        });
-
-                        results.append(docli);
-                    });
-
-                    var prev = $('<span>').text(Utils.localize({code:'widget.db.query.paging.prev'})).prepend('<i class="icon-angle-left">');
-                    var next = $('<span>').text(Utils.localize({code:'widget.db.query.paging.next'})).append('<i class="icon-angle-right">');;
-
-                    if(page > 0) {
-                        prev.click(function(){
-                            tracker.trackEvent("search.dbsearch.result.paging", page-1);
-                            getResults(page-1)
-                        });
-                    } else {
-                        prev.hide();
-                    }
-
-                    if((data.response.numFound/numOfRows) > (page+1)) {
-                        next.addClass('active').click(function(){
-                            tracker.trackEvent("search.dbsearch.result.paging", page+1);
-                            getResults(page+1)
-                        });
-                    } else {
-                        next.hide();
-                    }
-
-                    $('<tr>')
-                        .append($('<td class="pageLink pageLinkLeft">').append(prev))
-                        .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.response.numFound/numOfRows)))
-                        .append($('<td class="pageLink pageLinkRight">').append(next))
-                        .appendTo(resultPaging);
-
-                }
-            });
-        }
-
-        getResults(0);
-
-        return {
-            refresh: refresh
-        }
-    }
-
     function ConversationWidget(params,wgt_config) {
 
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
@@ -1113,8 +877,6 @@ function SmartiWidget(element,_options) {
                     switch(template.type) {
                         case 'ir_latch':
                             constructor = IrLatchWidget;break;
-                        case 'dbsearch':
-                            constructor = DBSearchWidget;break;
                         case 'related.conversation':
                             constructor = ConversationWidget;break;
                     }

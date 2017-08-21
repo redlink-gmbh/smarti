@@ -65,17 +65,17 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
     private final SolrEndpointConfiguration defaultConfig;
     
     @Autowired
-    public SolrSearchQueryBuilder(SolrEndpointConfiguration dbSearchConfig, TemplateRegistry registry) {
-        this(dbSearchConfig, registry, null);
+    public SolrSearchQueryBuilder(SolrEndpointConfiguration searchConfig, TemplateRegistry registry) {
+        this(searchConfig, registry, null);
     }
     
-    protected SolrSearchQueryBuilder(SolrEndpointConfiguration dbSearchConfig, TemplateRegistry registry, String nameSuffix) {
+    protected SolrSearchQueryBuilder(SolrEndpointConfiguration searchConfig, TemplateRegistry registry, String nameSuffix) {
         super(SolrEndpointConfiguration.class, registry);
         //sub-classes MUST classes some name suffix!
         if(!getClass().equals(SolrSearchQueryBuilder.class) && StringUtils.isBlank(nameSuffix)){
             throw new IllegalArgumentException("the parsed nameSuffix MUST NOT be NULL nor empty");
         }
-        this.defaultConfig = dbSearchConfig;
+        this.defaultConfig = searchConfig;
     }
 
     protected String getQueryTitle(){
