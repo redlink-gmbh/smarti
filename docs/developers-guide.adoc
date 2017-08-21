@@ -2,6 +2,10 @@
 
 TODO
 
+=== Client Configurations
+
+Find detailed description on how to add and configure clients in the <<clientConfig.adoc#,Client Configurations>> section.
+
 === Release
 
 For a release, a release branch (based on develop) is created which represents the release candidate.
