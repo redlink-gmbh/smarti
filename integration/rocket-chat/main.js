@@ -445,6 +445,244 @@ function SmartiWidget(element,_options) {
      * }
      * @constructor
      */
+    function IrLatchWidget(params,wgt_conf) {
+
+        const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
+
+        params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
+        var content = $('<div>').appendTo(params.elem);
+
+        function createTermPill(token) {
+
+            return $('<div class="smarti-token-pill">')
+                .append($('<span>').text(token.value))
+                .append('<i class="icon-cancel"></i>')
+                .data('token',token)
+                .click(function(){
+                    $(this).hide();
+                    getResults(0);
+                    tracker.trackEvent("search.dbsearch.tag.remove");
+                });
+        }
+
+        //TODO should be done server side
+        function removeDuplicatesBy(keyFn, array) {
+            var mySet = new Set();
+
+            return array.filter(function(x) {
+                var key = keyFn(x), isNew = !mySet.has(key);
+                if (isNew) mySet.add(key);
+                return isNew;
+            });
+        }
+
+        var termPills = $('<div class="smarti-token-pills">').appendTo(content);
+
+        function perparePillTokens(slots,tokens) {
+            var pillTokens = [];
+            $.each(slots,function(i,slot){
+                if(slot.tokenIndex != undefined && slot.tokenIndex > -1) {
+                    pillTokens.push(tokens[slot.tokenIndex]);
+                } else if(!slot.tokenIndex) {
+                    pillTokens.push(slot.token);
+                }
+            });
+            return pillTokens;
+        }
+
+
+        var pillTokens = perparePillTokens(params.slots,params.tokens);
+
+        $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
+            termPills.append(createTermPill(t));
+        });
+
+        function refresh(data) {
+
+            console.debug('refresh db search widget:\n%s', JSON.stringify(data,null,2));
+
+            var tokens = data.tokens;
+            var slots = data.templates[params.tempid].slots;
+            var pillTokens = perparePillTokens(slots,tokens);
+
+            var reload = false;
+
+            $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
+                var contained = false;
+                $.each(termPills.children(), function(j,tp){
+                    if($(tp).data('token').value == t.value) {
+                        contained = true;
+                    }
+                });
+                if(!contained) {
+                    termPills.append(createTermPill(t));
+                    reload = true;
+                }
+            });
+
+            if(reload) {
+                getResults(0);
+            }
+        }
+
+        var inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
+        var inputField = inputForm.find('input');
+
+        inputField.keypress(function(e){
+            if(e.which == 13) {
+                var val = $(this).val();
+                if(val!= undefined && val != "") {
+                    termPills.append(createTermPill({
+                        origin:'User',
+                        value:val,
+                        type:'Keyword'
+                    }));
+                    $(this).val("");
+                    tracker.trackEvent("search.dbsearch.tag.add");
+                }
+                getResults(0);
+            }
+        });
+
+        params.elem.append(inputForm);
+        var resultCount = $('<h3></h3>').appendTo(params.elem);
+        var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
+        var results = $('<ul class="search-results">').appendTo(params.elem);
+        var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+
+        function getResults(page) {
+            var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
+
+            //TODO still a hack !!!
+            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
+            if (wgt_conf.suffix) {
+                params.query.url += wgt_conf.suffix;
+            }
+
+            //append params
+            for(var property in params.query.defaults) {
+                params.query.url += '&' + property + "=" + params.query.defaults[property];
+            }
+
+            if(page > 0) {
+                //append paging
+                params.query.url += '&start=' + (page*numOfRows);
+            }
+
+            results.empty();
+            resultCount.empty();
+            resultPaging.empty();
+            loader.show();
+
+            console.log(`executeSearch ${ params.query.url }`);
+            $.ajax({
+                url: params.query.url,
+                dataType: 'jsonp',
+                jsonp: 'json.wrf',
+                failure: function(err) {
+                    console.error({code:'widget.db.query.failed',args:[params.query.displayTitle,err.responseText]});
+                },
+                success: function(data){
+                    loader.hide();
+
+                    tracker.trackEvent("search.dbsearch",data.response.numFound);
+
+                    if(data.response.numFound == 0) {
+                        resultCount.text(Utils.localize({code:'widget.db.query.no-results'}));
+                        return;
+                    }
+
+                    //map to dbsearch results
+                    var docs = $.map(data.response.docs, function(doc) {
+                        return {
+                            source: params.query.resultConfig.mappings.source ? doc[params.query.resultConfig.mappings.source] : undefined,
+                            title: params.query.resultConfig.mappings.title ? doc[params.query.resultConfig.mappings.title] : undefined,
+                            description: params.query.resultConfig.mappings.description ? doc[params.query.resultConfig.mappings.description] : undefined,
+                            type: params.query.resultConfig.mappings.type ? doc[params.query.resultConfig.mappings.type] : undefined,
+                            doctype: params.query.resultConfig.mappings.doctype ? doc[params.query.resultConfig.mappings.doctype] : undefined,
+                            link: params.query.resultConfig.mappings.link ? doc[params.query.resultConfig.mappings.link] : undefined,
+                            date: params.query.resultConfig.mappings.date ? new Date(doc[params.query.resultConfig.mappings.date]) : undefined
+                        };
+                    });
+
+                    resultCount.text(Utils.localize({code:'widget.db.query.header',args:[data.response.numFound]}));
+
+                    $.each(docs,function(i,doc){
+                        var docli = $('<li>' +
+                            (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
+                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
+                            '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
+                            (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
+                            '</li>');
+
+                        docli.find('.postAnswer').click(function(){
+                            var text = Utils.localize({code:"widget.db.answer.title",args:[params.query.displayTitle]});
+                            var attachments = [{
+                                title: doc.title,
+                                title_link: doc.link,
+                                thumb_url: doc.thumb ? doc.thumb : undefined,
+                                text:doc.description
+                            }];
+                            if(options.postings && options.postings.type == 'suggestText') {
+                                messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
+                            } else if(options.postings && options.postings.type == 'postText') {
+                                smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
+                            } else {
+                                smarti.post(text,attachments);
+                            }
+
+                            tracker.trackEvent("search.dbsearch.result.post", (page*numOfRows) + i);
+                        });
+
+                        results.append(docli);
+                    });
+
+                    var prev = $('<span>').text(Utils.localize({code:'widget.db.query.paging.prev'})).prepend('<i class="icon-angle-left">');
+                    var next = $('<span>').text(Utils.localize({code:'widget.db.query.paging.next'})).append('<i class="icon-angle-right">');;
+
+                    if(page > 0) {
+                        prev.click(function(){
+                            tracker.trackEvent("search.dbsearch.result.paging", page-1);
+                            getResults(page-1)
+                        });
+                    } else {
+                        prev.hide();
+                    }
+
+                    if((data.response.numFound/numOfRows) > (page+1)) {
+                        next.addClass('active').click(function(){
+                            tracker.trackEvent("search.dbsearch.result.paging", page+1);
+                            getResults(page+1)
+                        });
+                    } else {
+                        next.hide();
+                    }
+
+                    $('<tr>')
+                        .append($('<td class="pageLink pageLinkLeft">').append(prev))
+                        .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.response.numFound/numOfRows)))
+                        .append($('<td class="pageLink pageLinkRight">').append(next))
+                        .appendTo(resultPaging);
+
+                }
+            });
+        }
+
+        getResults(0);
+
+        return {
+            refresh: refresh
+        }
+    }
+
+    /**
+     * @param params
+     * @param wgt_conf
+     * @returns {
+     *      refresh: FUNCTION
+     * }
+     * @constructor
+     */
     function DBSearchWidget(params,wgt_conf) {
 
         const numOfRows = wgt_conf.numOfRows || 3;
@@ -873,6 +1111,8 @@ function SmartiWidget(element,_options) {
                     var constructor = undefined;
 
                     switch(template.type) {
+                        case 'ir_latch':
+                            constructor = IrLatchWidget;break;
                         case 'dbsearch':
                             constructor = DBSearchWidget;break;
                         case 'related.conversation':

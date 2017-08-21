@@ -11,5 +11,6 @@
 
     <artifactId>frontend</artifactId>
 
+    <!-- TODO automatic build -->
 
 </project>
