@@ -339,8 +339,7 @@
                             <failIfWarning>true</failIfWarning>
                             <excludedScopes>test,provided,system</excludedScopes>
                             <excludedGroups>((io|co)\.redlink\..*)</excludedGroups>
-                            <!-- Not packaged
-                            <excludedArtifacts>stanford-corenlp</excludedArtifacts> -->
+                            <excludedArtifacts>stanford-corenlp</excludedArtifacts>
                         </configuration>
                     </execution>
                 </executions>
@@ -384,13 +383,13 @@
                             <artifactId>query-conversation</artifactId>
                         </dependency>
                     </requiresUnpack>
-                    <!-- GPL licensed, needs to be installed manually
+                    <!-- GPL licensed, needs to be installed manually -->
                     <excludes>
                         <exclude>
                             <groupId>edu.stanford.nlp</groupId>
                             <artifactId>stanford-corenlp</artifactId>
                         </exclude>
-                    </excludes>  -->
+                    </excludes>
 
                     <!-- build-info -->
                     <additionalProperties>
