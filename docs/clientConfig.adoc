@@ -6,19 +6,26 @@ The configuration module allows to manage client specific configurations. It con
 
 __base path:__ `/client`
 
-The configuration REST Services allow to manage cliens and configurations via API calls.
+The configuration REST Services allow to manage clients and configurations via API calls.
 
 All endpoints use `application/json` as media type.
 
 #### Create/Update Client
 
-__endpoint:__ `POST /client` <br>
-__request body:__ `{<conf-cat>: [<comp-conf>,<comp-conf>]}`<br>
-__response body:__ the updated client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
+__endpoint:__ `POST /client` +
+__request body:__ `{"name":..., "description":..}` +
+__response body:__ the created/updated client configuration `{"id":..., "name":..., "description":..}`
+
+```
+curl -X POST -H "content-type: application/json" "http://localhost:8080/client" -d '{"name":"client-42"}'
+
+```
+
+IMPORTANT: The clients name has to match the pattern [a-z0-9-]+ (it is used also for posting messages)
 
 #### List Clients
 
-__endpoint:__ `GET /client` <br>
+__endpoint:__ `GET /client` +
 __response body:__ a list of clients `[{"id":"1","name":"client_42","description","Some description"}]`
 
 
@@ -36,8 +43,8 @@ curl -X GET -H "content-type: application/json" "http://localhost:8080/client/cl
 
 #### Update Client Configuration
 
-__endpoint:__ `POST /client/{client-id}/config` <br>
-__request body:__ `{<conf-cat>: [<comp-conf>,<comp-conf>]}`<br>
+__endpoint:__ `POST /client/{client-id}/config` +
+__request body:__ `{<conf-cat>: [<comp-conf>,<comp-conf>]}` +
 __response body:__ the updated client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
 
 The endpoint accepts an request body with the configuration. 
@@ -95,7 +102,7 @@ Any other field can be used for the actual configuration of the component. Their
 
 #### Retrieve Client Configuration
 
-__endpoint__: `GET config/{client-id}` <br>
+__endpoint__: `GET config/{client-id}/config` +
 __response body__: the created client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
 
 Retrieve the configuration for the client with the `{client-id}`. If no configuration is present a `404 Not Found` is returned
@@ -113,7 +120,7 @@ During the validation process all validation errors are collected. If one or mor
 The following listing shows an example where an illegal URL was configured as `solrEndpoint` for the 2nd configuration of the `queryBuilder` category.
 
 ```
-curl -X PUT -H "content-type: application/json" "http://localhost:8080/config/client25" --data-binary '{
+curl -X POST -H "content-type: application/json" "http://localhost:8080/config/client25/config" --data-binary '{
   "queryBuilder": [
     [..],
     {
