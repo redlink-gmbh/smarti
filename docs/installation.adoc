@@ -100,3 +100,5 @@ are available under
 
 From the running system, similar files are served under `http://localhost:8080/THIRD-PARTY.txt` (backend) 
 and `http://localhost:8080/3rdPartyLicenses.json` (frontend, UI).
+
+@see: https://github.com/redlink-gmbh/smarti/blob/develop/dist/src/main/resources/plugin-info.txt
