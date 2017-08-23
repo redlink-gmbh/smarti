@@ -407,6 +407,7 @@ function SmartiWidget(element,_options) {
         this.post = function(msg) {
             console.debug(`write text to element: ${msg}`);
             elem.val(msg);
+            elem.focus();
         }
     }
 
