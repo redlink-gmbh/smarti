@@ -458,13 +458,19 @@
                                 <!-- directories -->
                                 <mapping>
                                     <directory>/var/log/${packageName}</directory>
+                                    <filemode>755</filemode>
                                     <username>${daemonUser}</username>
                                     <groupname>root</groupname>
                                 </mapping>
                                 <mapping>
                                     <directory>/var/lib/${packageName}</directory>
+                                    <filemode>755</filemode>
                                     <username>${daemonUser}</username>
                                     <groupname>${daemonUser}</groupname>
+                                </mapping>
+                                <mapping>
+                                    <directory>/var/lib/${packageName}/ext</directory>
+                                    <filemode>755</filemode>
                                 </mapping>
                                 <mapping>
                                     <sources>
