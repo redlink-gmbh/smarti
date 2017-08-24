@@ -24,7 +24,7 @@ public class ClientService {
     @Autowired
     ConfigurationService configurationService;
 
-    private static final String NAME_PATTERN = "[a-z0-9-_:]+";
+    private static final String NAME_PATTERN = "[a-z0-9-_\\.:]+";
 
     public Iterable<Client> list() {
         return clientRepository.findAll();
@@ -99,8 +99,7 @@ public class ClientService {
         return clientRepository.existsByName(clientName);
     }
 
-    private boolean isProperClientName(String name) {
+    private static boolean isProperClientName(String name) {
         return name.matches(NAME_PATTERN);
     }
-
 }
