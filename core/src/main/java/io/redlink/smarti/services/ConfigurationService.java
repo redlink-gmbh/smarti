@@ -93,18 +93,17 @@ public class ConfigurationService {
     }
 
     public Configuration createConfiguration(String client, Configuration basicConfiguration){
-        Configuration configuration = new Configuration();
-        configuration.setClient(client);
-        configuration.setConfig(basicConfiguration.getConfig());
-        configuration.setCreated(new Date());
-        configuration.setModified(configuration.getCreated());
-        return configRepo.save(configuration);
+        return createConfiguration(client, basicConfiguration.getConfig());
     }
 
     public Configuration createConfiguration(String client){
+        return createConfiguration(client, getEmptyConfiguration());
+    }
+
+    private Configuration createConfiguration(String client, Map<String, List<ComponentConfiguration>> config){
         Configuration configuration = new Configuration();
         configuration.setClient(client);
-        configuration.setConfig(this.getEmptyConfiguration());
+        configuration.setConfig(config);
         configuration.setCreated(new Date());
         configuration.setModified(configuration.getCreated());
         return configRepo.save(configuration);
