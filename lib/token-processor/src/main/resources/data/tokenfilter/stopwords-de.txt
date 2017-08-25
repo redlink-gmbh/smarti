@@ -1,0 +1,10 @@
+#Stopword list for German language Token
+
+#Tokens with a value maching one of those entries will be deleted from the
+#conversation. Matching is case insensitive
+
+#Smart case matching is used. All upper case words are matched case sensitive.
+#All other words are matched case insensitive
+
+Hi
+Hallo
