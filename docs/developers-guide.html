@@ -5,7 +5,8 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Developers Guide</title>
+<meta name="author" content="Rüdiger Kurz">
+<title>Smarti Comprehensive Developer&#8217;s Guide</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -425,20 +426,342 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .show-for-print{display:inherit!important}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-right">
 <div id="header">
+<h1>Smarti Comprehensive Developer&#8217;s Guide</h1>
+<div class="details">
+<span id="author" class="author">Rüdiger Kurz</span><br>
+<span id="email" class="email"><a href="mailto:kurz@vnc-online.de">kurz@vnc-online.de</a></span><br>
+<span id="revnumber">version 1.0,</span>
+<span id="revdate">2017-08-26</span>
+</div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">Introduction</a></li>
+<li><a href="#_build_and_run">Build and Run</a>
+<ul class="sectlevel2">
+<li><a href="#_prepare">Prepare</a></li>
+<li><a href="#_checkout">Checkout</a></li>
+<li><a href="#_build">Build</a></li>
+<li><a href="#_run">Run</a></li>
+<li><a href="#_debug">Debug</a></li>
+<li><a href="#_release">Release</a></li>
+</ul>
+</li>
+<li><a href="#_additional_components">Additional components</a>
+<ul class="sectlevel2">
+<li><a href="#_enable_stanford_nlp">Enable Stanford NLP</a></li>
+</ul>
+</li>
+<li><a href="#_application_documentation">Application documentation</a>
+<ul class="sectlevel2">
+<li><a href="#_endpoints">Endpoints</a></li>
+<li><a href="#_client_configurations">Client Configurations</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_developers_guide">Developers Guide</h2>
+<h2 id="_introduction">Introduction</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>TODO</p>
+<p><strong>Smarti</strong> is a <a href="https://java.com/">Java</a>-Application based on the <a href="https://spring.io/">Spring Framework</a>.
+The application uses <a href="https://www.mongodb.com/">MongoDB</a> as database and <a href="http://lucene.apache.org/solr/">Apache Solr</a> as saerch engine.
+Installation packages are provided for <a href="https://www.debian.org/">Debian</a>- and <a href="https://www.redhat.com/">RedHat</a>-based systems.
+Alternatively the application can be started by directly launching the executable jar:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ java -jar smarti-${smarti-version}-exec.jar</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This document is written for developers, operators and administrators who like to</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>debug, change and contribute</strong> Smarti code,</p>
+</li>
+<li>
+<p><strong>run</strong> Smarti on a local machine,</p>
+</li>
+<li>
+<p><strong>deploy</strong> Smarti on a server and</p>
+</li>
+<li>
+<p><strong>help Smarti</strong> get a better application.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>All interested can convince themselves of the documentation quality.<br>
+And if you caught fire, maybe you will become a Smarti developer very soon ;-)</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Tip</div>
+</td>
+<td class="content">
+@all if you find typos, missing sections or if you have any other kind of helpful advice to improve this documentation or <strong>Smarti</strong> in general, please let us know.
+Share your thoughts and open an issue right <a href="https://github.com/redlink-gmbh/smarti/issues">here</a>.
+The <strong>Smarti</strong> community will help you along, as fast as possible.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_build_and_run">Build and Run</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This section explains how to checkout and build the Smarti application from its sources.
+By following these steps you will learn how to build, run and debug Smarti.
+Transfer these instructions on your local machine in order to start setting up your Software Development Environment (SDE).</p>
+</div>
+<div class="paragraph">
+<p>In order to build &amp; run Smarti the <a href="system-requirements.html">System requirements</a> have to be fulfilled.
+How to achieve that heavily depends on your target environment.
+When creating this documentation all commands have been executed and tested with <a href="http://releases.ubuntu.com/16.04/">Ubuntu 16.04. LTS</a> server running on <a href="https://aws.amazon.com/ec2/instance-types/">Amazon EC2 instance</a> (t2.large).
+Therefore and to keep it simple we decided to use Debian&#8217;s package manager <code>apt-get</code> for documentation purpose.</p>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Warning</div>
+</td>
+<td class="content">
+<strong>Be careful using <code>copy &amp; paste</code>.</strong><br>
+The aim of this manual is to explain and not to provide scripts.
+</td>
+</tr>
+</table>
 </div>
 <div class="sect2">
-<h3 id="_client_configurations">Client Configurations</h3>
+<h3 id="_prepare">Prepare</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install Java</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ sudo apt-get install openjdk-8-jdk</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install MongoDB (optional)</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">  $ sudo apt-get install mongodb-server</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install build components</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ sudo apt-get install git maven sass ruby-compass</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checkout">Checkout</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a source directory <code>${smarti-source}</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ mkdir ${smarti-source}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Checkout <a href="https://github.com/redlink-gmbh/smarti/tree/develop"><strong>Smarti</strong> source code</a> from <a href="https://github.com/">GitHub</a></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ git clone https://github.com/redlink-gmbh/smarti.git ${smarti-source}</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_build">Build</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Change into the source directory</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ cd ${smarti-source}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Execute maven build</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ mvn clean install [ -Pdeb | -Prpm ]</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Installation packages can be built for <a href="https://www.debian.org/">Debian</a>- and <a href="https://www.redhat.com/">RedHat</a>-based systems.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The build artifacts are finally placed in the <code>${smarti-source}/dist/target</code> directory.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_run">Run</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create a working directory</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">  $ mkdir ${smarti-home} &amp;&amp; cd ${smarti-home}</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<strong>Working directory</strong> - If you launch smarti the first time the <code>application.properties</code> file is created inside the directory where <code>java -jar</code> is executed.
+When ever this documentation refers the <code>${smarti-home}</code>, the directory where the <code>application.properties</code> is located, is being meant.
+Since Smarti is a Spring boot application you can externalize the configuration as explained in the <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html">Spring docs</a>.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Copy the executable jar into <code>${smarti-home}</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">  $ mv ${smarti-source}/dist/target/smarti-${smarti-version}-exec.jar .</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Launch smarti</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">  $ java -jar smarti-${smarti-version}-exec.jar</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<strong>Stanford NLP</strong> - If you want to use Stanford NLP analysis, ensure that the required libraries are included in the classpath.
+For more information and how to achieve this read section <a href="#_enable_stanford_nlp">Enable Stanford NLP</a>.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<strong>Common challenges</strong> - If this the first time you&#8217;re running <strong>Smarti</strong>, you may have been stepped into a pitfall and it does not work.
+We have picked up some common challenges that might be helpful.
+See sections <a href="trouble-shooting.html">Troubleshooting</a> in any case of problems.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_debug">Debug</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Launch smarti in debug mode</p>
 <div class="paragraph">
-<p>Find detailed description on how to add and configure clients in the <a href="clientConfig.html">Client Configurations</a> section.</p>
+<p>To launch <strong>Smarti</strong> in debug mode create a shell script appending preferred options to the <code>java</code>-command like:</p>
+</div>
+<div class="listingblock">
+<div class="title">start-smarti.sh</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">#!/bin/bash
+java -Xmx4g -jar -Xdebug application/target/smarti-${smarti-version}-exec.jar\
+    -Xrunjdwp:transport=dt_socket,address=${smarti-debug-port},server=y,suspend=n\
+    -Dspring.profiles.active=local\
+    --solrlib.home=${solr-home}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Configure your IDE</p>
+<div class="paragraph">
+<p>Create a debug configuration for the <code>Remote Java Application</code> and set the specified <code>${smarti-debug-port}</code>.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/debug-configuration.png" alt="debug configuration">
+</div>
+</div>
+</li>
+</ol>
+</div>
+<hr>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Now you are ready to start developing the next amazing feature for <strong>Smarti</strong>.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -452,10 +775,123 @@ Additionally, the version number of the develop branch is set to the new snapsho
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_additional_components">Additional components</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Due to licensing-issues (e.g. <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL</a>), some optional dependencies are not part if the distribution pacakges.
+To enable these additional modules, you need to put the missing libraries into the <code>ext</code>-folder in the working directory.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+When installed with the provided <code>deb</code> or <code>rpm</code> package, this folder is located at <code>/var/lib/smarti/ext</code> and contains a simple readme.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+When running Smarti by directly executing the jar file, you need to create the <code>ext</code> directory relative to the location where the <code>java</code> command is executed <code>${smarti-home}/ext</code>.
+</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">plugin-info.txt</div>
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java"># General
+
+This is the EXT folder. Put any additional library, dependency or plugin
+into this folder to have it added to smarti on the next restart of the application.
+
+# Stanford-NLP
+
+Stanford-NLP is GPL v3 licensed which makes it a bit more complicated to ship packages. That's why these dependencies
+are not part of the installation package.
+To make use of of Stanford-NLP analysis, add the following two libraries into this folder, and restart the application:
+
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar</code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_enable_stanford_nlp">Enable Stanford NLP</h3>
+<div class="paragraph">
+<p>To enable analysis based on <a href="https://nlp.stanford.edu/">Stanford NLP</a>, put the following libraries into the <code>ext</code>-folder.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar">stanford-corenlp-3.6.0.jar</a></p>
+</li>
+<li>
+<p><a href="https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar">stanford-corenlp-3.6.0-models-german.jar</a></p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ cd /var/lib/smarti/ext
+$ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar
+$ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_application_documentation">Application documentation</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_endpoints">Endpoints</h3>
+<div class="sect3">
+<h4 id="_admin_ui">Admin UI</h4>
+<div class="literalblock">
+<div class="content">
+<pre>http://${smarti-host}:${smarti-port}/</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_rest_api_swagger">REST API (Swagger)</h4>
+<div class="literalblock">
+<div class="content">
+<pre>http://${smarti-host}:${smarti-port}/v2/api-docs</pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_rocket_chat_integration_js">Rocket.Chat integration JS</h4>
+<div class="literalblock">
+<div class="content">
+<pre>http://${smarti-host}:${smarti-port}/plugin/v1/rocket.chat.js</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_client_configurations">Client Configurations</h3>
+<div class="paragraph">
+<p>Find detailed description on how to add and configure clients in the <a href="clientConfig.html">Client Configurations</a> section.</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-08-24 22:17:07 CEST
+Version 1.0<br>
+Last updated 2017-08-28 10:16:24 CEST
 </div>
 </div>
 </body>

@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Smarti</title>
+<title>System requirements</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -429,90 +429,148 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="header">
 </div>
 <div id="content">
-<div class="imageblock">
-<div class="content">
-<img src="https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master" alt="Build Status">
-</div>
-</div>
 <div class="sect1">
-<h2 id="_smarti">Smarti</h2>
+<h2 id="_system_requirements">System requirements</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
-natural language components and makes this data actionable via turning it into queries for an extendable set of endpoints.
-In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.</p>
+<p><strong>Server sizing</strong></p>
 </div>
-<div class="sect2">
-<h3 id="_how_to_install">How to install</h3>
-<div class="paragraph">
-<p>Installation packages are provided for <a href="https://www.debian.org">Debian</a>- and <a href="https://www.redhat.com">RedHat</a>-based systems. Alternatively the application can
-be started by directly launching the executable jar. Check out a detailed <a href="installation.html#Smarti Installation Guide">Smarti Installation Guide</a> including system requirements.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_configure">How to configure</h3>
-<div class="paragraph">
-<p>Smarti is configurable using either <a href="clientConfig.html">the client API</a> or the configuration UI, which can be found on the {HOST}/index.html page of the the running application.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_integrate">How to integrate</h3>
-<div class="paragraph">
-<p>Currently Smarti is working with <a href="https://rocket.chat">Rocket.Chat</a> conversations, where it can be smoothly integrated via a <a href="https://github.com/mrsimpson/Rocket.Chat">RC plugin</a>.
-Lookup the <a href="integrations/rocketchat.html">Rocket.Chat plugin description</a> for further information.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_develop">How to develop</h3>
-<div class="paragraph">
-<p><a href="developers-guide.html">Smarti Comprehensive Developer&#8217;s Guide</a></p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_contribute">How to contribute</h3>
-<div class="paragraph">
-<p>Smarti is an Open Source project so everyone is encouraged to improve it. Don&#8217;t hesitate to report bugs, provide fixes or
-share new ideas with us. We have various ways for contribution:</p>
-</div>
-<div class="ulist">
-<ul>
+<div class="ulist checklist">
+<ul class="checklist">
 <li>
-<p>use the issue tracker - report bugs, suggest features or give hints how we can improve the documentation.</p>
+<p>&#10003; DualCore-CPU (&gt; 2GHz)</p>
 </li>
 <li>
-<p>discuss issues with the community - two brains are better than one.</p>
+<p>&#10003; 4GB RAM</p>
 </li>
 <li>
-<p>write code - no patch is too small. So even fixing typos helps to improve Smarti.</p>
+<p>&#10003; 2GB temporary Storage</p>
 </li>
 </ul>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_license">License</h3>
 <div class="paragraph">
-<p>Free use of this software is granted under the terms of the Apache License Version 2.0.
-See the <a href="https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LICENSE.txt">License</a> for more details.</p>
+<p><strong>Operating systems</strong></p>
 </div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p>&#10003; Debian (e.g. <a href="http://releases.ubuntu.com/16.04/">Ubuntu 16.04. LTS</a>)</p>
+</li>
+<li>
+<p>&#10003; Red Hat (e.g. <a href="https://access.redhat.com/articles/3078#RHEL7">Red Hat Enterprise Linux 7</a>)</p>
+</li>
+<li>
+<p>&#10003; Amazon (e.g. <a href="https://aws.amazon.com/amazon-linux-ami/2017.03-release-notes/">Amazon Linux 2017.03</a>)</p>
+</li>
+</ul>
 </div>
-<div class="sect2">
-<h3 id="_authors">Authors</h3>
 <div class="paragraph">
-<p>Smarti is lead by <a href="http://redlink.co">Redlink</a> and <a href="http://assistify.de">Assistify</a> and was initiated in 2017.</p>
+<p><strong>System components</strong></p>
 </div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p>&#10003; <a href="https://java.com/">JavaVM</a>, version 1.8 (application default port: <code>8080</code>)</p>
+</li>
+<li>
+<p>&#10003; <a href="https://www.mongodb.com/">MongoDB</a>, version &gt;= 2.6 (database default port: <code>27017</code>)</p>
+</li>
+</ul>
 </div>
-<div class="sect2">
-<h3 id="_changelog">Changelog</h3>
 <div class="paragraph">
-<p>The <a href="changelog.html">Changelog</a> provides a complete list of changes in older releases.</p>
+<p><strong>Build components</strong></p>
 </div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p>&#10003; <a href="https://maven.apache.org/">Apache Maven</a> (<code>maven</code>)</p>
+</li>
+<li>
+<p>&#10003; <a href="http://sass-lang.com/">Sass</a> (<code>sass</code>)</p>
+</li>
+<li>
+<p>&#10003; <a href="http://compass-style.org/">Compass</a> (<code>ruby-compass</code>)</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p><strong>Additional components</strong></p>
+</div>
+<div class="ulist checklist">
+<ul class="checklist">
+<li>
+<p>&#10003; Third-Party Dependencies</p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+For detailed information about third party libraries read section <a href="installation.html">Third-Party Dependencies and Licenses</a>.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>&#10003; <a href="https://github.com/stanfordnlp/CoreNLP">Stanford CoreNLP</a></p>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Except the Stanford NLP libraries (GPL licensed), all direct runtime-dependencies such as third-party libraries are packaged with the main executable. Where to get and place the Stanford NLP libraries is explained in section <a href="developers-guide.html">Enable Stanford NLP</a>.
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
+</div>
+<hr>
+<div class="paragraph">
+<p><strong>Production vs. Development</strong></p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<strong>Smarti service</strong><br>
+As Smarti is a <a href="https://projects.spring.io/spring-boot/">Spring Boot</a> application it can be started by directly launching the executable jar.
+If you like to setup your development client or a non-productive server read section <a href="developers-guide.html">Build and Run</a> explains how to do start Smarti by executing the executable jar.
+To run Smarti in production it is recommended to deploy the <code>deb</code> or <code>rpm</code> package on your target environment instead executing the jar directly.
+Read section <a href="installation.html">Smarti Installation Guide</a> to learn more about how to deploy smarti on a server.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+<strong>Dedicated MongoDB</strong><br>
+In a production scenario it is absolutely recommended to run MongoDB on a dedicated system.
+If you like to run MongoDB on the same machine as the Smarti application <code>4 GB</code> RAM are insufficient.
+A developer client should have at least <code>8 GB</code> RAM.
+</td>
+</tr>
+</table>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-08-28 10:07:02 CEST
+Last updated 2017-08-28 09:58:14 CEST
 </div>
 </div>
 </body>

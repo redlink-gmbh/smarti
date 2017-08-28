@@ -1,0 +1,27 @@
+=== Troubleshooting
+
+In order of any problems, see also section <<installation.adoc#,System Maintenance>>.
+There you will find information about:
+
+* Service Status
+* Logging
+* Monitoring
+* System Health
+* System Info
+
+CAUTION: Ensure that the user running Smarti has sufficient permissions on the file system.
+
+```bash
+$ sudo chown -R smarti: /var/lib/smarti/ext
+$ sudo chmod a+x /var/lib/smarti /var/lib/smarti/ext /var/log/smarti
+```
+
+==== System behavior if libs are missing
+
+The system health check: `http://${smarti-host}:${smarti-port}/system/health` will return `{"status":"DOWN"}`.
+Additional there are some errors logged during server startup in `/var/log/main.log`
+
+```bash
+17:38:41: ERROR RequiredProvidersHealthCheck - Missing Processor: 'stanfordNlpProcessor'
+17:38:41: ERROR RequiredProvidersHealthCheck - Missing Processor: 'germanTrueCaseExtractor'
+```
