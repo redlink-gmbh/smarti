@@ -22,12 +22,14 @@ import com.google.common.collect.Iterators;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
+import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -48,9 +50,13 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -64,6 +70,10 @@ public class ConversationIndexer {
     public static final int DEFAULT_COMMIT_WITHIN = 10*1000; //10sec
 
     public static final int MIN_COMMIT_WITHIN = 1000; //1sec
+    
+    //TODO: make configurable
+    private static final Set<String> NOT_INDEXED_CONTEXT_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            Context.ENV_TOKEN))); //do not index the users token
 
     @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
     private int commitWithin = DEFAULT_COMMIT_WITHIN; 
@@ -193,6 +203,9 @@ public class ConversationIndexer {
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
         solrConversation.setField(FIELD_TYPE, "conversation");
         solrConversation.setField(FIELD_MODIFIED, conversation.getLastModified());
+        
+        //add owner and context information
+        addOwnerFields(solrConversation, conversation);
         addContextFields(solrConversation, conversation);
 
         solrConversation.setField(FIELD_MESSAGE_COUNT, conversation.getMessages().size());
@@ -230,6 +243,8 @@ public class ConversationIndexer {
 
         return solrConversation;
     }
+
+
     
     private SolrInputDocument toSolrInputDocument(Message message, int i, Conversation conversation) {
         final SolrInputDocument solrMsg = new SolrInputDocument();
@@ -246,6 +261,9 @@ public class ConversationIndexer {
             solrMsg.setField(FIELD_USER_ID, message.getUser().getId());
             solrMsg.setField(FIELD_USER_NAME, message.getUser().getDisplayName());
         }
+
+        //add owner and context information
+        addOwnerFields(solrMsg, conversation);
         addContextFields(solrMsg, conversation);
 
         solrMsg.setField(FIELD_MESSAGE, message.getContent());
@@ -256,12 +274,30 @@ public class ConversationIndexer {
 
         return solrMsg;
     }
-
+    
+    private void addOwnerFields(final SolrInputDocument solrDoc, Conversation conversation) {
+        String client = conversation.getClientId();
+        //NOTE: in old releases the clientId is not set. For those the
+        //      client information was stored in the domain of the context
+        if(StringUtils.isBlank(client)){
+            client = conversation.getContext().getDomain();
+        }
+        solrDoc.setField(FIELD_CLIENT, client);
+    }
     private void addContextFields(final SolrInputDocument solrDoc, Conversation conversation) {
         if (conversation.getContext() != null) {
-            solrDoc.setField(FIELD_CONTEXT, conversation.getContext().getContextType());
-            solrDoc.setField(FIELD_ENVIRONMENT, conversation.getContext().getEnvironmentType());
-            solrDoc.setField(FIELD_DOMAIN, conversation.getContext().getDomain());
+            Context ctx = conversation.getContext();
+            solrDoc.setField(FIELD_CONTEXT, ctx.getContextType());
+            solrDoc.setField(FIELD_ENVIRONMENT, ctx.getEnvironmentType());
+            solrDoc.setField(FIELD_DOMAIN, ctx.getDomain());
+            if(ctx.getEnvironment() != null){
+                ctx.getEnvironment().entrySet().stream()
+                .filter(e -> StringUtils.isNoneBlank(e.getKey()) && StringUtils.isNoneBlank(e.getValue()))
+                .filter(e -> !NOT_INDEXED_CONTEXT_FIELDS.contains(e.getKey()))
+                .forEach(e -> {
+                    solrDoc.setField("env_" + e.getKey(), e.getValue());
+                });
+            }
         }
     }
     

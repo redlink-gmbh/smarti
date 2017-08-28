@@ -25,11 +25,14 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -41,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CLIENT;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 
 /**
@@ -137,4 +141,24 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
     protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation);
+    
+    /**
+     * Adds a FilterQuery that ensures that only conversations with the same <code>clientID</code> as
+     * the current conversation are returned.
+     * @param solrQuery the SolrQuery to add the FilterQuery
+     * @param conversation the current conversation
+     */
+    protected final void addClientFilter(final SolrQuery solrQuery, Conversation conversation) {
+        String clientId = conversation.getClientId(); 
+        if(clientId == null && conversation.getContext() != null){ //for backward compatibility
+            clientId = conversation.getContext().getDomain();
+        }
+        if (StringUtils.isNotBlank(clientId)) {
+            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_CLIENT, ClientUtils.escapeQueryChars(clientId)));
+        } else {
+            solrQuery.addFilterQuery(String.format("-%s:*", FIELD_CLIENT));
+        }
+    }
+
+
 }
