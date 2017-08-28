@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Install Smarti</title>
+<title>Smarti Installation Guide</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -425,68 +425,97 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 .show-for-print{display:inherit!important}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-right">
 <div id="header">
+<h1>Smarti Installation Guide</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">Introduction</a></li>
+<li><a href="#_deploy">Deploy</a>
+<ul class="sectlevel2">
+<li><a href="#_deploy_on_debian">Deploy on Debian</a></li>
+<li><a href="#_deploy_on_red_hat">Deploy on Red Hat</a></li>
+</ul>
+</li>
+<li><a href="#_changing_the_user">Changing the User</a></li>
+<li><a href="#_system_maintenance">System maintenance</a>
+<ul class="sectlevel2">
+<li><a href="#_daemon_service">Daemon / Service</a></li>
+<li><a href="#_logging">Logging</a></li>
+<li><a href="#_monitoring">Monitoring</a></li>
+<li><a href="#_system_info">System Info</a></li>
+</ul>
+</li>
+<li><a href="#_application_configuration">Application Configuration</a>
+<ul class="sectlevel2">
+<li><a href="#_application_properties">application.properties</a></li>
+</ul>
+</li>
+<li><a href="#_third_party_dependencies_and_licenses">Third-Party Dependencies and Licenses</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_install_smarti">Install Smarti</h2>
+<h2 id="_introduction">Introduction</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Installation packages are provided for <a href="https://www.debian.org">Debian</a>- and (<a href="https://www.redhat.com">RedHat</a>-based systems. Alternatively the application can
-be started by directly launching the executable jar: <code>java -jar smarti-${version}-exec.jar</code>.</p>
+<p>Installation packages are provided for <a href="https://www.debian.org/">Debian</a>- and <a href="https://www.redhat.com/">RedHat</a>-based systems.</p>
 </div>
-<div class="admonitionblock warning">
+<div class="admonitionblock note">
 <table>
 <tr>
 <td class="icon">
-<div class="title">Warning</div>
+<div class="title">Note</div>
 </td>
 <td class="content">
-In the current version the packages include a <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GPL</a> licenced dependency (<a href="https://nlp.stanford.edu/software/">Stanford NLP</a>), so you are not allowed to distribute packages.
+Alternatively the application can be started by directly launching the executable jar: <code>java -jar smarti-${smarti-version}-exec.jar</code>, see section <a href="developers-guide.html">Build and Run</a>.
 </td>
 </tr>
 </table>
 </div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+In order to build &amp; run Smarti the <a href="system-requirements.html">System requirements</a> have to be fulfilled.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_deploy">Deploy</h2>
+<div class="sectionbody">
 <div class="sect2">
-<h3 id="_requirements">Requirements</h3>
-<div class="paragraph">
-<p><strong>smarti</strong> is a <a href="https://java.com">Java</a>-Application based on the <a href="https://spring.io">Spring Framework</a>.</p>
+<h3 id="_deploy_on_debian">Deploy on Debian</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ sudo dpkg -i ${smarti-source}/dist/target/smarti_${smarti-build-version}.deb</code></pre>
 </div>
-<div class="paragraph">
-<p>To run, it has the following minimal system requirements:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>DualCore-CPU (&gt; 2GHz)</p>
-</li>
-<li>
-<p>4GB RAM</p>
-</li>
-<li>
-<p>2GB temporary Storage</p>
-</li>
-<li>
-<p>available network-port (default: 8080)</p>
-</li>
-<li>
-<p><a href="https://java.com/"><strong>JavaVM</strong></a>, version <strong>1.8</strong></p>
-</li>
-<li>
-<p><a href="https://www.mongodb.com/"><strong>MongoDB</strong></a>, version <strong>&gt;=2.6</strong></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>All direct runtime-dependencies such as third-party libraries are packaged with the main executable.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_changing_the_user">Changing the User</h3>
+<h3 id="_deploy_on_red_hat">Deploy on Red Hat</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ sudo rpm -i ${smarti-source}/dist/target/smarti_${smarti-build-version}.rpm</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_changing_the_user">Changing the User</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>When installed using one of the provided packages (<code>deb</code>, <code>rpm</code>), smarti runs as it&#8217;s own system user <code>smarti</code>. This user is created during the installation
-process if it not already exists.</p>
+process if it does not already exists.</p>
 </div>
 <div class="paragraph">
 <p>To run smarti as a different user (<code>assistify</code> in this example), do the following steps:</p>
@@ -495,46 +524,44 @@ process if it not already exists.</p>
 <ol class="arabic">
 <li>
 <p>Create the new working-directory</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>mkdir -p /data/smarti
-chown -R assistify: /data/smarti</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ mkdir -p /data/smarti
+$ chown -R assistify: /data/smarti</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Populate the new working-directory with the required configuration files, e.g. by copying the default settings:</p>
-<div class="literalblock">
+<p>Populate the new working-directory with the required configuration files, e.g. by copying the default settings</p>
+<div class="listingblock">
 <div class="content">
-<pre>cp /etc/smarti/* /data/smarti</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ cp /etc/smarti/* /data/smarti</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Update the systemd configuration for smarti</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>systemctl edit smarti</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ systemctl edit smarti</code></pre>
 </div>
 </div>
-<div class="literalblock">
+<div class="paragraph">
+<p>and add the following content</p>
+</div>
+<div class="listingblock">
 <div class="content">
-<pre>and add the following content:</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>[Service]
+<pre class="highlight"><code class="language-bash" data-lang="bash">[Service]
 User = assistify
-WorkingDirectory = /data/smarti</pre>
+WorkingDirectory = /data/smarti</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Restart the smarti</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>systemctl try-restart smarti</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ systemctl try-restart smarti</code></pre>
 </div>
 </div>
 </li>
@@ -542,44 +569,62 @@ WorkingDirectory = /data/smarti</pre>
 </div>
 </div>
 </div>
-</div>
 <div class="sect1">
-<h2 id="_configuration">Configuration</h2>
+<h2 id="_system_maintenance">System maintenance</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_application_properties">application.properties</h3>
+<h3 id="_daemon_service">Daemon / Service</h3>
+<div class="sect3">
+<h4 id="_configuration">Configuration</h4>
+<div class="ulist">
+<ul>
+<li>
+<p><code>/etc/default/smarti</code></p>
+</li>
+<li>
+<p>JVM and JVM Options (e.g. <code>-Xmx4g</code>)</p>
+</li>
+<li>
+<p>Program Arguments (overwriting settings from the <code>application.properties</code>)</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_start_stop_restart">Start / Stop / Restart</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ sudo service smarti [ start | stop | restart  ]</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_status">Status</h4>
 <div class="paragraph">
-<p><code>/etc/smarti/application.properties</code></p>
+<p>To check the service status use the daemon</p>
 </div>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>## logging config file
-logging.config = ./logback.xml</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ service smarti status</code></pre>
 </div>
 </div>
-<div class="literalblock">
+<div class="paragraph">
+<p>This should result in something like</p>
+</div>
+<div class="listingblock">
 <div class="content">
-<pre>## server port
-server.port = 8080</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>## mongo-db
-#spring.data.mongodb.uri=mongodb://localhost/smarti
-spring.data.mongodb.database = smarti
-#spring.data.mongodb.host = localhost
-#spring.data.mongodb.port = 27017
-#spring.data.mongodb.password =
-#spring.data.mongodb.username =</pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash">● smarti.service - smarti
+   Loaded: loaded (/lib/systemd/system/smarti.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2017-08-26 12:12:28 UTC; 6s ago
+ Main PID: 4606 (bash)
+    Tasks: 22
+   Memory: 647.8M
+      CPU: 12.518s
+   CGroup: /system.slice/smarti.service</code></pre>
 </div>
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_monitoring_troubleshooting">Monitoring / Troubleshooting</h2>
-<div class="sectionbody">
 <div class="sect2">
 <h3 id="_logging">Logging</h3>
 <div class="ulist">
@@ -591,36 +636,99 @@ spring.data.mongodb.database = smarti
 <p>Log-Files available under <code>/var/lib/smarti/logs/</code>, a symlink to <code>/var/log/smarti/</code></p>
 </li>
 <li>
-<p><a href="http://logback.qos.ch/manual/configuration.html">Log-Configuration</a> under <code>/var/lib/smarti/logback.xml</code>, a
-symlink to <code>/etc/smarti/logback.xml</code></p>
+<p><a href="http://logback.qos.ch/manual/configuration.html">Log-Configuration</a> under <code>/var/lib/smarti/logback.xml</code>, a symlink to <code>/etc/smarti/logback.xml</code></p>
 </li>
 </ul>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Please keep in mind, that if smarti runs as a different user it probably also has a custom working directory. In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
-<p>Please keep in mind, that if <em>smarti</em> runs as a different user it probably also has a custom working directory.
-In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).</p>
+<p>To Check if Smarti is started search in <code>/var/log/smarti/main.log</code> for something like</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">[main] INFO  io.redlink.smarti.Application - smarti started: http://${smarti-host}:${smarti-port}/</code></pre>
+</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_daemon_configuration">Daemon Configuration</h3>
-<div class="ulist">
-<ul>
-<li>
-<p><code>/etc/default/smarti</code></p>
-</li>
-<li>
-<p>JVM and JVM Options (e.g. <code>-Xmx2g</code>)</p>
-</li>
-<li>
-<p>Program Arguments (overwriting settings from the <code>application.properties</code>)</p>
-</li>
-</ul>
+<h3 id="_monitoring">Monitoring</h3>
+<div class="sect3">
+<h4 id="_system_health">System Health</h4>
+<div class="paragraph">
+<p>A system-wide health check is available at <code><a href="http://${smarti-host}:${smarti-port}/system/health" class="bare">http://${smarti-host}:${smarti-port}/system/health</a></code>.
+In case of any problems you can call this URL in your browser or send a <code>curl</code> in order to check if Smarti is up and running.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ curl -X GET http://${smarti-host}:${smarti-port}/system/health</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>On success, if everything is running it returns: <code>{"status":"UP"}</code> else <code>{"status":"DOWN"}</code>.</p>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+<code>{"status":"DOWN"}</code> is also reported, if Stanford NLP libraries are not present in the classpath.
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_health_check">Health-Check</h3>
+<h3 id="_system_info">System Info</h3>
 <div class="paragraph">
-<p>System-wide health check is available under <code><a href="http://localhost:8080/system/health" class="bare">http://localhost:8080/system/health</a></code>.</p>
+<p>You can get a detailed information about the build version that is running by calling</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ curl -X GET http://${smarti-host}:${smarti-port}/system/info</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_application_configuration">Application Configuration</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html" class="bare">https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html</a></p>
+</div>
+<div class="sect2">
+<h3 id="_application_properties">application.properties</h3>
+<div class="listingblock">
+<div class="title">/etc/smarti/application.properties</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">## logging config file
+logging.config = ./logback.xml
+
+## server port
+server.port = ${smarti-port}
+
+## mongo-db
+#spring.data.mongodb.uri=mongodb://${mongodb-host}/smarti
+spring.data.mongodb.database = smarti
+#spring.data.mongodb.host = ${mongodb-host}
+#spring.data.mongodb.port = ${mongodb-port}
+#spring.data.mongodb.password =
+#spring.data.mongodb.username =</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -629,8 +737,7 @@ In such case, logs are stored in the new working directory (or whatever is confi
 <h2 id="_third_party_dependencies_and_licenses">Third-Party Dependencies and Licenses</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>When installing via one of the provided packages (<code>rpm</code>, <code>deb</code>) a list of used third-party libraries and their licenses
-are available under</p>
+<p>When installing via one of the provided packages (<code>rpm</code>, <code>deb</code>) a list of used third-party libraries and their licenses are available under</p>
 </div>
 <div class="ulist">
 <ul>
@@ -643,15 +750,30 @@ are available under</p>
 </ul>
 </div>
 <div class="paragraph">
-<p>From the running system, similar files are served under <code><a href="http://localhost:8080/THIRD-PARTY.txt" class="bare">http://localhost:8080/THIRD-PARTY.txt</a></code> (backend)
-and <code><a href="http://localhost:8080/3rdPartyLicenses.json" class="bare">http://localhost:8080/3rdPartyLicenses.json</a></code> (frontend, UI).</p>
+<p>From the running system, similar files are served.</p>
+</div>
+<div class="paragraph">
+<p><strong>Backend</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ curl http://${smarti-host}:${smarti-port}/THIRD-PARTY.txt</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Frontend UI</strong></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ curl http://${smarti-host}:${smarti-port}/3rdPartyLicenses.json</code></pre>
+</div>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-08-09 11:31:25 CEST
+Last updated 2017-08-28 10:19:20 CEST
 </div>
 </div>
 </body>

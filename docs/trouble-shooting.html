@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Smarti</title>
+<title>Troubleshooting</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -429,82 +429,59 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="header">
 </div>
 <div id="content">
-<div class="imageblock">
-<div class="content">
-<img src="https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master" alt="Build Status">
-</div>
-</div>
-<div class="sect1">
-<h2 id="_smarti">Smarti</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
-natural language components and makes this data actionable via turning it into queries for an extendable set of endpoints.
-In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.</p>
-</div>
 <div class="sect2">
-<h3 id="_how_to_install">How to install</h3>
+<h3 id="_troubleshooting">Troubleshooting</h3>
 <div class="paragraph">
-<p>Installation packages are provided for <a href="https://www.debian.org">Debian</a>- and <a href="https://www.redhat.com">RedHat</a>-based systems. Alternatively the application can
-be started by directly launching the executable jar. Check out a detailed <a href="installation.html#Smarti Installation Guide">Smarti Installation Guide</a> including system requirements.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_configure">How to configure</h3>
-<div class="paragraph">
-<p>Smarti is configurable using either <a href="clientConfig.html">the client API</a> or the configuration UI, which can be found on the {HOST}/index.html page of the the running application.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_integrate">How to integrate</h3>
-<div class="paragraph">
-<p>Currently Smarti is working with <a href="https://rocket.chat">Rocket.Chat</a> conversations, where it can be smoothly integrated via a <a href="https://github.com/mrsimpson/Rocket.Chat">RC plugin</a>.
-Lookup the <a href="integrations/rocketchat.html">Rocket.Chat plugin description</a> for further information.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_develop">How to develop</h3>
-<div class="paragraph">
-<p><a href="developers-guide.html">Smarti Comprehensive Developer&#8217;s Guide</a></p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_contribute">How to contribute</h3>
-<div class="paragraph">
-<p>Smarti is an Open Source project so everyone is encouraged to improve it. Don&#8217;t hesitate to report bugs, provide fixes or
-share new ideas with us. We have various ways for contribution:</p>
+<p>In order of any problems, see also section <a href="installation.html">System Maintenance</a>.
+There you will find information about:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>use the issue tracker - report bugs, suggest features or give hints how we can improve the documentation.</p>
+<p>Service Status</p>
 </li>
 <li>
-<p>discuss issues with the community - two brains are better than one.</p>
+<p>Logging</p>
 </li>
 <li>
-<p>write code - no patch is too small. So even fixing typos helps to improve Smarti.</p>
+<p>Monitoring</p>
+</li>
+<li>
+<p>System Health</p>
+</li>
+<li>
+<p>System Info</p>
 </li>
 </ul>
 </div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Caution</div>
+</td>
+<td class="content">
+Ensure that the user running Smarti has sufficient permissions on the file system.
+</td>
+</tr>
+</table>
 </div>
-<div class="sect2">
-<h3 id="_license">License</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ sudo chown -R smarti: /var/lib/smarti/ext
+$ sudo chmod a+x /var/lib/smarti /var/lib/smarti/ext /var/log/smarti</code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_system_behavior_if_libs_are_missing">System behavior if libs are missing</h4>
 <div class="paragraph">
-<p>Free use of this software is granted under the terms of the Apache License Version 2.0.
-See the <a href="https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LICENSE.txt">License</a> for more details.</p>
+<p>The system health check: <code><a href="http://${smarti-host}:${smarti-port}/system/health" class="bare">http://${smarti-host}:${smarti-port}/system/health</a></code> will return <code>{"status":"DOWN"}</code>.
+Additional there are some errors logged during server startup in <code>/var/log/main.log</code></p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_authors">Authors</h3>
-<div class="paragraph">
-<p>Smarti is lead by <a href="http://redlink.co">Redlink</a> and <a href="http://assistify.de">Assistify</a> and was initiated in 2017.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_changelog">Changelog</h3>
-<div class="paragraph">
-<p>The <a href="changelog.html">Changelog</a> provides a complete list of changes in older releases.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">17:38:41: ERROR RequiredProvidersHealthCheck - Missing Processor: 'stanfordNlpProcessor'
+17:38:41: ERROR RequiredProvidersHealthCheck - Missing Processor: 'germanTrueCaseExtractor'</code></pre>
 </div>
 </div>
 </div>
@@ -512,7 +489,7 @@ See the <a href="https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LI
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-08-28 10:07:02 CEST
+Last updated 2017-08-28 10:23:24 CEST
 </div>
 </div>
 </body>

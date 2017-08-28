@@ -1,114 +1,185 @@
-== Install Smarti
+= Smarti Installation Guide
+:toc: right
 
-Installation packages are provided for https://www.debian.org[Debian]- and (https://www.redhat.com[RedHat]-based systems. Alternatively the application can
-be started by directly launching the executable jar: `java -jar smarti-${version}-exec.jar`.
+== Introduction
 
-=== Requirements
+Installation packages are provided for https://www.debian.org/[Debian]- and https://www.redhat.com/[RedHat]-based systems.
 
-**smarti** is a https://java.com[Java]-Application based on the https://spring.io[Spring Framework].
+NOTE: Alternatively the application can be started by directly launching the executable jar: `java -jar smarti-${smarti-version}-exec.jar`, see section <<developers-guide.adoc#,Build and Run>>.
 
-To run, it has the following minimal system requirements:
+CAUTION: In order to build & run Smarti the <<system-requirements.adoc#,System requirements>> have to be fulfilled.
 
-* DualCore-CPU (> 2GHz)
-* 4GB RAM
-* 2GB temporary Storage
-* available network-port (default: 8080)
-* https://java.com/[**JavaVM**], version **1.8**
-* https://www.mongodb.com/[**MongoDB**], version **>=2.6**
+== Deploy
 
-All direct runtime-dependencies such as third-party libraries are packaged with the main executable.
+=== Deploy on Debian
 
-=== Changing the User
+```bash
+$ sudo dpkg -i ${smarti-source}/dist/target/smarti_${smarti-build-version}.deb
+```
 
-When installed using one of the provided packages (`deb`, `rpm`), smarti runs as it's own system user `smarti`. This user is created during the installation 
-process if it not already exists.
+=== Deploy on Red Hat
+
+```bash
+$ sudo rpm -i ${smarti-source}/dist/target/smarti_${smarti-build-version}.rpm
+```
+
+== Changing the User
+
+When installed using one of the provided packages (`deb`, `rpm`), smarti runs as it's own system user `smarti`. This user is created during the installation
+process if it does not already exists.
 
 To run smarti as a different user (`assistify` in this example), do the following steps:
 
-1. Create the new working-directory
+. Create the new working-directory
++
+```bash
+$ mkdir -p /data/smarti
+$ chown -R assistify: /data/smarti
+```
 
-        mkdir -p /data/smarti
-        chown -R assistify: /data/smarti
+. Populate the new working-directory with the required configuration files, e.g. by copying the default settings
++
+```bash
+$ cp /etc/smarti/* /data/smarti
+```
 
-2. Populate the new working-directory with the required configuration files, e.g. by copying the default settings:
+. Update the systemd configuration for smarti
++
+```bash
+$ systemctl edit smarti
+```
++
+and add the following content
++
+```bash
+[Service]
+User = assistify
+WorkingDirectory = /data/smarti
+```
 
-        cp /etc/smarti/* /data/smarti
-
-3. Update the systemd configuration for smarti
-
-        systemctl edit smarti
-
-    and add the following content:
-
-        [Service]
-        User = assistify
-        WorkingDirectory = /data/smarti
-
-4. Restart the smarti
-
-        systemctl try-restart smarti
-
-=== Additional Components
-Due to licensing-issues (e.g. https://www.gnu.org/licenses/gpl-3.0.html[GPL]), some optional dependencies are not part if the distribution pacakges.
-To enable these additional modules, you need to put the missing libraries into the `ext`-folder in the working directory.
-
-When installed with the provided `deb` or `rpm` package, this folder is located at `/var/lib/smarti/ext` and contains
-a simple readme.
-
-==== Stanford NLP
-To enable analysis based on https://nlp.stanford.edu[Stanford NLP], put these libraries into the `ext`-folder:
-
-* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar[stanford-corenlp-3.6.0.jar]
-* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar[stanford-corenlp-3.6.0-models-german.jar]
+. Restart the smarti
++
+```bash
+$ systemctl try-restart smarti
+```
 
 
-== Configuration
+== System maintenance
 
-=== application.properties
-`/etc/smarti/application.properties`
+=== Daemon / Service
 
-    ## logging config file
-    logging.config = ./logback.xml
-    
-    ## server port
-    server.port = 8080
-    
-    ## mongo-db
-    #spring.data.mongodb.uri=mongodb://localhost/smarti
-    spring.data.mongodb.database = smarti
-    #spring.data.mongodb.host = localhost
-    #spring.data.mongodb.port = 27017
-    #spring.data.mongodb.password =
-    #spring.data.mongodb.username =
-    
-== Monitoring / Troubleshooting
+==== Configuration
+
+* `/etc/default/smarti`
+* JVM and JVM Options (e.g. `-Xmx4g`)
+* Program Arguments (overwriting settings from the `application.properties`)
+
+==== Start / Stop / Restart
+
+```bash
+$ sudo service smarti [ start | stop | restart  ]
+```
+
+==== Status
+
+To check the service status use the daemon
+
+```bash
+$ service smarti status
+```
+
+This should result in something like
+
+```bash
+● smarti.service - smarti
+   Loaded: loaded (/lib/systemd/system/smarti.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2017-08-26 12:12:28 UTC; 6s ago
+ Main PID: 4606 (bash)
+    Tasks: 22
+   Memory: 647.8M
+      CPU: 12.518s
+   CGroup: /system.slice/smarti.service
+```
 
 === Logging
 
 * Working-Directory at `/var/lib/smarti/`
 * Log-Files available under `/var/lib/smarti/logs/`, a symlink to `/var/log/smarti/`
-* http://logback.qos.ch/manual/configuration.html[Log-Configuration] under `/var/lib/smarti/logback.xml`, a
-symlink to `/etc/smarti/logback.xml`
+* http://logback.qos.ch/manual/configuration.html[Log-Configuration] under `/var/lib/smarti/logback.xml`, a symlink to `/etc/smarti/logback.xml`
 
-Please keep in mind, that if _smarti_ runs as a different user it probably also has a custom working directory. 
-In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).
+NOTE: Please keep in mind, that if smarti runs as a different user it probably also has a custom working directory. In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).
 
-=== Daemon Configuration
+To Check if Smarti is started search in `/var/log/smarti/main.log` for something like
 
-* `/etc/default/smarti`
-    * JVM and JVM Options (e.g. `-Xmx2g`)
-    * Program Arguments (overwriting settings from the `application.properties`)
+```bash
+[main] INFO  io.redlink.smarti.Application - smarti started: http://${smarti-host}:${smarti-port}/
+```
 
-=== Health-Check
-System-wide health check is available under `http://localhost:8080/system/health`.
+=== Monitoring
+
+==== System Health
+
+A system-wide health check is available at `http://${smarti-host}:${smarti-port}/system/health`.
+In case of any problems you can call this URL in your browser or send a `curl` in order to check if Smarti is up and running.
+
+```bash
+$ curl -X GET http://${smarti-host}:${smarti-port}/system/health
+```
+
+On success, if everything is running it returns: `{"status":"UP"}` else `{"status":"DOWN"}`.
+
+NOTE: `{"status":"DOWN"}` is also reported, if Stanford NLP libraries are not present in the classpath.
+
+
+=== System Info
+
+You can get a detailed information about the build version that is running by calling
+```bash
+$ curl -X GET http://${smarti-host}:${smarti-port}/system/info
+```
+
+
+== Application Configuration
+
+https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html
+
+=== application.properties
+
+./etc/smarti/application.properties
+```bash
+## logging config file
+logging.config = ./logback.xml
+
+## server port
+server.port = ${smarti-port}
+
+## mongo-db
+#spring.data.mongodb.uri=mongodb://${mongodb-host}/smarti
+spring.data.mongodb.database = smarti
+#spring.data.mongodb.host = ${mongodb-host}
+#spring.data.mongodb.port = ${mongodb-port}
+#spring.data.mongodb.password =
+#spring.data.mongodb.username =
+```
+
 
 == Third-Party Dependencies and Licenses
 
-When installing via one of the provided packages (`rpm`, `deb`) a list of used third-party libraries and their licenses 
-are available under 
+When installing via one of the provided packages (`rpm`, `deb`) a list of used third-party libraries and their licenses are available under
 
 * `/usr/share/doc/smarti/THIRD-PARTY.txt` (backend), and
 * `/usr/share/doc/smarti/UI-THIRD-PARTY.json` (frontend, UI)
 
-From the running system, similar files are served under `http://localhost:8080/THIRD-PARTY.txt` (backend) 
-and `http://localhost:8080/3rdPartyLicenses.json` (frontend, UI).
+From the running system, similar files are served.
+
+*Backend*
+
+```bash
+$ curl http://${smarti-host}:${smarti-port}/THIRD-PARTY.txt
+```
+
+*Frontend UI*
+
+```bash
+$ curl http://${smarti-host}:${smarti-port}/3rdPartyLicenses.json
+```

@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Smarti</title>
+<title>Client Configuration</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -429,82 +429,222 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="header">
 </div>
 <div id="content">
-<div class="imageblock">
-<div class="content">
-<img src="https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master" alt="Build Status">
-</div>
-</div>
 <div class="sect1">
-<h2 id="_smarti">Smarti</h2>
+<h2 id="_client_configuration">Client Configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
-natural language components and makes this data actionable via turning it into queries for an extendable set of endpoints.
-In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.</p>
+<p>The configuration module allows to manage client specific configurations. It consists of a storage component, a service layer, REST services and an UI.</p>
 </div>
 <div class="sect2">
-<h3 id="_how_to_install">How to install</h3>
+<h3 id="_client_api">Client API</h3>
 <div class="paragraph">
-<p>Installation packages are provided for <a href="https://www.debian.org">Debian</a>- and <a href="https://www.redhat.com">RedHat</a>-based systems. Alternatively the application can
-be started by directly launching the executable jar. Check out a detailed <a href="installation.html#Smarti Installation Guide">Smarti Installation Guide</a> including system requirements.</p>
+<p><em>base path:</em> <code>/client</code></p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_configure">How to configure</h3>
 <div class="paragraph">
-<p>Smarti is configurable using either <a href="clientConfig.html">the client API</a> or the configuration UI, which can be found on the {HOST}/index.html page of the the running application.</p>
+<p>The configuration REST Services allow to manage clients and configurations via API calls.</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_integrate">How to integrate</h3>
 <div class="paragraph">
-<p>Currently Smarti is working with <a href="https://rocket.chat">Rocket.Chat</a> conversations, where it can be smoothly integrated via a <a href="https://github.com/mrsimpson/Rocket.Chat">RC plugin</a>.
-Lookup the <a href="integrations/rocketchat.html">Rocket.Chat plugin description</a> for further information.</p>
+<p>All endpoints use <code>application/json</code> as media type.</p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_how_to_develop">How to develop</h3>
+<div class="sect3">
+<h4 id="_create_update_client">Create/Update Client</h4>
 <div class="paragraph">
-<p><a href="developers-guide.html">Smarti Comprehensive Developer&#8217;s Guide</a></p>
+<p><em>endpoint:</em> <code>POST /client</code><br>
+<em>request body:</em> <code>{"name":&#8230;&#8203;, "description":..}</code><br>
+<em>response body:</em> the created/updated client configuration <code>{"id":&#8230;&#8203;, "name":&#8230;&#8203;, "description":..}</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X POST -H "content-type: application/json" "http://localhost:8080/client" -d '{"name":"client-42"}'</code></pre>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_how_to_contribute">How to contribute</h3>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+The clients name has to match the pattern [a-z0-9-]+ (it is used also for posting messages)
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_list_clients">List Clients</h4>
 <div class="paragraph">
-<p>Smarti is an Open Source project so everyone is encouraged to improve it. Don&#8217;t hesitate to report bugs, provide fixes or
-share new ideas with us. We have various ways for contribution:</p>
+<p><em>endpoint:</em> <code>GET /client</code><br>
+<em>response body:</em> a list of clients <code>[{"id":"1","name":"client_42","description","Some description"}]</code></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_get_client_configuration">Get Client Configuration</h4>
+<div class="paragraph">
+<p><em>endpoint:</em> <code>POST /client/{client-id}/config</code> &lt;br&gt;
+<em>response body:</em> the updated client configuration <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code></p>
+</div>
+<div class="paragraph">
+<p><em>example:</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X GET -H "content-type: application/json" "http://localhost:8080/client/client_42/config"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_update_client_configuration">Update Client Configuration</h4>
+<div class="paragraph">
+<p><em>endpoint:</em> <code>POST /client/{client-id}/config</code><br>
+<em>request body:</em> <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code><br>
+<em>response body:</em> the updated client configuration <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code></p>
+</div>
+<div class="paragraph">
+<p>The endpoint accepts an request body with the configuration.</p>
+</div>
+<div class="paragraph">
+<p>All updated configurations are validates (see the [Client Configuration Validation](#clientConfigurationValidation) section for more information)</p>
+</div>
+<div class="paragraph">
+<p><em>example:</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X POST -H "content-type: application/json" "http://localhost:8080/client/client_42/config"
+
+{
+  "queryBuilder": [
+    {
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
+      "unbound": false,
+      "solrEndpoint": "http://search.db.de/change/me",
+      [...]
+    },
+    [..]
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Notes about Server Side Configuration parsing</em></p>
+</div>
+<div class="paragraph">
+<p>Server-side parsing is done by [Jackson](<a href="https://github.com/FasterXML/jackson" class="bare">https://github.com/FasterXML/jackson</a>). The default <code>ComponentConfiguration</code> class parses additional parameters as <code>Map</code>. So By default configuration will use the default JSON to Java mappings.</p>
+</div>
+<div class="paragraph">
+<p>Components that use custom configuration classes can define additional fields. Additioal fields will be handeld as with the base <code>ComponentConfiguration</code> class.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_component_configuration">Component Configuration</h4>
+<div class="paragraph">
+<p>The JSON serialization of a configuration has the following base attributes</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>{
+  "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+  "name": "solrsearch",
+  "displayName": "solrsearch",
+  "type": "solrsearch",
+  "enabled": false,
+  "unbound": false,
+  [...]
+}</code></pre>
+</div>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>use the issue tracker - report bugs, suggest features or give hints how we can improve the documentation.</p>
+<p><em>`_class`</em> (<code>String</code>): used to store the Java type of custom configuration implementation. Can be ommited when the default type (<code>ComponentConfiguration</code>) is used by a component.</p>
 </li>
 <li>
-<p>discuss issues with the community - two brains are better than one.</p>
+<p><em>`type`</em> (<code>string</code>): The type of the component</p>
 </li>
 <li>
-<p>write code - no patch is too small. So even fixing typos helps to improve Smarti.</p>
+<p><em>`enabled`</em> (<code>boolean</code>): Allows to disable a configuration withou deleting it.</p>
+</li>
+<li>
+<p><em>`unbound`</em> (<code>boolean</code>): if <code>true</code> this configuration is not bound to any component. This means that the <code>type</code> is wrong or the component of that <code>type</code> is currently not available</p>
 </li>
 </ul>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_license">License</h3>
 <div class="paragraph">
-<p>Free use of this software is granted under the terms of the Apache License Version 2.0.
-See the <a href="https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LICENSE.txt">License</a> for more details.</p>
+<p>Any other field can be used for the actual configuration of the component. Their are no limitations to the kind of the configuration as long as the Component referenced by the <code>type</code> value can understand it.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_authors">Authors</h3>
+<div class="sect3">
+<h4 id="_retrieve_client_configuration">Retrieve Client Configuration</h4>
 <div class="paragraph">
-<p>Smarti is lead by <a href="http://redlink.co">Redlink</a> and <a href="http://assistify.de">Assistify</a> and was initiated in 2017.</p>
+<p><em>endpoint</em>: <code>GET config/{client-id}/config</code><br>
+<em>response body</em>: the created client configuration <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code></p>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_changelog">Changelog</h3>
 <div class="paragraph">
-<p>The <a href="changelog.html">Changelog</a> provides a complete list of changes in older releases.</p>
+<p>Retrieve the configuration for the client with the <code>{client-id}</code>. If no configuration is present a <code>404 Not Found</code> is returned</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_client_configuration_validation">Client Configuration Validation</h4>
+<div class="paragraph">
+<p>Configuration are validated on any update. This validation has several steps that are done for every component configuration:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>it is checked if the Component targeted by the Configuration is active. For this the <code>category</code> and the <code>type</code> field of the configuration are matched against registerd components. If this succeeds <code>unbound</code> is set to <code>false</code>.</p>
+</li>
+<li>
+<p>for all <em>bound</em> configurations the expected configuration class of the component is matched with the <code><em>class</code> value of the configuration. If those do not match the configuration is marked as _illegal</em></p>
+</li>
+<li>
+<p>the configuration is parsed to the component for validation. This validation can fail because of missing or illegal field values.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>During the validation process all validation errors are collected. If one or more are present a <code>422 Unprocessable Entity</code> response is generated. This response include [JSON Path](<a href="https://github.com/json-path/JsonPath" class="bare">https://github.com/json-path/JsonPath</a>) pointer to missing and illegal fields to allow UI to highlight those issues.</p>
+</div>
+<div class="paragraph">
+<p>The following listing shows an example where an illegal URL was configured as <code>solrEndpoint</code> for the 2nd configuration of the <code>queryBuilder</code> category.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X POST -H "content-type: application/json" "http://localhost:8080/config/client25/config" --data-binary '{
+  "queryBuilder": [
+    [..],
+    {
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
+      "unbound": false,
+      "solrEndpoint": "NOT A REAL URL",
+      ...
+    },
+    [..]
+    ]
+}'
+
+&lt; HTTP/1.1 422
+&lt; Content-Type: application/json;charset=UTF-8
+
+{
+  "data": {
+    "illegal": {
+      "queryBuilder[1].solrEndpoint": "unknown protocol: dummy"
+    }
+  },
+  "message": "Unable to process io.redlink.smarti.model.config.Configuration because of 1 illegal [queryBuilder[1].solrEndpoint] and 0 missing fields []",
+  "status": 422
+}</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -512,7 +652,7 @@ See the <a href="https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LI
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-08-28 10:07:02 CEST
+Last updated 2017-08-22 16:45:20 CEST
 </div>
 </div>
 </body>
