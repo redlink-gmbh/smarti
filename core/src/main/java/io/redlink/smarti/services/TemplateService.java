@@ -17,6 +17,7 @@
 package io.redlink.smarti.services;
 
 import io.redlink.smarti.api.TemplateBuilder;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Template;
 import org.slf4j.Logger;
@@ -54,8 +55,8 @@ public class TemplateService {
      * from the {@link Token#getMessageIdx()}
      * @param con the conversation
      */
-    public void updateTemplates(Conversation con) {
-        updateTemplates(con, con.getMeta().getLastMessageAnalyzed());
+    public void updateTemplates(Client client, Conversation con) {
+        updateTemplates(client, con, con.getMeta().getLastMessageAnalyzed());
     }
     /**
      * Builds and updates {@link Template}s for the parsed conversation by
@@ -66,7 +67,8 @@ public class TemplateService {
      * @param startMsgIdx the start message index for tokens to be considered when building and updating
      * templates
      */
-    public void updateTemplates(Conversation con, int startMsgIdx) {
+    public void updateTemplates(Client client, Conversation con, int startMsgIdx) {
+        //TODO: get template configuration for parsed client
         log.debug("Update QueryTemplates for {} (msgIndx:  {})", con, startMsgIdx);
         final long templStart = System.currentTimeMillis();
         templateBuilders.forEach(builder -> builder.updateTemplate(con, startMsgIdx));

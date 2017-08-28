@@ -2,8 +2,6 @@ package io.redlink.smarti.services;
 
 import static io.redlink.smarti.util.StringUtils.toSlug;
 
-import java.text.Normalizer;
-import java.text.Normalizer.Form;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -11,18 +9,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -34,6 +28,7 @@ import io.redlink.smarti.exception.BadArgumentException;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.exception.InvalidOrMissingFieldsException;
 import io.redlink.smarti.exception.NotFoundException;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.repo.ConfigurationRepo;
@@ -73,36 +68,39 @@ public class ConfigurationService {
         return configRepo.findOne(id);
     }
     
-    public Configuration getConfiguration(String client){
-        return configRepo.findByClient(client);
+    public Configuration getConfiguration(Client client){
+        return client == null ? null : configRepo.findByClient(client.getId());
     }
     
-    public boolean isConfiguration(String client){
-        return configRepo.existsByClient(client);
+    public boolean isConfiguration(Client client){
+        return client == null ? false : configRepo.existsByClient(client.getId());
     }
 
     /**
      * Deletes any configuration for the parsed client
      * @param client the client to delete the configuration for
      */
-    public void deleteConfiguration(String client){
+    public void deleteConfiguration(Client client){
         Configuration c = getConfiguration(client);
         if(c != null && c.getId() != null){
             delete(c.getId());
         }
     }
 
-    public Configuration createConfiguration(String client, Configuration basicConfiguration){
+    public Configuration createConfiguration(Client client, Configuration basicConfiguration){
         return createConfiguration(client, basicConfiguration.getConfig());
     }
 
-    public Configuration createConfiguration(String client){
+    public Configuration createConfiguration(Client client){
         return createConfiguration(client, getEmptyConfiguration());
     }
 
-    private Configuration createConfiguration(String client, Map<String, List<ComponentConfiguration>> config){
+    private Configuration createConfiguration(Client client, Map<String, List<ComponentConfiguration>> config){
+        if(client == null || client.getId() == null){
+            throw new BadArgumentException("client", client, "The client of a configuration MUST NOT be NULL!");
+        }
         Configuration configuration = new Configuration();
-        configuration.setClient(client);
+        configuration.setClient(client.getId());
         configuration.setConfig(config);
         configuration.setCreated(new Date());
         configuration.setModified(configuration.getCreated());
@@ -117,18 +115,18 @@ public class ConfigurationService {
      * @return the {@link Configuration} object (created or updated) holding the parsed
      * {@link SmartiConfiguration}
      */
-    public Configuration storeConfiguration(String client, Map<String,List<ComponentConfiguration>> config){
+    public Configuration storeConfiguration(Client client, Map<String,List<ComponentConfiguration>> config){
         if(config == null){
             throw new NullPointerException("The parsed configuration MUST NOT be NULL");
         }
-        if(StringUtils.isBlank(client)){
-            throw new BadArgumentException("client", client, "The client of a configuration MUST NOT be NULL nor blanl!");
+        if(client == null || client.getId() == null){
+            throw new BadArgumentException("client", client, "The client of a configuration MUST NOT be NULL!");
         }
         validate(config);
-        Configuration c = configRepo.findByClient(client);
+        Configuration c = configRepo.findByClient(client.getId());
         if(c == null){
             c = new Configuration();
-            c.setClient(client);
+            c.setClient(client.getId());
             c.setConfig(config);
             return create(c);
         } else {
@@ -214,8 +212,8 @@ public class ConfigurationService {
         if(c.getId() != null){
             throw new BadArgumentException("id", c.getId(), "The server assigned id of a configuration MUST be NULL on creation!");
         }
-        if(StringUtils.isBlank(c.getClient())){
-            throw new BadArgumentException("client", c.getClient(), "The client of a configuration MUST NOT be NULL nor blanl!");
+        if(c.getClient() == null){
+            throw new BadArgumentException("client", c.getClass(), "The client of a configuration MUST NOT be NULL!");
         }
         if(configRepo.existsByClient(c.getClient())){
             throw new BadArgumentException("client", c.getClient(), "A configuration for this client is already present!");

@@ -43,6 +43,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,22 +114,24 @@ public class RocketChatEndpoint {
             @ApiResponse(code = 200, message = "OK")
     })
     @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST)
-    public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientId,
+    public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientName,
                                            @RequestBody RocketEvent payload) {
-        log.debug("{}: {}", clientId, payload);
+        log.debug("{}: {}", clientName, payload);
 
-        if(!clientService.existsByName(clientId)) {
-            Client client = new Client();
-            client.setName(clientId);
-            clientService.save(client);
+        Client client = clientService.getByName(clientName);
+        if(client == null) { //TODO: make client generation configurable
+            client = new Client();
+            client.setName(clientName);
+            client = clientService.save(client);
         }
+        final ObjectId clientId = client.getId();
 
-        final String channelId = createChannelId(clientId, payload.getChannelId());
+        final String channelId = createChannelId(client, payload.getChannelId());
         Conversation conversation = storeService.getCurrentConversationByChannelId(channelId, () -> {
             Conversation newConversation = new Conversation();
-            newConversation.setClientId(clientId);
+            newConversation.setOwner(clientId);
             newConversation.getContext().setContextType(ROCKET_CHAT);
-            newConversation.getContext().setDomain(clientId);
+            newConversation.getContext().setDomain(clientName);
             newConversation.getContext().setEnvironment("channel", payload.getChannelName());
             newConversation.getContext().setEnvironment("channel_id", payload.getChannelId());
             newConversation.getContext().setEnvironment("token", payload.getToken());
@@ -156,7 +159,7 @@ public class RocketChatEndpoint {
             message.getMetadata().put("bot_id", payload.getBot().getIdentifier());
         }
 
-        conversation = conversationService.appendMessage(conversation, message, (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
+        conversation = conversationService.appendMessage(client, conversation, message, (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
 
         return ResponseEntity.ok().build();
     }
@@ -187,7 +190,7 @@ public class RocketChatEndpoint {
     /**
      * Called by rocket.chat plugins to get the conversationId for the clientId and channelId known to the plugin.
      * The returned conversationID can later be used for calls to the {@link ConversationWebservice}
-     * @param clientId the client id
+     * @param clientName the client id
      * @param channelId the channelId
      * @return a <code>200</code> with the conversation id as payload or a <code>404</code> if no conversation is
      * active for the parsed parameters.
@@ -196,9 +199,13 @@ public class RocketChatEndpoint {
     @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET,
         produces=MimeTypeUtils.TEXT_PLAIN_VALUE, consumes=MimeTypeUtils.ALL_VALUE)
     public ResponseEntity<?> getConversation(
-            @PathVariable(value="clientId") String clientId,
+            @PathVariable(value="clientId") String clientName,
             @PathVariable(value="channelId") String channelId) {
-        Conversation conversation = storeService.getCurrentConversationByChannelId(createChannelId(clientId, channelId),() -> null); //do not create new conversations
+        Client client = clientService.getByName(clientName);
+        if(client == null){
+            return ResponseEntity.notFound().build();
+        }
+        Conversation conversation = storeService.getCurrentConversationByChannelId(createChannelId(client, channelId),() -> null); //do not create new conversations
         if (conversation == null || conversation.getId() == null) {
             return ResponseEntity.notFound().build();
         } else {
@@ -206,11 +213,12 @@ public class RocketChatEndpoint {
         }
     }
 
-    public String createChannelId(String clientId, String roomId) {
-        Preconditions.checkNotNull(clientId, "Missing parameter <clientId>");
+    public String createChannelId(Client client, String roomId) {
+        Preconditions.checkNotNull(client, "Missing parameter <client>");
+        Preconditions.checkNotNull(client.getId(), "Invalid parameter <client>");
         Preconditions.checkNotNull(roomId, "Missing parameter <roomId>");
 
-        return String.format("%s/%s/%s", ROCKET_CHAT, clientId, roomId);
+        return String.format("%s/%s/%s", ROCKET_CHAT, client.getId(), roomId);
     }
 
 }

@@ -21,6 +21,7 @@ import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.QueryBuilderContainer;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.exception.NotFoundException;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
@@ -70,7 +71,7 @@ public class QueryBuilderService {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void buildQueries(Conversation conversation) {
+    public void buildQueries(Client client, Conversation conversation) {
         log.debug("Building queries for {}", conversation);
         //retrieve the states for the queries
         final Map<Integer,Map<String,State>> queryStates = new HashMap<>();
@@ -85,7 +86,7 @@ public class QueryBuilderService {
             t.setQueries(new LinkedList<>()); //remove the current queries before they are rebuilt
         });
 
-        if(!confService.isConfiguration(conversation.getClientId())) return;
+        if(!confService.isConfiguration(client)) return;
 
         Configuration clientConfig = confService.getConfiguration(conversation.getClientId());
 
@@ -120,8 +121,8 @@ public class QueryBuilderService {
         });
     }
 
-    public List<? extends Result> execute(String creatorString, Template template, Conversation conversation) throws IOException {
-        Configuration conf = confService.getConfiguration(conversation.getClientId());
+    public List<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation) throws IOException {
+        Configuration conf = confService.getConfiguration(client);
         if(conf == null){
             throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
         }

@@ -17,9 +17,11 @@
 
 package io.redlink.smarti.services;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Template;
@@ -70,10 +72,22 @@ public class ConversationService {
     public ConversationService(Optional<ExecutorService> processingExecutor) {
         this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
     }
-
-    public Conversation appendMessage(Conversation conversation, Message message, boolean process, Consumer<Conversation> onCompleteCallback) {
+    /**
+     * appends a message to the end of the conversation
+     * @param client the client
+     * @param conversation the conversation
+     * @param message
+     * @param process
+     * @param onCompleteCallback
+     * @return
+     */
+    public Conversation appendMessage(Client client, Conversation conversation, Message message, boolean process, Consumer<Conversation> onCompleteCallback) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
+        Preconditions.checkNotNull(client);
+        if(!Objects.equal(client.getId(),conversation.getOwner())){
+            throw new IllegalStateException("The parsed Client MUST BE the owner of the conversation!");
+        }
 
         conversation = storeService.appendMessage(conversation, message);
 
@@ -82,11 +96,11 @@ public class ConversationService {
             final Date lastModified = conversation.getLastModified();
             processingExecutor.submit(() -> {
                 try {
-                    prepareService.prepare(finalConversation);
+                    prepareService.prepare(client, finalConversation);
 
-                    templateService.updateTemplates(finalConversation);
+                    templateService.updateTemplates(client, finalConversation);
                     
-                    queryBuilderService.buildQueries(finalConversation);
+                    queryBuilderService.buildQueries(client, finalConversation);
 
                     try {
                         final Conversation storedConversation = storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
@@ -146,12 +160,12 @@ public class ConversationService {
         }
     }
 
-    public Conversation appendMessage(Conversation conversation, Message message, Consumer<Conversation> onCompleteCallback) {
-        return appendMessage(conversation, message, true, onCompleteCallback);
+    public Conversation appendMessage(Client client, Conversation conversation, Message message, Consumer<Conversation> onCompleteCallback) {
+        return appendMessage(client, conversation, message, true, onCompleteCallback);
     }
 
-    public Conversation appendMessage(Conversation conversation, Message message) {
-        return appendMessage(conversation, message, true, null);
+    public Conversation appendMessage(Client client, Conversation conversation, Message message) {
+        return appendMessage(client, conversation, message, true, null);
     }
 
     public Conversation completeConversation(Conversation conversation) {
@@ -162,7 +176,7 @@ public class ConversationService {
         return storeService.adjustMessageVotes(conversation.getId(), messageId, delta);
     }
 
-    public List<? extends Result> getInlineResults(Conversation conversation, Template template, String creator) throws IOException {
-        return queryBuilderService.execute(creator, template, conversation);
+    public List<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
+        return queryBuilderService.execute(client, creator, template, conversation);
     }
 }
