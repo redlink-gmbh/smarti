@@ -274,8 +274,13 @@
             <scope>runtime</scope>
         </dependency>
         
-
         <!-- END Analysis dependencies -->
+
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+            <version>${springfox.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>io.redlink.smarti</groupId>
