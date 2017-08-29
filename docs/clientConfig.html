@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.6.1">
-<title>Install Smarti</title>
+<title>Client Configuration</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -430,236 +430,222 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_install_smarti">Install Smarti</h2>
+<h2 id="_client_configuration">Client Configuration</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Installation packages are provided for <a href="https://www.debian.org">Debian</a>- and (<a href="https://www.redhat.com">RedHat</a>-based systems. Alternatively the application can
-be started by directly launching the executable jar: <code>java -jar smarti-${version}-exec.jar</code>.</p>
+<p>The configuration module allows to manage client specific configurations. It consists of a storage component, a service layer, REST services and an UI.</p>
 </div>
 <div class="sect2">
-<h3 id="_requirements">Requirements</h3>
+<h3 id="_client_api">Client API</h3>
 <div class="paragraph">
-<p><strong>smarti</strong> is a <a href="https://java.com">Java</a>-Application based on the <a href="https://spring.io">Spring Framework</a>.</p>
+<p><em>base path:</em> <code>/client</code></p>
 </div>
 <div class="paragraph">
-<p>To run, it has the following minimal system requirements:</p>
+<p>The configuration REST Services allow to manage clients and configurations via API calls.</p>
+</div>
+<div class="paragraph">
+<p>All endpoints use <code>application/json</code> as media type.</p>
+</div>
+<div class="sect3">
+<h4 id="_create_update_client">Create/Update Client</h4>
+<div class="paragraph">
+<p><em>endpoint:</em> <code>POST /client</code><br>
+<em>request body:</em> <code>{"name":&#8230;&#8203;, "description":..}</code><br>
+<em>response body:</em> the created/updated client configuration <code>{"id":&#8230;&#8203;, "name":&#8230;&#8203;, "description":..}</code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X POST -H "content-type: application/json" "http://localhost:8080/client" -d '{"name":"client-42"}'</code></pre>
+</div>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Important</div>
+</td>
+<td class="content">
+The clients name has to match the pattern [a-z0-9-]+ (it is used also for posting messages)
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_list_clients">List Clients</h4>
+<div class="paragraph">
+<p><em>endpoint:</em> <code>GET /client</code><br>
+<em>response body:</em> a list of clients <code>[{"id":"1","name":"client_42","description","Some description"}]</code></p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_get_client_configuration">Get Client Configuration</h4>
+<div class="paragraph">
+<p><em>endpoint:</em> <code>POST /client/{client-id}/config</code> &lt;br&gt;
+<em>response body:</em> the updated client configuration <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code></p>
+</div>
+<div class="paragraph">
+<p><em>example:</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X GET -H "content-type: application/json" "http://localhost:8080/client/client_42/config"</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_update_client_configuration">Update Client Configuration</h4>
+<div class="paragraph">
+<p><em>endpoint:</em> <code>POST /client/{client-id}/config</code><br>
+<em>request body:</em> <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code><br>
+<em>response body:</em> the updated client configuration <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code></p>
+</div>
+<div class="paragraph">
+<p>The endpoint accepts an request body with the configuration.</p>
+</div>
+<div class="paragraph">
+<p>All updated configurations are validates (see the [Client Configuration Validation](#clientConfigurationValidation) section for more information)</p>
+</div>
+<div class="paragraph">
+<p><em>example:</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>curl -X POST -H "content-type: application/json" "http://localhost:8080/client/client_42/config"
+
+{
+  "queryBuilder": [
+    {
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
+      "unbound": false,
+      "solrEndpoint": "http://search.db.de/change/me",
+      [...]
+    },
+    [..]
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>Notes about Server Side Configuration parsing</em></p>
+</div>
+<div class="paragraph">
+<p>Server-side parsing is done by [Jackson](<a href="https://github.com/FasterXML/jackson" class="bare">https://github.com/FasterXML/jackson</a>). The default <code>ComponentConfiguration</code> class parses additional parameters as <code>Map</code>. So By default configuration will use the default JSON to Java mappings.</p>
+</div>
+<div class="paragraph">
+<p>Components that use custom configuration classes can define additional fields. Additioal fields will be handeld as with the base <code>ComponentConfiguration</code> class.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_component_configuration">Component Configuration</h4>
+<div class="paragraph">
+<p>The JSON serialization of a configuration has the following base attributes</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>{
+  "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+  "name": "solrsearch",
+  "displayName": "solrsearch",
+  "type": "solrsearch",
+  "enabled": false,
+  "unbound": false,
+  [...]
+}</code></pre>
+</div>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>DualCore-CPU (&gt; 2GHz)</p>
+<p><em>`_class`</em> (<code>String</code>): used to store the Java type of custom configuration implementation. Can be ommited when the default type (<code>ComponentConfiguration</code>) is used by a component.</p>
 </li>
 <li>
-<p>4GB RAM</p>
+<p><em>`type`</em> (<code>string</code>): The type of the component</p>
 </li>
 <li>
-<p>2GB temporary Storage</p>
+<p><em>`enabled`</em> (<code>boolean</code>): Allows to disable a configuration withou deleting it.</p>
 </li>
 <li>
-<p>available network-port (default: 8080)</p>
-</li>
-<li>
-<p><a href="https://java.com/"><strong>JavaVM</strong></a>, version <strong>1.8</strong></p>
-</li>
-<li>
-<p><a href="https://www.mongodb.com/"><strong>MongoDB</strong></a>, version <strong>&gt;=2.6</strong></p>
+<p><em>`unbound`</em> (<code>boolean</code>): if <code>true</code> this configuration is not bound to any component. This means that the <code>type</code> is wrong or the component of that <code>type</code> is currently not available</p>
 </li>
 </ul>
 </div>
 <div class="paragraph">
-<p>All direct runtime-dependencies such as third-party libraries are packaged with the main executable.</p>
+<p>Any other field can be used for the actual configuration of the component. Their are no limitations to the kind of the configuration as long as the Component referenced by the <code>type</code> value can understand it.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_changing_the_user">Changing the User</h3>
+<div class="sect3">
+<h4 id="_retrieve_client_configuration">Retrieve Client Configuration</h4>
 <div class="paragraph">
-<p>When installed using one of the provided packages (<code>deb</code>, <code>rpm</code>), smarti runs as it&#8217;s own system user <code>smarti</code>. This user is created during the installation
-process if it not already exists.</p>
+<p><em>endpoint</em>: <code>GET config/{client-id}/config</code><br>
+<em>response body</em>: the created client configuration <code>{&lt;conf-cat&gt;: [&lt;comp-conf&gt;,&lt;comp-conf&gt;]}</code></p>
 </div>
 <div class="paragraph">
-<p>To run smarti as a different user (<code>assistify</code> in this example), do the following steps:</p>
+<p>Retrieve the configuration for the client with the <code>{client-id}</code>. If no configuration is present a <code>404 Not Found</code> is returned</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_client_configuration_validation">Client Configuration Validation</h4>
+<div class="paragraph">
+<p>Configuration are validated on any update. This validation has several steps that are done for every component configuration:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Create the new working-directory</p>
-<div class="literalblock">
-<div class="content">
-<pre>mkdir -p /data/smarti
-chown -R assistify: /data/smarti</pre>
-</div>
-</div>
+<p>it is checked if the Component targeted by the Configuration is active. For this the <code>category</code> and the <code>type</code> field of the configuration are matched against registerd components. If this succeeds <code>unbound</code> is set to <code>false</code>.</p>
 </li>
 <li>
-<p>Populate the new working-directory with the required configuration files, e.g. by copying the default settings:</p>
-<div class="literalblock">
-<div class="content">
-<pre>cp /etc/smarti/* /data/smarti</pre>
-</div>
-</div>
+<p>for all <em>bound</em> configurations the expected configuration class of the component is matched with the <code><em>class</code> value of the configuration. If those do not match the configuration is marked as _illegal</em></p>
 </li>
 <li>
-<p>Update the systemd configuration for smarti</p>
-<div class="literalblock">
-<div class="content">
-<pre>systemctl edit smarti</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>and add the following content:</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>[Service]
-User = assistify
-WorkingDirectory = /data/smarti</pre>
-</div>
-</div>
-</li>
-<li>
-<p>Restart the smarti</p>
-<div class="literalblock">
-<div class="content">
-<pre>systemctl try-restart smarti</pre>
-</div>
-</div>
+<p>the configuration is parsed to the component for validation. This validation can fail because of missing or illegal field values.</p>
 </li>
 </ol>
 </div>
-</div>
-<div class="sect2">
-<h3 id="_additional_components">Additional Components</h3>
 <div class="paragraph">
-<p>Due to licensing-issues (e.g. <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL</a>), some optional dependencies are not part if the distribution pacakges.
-To enable these additional modules, you need to put the missing libraries into the <code>ext</code>-folder in the working directory.</p>
+<p>During the validation process all validation errors are collected. If one or more are present a <code>422 Unprocessable Entity</code> response is generated. This response include [JSON Path](<a href="https://github.com/json-path/JsonPath" class="bare">https://github.com/json-path/JsonPath</a>) pointer to missing and illegal fields to allow UI to highlight those issues.</p>
 </div>
 <div class="paragraph">
-<p>When installed with the provided <code>deb</code> or <code>rpm</code> package, this folder is located at <code>/var/lib/smarti/ext</code> and contains
-a simple readme.</p>
+<p>The following listing shows an example where an illegal URL was configured as <code>solrEndpoint</code> for the 2nd configuration of the <code>queryBuilder</code> category.</p>
 </div>
-<div class="sect3">
-<h4 id="_stanford_nlp">Stanford NLP</h4>
-<div class="paragraph">
-<p>To enable analysis based on <a href="https://nlp.stanford.edu">Stanford NLP</a>, put these libraries into the <code>ext</code>-folder:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar">stanford-corenlp-3.6.0.jar</a></p>
-</li>
-<li>
-<p><a href="https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar">stanford-corenlp-3.6.0-models-german.jar</a></p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_configuration">Configuration</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_application_properties">application.properties</h3>
-<div class="paragraph">
-<p><code>/etc/smarti/application.properties</code></p>
-</div>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>## logging config file
-logging.config = ./logback.xml</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>## server port
-server.port = 8080</pre>
-</div>
-</div>
-<div class="literalblock">
-<div class="content">
-<pre>## mongo-db
-#spring.data.mongodb.uri=mongodb://localhost/smarti
-spring.data.mongodb.database = smarti
-#spring.data.mongodb.host = localhost
-#spring.data.mongodb.port = 27017
-#spring.data.mongodb.password =
-#spring.data.mongodb.username =</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_monitoring_troubleshooting">Monitoring / Troubleshooting</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_logging">Logging</h3>
-<div class="ulist">
-<ul>
-<li>
-<p>Working-Directory at <code>/var/lib/smarti/</code></p>
-</li>
-<li>
-<p>Log-Files available under <code>/var/lib/smarti/logs/</code>, a symlink to <code>/var/log/smarti/</code></p>
-</li>
-<li>
-<p><a href="http://logback.qos.ch/manual/configuration.html">Log-Configuration</a> under <code>/var/lib/smarti/logback.xml</code>, a
-symlink to <code>/etc/smarti/logback.xml</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Please keep in mind, that if <em>smarti</em> runs as a different user it probably also has a custom working directory.
-In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_daemon_configuration">Daemon Configuration</h3>
-<div class="ulist">
-<ul>
-<li>
-<p><code>/etc/default/smarti</code></p>
-</li>
-<li>
-<p>JVM and JVM Options (e.g. <code>-Xmx2g</code>)</p>
-</li>
-<li>
-<p>Program Arguments (overwriting settings from the <code>application.properties</code>)</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_health_check">Health-Check</h3>
-<div class="paragraph">
-<p>System-wide health check is available under <code><a href="http://localhost:8080/system/health" class="bare">http://localhost:8080/system/health</a></code>.</p>
+<pre class="highlight"><code>curl -X POST -H "content-type: application/json" "http://localhost:8080/config/client25/config" --data-binary '{
+  "queryBuilder": [
+    [..],
+    {
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
+      "unbound": false,
+      "solrEndpoint": "NOT A REAL URL",
+      ...
+    },
+    [..]
+    ]
+}'
+
+&lt; HTTP/1.1 422
+&lt; Content-Type: application/json;charset=UTF-8
+
+{
+  "data": {
+    "illegal": {
+      "queryBuilder[1].solrEndpoint": "unknown protocol: dummy"
+    }
+  },
+  "message": "Unable to process io.redlink.smarti.model.config.Configuration because of 1 illegal [queryBuilder[1].solrEndpoint] and 0 missing fields []",
+  "status": 422
+}</code></pre>
 </div>
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="_third_party_dependencies_and_licenses">Third-Party Dependencies and Licenses</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>When installing via one of the provided packages (<code>rpm</code>, <code>deb</code>) a list of used third-party libraries and their licenses
-are available under</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><code>/usr/share/doc/smarti/THIRD-PARTY.txt</code> (backend), and</p>
-</li>
-<li>
-<p><code>/usr/share/doc/smarti/UI-THIRD-PARTY.json</code> (frontend, UI)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>From the running system, similar files are served under <code><a href="http://localhost:8080/THIRD-PARTY.txt" class="bare">http://localhost:8080/THIRD-PARTY.txt</a></code> (backend)
-and <code><a href="http://localhost:8080/3rdPartyLicenses.json" class="bare">http://localhost:8080/3rdPartyLicenses.json</a></code> (frontend, UI).</p>
 </div>
 </div>
 </div>
