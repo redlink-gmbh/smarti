@@ -65,12 +65,15 @@ The aim of this manual is to explain and not to provide scripts.
  $ sudo apt-get install git maven sass ruby-compass
 ```
 
-TIP: For other operating systems +
+[TIP]
+==== For other operating systems
 check the installation manuals for the target platform: +
 https://git-scm.com/book/en/v2/Getting-Started-Installing-Git[Git] +
 https://maven.apache.org/install.html[Maven] +
-https://www.ruby-lang.org/en/documentation/installation/[Ruby] + 
-and on top of ruby using the ruby package manager `(sudo) gem install sass compass`
+https://www.ruby-lang.org/en/documentation/installation/[Ruby] +
+and on top of ruby using the ruby package manager
+```sudo gem install sass compass```
+====
 
 === Checkout
 
