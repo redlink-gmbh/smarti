@@ -723,6 +723,7 @@ b.conum * { color: inherit !important; }
 <li><a href="#_build_and_run">Build and Run</a>
 <ul class="sectlevel2">
 <li><a href="#_prepare">Prepare</a></li>
+<li><a href="#_checkout">Checkout</a></li>
 <li><a href="#_build">Build</a></li>
 <li><a href="#_run">Run</a></li>
 <li><a href="#_debug">Debug</a></li>
@@ -854,29 +855,55 @@ The aim of this manual is to explain and not to provide scripts.
 </li>
 </ol>
 </div>
-<div class="sect3">
-<h4 id="_for_other_operating_systems">For other operating systems</h4>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
 <div class="paragraph">
-<p>check the installation manuals for the target platform:<br>
-<a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">Git</a><br>
-<a href="https://maven.apache.org/install.html">Maven</a><br>
-<a href="https://www.ruby-lang.org/en/documentation/installation/">Ruby</a><br>
-and on top of ruby using the ruby package manager</p>
+<p><strong>For other operating systems</strong>
+check the installation manuals for the target platform:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">Git</a></p>
+</li>
+<li>
+<p><a href="https://maven.apache.org/install.html">Maven</a></p>
+</li>
+<li>
+<p><a href="https://www.ruby-lang.org/en/documentation/installation/">Ruby</a></p>
+</li>
+<li>
+<p>and on top of ruby using the ruby package manager</p>
+</li>
+</ul>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-sudo gem install sass compass```" data-lang="sudo gem install sass compass```">====
-
-=== Checkout
-
-. Create a source directory `${smarti-source}`
-+
-```bash
- $ mkdir ${smarti-source}</code></pre>
+<pre class="highlight"><code>sudo gem install sass compass</code></pre>
 </div>
 </div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_checkout">Checkout</h3>
 <div class="olist arabic">
 <ol class="arabic">
+<li>
+<p>Create a source directory <code>${smarti-source}</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash"> $ mkdir ${smarti-source}</code></pre>
+</div>
+</div>
+</li>
 <li>
 <p>Checkout <a href="https://github.com/redlink-gmbh/smarti/tree/develop"><strong>Smarti</strong> source code</a> from <a href="https://github.com/">GitHub</a></p>
 <div class="listingblock">
@@ -886,7 +913,6 @@ and on top of ruby using the ruby package manager</p>
 </div>
 </li>
 </ol>
-</div>
 </div>
 </div>
 <div class="sect2">
@@ -1182,7 +1208,7 @@ $ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/st
 <div id="footer">
 <div id="footer-text">
 Version 1.0<br>
-Last updated 2017-08-29 14:55:19 CEST
+Last updated 2017-08-29 15:46:57 CEST
 </div>
 </div>
 </body>
