@@ -24,7 +24,7 @@ install:
 script:
   - mvn -B -DargLine="-Xmx2g" test
 
-  after_success:
+after_success:
   - cd docs/html ; rm -rf ./html
   - git init
   - git config user.name "${GH_USER_NAME}"
