@@ -83,7 +83,7 @@
             <configuration>
               <backend>pdf</backend>
               <outputDirectory>../docs-generated/pdf</outputDirectory>
-              <outputFile>./Smarti-documentation.pdf</outputFile>
+              <outputFile>Smarti-documentation.pdf</outputFile>
               <sourceHighlighter>coderay</sourceHighlighter>
               <doctype>book</doctype>
               <attributes>
@@ -100,6 +100,15 @@
           <sourceDirectory>.</sourceDirectory>
           <headerFooter>true</headerFooter>
           <imagesDir>./images</imagesDir>
+          <attributes>
+            <sourcedir>${project.build.sourceDirectory}</sourcedir>
+          </attributes>
+          <resources>
+            <resource>
+              <directory>.</directory> <!-- or just use . o filter across all files-->
+              <exclude>**/pom.xml</exclude>
+            </resource>
+          </resources>
         </configuration>
       </plugin>
     </plugins>
