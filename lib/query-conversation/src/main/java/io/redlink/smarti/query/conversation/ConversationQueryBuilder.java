@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CLIENT;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 
 /**
@@ -143,21 +143,14 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation);
     
     /**
-     * Adds a FilterQuery that ensures that only conversations with the same <code>clientID</code> as
+     * Adds a FilterQuery that ensures that only conversations with the same <code>owner</code> as
      * the current conversation are returned.
      * @param solrQuery the SolrQuery to add the FilterQuery
      * @param conversation the current conversation
      */
     protected final void addClientFilter(final SolrQuery solrQuery, Conversation conversation) {
-        String clientId = conversation.getClientId(); 
-        if(clientId == null && conversation.getContext() != null){ //for backward compatibility
-            clientId = conversation.getContext().getDomain();
-        }
-        if (StringUtils.isNotBlank(clientId)) {
-            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_CLIENT, ClientUtils.escapeQueryChars(clientId)));
-        } else {
-            solrQuery.addFilterQuery(String.format("-%s:*", FIELD_CLIENT));
-        }
+        solrQuery.addFilterQuery(new StringBuilder(FIELD_OWNER).append(':')
+                .append(conversation.getOwner().toHexString()).toString());
     }
 
 

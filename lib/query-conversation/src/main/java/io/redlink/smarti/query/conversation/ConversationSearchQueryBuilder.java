@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CLIENT;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_DOMAIN;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
 

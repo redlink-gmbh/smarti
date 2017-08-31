@@ -23,7 +23,7 @@ public class Configuration {
     private ObjectId id;
     
     @Indexed
-    private String client;
+    private ObjectId client;
     
     private Date created;
     
@@ -44,11 +44,11 @@ public class Configuration {
         return id;
     }
     
-    public String getClient() {
+    public ObjectId getClient() {
         return client;
     }
     
-    public void setClient(String client) {
+    public void setClient(ObjectId client) {
         this.client = client;
     }
     

@@ -23,6 +23,7 @@ public class Client {
     @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
+    @Indexed(unique=true)
     private String name;
 
     private String description;

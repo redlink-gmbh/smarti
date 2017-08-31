@@ -25,7 +25,7 @@
     <!-- generic -->
     <field name="id"                    type="string"         indexed="true"  stored="true"  multiValued="false" required="true"/>
     <field name="type"                  type="type"           indexed="true"  stored="true"  multiValued="false" required="true"/>
-    <field name="client"                type="string"         indexed="true"  stored="true"  multiValued="false"/>
+    <field name="owner"                 type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="user_id"               type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="user_name"             type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <dynamicField name="env_*"          type="string"         indexed="true"  stored="true"  multiValued="false"/>

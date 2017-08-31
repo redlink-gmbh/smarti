@@ -53,7 +53,7 @@ public class Conversation {
 
     @Indexed
     @JsonIgnore
-    private String clientId;
+    private ObjectId owner;
     
     @ApiModelProperty(position = 0, value = "metadata")
     private ConversationMeta meta = new ConversationMeta();
@@ -81,9 +81,9 @@ public class Conversation {
     }
     
     @PersistenceConstructor
-    public Conversation(ObjectId id, String clientId){
+    public Conversation(ObjectId id, ObjectId owner){
         this.id = id;
-        this.clientId = clientId;
+        this.owner = owner;
     }
     
     public ObjectId getId() {
@@ -93,13 +93,30 @@ public class Conversation {
     public void setId(ObjectId id) {
         this.id = id;
     }
-
-    public String getClientId() {
-        return clientId;
+    
+    /**
+     * @return
+     * @deprecated use #getOwner() instead
+     */
+    @Deprecated
+    public ObjectId getClientId() {
+        return getOwner();
     }
     
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
+    /**
+     * @deprecated use {@link #setOwner(ObjectId)} instead
+     */
+    @Deprecated
+    public void setClientId(ObjectId clientId) {
+        setOwner(clientId);;
+    }
+    
+    public ObjectId getOwner() {
+        return owner;
+    }
+    
+    public void setOwner(ObjectId owner) {
+        this.owner = owner;
     }
     
     public String getChannelId() {

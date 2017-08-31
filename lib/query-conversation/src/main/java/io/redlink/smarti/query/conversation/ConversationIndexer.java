@@ -205,7 +205,7 @@ public class ConversationIndexer {
         solrConversation.setField(FIELD_MODIFIED, conversation.getLastModified());
         
         //add owner and context information
-        addOwnerFields(solrConversation, conversation);
+        solrConversation.setField(FIELD_OWNER, conversation.getOwner().toHexString());
         addContextFields(solrConversation, conversation);
 
         solrConversation.setField(FIELD_MESSAGE_COUNT, conversation.getMessages().size());
@@ -263,7 +263,7 @@ public class ConversationIndexer {
         }
 
         //add owner and context information
-        addOwnerFields(solrMsg, conversation);
+        solrMsg.setField(FIELD_OWNER, conversation.getOwner().toHexString());
         addContextFields(solrMsg, conversation);
 
         solrMsg.setField(FIELD_MESSAGE, message.getContent());
@@ -275,15 +275,6 @@ public class ConversationIndexer {
         return solrMsg;
     }
     
-    private void addOwnerFields(final SolrInputDocument solrDoc, Conversation conversation) {
-        String client = conversation.getClientId();
-        //NOTE: in old releases the clientId is not set. For those the
-        //      client information was stored in the domain of the context
-        if(StringUtils.isBlank(client)){
-            client = conversation.getContext().getDomain();
-        }
-        solrDoc.setField(FIELD_CLIENT, client);
-    }
     private void addContextFields(final SolrInputDocument solrDoc, Conversation conversation) {
         if (conversation.getContext() != null) {
             Context ctx = conversation.getContext();
