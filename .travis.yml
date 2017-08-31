@@ -25,8 +25,9 @@ script:
   - mvn -B -DargLine="-Xmx2g" test
 
 after_success:
-  - [[ ( $TRAVIS_BRANCH = master ) || ( $TRAVIS_BRANCH = documentation ) ]]
-    && cd docs-generated/html; rm -rf ./target
+  - test $TRAVIS_BRANCH = master -o $TRAVIS_BRANCH = documentation
+    && cd docs-generated/html
+    && rm -rf ./target
     && git init
     && git config user.name $GH_USER_NAME
     && git config user.email $GH_USER_EMAIL
