@@ -1,5 +1,3 @@
-image::https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master[Build Status]
-
 == Smarti
 
 Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
