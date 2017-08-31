@@ -14,8 +14,12 @@
   ~ limitations under the License.
   ~
   -->
-
-<h2>Conversations for <span ng-bind="$resolve.client.data.name"></span></h2>
+<div class="clearfix">
+  <div class="pull-right">
+    <button class="btn btn-default" ng-click="$ctrl.backToList()">Back to List</button>
+  </div>
+  <h2>Conversations for <span ng-bind="$resolve.client.data.name"></span></h2>
+</div>
 <div>
   <div class="clearfix">
     <div class="pull-right">

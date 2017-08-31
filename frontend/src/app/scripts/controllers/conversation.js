@@ -35,11 +35,16 @@ angular.module('smartiApp')
     };
 
     $ctrl.openConversation = openConversation;
+    $ctrl.backToList = backToList;
 
     $scope.$watch('$ctrl.paging.currentPage', loadConversations);
     $scope.$watch('$ctrl.paging.pageSize', loadConversations);
 
     loadConversations();
+
+    function backToList() {
+      $location.path('/');
+    }
 
     function loadConversations() {
       $ctrl.conversations = null;
