@@ -24,12 +24,17 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.repositories.ConversationRepository;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -64,6 +69,9 @@ public class ConversationService {
     
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    @Autowired
+    private ConversationRepository conversationRepository;
 
     private final ExecutorService processingExecutor;
 
@@ -164,5 +172,18 @@ public class ConversationService {
 
     public List<? extends Result> getInlineResults(Conversation conversation, Template template, String creator) throws IOException {
         return queryBuilderService.execute(creator, template, conversation);
+    }
+
+    public Page<Conversation> listConversations(String clientId, int page, int pageSize) {
+        final PageRequest paging = new PageRequest(page, pageSize);
+        if (StringUtils.isNotBlank(clientId)) {
+            return conversationRepository.findByClientId(clientId, paging);
+        } else {
+            return conversationRepository.findAll(paging);
+        }
+    }
+
+    public Conversation getConversation(ObjectId conversationId) {
+        return storeService.get(conversationId);
     }
 }

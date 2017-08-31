@@ -19,7 +19,9 @@ package io.redlink.smarti.webservice;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.utils.WebserviceUtils;
 import io.redlink.smarti.webservice.pojo.PagedConversationList;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -29,6 +31,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+
 @CrossOrigin
 @RestController
 @RequestMapping(value = "admin/conversation",
@@ -36,21 +40,35 @@ import org.springframework.web.bind.annotation.*;
 @Api("conversation-admin")
 public class ConversationAdminWebservice {
 
+    private final ConversationService conversationService;
+
+    public ConversationAdminWebservice(ConversationService conversationService) {
+        this.conversationService = conversationService;
+    }
+
     @ApiOperation(value = "list conversations", response = PagedConversationList.class)
     @RequestMapping(method = RequestMethod.GET)
     public ResponseEntity<?> listConversations(
             @RequestParam(value = "clientId", required = false) String clientId,
-            @RequestParam(value = "page", defaultValue = "0") long page,
+            @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize
     ) {
-        return ResponseEntities.notImplemented();
+        WebserviceUtils.checkParameter(page >= 0, "page must not be negative");
+        WebserviceUtils.checkParameter(pageSize > 0, "minimal pageSize is 1");
+
+        return ResponseEntity.ok(conversationService.listConversations(clientId, page, pageSize));
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
     @RequestMapping(value = "{conversationId}", method = RequestMethod.GET)
     public ResponseEntity<?> getConversation(
             @PathVariable("conversationId") ObjectId conversationId) {
-        return ResponseEntities.notImplemented();
+        final Conversation conversation = conversationService.getConversation(conversationId);
+        if (Objects.nonNull(conversation)) {
+            return ResponseEntity.ok(conversation);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @ApiOperation(value = "delete a message", response = Conversation.class)

@@ -39,7 +39,7 @@ public class ClientWebservice {
     @Autowired
     private ConfigurationService configService;
 
-    @ApiOperation(value = "get a client", response = Client.class)
+    @ApiOperation(value = "get a client", response = Client.class, responseContainer = "List")
     @RequestMapping(method = RequestMethod.GET)
     public Iterable<Client> listClients() throws IOException {
         return clientService.list();
