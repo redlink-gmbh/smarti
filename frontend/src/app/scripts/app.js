@@ -12,7 +12,10 @@ angular
   .module('smartiApp', [
     'config',
     'ngRoute',
-    'ui.codemirror'
+    'ngAnimate',
+    'ui.codemirror',
+    'ui.bootstrap',
+    'toastr'
   ])
   .config(function ($routeProvider) {
     $routeProvider
@@ -35,7 +38,31 @@ angular
             } else {
               return new Client();
             }
-          }}
+          }
+        }
+      })
+      .when('/client/:clientId/conversations', {
+        templateUrl: 'views/conversations.html',
+        controller: 'ConversationCtrl',
+        controllerAs: '$ctrl',
+        resolve: {
+          client: function ($route, ClientService) {
+            return ClientService.getById($route.current.params.clientId);
+          }
+        }
+      })
+      .when('/client/:clientId/conversations/:conversationId', {
+        templateUrl: 'views/conversationEdit.html',
+        controller: 'ConversationEditCtrl',
+        controllerAs: '$ctrl',
+        resolve: {
+          client: function ($route, ClientService) {
+            return ClientService.getById($route.current.params.clientId);
+          },
+          conversation: function($route, ConversationService) {
+            return ConversationService.getConversation($route.current.params.conversationId);
+          }
+        }
       })
       .otherwise({
         redirectTo: '/'

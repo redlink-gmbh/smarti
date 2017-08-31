@@ -1,0 +1,49 @@
+<!--
+  ~ Copyright 2017 Redlink GmbH
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+<div class="clearfix">
+  <div class="pull-right">
+    <button class="btn btn-default" ng-click="$ctrl.backToList()">Back to List</button>
+  </div>
+  <h2>Edit conversation <span ng-bind="$resolve.conversation.id"></span></h2>
+</div>
+<div>
+  <h3>Messages</h3>
+  <div class="panel panel-info panel-sm"
+       ng-repeat="m in $resolve.conversation.messages"
+       id="#{{$index}}">
+    <div class="panel-heading">
+      #{{$index}}
+      <span ng-bind="m.user.displayName"></span>
+      <span class="pull-right" style="display: inline-block">
+        <button ng-if="m.editing" class="btn btn-default btn-xs" ng-click="$ctrl.saveMessage(m)"><i class="glyphicon glyphicon-floppy-disk"></i></button>
+        <button ng-if="!m.editing" class="btn btn-default btn-xs" ng-click="m.editing = true"><i class="glyphicon glyphicon-pencil"></i></button>
+        <button ng-if="!m.editing" class="btn btn-default btn-xs" ng-click="$ctrl.deleteMessage(m.id)"><i class="glyphicon glyphicon-remove"></i></button>
+      </span>
+    </div>
+    <div class="panel-body">
+      <span ng-if="!m.editing" ng-bind="m.content"></span>
+      <form ng-if="m.editing">
+        <div class="form-group">
+          <textarea class="form-control" ng-model="m.content"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="panel-footer">
+      <span ng-bind="m.time | date:'medium'"></span>
+    </div>
+  </div>
+</div>
