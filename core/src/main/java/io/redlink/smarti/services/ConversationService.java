@@ -256,7 +256,7 @@ public class ConversationService {
         if(confModDate == null || conversation.getLastModified().before(confModDate)){
             log.debug("update queries for {} because after configuration change",conversation);
             queryBuilderService.buildQueries(config, conversation);
-            if(Objects.equal(conversation.getOwner(), client.getId())){
+            if(Objects.equal(conversation.getOwner(), config.getClient())){//only store updated queries if we used the owners conviguration
                 conversation = storeService.storeIfUnmodifiedSince(conversation, conversation.getLastModified());
             } //TODO: when we add a query cache we could also cache queries for other clients as the owner of the conversation
         }
@@ -273,7 +273,7 @@ public class ConversationService {
         final ObjectId conversationId = storeService.mapChannelToCurrentConversationId(channelId);
         if (conversationId != null) {
             Conversation conversation = storeService.get(conversationId);
-            if(Objects.equal(conversation, client.getId())){
+            if(Objects.equal(conversation.getOwner(), client.getId())){
                 return getConversation(client, conversationId);
             } else {
                 //this should never happen unless we have two clients with the same channelId
