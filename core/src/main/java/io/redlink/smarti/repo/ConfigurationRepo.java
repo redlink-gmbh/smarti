@@ -8,8 +8,8 @@ import io.redlink.smarti.model.config.Configuration;
 public interface ConfigurationRepo extends CrudRepository<Configuration, ObjectId> {
 
 
-    boolean existsByClient(String client);
+    boolean existsByClient(ObjectId client);
     
-    Configuration findByClient(String client);
+    Configuration findByClient(ObjectId client);
     
 }

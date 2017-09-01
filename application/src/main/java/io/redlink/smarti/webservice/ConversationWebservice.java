@@ -23,6 +23,7 @@ import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConfigurationService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.services.QueryBuilderService;
@@ -87,6 +88,9 @@ public class ConversationWebservice {
     @Autowired
     private ConfigurationService configService;
 
+    @Autowired
+    private ClientService clientService;
+    
     @ApiOperation(value = "create a conversation")
     @ApiResponses({
             @ApiResponse(code = 201, message = "Created", response = Conversation.class)
@@ -96,14 +100,18 @@ public class ConversationWebservice {
         conversation = Optional.ofNullable(conversation).orElseGet(Conversation::new);
         // Create a new Conversation -> id must be null
         conversation.setId(null);
+        //TODO: set the owner of the conversation based on the current user
         return ResponseEntity.status(HttpStatus.CREATED).body(storeService.store(conversation));
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
     public ResponseEntity<?> getConversation(@PathVariable("id") ObjectId id) {
-        final Conversation conversation = storeService.get(id);
-
+        //TODO get the client for the authenticated user
+        final Conversation conversation = conversationService.getConversation(null, id);
+        
+        //TODO: check that the client has the right to access the conversation
+        
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
@@ -118,6 +126,7 @@ public class ConversationWebservice {
         // make sure the id is the right one
         conversation.setId(id);
         // todo: some additional checks?
+        //TODO: check that the authenticated user has rights to update messages of this client
         return ResponseEntity.ok(storeService.store(conversation));
     }
 
@@ -129,8 +138,12 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
-
-        return ResponseEntity.ok(conversationService.appendMessage(conversation, message));
+        //TODO: check that the authenticated user has rights to update messages of this client
+        Client client = clientService.get(conversation.getOwner());
+        if(client == null){
+            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
+        }
+        return ResponseEntity.ok(conversationService.appendMessage(client, conversation, message));
     }
 
     @ApiOperation(value = "up-/down-vote a message within a conversation", response = Conversation.class)
@@ -142,7 +155,7 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
-
+        //TODO: check that the authenticated user has rights to up/down vote the conversation
         return ResponseEntity.ok(conversationService.rateMessage(conversation, messageId, vote.getDelta()));
     }
 
@@ -151,6 +164,7 @@ public class ConversationWebservice {
     public ResponseEntity<?> prepare(@PathVariable("id") ObjectId id) {
         final Conversation conversation = storeService.get(id);
 
+        //TODO: check that the authenticated user has rights to access the conversation
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
@@ -163,6 +177,7 @@ public class ConversationWebservice {
     public ResponseEntity<?> query(@PathVariable("id") ObjectId id) {
         final Conversation conversation = storeService.get(id);
 
+        //TODO: check that the authenticated user has rights to access the conversation
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
@@ -179,10 +194,15 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
+        Client client = clientService.get(conversation.getOwner());
+        if(client == null){
+            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
+        }
+        //TODO: check that the authenticated user has rights to access the conversation
         try {
             final Template template = conversation.getTemplates().get(templateIdx);
 
-            return ResponseEntity.ok(conversationService.getInlineResults(conversation, template, creator));
+            return ResponseEntity.ok(conversationService.getInlineResults(client, conversation, template, creator));
         } catch (IOException e) {
             return ResponseEntities.serviceUnavailable(e.getMessage(), e);
         } catch (IndexOutOfBoundsException e) {
@@ -200,12 +220,13 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         }
-        Configuration clientConf = configService.getConfiguration(conversation.getClientId());
-        if(clientConf == null){
-            return ResponseEntity.notFound().build();
+        Client client = clientService.get(conversation.getOwner());
+        if(client == null){
+            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
         }
-        Configuration conf = configService.getConfiguration(conversation.getClientId());
-        if(conf == null){
+        //TODO: check that the authenticated user has rights to access the conversation
+        Configuration clientConf = configService.getClientConfiguration(client.getId());
+        if(clientConf == null){
             log.info("Client {} of Conversation {} has no longer a configuration assigned ... returning 404 NOT FOUND",
                     conversation.getChannelId(), conversation.getId());
             return ResponseEntity.notFound().build();
@@ -214,7 +235,7 @@ public class ConversationWebservice {
         if (template == null) return ResponseEntity.notFound().build();
         
         //only update the single requested query
-        final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> builderContext = queryBuilderService.getQueryBuilder(creator,conf);
+        final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> builderContext = queryBuilderService.getQueryBuilder(creator,clientConf);
         if (builderContext == null) {
             return ResponseEntity.notFound().build();
         }
@@ -238,6 +259,7 @@ public class ConversationWebservice {
     public ResponseEntity<?> complete(@PathVariable("id") ObjectId id) {
         final Conversation conversation = storeService.get(id);
 
+        //TODO: check that the authenticated user has rights to publish (complete) the conversation
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {

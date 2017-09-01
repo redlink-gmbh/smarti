@@ -17,15 +17,19 @@
 
 package io.redlink.smarti.services;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,23 +61,38 @@ public class ConversationService {
     private PrepareService prepareService;
 
     @Autowired
-    private TemplateService templateService;
-    
-    @Autowired
     private QueryBuilderService queryBuilderService;
     
     @Autowired
+    private TemplateService templateService;
+    
+    @Autowired
     private ApplicationEventPublisher eventPublisher;
+    
+    @Autowired
+    private ConfigurationService confService;
 
     private final ExecutorService processingExecutor;
 
     public ConversationService(Optional<ExecutorService> processingExecutor) {
         this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
     }
-
-    public Conversation appendMessage(Conversation conversation, Message message, boolean process, Consumer<Conversation> onCompleteCallback) {
+    /**
+     * appends a message to the end of the conversation
+     * @param client the client
+     * @param conversation the conversation
+     * @param message
+     * @param process
+     * @param onCompleteCallback
+     * @return
+     */
+    public Conversation appendMessage(Client client, Conversation conversation, Message message, boolean process, Consumer<Conversation> onCompleteCallback) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
+        Preconditions.checkNotNull(client);
+        if(!Objects.equal(client.getId(),conversation.getOwner())){
+            throw new IllegalStateException("The parsed Client MUST BE the owner of the conversation!");
+        }
 
         conversation = storeService.appendMessage(conversation, message);
 
@@ -82,11 +101,11 @@ public class ConversationService {
             final Date lastModified = conversation.getLastModified();
             processingExecutor.submit(() -> {
                 try {
-                    prepareService.prepare(finalConversation);
+                    prepareService.prepare(client, finalConversation);
 
-                    templateService.updateTemplates(finalConversation);
+                    templateService.updateTemplates(client, finalConversation);
                     
-                    queryBuilderService.buildQueries(finalConversation);
+                    queryBuilderService.buildQueries(client, finalConversation);
 
                     try {
                         final Conversation storedConversation = storeService.storeIfUnmodifiedSince(finalConversation, lastModified);
@@ -146,12 +165,12 @@ public class ConversationService {
         }
     }
 
-    public Conversation appendMessage(Conversation conversation, Message message, Consumer<Conversation> onCompleteCallback) {
-        return appendMessage(conversation, message, true, onCompleteCallback);
+    public Conversation appendMessage(Client client, Conversation conversation, Message message, Consumer<Conversation> onCompleteCallback) {
+        return appendMessage(client, conversation, message, true, onCompleteCallback);
     }
 
-    public Conversation appendMessage(Conversation conversation, Message message) {
-        return appendMessage(conversation, message, true, null);
+    public Conversation appendMessage(Client client, Conversation conversation, Message message) {
+        return appendMessage(client, conversation, message, true, null);
     }
 
     public Conversation completeConversation(Conversation conversation) {
@@ -162,7 +181,33 @@ public class ConversationService {
         return storeService.adjustMessageVotes(conversation.getId(), messageId, delta);
     }
 
-    public List<? extends Result> getInlineResults(Conversation conversation, Template template, String creator) throws IOException {
-        return queryBuilderService.execute(creator, template, conversation);
+    public List<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
+        return queryBuilderService.execute(client, creator, template, conversation);
     }
+    
+    public Conversation getConversation(Client client, ObjectId convId){
+        Conversation conversation = storeService.get(convId);
+        if(conversation == null){
+            return null;
+        }
+        Configuration config;
+        if(client == null){
+            config = confService.getClientConfiguration(conversation.getOwner());
+        } else {
+            config = confService.getClientConfiguration(client);
+        }
+        if(config == null){
+            log.debug("Client {} does not have a configuration. Will use default configuration", client);
+            config = confService.getDefaultConfiguration();
+        }
+        Date confModDate = config.getModified();
+        if(confModDate == null || conversation.getLastModified().before(confModDate)){
+            log.debug("update queries for {} because after configuration change",conversation);
+            queryBuilderService.buildQueries(config, conversation);
+            conversation = storeService.storeIfUnmodifiedSince(conversation, conversation.getLastModified());
+        }
+        return conversation;
+    }
+
+    
 }

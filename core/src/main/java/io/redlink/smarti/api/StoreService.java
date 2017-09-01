@@ -23,7 +23,6 @@ import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,15 +47,15 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
             if(persisted == null){
                 throw new NotFoundException(Conversation.class, conversation.getId());
             } else {
-                if(conversation.getClientId() == null){
-                    conversation.setClientId(persisted.getClientId());
-                } else if(!Objects.equals(conversation.getClientId(), persisted.getClientId())){
+                if(conversation.getOwner() == null){
+                    conversation.setOwner(persisted.getOwner());
+                } else if(!Objects.equals(conversation.getOwner(), persisted.getOwner())){
                     throw new ConflictException(Conversation.class, "clientId", "The clientId MUST NOT be changed for an existing conversation!");
                 }
             }
         } else { //create a new conversation
-            if(StringUtils.isBlank(conversation.getClientId())){
-                throw new IllegalStateException("The clientId MUST NOT be NULL nor empty for a new conversation!");
+            if(conversation.getOwner() == null){
+                throw new ConflictException(Conversation.class, "owner", "The owner MUST NOT be NULL nor empty for a new conversation!");
             }
         }
         final Conversation stored = doStore(conversation);
