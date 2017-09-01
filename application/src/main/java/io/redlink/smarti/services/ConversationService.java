@@ -25,9 +25,11 @@ import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,13 +61,16 @@ public class ConversationService {
     private PrepareService prepareService;
 
     @Autowired
-    private TemplateService templateService;
-    
-    @Autowired
     private QueryBuilderService queryBuilderService;
     
     @Autowired
+    private TemplateService templateService;
+    
+    @Autowired
     private ApplicationEventPublisher eventPublisher;
+    
+    @Autowired
+    private ConfigurationService confService;
 
     private final ExecutorService processingExecutor;
 
@@ -179,4 +184,30 @@ public class ConversationService {
     public List<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
         return queryBuilderService.execute(client, creator, template, conversation);
     }
+    
+    public Conversation getConversation(Client client, ObjectId convId){
+        Conversation conversation = storeService.get(convId);
+        if(conversation == null){
+            return null;
+        }
+        Configuration config;
+        if(client == null){
+            config = confService.getClientConfiguration(conversation.getOwner());
+        } else {
+            config = confService.getClientConfiguration(client);
+        }
+        if(config == null){
+            log.debug("Client {} does not have a configuration. Will use default configuration", client);
+            config = confService.getDefaultConfiguration();
+        }
+        Date confModDate = config.getModified();
+        if(confModDate == null || conversation.getLastModified().before(confModDate)){
+            log.debug("update queries for {} because after configuration change",conversation);
+            queryBuilderService.buildQueries(config, conversation);
+            conversation = storeService.storeIfUnmodifiedSince(conversation, conversation.getLastModified());
+        }
+        return conversation;
+    }
+
+    
 }
