@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
@@ -132,9 +133,9 @@ public class RocketChatEndpoint {
             newConversation.setOwner(clientId);
             newConversation.getContext().setContextType(ROCKET_CHAT);
             newConversation.getContext().setDomain(clientName);
-            newConversation.getContext().setEnvironment("channel", payload.getChannelName());
-            newConversation.getContext().setEnvironment("channel_id", payload.getChannelId());
-            newConversation.getContext().setEnvironment("token", payload.getToken());
+            newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_NAME, payload.getChannelName());
+            newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_ID, payload.getChannelId());
+            newConversation.getContext().setEnvironment(Context.ENV_TOKEN, payload.getToken());
             return newConversation;
         });
         if(!conversation.getChannelId().equals(channelId)){
@@ -170,7 +171,7 @@ public class RocketChatEndpoint {
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
             final HttpPost post = new HttpPost(callbackUrl);
             post.setEntity(new StringEntity(
-                    toJsonString(new SmartiUpdatePing(conversation.getId(), conversation.getContext().getEnvironment("channel_id"), token)),
+                    toJsonString(new SmartiUpdatePing(conversation.getId(), conversation.getContext().getEnvironment(Context.ENV_CHANNEL_ID), token)),
                     ContentType.APPLICATION_JSON
             ));
             httpClient.execute(post, response -> null);
