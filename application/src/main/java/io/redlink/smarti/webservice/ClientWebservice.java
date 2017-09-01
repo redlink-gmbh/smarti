@@ -89,7 +89,7 @@ public class ClientWebservice {
         if(client == null){
             return ResponseEntity.notFound().build();
         }
-        final Configuration c = configService.getConfiguration(client);
+        final Configuration c = configService.getClientConfiguration(client);
         if (c == null) {
             return ResponseEntity.notFound().build();
         } else {

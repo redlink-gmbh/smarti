@@ -5,9 +5,12 @@ import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.repo.ClientRepository;
 
+import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.mongodb.DuplicateKeyException;
 
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -68,7 +71,11 @@ public class ClientService {
         
         //save the client
         client.setLastUpdate(new Date());
-        client = clientRepository.save(client);
+        try {
+            client = clientRepository.save(client);
+        } catch (DuplicateKeyException | org.springframework.dao.DuplicateKeyException e) {
+            throw new ConflictException(Client.class, "name", "A Client with the name '" + client.getName() + "' already exists!");
+        }
         //init the client configuration
         initClientConfiguration(client);
         return client;
@@ -119,7 +126,7 @@ public class ClientService {
             Client defaultClient = client.isDefaultClient() ? null : //if this is the new default client start with an empty configuration
                 getDefaultClient(); //else try to retrieve the default client
             Configuration defaultConf = defaultClient == null ? null : //no default client
-                configurationService.getConfiguration(defaultClient); //end the default configuration
+                configurationService.getClientConfiguration(defaultClient); //end the default configuration
             if(defaultConf != null) {
                 configurationService.createConfiguration(client, defaultConf);
             } else {

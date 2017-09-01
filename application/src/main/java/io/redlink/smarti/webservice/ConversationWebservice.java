@@ -107,9 +107,11 @@ public class ConversationWebservice {
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
     public ResponseEntity<?> getConversation(@PathVariable("id") ObjectId id) {
-        final Conversation conversation = storeService.get(id);
-
-        //TODO: check that the authenticated user has the rights to access the conversation
+        //TODO get the client for the authenticated user
+        final Conversation conversation = conversationService.getConversation(null, id);
+        
+        //TODO: check that the client has the right to access the conversation
+        
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
@@ -223,7 +225,7 @@ public class ConversationWebservice {
             throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
         }
         //TODO: check that the authenticated user has rights to access the conversation
-        Configuration clientConf = configService.getConfiguration(client.getId());
+        Configuration clientConf = configService.getClientConfiguration(client.getId());
         if(clientConf == null){
             log.info("Client {} of Conversation {} has no longer a configuration assigned ... returning 404 NOT FOUND",
                     conversation.getChannelId(), conversation.getId());

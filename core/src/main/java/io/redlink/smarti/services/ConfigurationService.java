@@ -63,12 +63,15 @@ public class ConfigurationService {
         this.configurableComponents = Collections.unmodifiableMap(ccs);
     }
 
-    
     public Configuration getConfiguration(ObjectId id){
         return configRepo.findOne(id);
     }
     
-    public Configuration getConfiguration(Client client){
+    public Configuration getClientConfiguration(ObjectId id){
+        return id == null ? null : configRepo.findByClient(id);
+    }
+    
+    public Configuration getClientConfiguration(Client client){
         return client == null ? null : configRepo.findByClient(client.getId());
     }
     
@@ -81,7 +84,7 @@ public class ConfigurationService {
      * @param client the client to delete the configuration for
      */
     public void deleteConfiguration(Client client){
-        Configuration c = getConfiguration(client);
+        Configuration c = getClientConfiguration(client);
         if(c != null && c.getId() != null){
             delete(c.getId());
         }
