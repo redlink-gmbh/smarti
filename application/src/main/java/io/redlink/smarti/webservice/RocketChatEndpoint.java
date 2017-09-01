@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
-import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
@@ -72,8 +71,8 @@ public class RocketChatEndpoint {
     @Value("${smarti.debug:false}")
     private boolean debug = false;
 
-    @Autowired
-    private StoreService storeService;
+    //@Autowired
+    //private StoreService storeService;
 
     @Autowired
     private ClientService clientService;
@@ -125,12 +124,11 @@ public class RocketChatEndpoint {
             client.setName(clientName);
             client = clientService.save(client);
         }
-        final ObjectId clientId = client.getId();
 
         final String channelId = createChannelId(client, payload.getChannelId());
-        Conversation conversation = storeService.getCurrentConversationByChannelId(channelId, () -> {
+        Conversation conversation = conversationService.getCurrentConversationByChannelId(client, channelId, () -> {
             Conversation newConversation = new Conversation();
-            newConversation.setOwner(clientId);
+            //newConversation.setOwner(clientId); -> set by the method
             newConversation.getContext().setContextType(ROCKET_CHAT);
             newConversation.getContext().setDomain(clientName);
             newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_NAME, payload.getChannelName());
@@ -206,7 +204,8 @@ public class RocketChatEndpoint {
         if(client == null){
             return ResponseEntity.notFound().build();
         }
-        Conversation conversation = storeService.getCurrentConversationByChannelId(createChannelId(client, channelId),() -> null); //do not create new conversations
+        Conversation conversation = conversationService.getCurrentConversationByChannelId(
+                client, createChannelId(client, channelId),() -> null); //do not create new conversations
         if (conversation == null || conversation.getId() == null) {
             return ResponseEntity.notFound().build();
         } else {

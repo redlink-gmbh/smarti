@@ -22,6 +22,7 @@ import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.services.ConversationService;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
@@ -35,6 +36,9 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
+ * Low level service that allows to have different storage implementations for {@link Conversation}. Higher level
+ * components and web-services will want to use the {@link ConversationService} instead
+ * @see ConversationService
  */
 public abstract class StoreService implements ApplicationEventPublisherAware {
 
@@ -64,14 +68,26 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
         }
         return stored;
     }
-
-    public abstract Conversation storeIfUnmodifiedSince(Conversation finalConversation, Date lastModified);
+    /**
+     * Stores a conversation if it was not updated since the <code>lastModified</code> date. Used to store
+     * processing results for a conversation. Those results are only stored if the conversation has not changed in the
+     * meantime.
+     * @param conversation the conversation to store
+     * @param lastModified the last modified date
+     * @return the conversation as stored
+     */
+    public abstract Conversation storeIfUnmodifiedSince(Conversation conversation, Date lastModified);
 
     @Override
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
         eventPublisher = applicationEventPublisher;
     }
 
+    /**
+     * Stores the parsed conversation. This is called by {@link #store(Conversation)} after all required validity checks
+     * @param conversation the conversation to store
+     * @return the conversation as stored
+     */
     protected abstract Conversation doStore(Conversation conversation);
 
     public abstract Collection<ObjectId> listConversationIDs();
@@ -80,26 +96,6 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     public final Collection<ObjectId> listConversationIDsByUser(String userId) {
         return listConversationIDsByHashedUser(userId);
-    }
-
-    public Conversation getCurrentConversationByChannelId(String channelId) {
-        return getCurrentConversationByChannelId(channelId, Conversation::new);
-    }
-
-    public Conversation getCurrentConversationByChannelId(String channelId, Supplier<Conversation> supplier) {
-        final ObjectId conversationId = mapChannelToCurrentConversationId(channelId);
-        if (conversationId != null) {
-            return get(conversationId);
-        } else {
-            final Conversation c = supplier.get();
-            if(c != null){
-                c.setId(null);
-                c.setChannelId(channelId);
-                return store(c);
-            } else {
-                return null;
-            }
-        }
     }
 
     public abstract ObjectId mapChannelToCurrentConversationId(String channelId);
