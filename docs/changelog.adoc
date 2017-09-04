@@ -2,6 +2,32 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+=== Smarti 0.5.0 Release Notes
+07 August, 2017
+
+Smarti 0.5.0 is a technical architecture release. For now basic decisions about the fundamental software design are not complete.
+In short this version of Smarti solves some security aspects, ensures backward compatibility to version 0.3.0 and fixes some bugs.
+Next to a https://assistify.github.io/smarti/[new comprehensive development documentation] Smarti 0.5.0 introduces lifecycle management for stored conversations.
+
+==== New in Smarti 0.5.0
+This release introduces an API that allows to manage the lifecycle of stored conversation, including:
+
+* JSON-based im- and export of conversations,
+* mark conversations obsolete by setting an expiration date,
+* authors may now edit their conversation's texts or remove messages
+
+==== Improved in Smarti 0.5.0
+* https://github.com/redlink-gmbh/smarti/issues/32[#32 - Added an API for conversational lifecycle management]
+* https://github.com/redlink-gmbh/smarti/issues/32[#33 - Added an UI for conversational lifecycle management]
+* https://github.com/redlink-gmbh/smarti/issues/32[#37 - Added support for JSON-based conversation im- and export]
+* https://github.com/redlink-gmbh/smarti/issues/32[#55 - Added a complete documentation for the `application.properties`]
+* https://github.com/redlink-gmbh/smarti/issues/32[#12 - Added support for integrated Swagger UI in order to access REST API documentation]
+* https://github.com/redlink-gmbh/smarti/issues/32[#56 - Improved the client model in order to implement the authentication concept]
+* https://github.com/redlink-gmbh/smarti/issues/32[#31 - Fixed issue where greetings like 'Hi' have been extracted as keywords]
+* https://github.com/redlink-gmbh/smarti/issues/32[#46 - Fixed issue where clients have been allowed to access conversations of other clients]
+* https://github.com/redlink-gmbh/smarti/issues/32[#53 - Fixed issue where queries have to be recalculate if the client configuration has changed]
+
+
 === 0.4.0 (TBD)
 ==== Bug fixes
 ==== Improvements and Refactoring
