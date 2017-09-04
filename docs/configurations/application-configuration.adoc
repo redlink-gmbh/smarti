@@ -1,0 +1,24 @@
+=== Application Configuration
+
+==== application.properties
+
+NOTE: TODO: We want to have automatically generated and commented `application.properties` configuration file here.
+
+./etc/smarti/application.properties
+```bash
+## logging config file
+logging.config = ./logback.xml
+
+## server port
+server.port = ${smarti-port}
+
+## mongo-db
+#spring.data.mongodb.uri=mongodb://${mongodb-host}/smarti
+spring.data.mongodb.database = smarti
+#spring.data.mongodb.host = ${mongodb-host}
+#spring.data.mongodb.port = ${mongodb-port}
+#spring.data.mongodb.password =
+#spring.data.mongodb.username =
+```
+
+NOTE: See also the https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[Spring boot external configuration] feature documentation.

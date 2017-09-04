@@ -1,0 +1,170 @@
+== Smarti Developer Guide
+
+:imagedir: _images/
+:commonsdir: commons/
+
+=== Introduction
+
+*Smarti* is a https://java.com/[Java]-Application based on the https://spring.io/[Spring Framework].
+The application uses https://www.mongodb.com/[MongoDB] as database and http://lucene.apache.org/solr/[Apache Solr] as search engine.
+Installation packages are provided for https://www.debian.org/[Debian]- and https://www.redhat.com/[RedHat]-based systems.
+Alternatively the application can be started by directly launching the executable jar:
+
+```bash
+$ java -jar smarti-${smarti-version}-exec.jar
+```
+
+
+=== Build and Run
+
+This section explains how to checkout and build the Smarti application from its sources.
+By following these steps you will learn how to build, run and debug Smarti.
+Transfer these instructions on your local machine in order to start setting up your Software Development Environment (SDE).
+
+In order to build & run Smarti the <<{commonsdir}system-requirements.adoc#,System requirements>> have to be fulfilled.
+How to achieve that heavily depends on your target environment.
+When creating this documentation all commands have been executed and tested with http://releases.ubuntu.com/16.04/[Ubuntu 16.04. LTS] server running on https://aws.amazon.com/ec2/instance-types/[Amazon EC2 instance] (t2.large).
+Therefore and to keep it simple we decided to use Debian's package manager `apt-get` for documentation purpose.
+
+NOTE: If you have any trouble please have a look at <<troubleshooting-guide.adoc#, Troubleshooting>>, maybe you're not alone.
+
+WARNING: *Be careful using `copy & paste`.* +
+The aim of this manual is to explain and not to provide scripts.
+
+==== Prepare
+
+. Install Java
++
+```bash
+$ sudo apt-get install openjdk-8-jdk
+```
+
+ . Install MongoDB (optional)
++
+```bash
+$ sudo apt-get install mongodb-server
+```
+
+. Install build components
++
+```bash
+$ sudo apt-get install git maven ruby ruby-sass ruby-compass
+```
+
+[TIP]
+====
+*For other operating systems*
+check the installation manuals for the target platform:
+
+* [*] https://git-scm.com/book/en/v2/Getting-Started-Installing-Git[Git] (`git`)
+* [*] https://maven.apache.org/install.html[Maven] (`maven`)
+* [*] https://www.ruby-lang.org/en/documentation/installation[Ruby] (`ruby`)
+
+and on top of ruby use its package manager `gem` to install `sass` and `compass`
+
+```bash
+sudo gem install sass compass
+```
+
+* [*] http://sass-lang.com/install[Sass] (`ruby-sass`)
+* [*] http://compass-style.org/install[Compass] (`ruby-compass`)
+
+====
+
+==== Checkout
+
+. Create a source directory `${smarti-source}`
++
+```bash
+$ mkdir ${smarti-source}
+```
+
+. Checkout https://github.com/redlink-gmbh/smarti/tree/develop[*Smarti* source code] from https://github.com/[GitHub]
++
+```bash
+$ git clone https://github.com/redlink-gmbh/smarti.git ${smarti-source}
+```
+
+==== Build
+
+. Change into the source directory
++
+```bash
+$ cd ${smarti-source}
+```
+
+. Execute maven build
++
+```bash
+$ mvn clean install [ -Pdeb | -Prpm ]
+```
++
+NOTE: Installation packages can be built for https://www.debian.org/[Debian]- and https://www.redhat.com/[RedHat]-based systems.
++
+NOTE: The build artifacts are finally placed in the `${smarti-source}/dist/target` directory.
+
+==== Run
+
+. Create a working directory
++
+```bash
+$ mkdir ${smarti-work-dir} && cd ${smarti-work-dir}
+```
++
+NOTE: *Working directory* - If you launch smarti the first time the `application.properties` file is created inside the directory where `java -jar` is executed.
+When ever this documentation refers the `${smarti-work-dir}`, the directory where the `application.properties` is located, is being meant.
+Since Smarti is a Spring boot application you can externalize the configuration as explained in the https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[Spring docs].
+
+. Copy the executable jar into `${smarti-work-dir}`
++
+```bash
+$ mv ${smarti-source}/dist/target/smarti-${smarti-version}-exec.jar .
+```
+
+. Launch smarti
++
+```bash
+$ java -jar smarti-${smarti-version}-exec.jar
+```
++
+NOTE: *Stanford NLP* - If you want to use Stanford NLP analysis, ensure that the required libraries are included in the class path.
+For more information and how to achieve this read section <<Enable Stanford NLP>>.
++
+NOTE: *Common challenges* - If this the first time you're running *Smarti*, you may have been stepped into a pitfall and it does not work.
+We have picked up some common challenges that might be helpful.
+See sections <<troubleshooting-guide.adoc#, Troubleshooting>> in any case of problems.
+
+==== Debug
+
+. Launch smarti in debug mode
++
+To launch *Smarti* in debug mode create a shell script appending preferred options to the `java`-command like:
++
+.start-smarti.sh
+```bash
+#!/bin/bash
+java -Xmx4g -jar -Xdebug application/target/smarti-${smarti-version}-exec.jar\
+    -Xrunjdwp:transport=dt_socket,address=${smarti-debug-port},server=y,suspend=n\
+    -Dspring.profiles.active=local\
+    --solrlib.home=${solr-home}
+```
+
+. Configure your IDE
++
+Create a debug configuration for the `Remote Java Application` and set the specified `${smarti-debug-port}`.
++
+image::{imagedir}debug-configuration.png[]
+
+'''
+
+==== Release
+
+For a release, a release branch (based on develop) is created which represents the release candidate.
+If the candidate fulfills the requirements, the issues of the release are documented in the changelogs.
+Then the version number is set to the release number, the branch is merged into master and the master is tagged with the release number.
+Additionally, the version number of the develop branch is set to the new snapshot version.
+
+NOTE: Now you are ready to start developing the next amazing feature for *Smarti*.
+
+
+CAUTION: Read Additional Components section.

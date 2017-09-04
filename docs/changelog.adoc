@@ -1,4 +1,4 @@
-== Changelog
+== Smarti Changelog
 
 This document shows the changes that are introduced into Smarti with the releases.
 

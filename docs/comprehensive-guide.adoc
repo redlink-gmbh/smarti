@@ -4,6 +4,7 @@ v1.0, 2017-08-26
 :toc: left
 
 :commons: commons/
+:configurations: configurations/
 
 image::https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master[Build Status]
 
@@ -11,9 +12,21 @@ include::guide-preamble.adoc[]
 
 include::guide-overview.adoc[]
 
-include::commons/license.adoc[]
+include::installation-guide.adoc[]
 
-include::commons/authors.adoc[]
+include::configuration-guide.adoc[]
+
+include::integration-guide.adoc[]
+
+include::troubleshooting-guide.adoc[]
+
+include::developer-guide.adoc[]
+
+include::contribution-guide.adoc[]
+
+include::license.adoc[]
+
+include::authors.adoc[]
 
 == Changelog
 The <<changelog.adoc#,Changelog>> provides a complete list of changes in older releases.

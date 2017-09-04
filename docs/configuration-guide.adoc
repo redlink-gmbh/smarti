@@ -1,0 +1,16 @@
+== Smarti Configuration Guide
+
+Smarti is configurable using either <<{configurationsdir}client-configuration-api.adoc#,the client API>> or the <<{configurationsdir}client-configuration-ui.adoc#,configuration UI>>, which can be found on the `{HOST}/index.html` page of the the running application.
+
+include::configurations/client-configuration-api.adoc[]
+
+include::configurations/client-configuration-ui.adoc[]
+
+
+=== Endpoints
+
+==== Admin UI
+
+==== REST API (Swagger)
+
+==== Rocket.Chat integration JS

@@ -1,0 +1,8 @@
+== Smarti Contribution Guide
+
+Smarti is an Open Source project so everyone is encouraged to improve it. Don't hesitate to report bugs, provide fixes or
+share new ideas with us. We have various ways for contribution:
+
+* use the issue tracker - report bugs, suggest features or give hints how we can improve the documentation.
+* discuss issues with the community - two brains are better than one.
+* write code - no patch is too small. So even fixing typos helps to improve Smarti.

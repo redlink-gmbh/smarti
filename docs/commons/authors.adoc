@@ -1,0 +1,2 @@
+== Authors
+Smarti is lead by http://redlink.co[Redlink] and http://assistify.de[Assistify] and was initiated in 2017.

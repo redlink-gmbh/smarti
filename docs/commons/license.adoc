@@ -1,0 +1,4 @@
+== License
+
+Free use of this software is granted under the terms of the Apache License Version 2.0.
+See the https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LICENSE.txt[License] for more details.
