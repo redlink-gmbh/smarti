@@ -26,6 +26,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Conversation Repository
@@ -34,5 +35,7 @@ import java.util.Collection;
  */
 public interface ConversationRepository extends PagingAndSortingRepository<Conversation, ObjectId>, ConversationRepositoryCustom {
 
-    Page<Conversation> findByOwner(ObjectId clientId, PageRequest paging);
+    Page<Conversation> findByOwner(ObjectId owner, PageRequest paging);
+
+    List<Conversation> findByOwner(ObjectId owner);
 }

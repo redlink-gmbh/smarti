@@ -20,6 +20,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.config.Configuration;
+import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.utils.WebserviceUtils;
@@ -44,9 +45,11 @@ import java.util.Objects;
 public class ConversationAdminWebservice {
 
     private final ConversationService conversationService;
+    private final ClientService clientService;
 
-    public ConversationAdminWebservice(ConversationService conversationService) {
+    public ConversationAdminWebservice(ConversationService conversationService, ClientService clientService) {
         this.conversationService = conversationService;
+        this.clientService = clientService;
     }
 
     @ApiOperation(value = "list conversations", response = PagedConversationList.class)
@@ -79,7 +82,12 @@ public class ConversationAdminWebservice {
     public ResponseEntity<?> deleteMessage(
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("messageId") String messageId) {
-        return ResponseEntities.notImplemented();
+
+        if (conversationService.deleteMessage(conversationId, messageId)) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @ApiOperation(value = "edit/update a message", response = Conversation.class)
@@ -88,9 +96,16 @@ public class ConversationAdminWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("messageId") String messageId,
             @RequestBody Message updatedMessage) {
+
         // Make sure the messageId does not change
         updatedMessage.setId(messageId);
-        return ResponseEntities.notImplemented();
+        final Conversation updatedConversation = conversationService.updateMessage(conversationId, updatedMessage);
+
+        if (Objects.nonNull(updatedConversation)) {
+            return ResponseEntity.ok(updatedConversation);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @ApiOperation(value = "set/update the status of the conversation", response = Conversation.class)
@@ -98,7 +113,12 @@ public class ConversationAdminWebservice {
     public ResponseEntity<?> setConversationStatus(
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("newStatus") @ApiParam(allowableValues = "New,Ongoing,Complete", required = true) ConversationMeta.Status newStatus) {
-        return ResponseEntities.notImplemented();
+
+        if (conversationService.exists(conversationId)) {
+            return ResponseEntity.ok(conversationService.updateStatus(conversationId, newStatus));
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @ApiOperation(value = "set/update the status of the conversation", response = Conversation.class)
@@ -106,20 +126,33 @@ public class ConversationAdminWebservice {
     public ResponseEntity<?> setExpiry(
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Date expiryDate) {
+        // TODO[#59]: implement this
         return ResponseEntities.notImplemented();
     }
 
     @ApiOperation(value = "export conversations", response = Configuration.class, responseContainer = "List")
     @RequestMapping(value = "export", method = RequestMethod.GET)
     public ResponseEntity<?> exportConversations(@RequestParam("owner") ObjectId owner) {
-        return ResponseEntities.notImplemented();
+        if (clientService.exists(owner)) {
+            return ResponseEntity.ok(conversationService.getConversations(owner));
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @ApiOperation(value = "import conversations")
     @RequestMapping(value = "import", method = RequestMethod.POST)
-    public ResponseEntity<?> importConversations(@RequestParam("owner") ObjectId owner,
-                                                 @RequestBody List<Conversation> conversations) {
-        return ResponseEntities.notImplemented();
+    public ResponseEntity<?> importConversations(
+            @RequestParam("owner") ObjectId owner,
+            @RequestParam(value = "replace", defaultValue = "false", required = false) boolean replace,
+            @RequestBody List<Conversation> conversations
+    ) {
+        if (clientService.exists(owner)) {
+            conversationService.importConversations(owner, conversations, replace);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 }

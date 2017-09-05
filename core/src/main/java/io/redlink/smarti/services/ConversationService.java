@@ -21,10 +21,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.repositories.ConversationRepository;
@@ -312,4 +309,35 @@ public class ConversationService {
         return storeService.get(conversationId);
     }
 
+    public List<Conversation> getConversations(ObjectId owner) {
+        return conversationRepository.findByOwner(owner);
+    }
+
+    public void importConversations(ObjectId owner, List<Conversation> conversations) {
+        importConversations(owner, conversations, false);
+    }
+
+    public void importConversations(ObjectId owner, List<Conversation> conversations, boolean replace) {
+        // TODO(westei): implement this method
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public boolean exists(ObjectId conversationId) {
+        return conversationRepository.exists(conversationId);
+    }
+
+    public Conversation updateStatus(ObjectId conversationId, ConversationMeta.Status newStatus) {
+        // TODO: do I need to trigger a re-index? How?
+        return conversationRepository.updateConversationStatus(conversationId, newStatus);
+    }
+
+    public boolean deleteMessage(ObjectId conversationId, String messageId) {
+        // TODO: do I need to trigger a re-index? How?
+        return conversationRepository.deleteMessage(conversationId, messageId);
+    }
+
+    public Conversation updateMessage(ObjectId conversationId, Message updatedMessage) {
+        // TODO: do I need to trigger a re-index? How?
+        return conversationRepository.updateMessage(conversationId, updatedMessage);
+    }
 }
