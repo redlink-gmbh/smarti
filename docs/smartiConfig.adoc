@@ -35,37 +35,35 @@ Mongo DB is used by Smarti to store client, configuration and conversations.
 * `spring.data.mongodb.database = smarti`
 * `spring.data.mongodb.host = localhost`
 * `spring.data.mongodb.port = 27017`
-* `spring.data.mongodb.password = `
-* `spring.data.mongodb.username = `
+* `spring.data.mongodb.password =`
+* `spring.data.mongodb.username =`
 
 #### Tomcat AJP-Config
 
 To enable AJP use the following properties
 
-* `tomcat.ajp.enabled=false `
-* `tomcat.ajp.protocol=AJP/1.3 `
-* `tomcat.ajp.port=9090 `
-* `tomcat.ajp.allow-trace=false `
-* `tomcat.ajp.secure=false `
-* `tomcat.ajp.scheme=http `
+* `tomcat.ajp.enabled=false`
+* `tomcat.ajp.protocol=AJP/1.3`
+* `tomcat.ajp.port=9090`
+* `tomcat.ajp.allow-trace=false`
+* `tomcat.ajp.secure=false`
+* `tomcat.ajp.scheme=http`
 
 ### Spring Mail Configuration
 
 No core component of Smarti does send mails. However in cases where modules want to send notifications per mail those are the properties used by Spring to configure the Mail Server to use. 
 
-* `spring.mail.host= `
-* `spring.mail.port= `
-* `spring.mail.protocol=smtp `
-* `spring.mail.username= `
-* `spring.mail.password= `
+* `spring.mail.host=`
+* `spring.mail.port=`
+* `spring.mail.protocol=smtp`
+* `spring.mail.username=`
+* `spring.mail.password=`
 
 ###SolrLib Configuration
 
-[SolrLib](https://github.com/redlink-gmbh/solrlib/) is a library that allows to use Solr in Spring. It supports embedded, standalone and cloud versions of Solr by adding the according modules.
+https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to use Solr in Spring. It supports embedded, standalone and cloud versions of Solr by adding the according modules.
 
-* `solrlib.home=/absolute/path/to/solr/home`: The `${SOLR_HOME}` directory, Used by embedded and standalone.
-    
-    **NOTE:** In case an embedded Solr Server is used it is highly recommended to set `solrlib.home` to the absolute path where the embedded Solr server will be located. Otherwise a new Solr core will be created in a temp folder on every startup.
+* `solrlib.home=/absolute/path/to/solr/home`: The `${SOLR_HOME}` directory, Used by embedded and standalone. **NOTE:** In case an embedded Solr Server is used it is highly recommended to set `solrlib.home` to the absolute path where the embedded Solr server will be located. Otherwise a new Solr core will be created in a temp folder on every startup.
 * `solrlib.base-url = http://localhost:8983/solr`: base-url for all solr requests. This will trigger using solrlib-standalone if available on the classpath -
 * `solrlib.zk-connection = zookeeper1:8121,zookeeper2:8121`: ZooKeeper connection string. This will trigger using solrlib-cloud if available on the classpath
 * `solrlib.collection-prefix = `: prefix for the remote collection names, to avoid name-clashes on shared servers. Only used by standalone and cloud
@@ -77,8 +75,8 @@ No core component of Smarti does send mails. However in cases where modules want
 
 **UI Cache**
 
-* `ui.cache.maxAge`: The maximum age of elements in the cache in seconds (default: `864000` - 10 days). If `< 0 ` no cache will be used.
-* `ui.cache.indexMaxAge`: The maximum age of a cached `index.hmtl` (default: `3600` - 1 hour). If `< 0 ` no cache will be used.
+* `ui.cache.maxAge`: The maximum age of elements in the cache in seconds (default: `864000` - 10 days). If `< 0` no cache will be used.
+* `ui.cache.indexMaxAge`: The maximum age of a cached `index.hmtl` (default: `3600` - 1 hour). If `< 0` no cache will be used.
 
 **CORS**
 
@@ -109,7 +107,7 @@ Allows to inject backend properties in the Frontend
 The Speak Service managed resource bundles for bot generated replay messages in conversations.
 
 * `message.locale = de_DE`
-* `message.source = `
+* `message.source =`
 
 ### Conversation Indexing
 
@@ -122,16 +120,16 @@ Conversation are indexed in Solr managed by SolrLib
 
 For now Analysis configurations are global. No Client specific configuration is possible.
 
-**NOTE:** Client specific analysis configurations are planed for a future release
+_NOTE:_ Client specific analysis configurations are planed for a future release
 
 #### Analysis Chain configuration
 
 The analysis chain used to process conversations can be configured by the following properties
 
-* `smarti.analysis.required = `: coma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
+* `smarti.analysis.required =`: coma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
 * `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: coma separated list of optional analysis component.
-    * coma separated list of names to explicitly define the processors to be used
-    * `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
+** coma separated list of names to explicitly define the processors to be used
+** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
 #### Interesting Term
 
@@ -149,7 +147,7 @@ The above configuration requires a Solr Server. To allow the use of embedded Sol
 * `solrcore.wikipedia.de.resource=`: Absolute path to the archive with the German Wikipedia Corpus.
 * `solrcore.crawl.systel.resource=`: Absolute path to the archive with the crawl of Systel related Webpages
 
-**NOTE:** The archives with the Solr cores are separate downloads. The cores are initialized on the embedded Solr server managed by [SolrLib](https://github.com/redlink-gmbh/solrlib/)
+**NOTE:** The archives with the Solr cores are separate downloads. The cores are initialized on the embedded Solr server managed by https://github.com/redlink-gmbh/solrlib/[SolrLib]
 
 #### Token Filter: Stopword
 
@@ -162,7 +160,7 @@ This analysis components allows to reference stopword lists for extracted tokens
 
 Stopword lists a text files with a single word per line. Empty lines and lines starting with `#` are ignored.
 
-Lists are loaded as [Spring Resource](https://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html). Therefore `classpath:`, `file:` and URL resources (`http(s):`, `ftp:`) can be used.
+Lists are loaded as https://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html[Spring Resource]. Therefore `classpath:`, `file:` and URL resources (`http(s):`, `ftp:`) can be used.
 
 #### Hasso Extraction
 
@@ -182,7 +180,7 @@ This section includes configuration properties used to define the default config
 
 A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module. The configuration properties described in this section do 
 
-**NOTE** configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<clientConf.adoc#, Client Configuration>> service.
+_NOTE:_ configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<clientConf.adoc#, Client Configuration>> service.
 
 **Prefix**: `query.solr`
 
@@ -198,25 +196,25 @@ Properties with the prefix `query.solr.search` define how the Solr query is buil
 The default will search for *location names* and general *token names* in the default search field of Solr. All other options are deactivated. By setting the following properties those defaults for new Solr Endpoint configurations can be changed.
 
 * Title Search
-    * `query.solr.search.title.enabled` (type: `Boolean`, default: `false`): Title search is disabled by default
-    * `query.solr.search.title.field` (type: `String`): The name of the full text field are `null` or `empty` to use the default search field
+** `query.solr.search.title.enabled` (type: `Boolean`, default: `false`): Title search is disabled by default
+** `query.solr.search.title.field` (type: `String`): The name of the full text field are `null` or `empty` to use the default search field
 * Full-Text Search
-    * `query.solr.search.full-text.enabled` (type: `Boolean`, default: `true`): Full text search is enabled by default
-    * `query.solr.search.full-text.field` (type: `String`): The name of the full text field are `null` to use the default field
+** `query.solr.search.full-text.enabled` (type: `Boolean`, default: `true`): Full text search is enabled by default
+** `query.solr.search.full-text.field` (type: `String`): The name of the full text field are `null` to use the default field
 * Related Document Search
-    * `query.solr.search.related.enabled` (type: `Boolean`, default: `true`): If related Document search enabled
-    * `query.solr.search.related.fields` (type: `List<String>`): The fields to use for search for similar documents
+** `query.solr.search.related.enabled` (type: `Boolean`, default: `true`): If related Document search enabled
+** `query.solr.search.related.fields` (type: `List<String>`): The fields to use for search for similar documents
 * Spatial (Geo) Search
-    * `query.solr.search.spatial.enabled` (type: `Boolean`, default: `false`)
-    * `query.solr.search.spatial.locationNameField` (type: `String`): The name of the field used to search for location names or `null` to use the default field
-    * `query.solr.search.spatial.latLonPointSpatialField` (type: `String`): The name of the Solr field using a `latLonPointSpatial` type to search for documents near a extracted location (with included lat/lon information)
-    * `query.solr.search.spatial.rptField` (type: `String`): The name of the Solr field using a `rpt` type to search for documents near a extracted location (with included lat/lon information)
-    * `query.solr.search.spatial.bboxField` (type: `String`): The name of the Solr field using a `bbox` type to search for documents near a extracted location (with included lat/lon information)
+** `query.solr.search.spatial.enabled` (type: `Boolean`, default: `false`)
+** `query.solr.search.spatial.locationNameField` (type: `String`): The name of the field used to search for location names or `null` to use the default field
+** `query.solr.search.spatial.latLonPointSpatialField` (type: `String`): The name of the Solr field using a `latLonPointSpatial` type to search for documents near a extracted location (with included lat/lon information)
+** `query.solr.search.spatial.rptField` (type: `String`): The name of the Solr field using a `rpt` type to search for documents near a extracted location (with included lat/lon information)
+** `query.solr.search.spatial.bboxField` (type: `String`): The name of the Solr field using a `bbox` type to search for documents near a extracted location (with included lat/lon information)
 * Temporal Search
-    * `query.solr.search.temporal.enabled` (type: `Boolean`, default: `false`):
-    * `query.solr.search.temporal.timeRangeField` (type: `Boolean`, default: `false`): The name of the Solr field using the `DateRangeField` type used to search Documents near the extracted Date/Times or Date/Time ranges.
-    * `query.solr.search.temporal.startTimeField` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near extracted Date/Times or the start time of extracted ranges.
-    * `query.solr.search.temporal.endTimeField` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near end date of extracted ranges.
+** `query.solr.search.temporal.enabled` (type: `Boolean`, default: `false`):
+** `query.solr.search.temporal.timeRangeField` (type: `Boolean`, default: `false`): The name of the Solr field using the `DateRangeField` type used to search Documents near the extracted Date/Times or Date/Time ranges.
+** `query.solr.search.temporal.startTimeField` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near extracted Date/Times or the start time of extracted ranges.
+** `query.solr.search.temporal.endTimeField` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near end date of extracted ranges.
 
 **Result Configuration**
 
@@ -243,6 +241,6 @@ Typical examples include
 * `query.solr.defautls.rows`: the number of results
 * `query.solr.defautls.df`: the default search field
 
-*NOTE*: Defaults (and invariants) can also be set in the Solr Request hander (`solrconf.xml`). In cases where one has control over the Solr configuration it is preferable to do so.
+_NOTE:_ Defaults (and invariants) can also be set in the Solr Request hander (`solrconf.xml`). In cases where one has control over the Solr configuration it is preferable to do so.
 
 
