@@ -13,7 +13,10 @@ be started by directly launching the executable jar. Check out a detailed <<inst
 
 === How to configure
 
-Smarti is configurable using either <<clientConfig.adoc#,the client API>> or the configuration UI, which can be found on the {HOST}/index.html page of the the running application.
+<<configuration.adoc#,Configuration>> is done on two levels: 
+
+1. Global <<smartiConfig.adoc#,Smarti configuration>>
+2. Client specific configurations using the <<clientConfig.adoc#,the client API>> or the <<client-configuration-ui.adoc#,configuration UI>>, which can be found on the `{HOST}/index.html` page of the the running application.
 
 === How to integrate
 
