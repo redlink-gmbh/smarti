@@ -299,10 +299,10 @@ public class ConversationService {
         }
     }
 
-    public Page<Conversation> listConversations(String clientId, int page, int pageSize) {
+    public Page<Conversation> listConversations(ObjectId clientId, int page, int pageSize) {
         final PageRequest paging = new PageRequest(page, pageSize);
-        if (StringUtils.isNotBlank(clientId)) {
-            return conversationRepository.findByClientId(clientId, paging);
+        if (java.util.Objects.nonNull(clientId)) {
+            return conversationRepository.findByOwner(clientId, paging);
         } else {
             return conversationRepository.findAll(paging);
         }

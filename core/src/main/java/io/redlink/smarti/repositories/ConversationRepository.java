@@ -34,7 +34,5 @@ import java.util.Collection;
  */
 public interface ConversationRepository extends PagingAndSortingRepository<Conversation, ObjectId>, ConversationRepositoryCustom {
 
-    Collection<Conversation> findConversationByUserId(String userId); //TODO: I guess wouldn't work
-
-    Page<Conversation> findByClientId(String clientId, Pageable paging);
+    Page<Conversation> findByOwner(ObjectId clientId, PageRequest paging);
 }

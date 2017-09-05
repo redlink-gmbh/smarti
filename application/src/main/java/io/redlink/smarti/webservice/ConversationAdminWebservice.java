@@ -32,6 +32,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 @CrossOrigin
@@ -50,14 +52,14 @@ public class ConversationAdminWebservice {
     @ApiOperation(value = "list conversations", response = PagedConversationList.class)
     @RequestMapping(method = RequestMethod.GET)
     public ResponseEntity<?> listConversations(
-            @RequestParam(value = "clientId", required = false) String clientId,
+            @RequestParam(value = "owner", required = false) ObjectId owner,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize
     ) {
         WebserviceUtils.checkParameter(page >= 0, "page must not be negative");
         WebserviceUtils.checkParameter(pageSize > 0, "minimal pageSize is 1");
 
-        return ResponseEntity.ok(conversationService.listConversations(clientId, page, pageSize));
+        return ResponseEntity.ok(conversationService.listConversations(owner, page, pageSize));
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
@@ -99,15 +101,24 @@ public class ConversationAdminWebservice {
         return ResponseEntities.notImplemented();
     }
 
+    @ApiOperation(value = "set/update the status of the conversation", response = Conversation.class)
+    @RequestMapping(value = "{conversationId}/expiry", method = RequestMethod.PUT)
+    public ResponseEntity<?> setExpiry(
+            @PathVariable("conversationId") ObjectId conversationId,
+            @RequestBody Date expiryDate) {
+        return ResponseEntities.notImplemented();
+    }
+
     @ApiOperation(value = "export conversations", response = Configuration.class, responseContainer = "List")
     @RequestMapping(value = "export", method = RequestMethod.GET)
-    public ResponseEntity<?> exportConversations() {
+    public ResponseEntity<?> exportConversations(@RequestParam("owner") ObjectId owner) {
         return ResponseEntities.notImplemented();
     }
 
     @ApiOperation(value = "import conversations")
-    @RequestMapping(value = "export", method = RequestMethod.POST)
-    public ResponseEntity<?> importConversations() {
+    @RequestMapping(value = "import", method = RequestMethod.POST)
+    public ResponseEntity<?> importConversations(@RequestParam("owner") ObjectId owner,
+                                                 @RequestBody List<Conversation> conversations) {
         return ResponseEntities.notImplemented();
     }
 
