@@ -19,6 +19,7 @@ package io.redlink.smarti.webservice;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.utils.WebserviceUtils;
@@ -95,6 +96,18 @@ public class ConversationAdminWebservice {
     public ResponseEntity<?> setConversationStatus(
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("newStatus") @ApiParam(allowableValues = "New,Ongoing,Complete", required = true) ConversationMeta.Status newStatus) {
+        return ResponseEntities.notImplemented();
+    }
+
+    @ApiOperation(value = "export conversations", response = Configuration.class, responseContainer = "List")
+    @RequestMapping(value = "export", method = RequestMethod.GET)
+    public ResponseEntity<?> exportConversations() {
+        return ResponseEntities.notImplemented();
+    }
+
+    @ApiOperation(value = "import conversations")
+    @RequestMapping(value = "export", method = RequestMethod.POST)
+    public ResponseEntity<?> importConversations() {
         return ResponseEntities.notImplemented();
     }
 
