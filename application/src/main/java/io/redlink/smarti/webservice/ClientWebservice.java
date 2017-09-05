@@ -69,30 +69,32 @@ public class ClientWebservice {
     @ApiOperation(value = "creates/updates a client config", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
     @RequestMapping(value = "{id}/config", method = RequestMethod.POST)
     public ResponseEntity<?> storeConfig(@PathVariable("id") ObjectId id, @RequestBody(required=true) String jsonData) throws IOException {
-        if(clientService.exists(id)) {
-            String client= clientService.get(id).getName();
-            Map<String,List<ComponentConfiguration>> config;
-            try {
-                config = objectMapper.readValue(jsonData, ConfigurationWebservice.smartiConfigType);
-            } catch (JsonParseException | JsonMappingException e) {
-                return ResponseEntities.badRequest(e.getClass().getSimpleName() + ": " + e.getMessage());
-            }
-            return ConfigurationWebservice.writeSmartiConfig(configService.storeConfiguration(client, config));
-        } else return ResponseEntities.status(404, "client does not exist");
+        Client client = clientService.get(id);
+        if(client == null){
+            return ResponseEntity.notFound().build();
+        }
+        Map<String,List<ComponentConfiguration>> config;
+        try {
+            config = objectMapper.readValue(jsonData, ConfigurationWebservice.smartiConfigType);
+        } catch (JsonParseException | JsonMappingException e) {
+            return ResponseEntities.badRequest(e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+        return ConfigurationWebservice.writeSmartiConfig(configService.storeConfiguration(client, config));
     }
 
     @ApiOperation(value = "get a client config", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
     @RequestMapping(value = "{id}/config", method = RequestMethod.GET)
     public ResponseEntity<?> getClientConfiguration(@PathVariable("id") ObjectId id) throws IOException {
-        if(clientService.exists(id)) {
-            String client = clientService.get(id).getName();
-            final Configuration c = configService.getConfiguration(client);
-            if (c == null) {
-                return ResponseEntity.notFound().build();
-            } else {
-                return ConfigurationWebservice.writeSmartiConfig(c);
-            }
-        } else return ResponseEntities.status(404, "client does not exist");
+        Client client = clientService.get(id);
+        if(client == null){
+            return ResponseEntity.notFound().build();
+        }
+        final Configuration c = configService.getClientConfiguration(client);
+        if (c == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ConfigurationWebservice.writeSmartiConfig(c);
+        }
     }
 
 

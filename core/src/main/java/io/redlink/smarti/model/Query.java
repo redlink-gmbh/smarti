@@ -17,6 +17,11 @@
 package io.redlink.smarti.model;
 
 
+import java.util.Date;
+
+import org.springframework.data.annotation.PersistenceConstructor;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
@@ -43,6 +48,9 @@ public class Query {
     @ApiModelProperty(value = "supports inline results", notes = "if the query/creator supports inline results")
     private boolean inlineResultSupport = false;
 
+    @JsonIgnore
+    private Date created;
+    
     @ApiModelProperty(notes = "state of this query")
     private State state = State.Suggested;
 
@@ -51,11 +59,24 @@ public class Query {
     }
 
     public Query(String creator) {
+        this(creator, new Date());
+    }
+    
+    @PersistenceConstructor
+    protected Query(String creator, Date created) {
         this.creator = creator;
+        this.created = created;
     }
 
     public float getConfidence() {
         return confidence;
+    }
+    /**
+     * The creation date
+     * @return the date or <code>null</code> if unknown (for old data)
+     */
+    public Date getCreated() {
+        return created;
     }
 
     public Query setConfidence(float confidence) {
