@@ -107,7 +107,7 @@ Any other field can be used for the actual configuration of the component. Their
 
 #### Retrieve Client Configuration
 
-__endpoint__: `GET config/{client-id}/config` +
+__endpoint__: `GET client/{client-id}/config` +
 __response body__: the created client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
 
 Retrieve the configuration for the client with the `{client-id}`. If no configuration is present a `404 Not Found` is returned

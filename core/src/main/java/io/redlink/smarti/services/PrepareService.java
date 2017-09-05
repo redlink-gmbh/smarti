@@ -19,6 +19,7 @@ package io.redlink.smarti.services;
 
 import io.redlink.nlp.api.ProcessingException;
 import io.redlink.nlp.api.Processor;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.processing.ProcessingData;
 import org.apache.commons.lang3.StringUtils;
@@ -123,7 +124,8 @@ public class PrepareService {
         _processors.clear();
     }
     
-    public void prepare(Conversation conversation) {
+    public void prepare(Client client, Conversation conversation) {
+        //TODO: get pipeline and processor configuration for the parsed client
         log.debug("Preparing query for {}", conversation);
         while(conversation.getTokens().remove(null)){
             log.warn("Parsed Conversation {} contained a NULL Token", conversation);

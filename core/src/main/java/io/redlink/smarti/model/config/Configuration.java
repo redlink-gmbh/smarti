@@ -14,16 +14,18 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import io.redlink.smarti.api.config.Configurable;
 
+@Document
 public class Configuration {
 
     @Id
     private ObjectId id;
     
     @Indexed
-    private String client;
+    private ObjectId client;
     
     private Date created;
     
@@ -44,11 +46,11 @@ public class Configuration {
         return id;
     }
     
-    public String getClient() {
+    public ObjectId getClient() {
         return client;
     }
     
-    public void setClient(String client) {
+    public void setClient(ObjectId client) {
         this.client = client;
     }
     

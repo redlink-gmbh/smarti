@@ -28,7 +28,6 @@ import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,13 +120,16 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDX));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
-
-        final String domain = conversation.getContext().getDomain();
-        if (StringUtils.isNotBlank(domain)) {
-            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_DOMAIN, ClientUtils.escapeQueryChars(domain)));
-        } else {
-             solrQuery.addFilterQuery(String.format("-%s:*", FIELD_DOMAIN));
-        }
+        
+        //since #46 the client field is used to filter for the current user
+        addClientFilter(solrQuery, conversation);
+        //Pre SMARTI #46 code
+//        final String domain = conversation.getContext().getDomain();
+//        if (StringUtils.isNotBlank(domain)) {
+//            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_DOMAIN, ClientUtils.escapeQueryChars(domain)));
+//        } else {
+//             solrQuery.addFilterQuery(String.format("-%s:*", FIELD_DOMAIN));
+//        }
 
         return new ConversationMltRequest(solrQuery, mltQuery.getContent());
 

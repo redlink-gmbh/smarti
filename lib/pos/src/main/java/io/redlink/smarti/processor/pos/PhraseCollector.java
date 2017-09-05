@@ -25,7 +25,6 @@ import io.redlink.nlp.model.Span.SpanTypeEnum;
 import io.redlink.nlp.model.phrase.PhraseCategory;
 import io.redlink.nlp.model.phrase.PhraseTag;
 import io.redlink.nlp.model.util.NlpUtils;
-import io.redlink.smarti.api.QueryPreparator;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;

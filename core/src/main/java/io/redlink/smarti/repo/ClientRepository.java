@@ -1,4 +1,4 @@
-package io.redlink.smarti.repositories;
+package io.redlink.smarti.repo;
 
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
@@ -16,4 +16,5 @@ public interface ClientRepository extends CrudRepository<Client, ObjectId> {
     public boolean existsByName(String name);
     public Client findOneByDefaultClientTrue();
     public List<Client> findByDefaultClientTrue();
+    public Client findOneByName(String name);
 }
