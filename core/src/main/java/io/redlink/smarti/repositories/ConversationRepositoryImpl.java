@@ -203,7 +203,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     public boolean deleteMessage(ObjectId conversationId, String messageId) {
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
-                .pull("messages._id", messageId);
+                .pull("messages", new BasicDBObject("_id", messageId));
 
         final WriteResult result = mongoTemplate.updateFirst(query, update, Conversation.class);
         return result.getN() == 1;

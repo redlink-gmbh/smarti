@@ -35,7 +35,7 @@ import java.util.List;
  */
 public interface ConversationRepository extends PagingAndSortingRepository<Conversation, ObjectId>, ConversationRepositoryCustom {
 
-    Page<Conversation> findByOwner(ObjectId owner, PageRequest paging);
+    Page<Conversation> findByOwner(ObjectId owner, Pageable paging);
 
     List<Conversation> findByOwner(ObjectId owner);
 }

@@ -84,7 +84,7 @@ public class ConversationAdminWebservice {
             @PathVariable("messageId") String messageId) {
 
         if (conversationService.deleteMessage(conversationId, messageId)) {
-            return ResponseEntity.noContent().build();
+            return getConversation(conversationId);
         } else {
             return ResponseEntity.notFound().build();
         }
