@@ -25,7 +25,7 @@ Lookup the <<integrations/rocketchat.adoc#,Rocket.Chat plugin description>> for 
 
 === How to develop
 
-<<developers-guide.adoc#,Smarti Comprehensive Developer's Guide>>
+Follow the <<developers-guide.adoc#,Smarti Comprehensive Developer's Guide>> and have a look at the different <<components.adoc#,components>>
 
 === How to contribute
 
