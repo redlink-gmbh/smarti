@@ -30,6 +30,7 @@ angular.module('smartiApp')
     $ctrl.backToList = backToList;
     $ctrl.saveMessage = saveMessage;
     $ctrl.deleteMessage = deleteMessage;
+    $ctrl.setConversationStatus = setConversationStatus;
 
     function backToList() {
       $location.path('client/' + client.data.id + '/conversations');
@@ -62,7 +63,17 @@ angular.module('smartiApp')
           return response;
         },
         handleError
-      )
+      );
+    }
+
+    function setConversationStatus(newStatus) {
+      return ConversationService.setConversationStatus(conversation.id, newStatus).then(
+        function (response) {
+          conversation.meta.status = response.meta.status;
+          return response;
+        },
+        handleError
+      );
     }
 
   });

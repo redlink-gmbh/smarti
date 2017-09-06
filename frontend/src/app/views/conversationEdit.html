@@ -21,17 +21,29 @@
   <h2>Edit conversation <span ng-bind="$resolve.conversation.id"></span></h2>
 </div>
 <div>
+  <h3>Settings</h3>
+  <form class="form-inline">
+    <div class="form-group">
+      <strong>Status</strong>
+      <select class="form-control"
+              ng-model="$resolve.conversation.meta.status"
+              ng-options="s for s in ['New', 'Ongoing', 'Complete']"
+              ng-change="$ctrl.setConversationStatus($resolve.conversation.meta.status)"></select>
+    </div>
+  </form>
+</div>
+<div>
   <h3>Messages</h3>
   <div class="panel panel-info panel-sm"
        ng-repeat="m in $resolve.conversation.messages"
-       id="#{{$index}}">
+       id="#{{$index+1}}">
     <div class="panel-heading">
-      #{{$index}}
+      #{{$index+1}}
       <span ng-bind="m.user.displayName"></span>
       <span class="pull-right" style="display: inline-block">
         <button ng-if="m.editing" class="btn btn-default btn-xs" ng-click="$ctrl.saveMessage(m)"><i class="glyphicon glyphicon-floppy-disk"></i></button>
         <button ng-if="!m.editing" class="btn btn-default btn-xs" ng-click="m.editing = true"><i class="glyphicon glyphicon-pencil"></i></button>
-        <button ng-if="!m.editing" class="btn btn-default btn-xs" ng-click="$ctrl.deleteMessage(m.id)"><i class="glyphicon glyphicon-remove"></i></button>
+        <button ng-if="!m.editing" class="btn btn-default btn-xs" ng-click="$ctrl.deleteMessage(m)"><i class="glyphicon glyphicon-remove"></i></button>
       </span>
     </div>
     <div class="panel-body">

@@ -33,10 +33,12 @@ angular.module('smartiApp')
     this.saveMessage = saveMessage;
     this.deleteMessage = deleteMessage;
 
+    this.setConversationStatus = setConversationStatus;
+
     function getForClient(clientId, page, pageSize) {
       return $http.get(ENV.serviceBaseUrl + 'admin/conversation', {
         params: {
-          clientId: clientId,
+          owner: clientId,
           page: page,
           pageSize: pageSize
         }
@@ -64,6 +66,14 @@ angular.module('smartiApp')
         .then(function (response) {
           return response.data;
         });
+    }
+
+    function setConversationStatus(conversationId, newStatus) {
+      return $http.put(ENV.serviceBaseUrl + 'admin/conversation/' + conversationId + '/status/' + newStatus, undefined)
+        .then(function (response) {
+          return response.data;
+        });
+
     }
 
   });
