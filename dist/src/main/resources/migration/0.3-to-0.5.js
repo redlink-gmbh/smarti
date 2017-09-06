@@ -42,78 +42,79 @@ db.getCollection(client).find().forEach(function(c) {
             created: new ISODate(),
             modified: new ISODate(),
             config: {
-        		"queryBuilder" : [
-        			{
-        				"name" : "conversationmlt",
-        				"displayName" : "Related Conversations",
-        				"type" : "conversationmlt",
-        				"enabled" : true,
-        				"unbound" : false,
-        				"configuration" : {
-        					
-        				}
-        			},
-        			{
-        				"solrEndpoint" : "http://host.domain.org:8983/solr/change-me",
-        				"search" : {
-        					"title" : {
-        						"enabled" : false,
-        						"field" : ""
-        					},
-        					"fullText" : {
-        						"enabled" : true,
-        						"field" : ""
-        					},
-        					"spatial" : {
-        						"enabled" : true,
-        						"locationNameField" : ""
-        					},
-        					"temporal" : {
-        						"enabled" : false
-        					},
-        					"related" : {
-        						"enabled" : false,
-        						"fields" : [ ]
-        					}
-        				},
-        				"defaults" : {
-        					"rows" : 10,
-        					"fields" : "*,score"
-        				},
-        				"result" : {
-        					"mappings" : {
-        						"title": "title",
-        				        "description": "description",
-        				        "type": "type",
-        				        "doctype": "doctype",
-        				        "thumb": "thumb",
-        				        "link": "link",
-        				        "date": "date",
-        				        "source": "source"
-        					},
-        				},
-        				"name" : "db-search-endpoint",
-        				"displayName" : "DB Search Endpoint",
-        				"type" : "solrsearch",
-        				"enabled" : false,
-        				"unbound" : false,
-        				"configuration" : {
-        					
-        				},
-        				"_class" : "io.redlink.smarti.query.solr.SolrEndpointConfiguration"
-        			},
-        			{
-        				"name" : "conversationsearch",
-        				"displayName" : "conversationsearch",
-        				"type" : "conversationsearch",
-        				"enabled" : true,
-        				"unbound" : false,
-        				"configuration" : {
+                "queryBuilder" : [
+                    {
+                        "name" : "conversationmlt",
+                        "displayName" : "Related Conversations",
+                        "type" : "conversationmlt",
+                        "enabled" : true,
+                        "unbound" : false,
+                        "configuration" : {
+                            
+                        }
+                    },
+                    {
+                        "solrEndpoint" : "http://host.domain.org:8983/solr/change-me",
+                        "search" : {
+                            "title" : {
+                                "enabled" : false,
+                                "field" : ""
+                            },
+                            "fullText" : {
+                                "enabled" : true,
+                                "field" : ""
+                            },
+                            "spatial" : {
+                                "enabled" : true,
+                                "locationNameField" : ""
+                            },
+                            "temporal" : {
+                                "enabled" : false
+                            },
+                            "related" : {
+                                "enabled" : false,
+                                "fields" : [ ]
+                            }
+                        },
+                        "defaults" : {
+                            "rows" : 10,
+                            "fields" : "*,score"
+                        },
+                        "result" : {
+                            "numOfRows": 10,
+                            "mappings" : {
+                                "title": "title",
+                                "description": "description",
+                                "type": "type",
+                                "doctype": "doctype",
+                                "thumb": "thumb",
+                                "link": "link",
+                                "date": "date",
+                                "source": "source"
+                            },
+                        },
+                        "name" : "search-endpoint-0",
+                        "displayName" : "Search Endpoint",
+                        "type" : "solrsearch",
+                        "enabled" : false,
+                        "unbound" : false,
+                        "configuration" : {
+                            
+                        },
+                        "_class" : "io.redlink.smarti.query.solr.SolrEndpointConfiguration"
+                    },
+                    {
+                        "name" : "conversationsearch",
+                        "displayName" : "conversationsearch",
+                        "type" : "conversationsearch",
+                        "enabled" : true,
+                        "unbound" : false,
+                        "configuration" : {
 
-        				}
-        			}
-        		]
-        	}
+                        }
+                    }
+                ]
+            }
         }},
         { upsert: true }
     );
