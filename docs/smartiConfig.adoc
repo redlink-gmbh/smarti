@@ -158,9 +158,11 @@ This analysis components allows to reference stopword lists for extracted tokens
 * `processor.token.stopword.default = {spring-resource}` : List of stop words used for any language (in addition to language specific stopwords)
 * `processor.token.stopword.{lang} = {spring-resource}`: list of stop words for the language `lang`.
 
-Stopword lists a text files with a single word per line. Empty lines and lines starting with `#` are ignored.
+where:
 
-Lists are loaded as https://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html[Spring Resource]. Therefore `classpath:`, `file:` and URL resources (`http(s):`, `ftp:`) can be used.
+* `lang` is the 2 letter ISO language code (e.g. `de` for German)
+*  `spring-resource` are loaded as https://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html[Spring Resource]. Therefore `classpath:`, `file:` and URL resources (`http(s):`, `ftp:`) can be used.
+*  Stopword lists a text files with a single word per line. Empty lines and lines starting with `#` are ignored.
 
 #### Hasso Extraction
 
