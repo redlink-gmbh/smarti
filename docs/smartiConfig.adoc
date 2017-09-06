@@ -63,10 +63,10 @@ No core component of Smarti does send mails. However in cases where modules want
 
 https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to use Solr in Spring. It supports embedded, standalone and cloud versions of Solr by adding the according modules.
 
-* `solrlib.home=/absolute/path/to/solr/home`: The `${SOLR_HOME}` directory, Used by embedded and standalone. **NOTE:** In case an embedded Solr Server is used it is highly recommended to set `solrlib.home` to the absolute path where the embedded Solr server will be located. Otherwise a new Solr core will be created in a temp folder on every startup.
+* `solrlib.home = /absolute/path/to/solr/home`: The `${SOLR_HOME}` directory, Used by embedded and standalone. **NOTE:** In case an embedded Solr Server is used it is highly recommended to set `solrlib.home` to the absolute path where the embedded Solr server will be located. Otherwise a new Solr core will be created in a temp folder on every startup.
 * `solrlib.base-url = http://localhost:8983/solr`: base-url for all solr requests. This will trigger using solrlib-standalone if available on the classpath -
 * `solrlib.zk-connection = zookeeper1:8121,zookeeper2:8121`: ZooKeeper connection string. This will trigger using solrlib-cloud if available on the classpath
-* `solrlib.collection-prefix = `: prefix for the remote collection names, to avoid name-clashes on shared servers. Only used by standalone and cloud
+* `solrlib.collection-prefix =`: prefix for the remote collection names, to avoid name-clashes on shared servers. Only used by standalone and cloud
 * `solrlib.max-shards-per-node = 1`: Only relevant in cloud-mode
 * `solrlib.deploy-cores = true`: option to disable automatic configuration update/deployment to remote servers. You might not have the karma to do so. Only used by standalone and cloud
 * `solrlib.delete-on-shutdown = false`: option to delete the solrlib-home upon shutdown. Only used by embedded
@@ -75,12 +75,12 @@ https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to us
 
 **UI Cache**
 
-* `ui.cache.maxAge`: The maximum age of elements in the cache in seconds (default: `864000` - 10 days). If `< 0` no cache will be used.
-* `ui.cache.indexMaxAge`: The maximum age of a cached `index.hmtl` (default: `3600` - 1 hour). If `< 0` no cache will be used.
+* `ui.cache.maxAge = 864000`: The maximum age of elements in the cache in seconds (default: `864000` - 10 days). If `< 0` no cache will be used.
+* `ui.cache.indexMaxAge = 3600`: The maximum age of a cached `index.hmtl` (default: `3600` - 1 hour). If `< 0` no cache will be used.
 
 **CORS**
 
-* `cors.enabled:true`: allows to enable/disable Cors
+* `cors.enabled = true`: allows to enable/disable Cors
 
 **Property Injection**
 
@@ -90,7 +90,7 @@ Allows to inject backend properties in the Frontend
 
 **Default Wbservice Error Handler**
  
-* `webservice.errorhandler.writetrace = false`: Note that even if disabled stacktraces for `5**` responses will be loge.
+* `webservice.errorhandler.writetrace = false`: Note that even if disabled stacktraces for `5**` responses will be logged.
 
 **Jsonp callback**
 
@@ -113,8 +113,8 @@ The Speak Service managed resource bundles for bot generated replay messages in 
 
 Conversation are indexed in Solr managed by SolrLib
 
-* `smarti.index.conversation.commitWithin`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
-*  `smarti.index.conversation.message.merge-timeout`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
+* `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
+*  `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 
 ### Analysis Configuration
 
@@ -122,13 +122,13 @@ For now Analysis configurations are global. No Client specific configuration is 
 
 _NOTE:_ Client specific analysis configurations are planed for a future release
 
-#### Analysis Chain configuration
+#### Analysis Chain
 
 The analysis chain used to process conversations can be configured by the following properties
 
-* `smarti.analysis.required =`: coma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
-* `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: coma separated list of optional analysis component.
-** coma separated list of names to explicitly define the processors to be used
+* `smarti.analysis.required =`: comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
+* `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
+** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
 #### Interesting Term
@@ -137,15 +137,15 @@ Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a do
 
 Their are several ways to configure Solr endpoints to be used for interesting terms.
 
-* `keyword.solrmlt[0].name = my-corpus`
-* `keyword.solrmlt[0].url = http://localhost:8983/solr/my-corpus`
+* `keyword.solrmlt[0].name = my-corpus`: name suffix for the analysis component name. MUST BE unique.
+* `keyword.solrmlt[0].url = http://localhost:8983/solr/my-corpus`: The URL of the Solr endpoint
 * `keyword.solrmlt[0].field = text_gen`: The default field used in cases the lanugage is unknown or as fallback if no field is configured for the language of the conversation
-* `keyword.solrmlt[0].lang.{lang} = {field}`: The field to be used for `{lang}` (e.g. for German: `keyword.solrmlt[0].lang.de=text_de`)
+* `keyword.solrmlt[0].lang.{lang} = {field}`: The field to be used for `{lang}` (e.g. for German: `keyword.solrmlt[0].lang.de = text_de`)
 
 The above configuration requires a Solr Server. To allow the use of embedded Solr Servers specific modules are required. Currenty two of those exist.
 
-* `solrcore.wikipedia.de.resource=`: Absolute path to the archive with the German Wikipedia Corpus.
-* `solrcore.crawl.systel.resource=`: Absolute path to the archive with the crawl of Systel related Webpages
+* `solrcore.wikipedia.de.resource =`: Absolute path to the archive with the German Wikipedia Corpus.
+* `solrcore.crawl.systel.resource =`: Absolute path to the archive with the crawl of Systel related Webpages
 
 **NOTE:** The archives with the Solr cores are separate downloads. The cores are initialized on the embedded Solr server managed by https://github.com/redlink-gmbh/solrlib/[SolrLib]
 
@@ -166,8 +166,8 @@ Lists are loaded as https://docs.spring.io/spring/docs/current/spring-framework-
 
 Hasso was a spefic use case of the predecessor of Smarti. The module `hasso-vocabulary-extractor` provides two vocabulary based keyword extraction components. 
 
-* `smarti.extractor.synonyms.db`: `CSV` file with `;` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `db-entity`.
-* `smarti.extractor.synonyms.sap`: `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
+* `smarti.extractor.synonyms.db =`: `CSV` file with `;` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `db-entity`.
+* `smarti.extractor.synonyms.sap =`: `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
 
 
 ### Query Builder Defalt Configuration
@@ -178,16 +178,16 @@ This section includes configuration properties used to define the default config
 
 #### Solr Endpoint configuration
 
-A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module. The configuration properties described in this section do 
+A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module.  
 
-_NOTE:_ configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<clientConf.adoc#, Client Configuration>> service.
+_NOTE:_ The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<clientConf.adoc#, Client Configuration>> service.
 
 **Prefix**: `query.solr`
 
 **General Properties**
 
-* `query.solr.enabled` (type: `Boolean`): The default state for new Solr Endpoint Configurations
-* `query.solr.solr-endpoint` (type: `String`): The URL of the Solr Endpoint (Solr Core)
+* `query.solr.enabled = false` (type: `Boolean`): The default state for new Solr Endpoint Configurations
+* `query.solr.solr-endpoint = http(s)://solr-host:port/solr/core-name` (type: `String`): The URL of the Solr Endpoint (Solr Core)
 
 **Search Configuration**
 
@@ -196,25 +196,25 @@ Properties with the prefix `query.solr.search` define how the Solr query is buil
 The default will search for *location names* and general *token names* in the default search field of Solr. All other options are deactivated. By setting the following properties those defaults for new Solr Endpoint configurations can be changed.
 
 * Title Search
-** `query.solr.search.title.enabled` (type: `Boolean`, default: `false`): Title search is disabled by default
-** `query.solr.search.title.field` (type: `String`): The name of the full text field are `null` or `empty` to use the default search field
+** `query.solr.search.title.enabled = false` (type: `Boolean`, default: `false`): Title search is disabled by default
+** `query.solr.search.title.field = title` (type: `String`): The name of the full text field are `null` or `empty` to use the default search field
 * Full-Text Search
-** `query.solr.search.full-text.enabled` (type: `Boolean`, default: `true`): Full text search is enabled by default
-** `query.solr.search.full-text.field` (type: `String`): The name of the full text field are `null` to use the default field
+** `query.solr.search.full-text.enabled = true` (type: `Boolean`, default: `true`): Full text search is enabled by default
+** `query.solr.search.full-text.field =` (type: `String`): The name of the full text field are `null` or empty to use the default field
 * Related Document Search
-** `query.solr.search.related.enabled` (type: `Boolean`, default: `true`): If related Document search enabled
-** `query.solr.search.related.fields` (type: `List<String>`): The fields to use for search for similar documents
+** `query.solr.search.related.enabled = false` (type: `Boolean`, default: `true`): If related Document search enabled
+** `query.solr.search.related.fields =` (type: `List<String>`): The fields to use for search for similar documents
 * Spatial (Geo) Search
-** `query.solr.search.spatial.enabled` (type: `Boolean`, default: `false`)
-** `query.solr.search.spatial.locationNameField` (type: `String`): The name of the field used to search for location names or `null` to use the default field
+** `query.solr.search.spatial.enabled = true` (type: `Boolean`, default: `true`)
+** `query.solr.search.spatial.locationNameField =` (type: `String`): The name of the field used to search for location names or `null` or empty to use the default field
 ** `query.solr.search.spatial.latLonPointSpatialField` (type: `String`): The name of the Solr field using a `latLonPointSpatial` type to search for documents near a extracted location (with included lat/lon information)
-** `query.solr.search.spatial.rptField` (type: `String`): The name of the Solr field using a `rpt` type to search for documents near a extracted location (with included lat/lon information)
-** `query.solr.search.spatial.bboxField` (type: `String`): The name of the Solr field using a `bbox` type to search for documents near a extracted location (with included lat/lon information)
+** `query.solr.search.spatial.rptField =` (type: `String`): The name of the Solr field using a `rpt` type to search for documents near a extracted location (with included lat/lon information)
+** `query.solr.search.spatial.bboxField =` (type: `String`): The name of the Solr field using a `bbox` type to search for documents near a extracted location (with included lat/lon information)
 * Temporal Search
-** `query.solr.search.temporal.enabled` (type: `Boolean`, default: `false`):
-** `query.solr.search.temporal.timeRangeField` (type: `Boolean`, default: `false`): The name of the Solr field using the `DateRangeField` type used to search Documents near the extracted Date/Times or Date/Time ranges.
-** `query.solr.search.temporal.startTimeField` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near extracted Date/Times or the start time of extracted ranges.
-** `query.solr.search.temporal.endTimeField` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near end date of extracted ranges.
+** `query.solr.search.temporal.enabled = false` (type: `Boolean`, default: `false`):
+** `query.solr.search.temporal.timeRangeField =` (type: `Boolean`, default: `false`): The name of the Solr field using the `DateRangeField` type used to search Documents near the extracted Date/Times or Date/Time ranges.
+** `query.solr.search.temporal.startTimeField =` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near extracted Date/Times or the start time of extracted ranges.
+** `query.solr.search.temporal.endTimeField =` (type: `Boolean`, default: `false`): The name of the Solr date field used to search for Documents near end date of extracted ranges.
 
 **Result Configuration**
 
@@ -222,24 +222,24 @@ Properties with the prefix `query.solr.result` are used to define how results ar
 
 Setting defaults for mappings is usefull if different cores do share the same or similar `schema.xml`
 
-* `query.solr.result.mappings.date` (type: `String`): The date of the document
-* `query.solr.result.mappings.description` (type: `String`): The description to be shown for results
-* `query.solr.result.mappings.doctype` (type: `String`): The document type of the document
-* `query.solr.result.mappings.link` (type: `String`): The link pointing to the resource described by the document.
-* `query.solr.result.mappings.source` (type: `String`): THe source of the document
-* `query.solr.result.mappings.thumb` (type: `String`): The thumbnail for the document
-* `query.solr.result.mappings.title` (type: `String`): The title of the document
-* `query.solr.result.mappings.type` (type: `String`): the type of the document
+* `query.solr.result.mappings.title =` (type: `String`): The title of the document
+* `query.solr.result.mappings.description =` (type: `String`): The description to be shown for results
+* `query.solr.result.mappings.type =` (type: `String`): the type of the document
+* `query.solr.result.mappings.doctype =` (type: `String`): The document type of the document
+* `query.solr.result.mappings.thumb =` (type: `String`): The thumbnail for the document
+* `query.solr.result.mappings.link =` (type: `String`): The link pointing to the resource described by the document.
+* `query.solr.result.mappings.date =` (type: `String`): The date of the document
+* `query.solr.result.mappings.source =` (type: `String`): The source of the document
 
 **Solr Defaults Configuration**
 
 The prefix `query.solr.defaults` properties can be used to set Solr Params that are included in all
-Solr queries (e.g. to set the default field one can define `query.solr.defaults.df=my-default-field`).
+Solr queries (e.g. to set the default field one can define `query.solr.defaults.df = my-default-field`).
 
 Typical examples include
 
-* `query.solr.defautls.rows`: the number of results
-* `query.solr.defautls.df`: the default search field
+* `query.solr.defautls.rows = 10`: This sets the number of results to `10`
+* `query.solr.defautls.df = text`: the default search field to `text`
 
 _NOTE:_ Defaults (and invariants) can also be set in the Solr Request hander (`solrconf.xml`). In cases where one has control over the Solr configuration it is preferable to do so.
 
