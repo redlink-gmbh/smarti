@@ -31,7 +31,7 @@ import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.repo.ConfigurationRepo;
+import io.redlink.smarti.repositories.ConfigurationRepo;
 
 @Component
 public class ConfigurationService {

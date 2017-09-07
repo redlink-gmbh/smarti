@@ -38,6 +38,10 @@ angular.module('smartiApp')
       }
     };
 
+    $scope.manageConversations = function (clientId) {
+      $location.path('client/' + clientId + '/conversations');
+    };
+
     listClients();
 
   });

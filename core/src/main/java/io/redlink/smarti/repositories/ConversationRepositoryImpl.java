@@ -78,10 +78,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         final Query query;
         final Update update;
         if (mongoTemplate.exists(isMessageEdit, Conversation.class)) {
-            query = isMessageEdit;
-            update = new Update()
-                    .set("messages.$", message)
-                    .currentDate("lastModified");
+            return updateMessage(conversation.getId(), message);
         } else {
             query = new Query();
             query.addCriteria(Criteria.where("_id").is(conversation.getId()));
@@ -97,6 +94,23 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
             return mongoTemplate.findById(conversation.getId(), Conversation.class);
         } else {
             throw new ConcurrentModificationException();
+        }
+    }
+
+    @Override
+    public Conversation updateMessage(ObjectId conversationId, Message message) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId))
+                .addCriteria(Criteria.where("messages._id").is(message.getId()));
+
+        final Update update = new Update()
+                .set("messages.$", message)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() == 1) {
+            return mongoTemplate.findById(conversationId, Conversation.class);
+        } else {
+            return null;
         }
     }
 
@@ -172,6 +186,29 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         mongoTemplate.updateFirst(query, update, Conversation.class);
 
         return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+
+    @Override
+    public Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update()
+                .set("meta.status", status)
+                .currentDate("lastModified");
+
+        mongoTemplate.updateFirst(query, update, Conversation.class);
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+
+    @Override
+    public boolean deleteMessage(ObjectId conversationId, String messageId) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update()
+                .pull("messages", new BasicDBObject("_id", messageId))
+                .currentDate("lastModified");
+
+        final WriteResult result = mongoTemplate.updateFirst(query, update, Conversation.class);
+        return result.getN() == 1;
     }
 
     @Override

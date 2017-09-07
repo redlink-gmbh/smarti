@@ -18,6 +18,7 @@
 package io.redlink.smarti.repositories;
 
 import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
@@ -47,9 +48,16 @@ public interface ConversationRepositoryCustom {
 
     Conversation appendMessage(Conversation conversation, Message message);
 
+    Conversation updateMessage(ObjectId conversationId, Message updatedMessage);
+
     Conversation saveIfNotLastModifiedAfter(Conversation finalConversation, Date lastModified);
 
     Conversation completeConversation(ObjectId conversationId);
 
     Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta);
+
+    Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status);
+
+    boolean deleteMessage(ObjectId conversationId, String messageId);
+
 }
