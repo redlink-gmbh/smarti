@@ -17,19 +17,21 @@
 
 package io.redlink.smarti.repositories;
 
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import java.util.Collection;
+import java.util.List;
 
 /**
- * Conversation Repository
- *
- * @author Sergio Fernández
+ * @author Thomas Kurz (thomas.kurz@redlink.co)
+ * @since 17.08.17.
  */
-public interface ConversationRepository extends CrudRepository<Conversation, ObjectId>, ConversationRepositoryCustom {
-
-    Collection<Conversation> findConversationByUserId(String userId); //TODO: I guess wouldn't work
-
+public interface ClientRepository extends CrudRepository<Client, ObjectId> {
+    public boolean existsByName(String name);
+    public Client findOneByDefaultClientTrue();
+    public List<Client> findByDefaultClientTrue();
+    public Client findOneByName(String name);
 }
