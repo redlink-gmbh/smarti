@@ -192,7 +192,8 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     public Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status) {
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
-                .set("meta.status", status);
+                .set("meta.status", status)
+                .currentDate("lastModified");
 
         mongoTemplate.updateFirst(query, update, Conversation.class);
 
@@ -203,7 +204,8 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     public boolean deleteMessage(ObjectId conversationId, String messageId) {
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
-                .pull("messages", new BasicDBObject("_id", messageId));
+                .pull("messages", new BasicDBObject("_id", messageId))
+                .currentDate("lastModified");
 
         final WriteResult result = mongoTemplate.updateFirst(query, update, Conversation.class);
         return result.getN() == 1;

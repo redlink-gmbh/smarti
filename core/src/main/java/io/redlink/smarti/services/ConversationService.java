@@ -20,6 +20,7 @@ package io.redlink.smarti.services;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.Configuration;
@@ -78,6 +79,7 @@ public class ConversationService {
     private ConversationRepository conversationRepository;
 
     private final ExecutorService processingExecutor;
+    private ApplicationEventPublisher applicationEventPublisher;
 
     public ConversationService(Optional<ExecutorService> processingExecutor) {
         this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
@@ -245,6 +247,8 @@ public class ConversationService {
     }
 
     private Conversation updateQueries(Client client, Conversation conversation) {
+        if (conversation == null) return null;
+
         Configuration config;
         if(client == null){
             config = confService.getClientConfiguration(conversation.getOwner());
@@ -327,17 +331,25 @@ public class ConversationService {
     }
 
     public Conversation updateStatus(ObjectId conversationId, ConversationMeta.Status newStatus) {
-        // TODO: do I need to trigger a re-index? How?
-        return conversationRepository.updateConversationStatus(conversationId, newStatus);
+        return publishSaveEvent(updateQueries(null, conversationRepository.updateConversationStatus(conversationId, newStatus)));
     }
 
     public boolean deleteMessage(ObjectId conversationId, String messageId) {
-        // TODO: do I need to trigger a re-index? How?
-        return conversationRepository.deleteMessage(conversationId, messageId);
+        final boolean success = conversationRepository.deleteMessage(conversationId, messageId);
+        if (success) {
+            final Conversation one = conversationRepository.findOne(conversationId);
+            publishSaveEvent(updateQueries(null, one));
+        }
+        return success;
     }
 
     public Conversation updateMessage(ObjectId conversationId, Message updatedMessage) {
-        // TODO: do I need to trigger a re-index? How?
-        return conversationRepository.updateMessage(conversationId, updatedMessage);
+        return publishSaveEvent(updateQueries(null, conversationRepository.updateMessage(conversationId, updatedMessage)));
+    }
+
+    private Conversation publishSaveEvent(Conversation conversation) {
+        Preconditions.checkNotNull(conversation, "Can't publish <null> conversation");
+        eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
+        return conversation;
     }
 }
