@@ -28,8 +28,17 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.UUID;
+
+import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
+import static org.springframework.http.HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD;
+import static org.springframework.http.HttpHeaders.ORIGIN;
 
 @Configuration
 @EnableWebSecurity
@@ -47,6 +56,11 @@ public class SimpleAuthConfiguration extends WebSecurityConfigurerAdapter {
             .authorizeRequests()
                 .anyRequest().permitAll()
                 .and()
+            .httpBasic()
+                .realmName("smarti admin area")
+                .and()
+            .csrf()
+                .disable()
         ;
     }
 
@@ -54,7 +68,9 @@ public class SimpleAuthConfiguration extends WebSecurityConfigurerAdapter {
     public void configureGlobal(AuthenticationManagerBuilder auth, @Value("${security.password:}") String password) throws Exception {
         if (StringUtils.isBlank(password)) {
             password = UUID.randomUUID().toString();
-            log.error("No password configured in 'security.password', using {}", password);
+            log.error("No password configured in 'security.password', using '{}' for user 'admin'", password);
+        } else {
+            log.info("Configuring passwort from 'security.password' for user 'admin'");
         }
         auth
             .inMemoryAuthentication()
