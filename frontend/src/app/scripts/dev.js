@@ -14,14 +14,15 @@
  * limitations under the License.
  *
  */
+'use strict';
 
 angular
   .module('smartiApp')
   .config(function ($httpProvider) {
-    // $httpProvider.interceptors.push('devAuthInterceptor');
+    $httpProvider.interceptors.push('devAuthInterceptor');
   })
   .factory('devAuthInterceptor', function($location, $log) {
-    var user = $location.search().user || 'user',
+    var user = $location.search().user || 'admin',
       passwd = $location.search().passwd || user;
 
     $log.error('!!Warning!! Using hard-coded credentials for user "' + user + '"');

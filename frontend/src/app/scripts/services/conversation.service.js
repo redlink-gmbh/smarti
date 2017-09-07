@@ -78,14 +78,14 @@ angular.module('smartiApp')
     }
 
     function buildExportLink(owner) {
-      return `${ENV.serviceBaseUrl}admin/conversation/export?owner=${owner}`
+      return ENV.serviceBaseUrl+'admin/conversation/export?owner='+owner;
     }
 
     function importConversations(owner, file, replaceExisting) {
-      let data = new FormData();
+      var data = new FormData();
       data.append("file", file);
 
-      return $http.post(`${ENV.serviceBaseUrl}admin/conversation/import`, data, {
+      return $http.post(ENV.serviceBaseUrl + 'admin/conversation/import', data, {
         params: {
           owner: owner,
           replace: replaceExisting || false
@@ -100,13 +100,13 @@ angular.module('smartiApp')
     }
 
     function importConversations2(owner, file, replaceExisting) {
-      let defer = $q.defer(),
+      var defer = $q.defer(),
         reader = new FileReader();
 
       reader.onloadend = function (e) {
-        let data = e.target.result;
+        var data = e.target.result;
 
-        defer.resolve($http.post(`${ENV.serviceBaseUrl}admin/conversation/import`, data, {
+        defer.resolve($http.post(ENV.serviceBaseUrl + 'admin/conversation/import', data, {
           params: {
             owner: owner,
             replace: replaceExisting || false
