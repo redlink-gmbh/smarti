@@ -16,6 +16,7 @@
  */
 package io.redlink.smarti.webservice;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
@@ -29,10 +30,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.bson.types.ObjectId;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -44,10 +48,12 @@ import java.util.Objects;
 @Api("conversation-admin")
 public class ConversationAdminWebservice {
 
+    private final ObjectMapper jacksonObjectMapper;
     private final ConversationService conversationService;
     private final ClientService clientService;
 
-    public ConversationAdminWebservice(ConversationService conversationService, ClientService clientService) {
+    public ConversationAdminWebservice(ObjectMapper jacksonObjectMapper, ConversationService conversationService, ClientService clientService) {
+        this.jacksonObjectMapper = jacksonObjectMapper;
         this.conversationService = conversationService;
         this.clientService = clientService;
     }
@@ -141,7 +147,7 @@ public class ConversationAdminWebservice {
     }
 
     @ApiOperation(value = "import conversations")
-    @RequestMapping(value = "import", method = RequestMethod.POST)
+    @RequestMapping(value = "import", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> importConversations(
             @RequestParam("owner") ObjectId owner,
             @RequestParam(value = "replace", defaultValue = "false", required = false) boolean replace,
@@ -150,6 +156,26 @@ public class ConversationAdminWebservice {
         if (clientService.exists(owner)) {
             conversationService.importConversations(owner, conversations, replace);
             return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @ApiOperation(value = "import conversations")
+    @RequestMapping(value = "import", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> importConversations(
+            @RequestParam("owner") ObjectId owner,
+            @RequestParam(value = "replace", defaultValue = "false", required = false) boolean replace,
+            @RequestParam("file") MultipartFile file
+    ) {
+        if (clientService.exists(owner)) {
+            try {
+                final List<Conversation> conversations = jacksonObjectMapper.readValue(file.getInputStream(),
+                        jacksonObjectMapper.getTypeFactory().constructCollectionType(List.class, Conversation.class));
+                return importConversations(owner, replace, conversations);
+            } catch (IOException e) {
+                return ResponseEntity.unprocessableEntity().build();
+            }
         } else {
             return ResponseEntity.badRequest().build();
         }

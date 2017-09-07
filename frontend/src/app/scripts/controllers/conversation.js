@@ -24,7 +24,7 @@
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('ConversationCtrl', function ($scope, $location, client, ConversationService) {
+  .controller('ConversationCtrl', function ($scope, $location, $route, $uibModal, client, ConversationService) {
     var $ctrl = this;
 
     $ctrl.conversations = null;
@@ -36,6 +36,9 @@ angular.module('smartiApp')
 
     $ctrl.openConversation = openConversation;
     $ctrl.backToList = backToList;
+    $ctrl.import = importConversations;
+
+    $scope.downloadLink = ConversationService.buildExportLink(client.data.id);
 
     $scope.$watch('$ctrl.paging.currentPage', loadConversations);
     $scope.$watch('$ctrl.paging.pageSize', loadConversations);
@@ -63,5 +66,28 @@ angular.module('smartiApp')
       $location.path('client/' + client.data.id + '/conversations/' + conversationId);
     }
 
+    function importConversations() {
+      $uibModal.open({
+        templateUrl: 'views/modal/import-conversations.html',
+        controller: function ($uibModalInstance) {
+          const $modal = this;
+
+          $modal.upload = function () {
+            ConversationService.importConversations(client.data.id, $modal.uploadFile, $modal.uploadReplace)
+              .then($uibModalInstance.close, $uibModalInstance.dismiss);
+          };
+          $modal.cancel = $uibModalInstance.dismiss;
+
+        },
+        controllerAs: '$modal'
+      }).result
+        .then(
+          function() {
+            $route.reload();
+          },
+          function () {
+
+          });
+    }
 
   });

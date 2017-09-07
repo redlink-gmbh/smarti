@@ -34,6 +34,8 @@ angular.module('smartiApp')
     this.deleteMessage = deleteMessage;
 
     this.setConversationStatus = setConversationStatus;
+    this.buildExportLink = buildExportLink;
+    this.importConversations = importConversations;
 
     function getForClient(clientId, page, pageSize) {
       return $http.get(ENV.serviceBaseUrl + 'admin/conversation', {
@@ -73,7 +75,50 @@ angular.module('smartiApp')
         .then(function (response) {
           return response.data;
         });
+    }
 
+    function buildExportLink(owner) {
+      return `${ENV.serviceBaseUrl}admin/conversation/export?owner=${owner}`
+    }
+
+    function importConversations(owner, file, replaceExisting) {
+      let data = new FormData();
+      data.append("file", file);
+
+      return $http.post(`${ENV.serviceBaseUrl}admin/conversation/import`, data, {
+        params: {
+          owner: owner,
+          replace: replaceExisting || false
+        },
+        headers: {
+          'Content-Type': undefined
+        }
+      })
+        .then(function (response) {
+          return response.data;
+        });
+    }
+
+    function importConversations2(owner, file, replaceExisting) {
+      let defer = $q.defer(),
+        reader = new FileReader();
+
+      reader.onloadend = function (e) {
+        let data = e.target.result;
+
+        defer.resolve($http.post(`${ENV.serviceBaseUrl}admin/conversation/import`, data, {
+          params: {
+            owner: owner,
+            replace: replaceExisting || false
+          }
+        })
+          .then(function (response) {
+            return response.data;
+          }));
+      };
+      reader.readAsText(file);
+
+      return defer.promise;
     }
 
   });

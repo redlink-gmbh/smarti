@@ -21,9 +21,19 @@
   <h2>Conversations for <span ng-bind="$resolve.client.data.name"></span></h2>
 </div>
 <div>
+  <a class="btn btn-default"
+     download="conversations.json"
+     ng-href="{{downloadLink}}">
+    <i class="glyphicon glyphicon-download"></i> Export
+  </a>
+  <button class="btn btn-default"
+          ng-click="$ctrl.import()">
+    <i class="glyphicon glyphicon-upload"></i> Import</button>
+</div>
+<div>
   <div class="clearfix">
     <div class="pull-right">
-      <select ng-model="$ctrl.paging.pageSize" ng-options="s for s in [5, 10, 15, 20]"></select>
+      <select class="form-control" ng-model="$ctrl.paging.pageSize" ng-options="s for s in [5, 10, 15, 20]"></select>
     </div>
   </div>
   <div>

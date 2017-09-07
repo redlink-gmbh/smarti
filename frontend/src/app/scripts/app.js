@@ -15,6 +15,7 @@ angular
     'ngAnimate',
     'ui.codemirror',
     'ui.bootstrap',
+    'ngFileUpload',
     'toastr'
   ])
   .config(function ($routeProvider) {
