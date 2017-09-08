@@ -20,8 +20,8 @@ var conversation = 'conversations',
 
 // create all clients
 db.getCollection(conversation).aggregate([
-    { $project: { _id: '$context.domain' } },
-    { $group: { _id: '$_id'}},
+    { $project: { domain: '$context.domain' } },
+    { $group: { _id: '$domain'}},
     { $project: {
         _id: { $literal: new ObjectId() },
         name: '$_id',
