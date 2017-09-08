@@ -79,10 +79,15 @@ share new ideas with us. Use the issue tracker or send a pull request. To learn 
 
 
 include::installation-guide.adoc[]
+
 include::configuration-guide.adoc[]
+
 include::integration-guide.adoc[]
+
 include::troubleshooting-guide.adoc[]
+
 include::developer-guide.adoc[]
+
 include::contribution-guide.adoc[]
 
 
