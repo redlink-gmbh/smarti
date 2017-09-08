@@ -15,7 +15,7 @@
  ~
  -->
 
-<form class="form" name="uploadForm" ng-submit="$modal.upload()">
+<form class="form" name="uploadForm" ng-submit="$modal.upload(uploadForm)">
   <div class="modal-header">
     <h3 class="modal-title">Import Conversations</h3>
   </div>
@@ -32,7 +32,17 @@
     </div>
   </div>
   <div class="modal-footer">
-    <button class="btn btn-primary" ng-disabled="uploadForm.$invalid">
+    <div class="has-error" style="display: inline-block; margin-right: 1em">
+      <span class="help-block">
+        <span ng-if="uploadForm.file.$invalid">
+          Please choose archive to import.
+        </span>
+        <span ng-if="$modal.serverError && uploadForm.$submitted && uploadForm.$pristine">
+          Server-Error: <span ng-bind="$modal.serverError"></span>
+        </span>
+      </span>
+    </div>
+    <button class="btn btn-primary" ng-disabled="$modal.inProgress || uploadForm.$invalid">
       <i class="glyphicon glyphicon-upload"></i> Importieren
     </button>
     <button class="btn btn-default" type="reset" ng-click="$modal.cancel()">Cancel</button>
