@@ -78,17 +78,17 @@ Smarti is an Open Source project so everyone is encouraged to improve it. Don't 
 share new ideas with us. Use the issue tracker or send a pull request. To learn more about contributing and how to become a Smarti commiter, read the <<index.adoc#_smarti_contribution_guide,Smarti Contribution Guide>>.
 
 
-include::installation-guide.adoc[]
+include::installation-guide.adoc[Installation Guide]
 
-include::configuration-guide.adoc[]
+include::configuration-guide.adoc[Configuration Guide]
 
-include::integration-guide.adoc[]
+include::integration-guide.adoc[Integration Guide]
 
-include::troubleshooting-guide.adoc[]
+include::troubleshooting-guide.adoc[Troubleshooting Guide]
 
-include::developer-guide.adoc[]
+include::developer-guide.adoc[Developer Guide]
 
-include::contribution-guide.adoc[]
+include::contribution-guide.adoc[Contribution Guide]
 
 
 == License
