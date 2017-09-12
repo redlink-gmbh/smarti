@@ -22,7 +22,7 @@ db.getCollection(conversation).aggregate([
     { $project: { domain: '$context.domain' } },
     { $group: { _id: '$domain'}},
     { $project: {
-        _id: { $literal: new ObjectId() },
+        _id: 0,
         name: '$_id',
         lastUpdate: { $literal: ISODate() },
         defaultClient: { $literal: false }
