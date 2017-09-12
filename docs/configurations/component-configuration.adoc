@@ -1,6 +1,3 @@
-=== Components Configuration
-
-
 ==== Analysis Components
 
 Smarti uses Redlink NLP for the analysis of Conversations. In addition it provides several specific analysis components that are implemented as extensions to Redlink NLP.
