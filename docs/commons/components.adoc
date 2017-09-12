@@ -5,9 +5,9 @@
 
 Smarti uses Redlink NLP for the analysis of Conversations. In addition it provides several specific analysis components that are implemented as extensions to Redlink NLP.
 
-This documentation focus is on those extensions 
+This documentation focus is on those extensions
 
-#### Intersting Terms
+#### Interesting Terms
 
 Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
@@ -24,9 +24,9 @@ For more information on the configuration of Interesting Term Extractors see the
 
 Analysis Component that applies all registered Token Filters. If a single filter wants to filter a Token the token is removed from the conversation.
 
-##### Stoword Token Filter
+##### Stopword Token Filter
 
-This Analysis component allows to filter extracted Tokens based on their value. Filtering is done based on stopword lists. One list is used for all languages where additional language specific lists can also be configured. 
+This Analysis component allows to filter extracted Tokens based on their value. Filtering is done based on stopword lists. One list is used for all languages where additional language specific lists can also be configured.
 
 See the <<smartiConf.adoc#token-filter-stopword, Stoword Token Filter configuration>> section of the Smarti Configuration for more information.
 
@@ -41,7 +41,7 @@ Tokens in the original texts are replaced with `<{Token.Type}>`. This allows to 
 Typically those rules are used to add ``Hint``s to token extracted from a conversation. The following example showns Regex pattern that assigns the `from` and `to` hints to `Place` type tokens extracted from a text
 
     public MyGermanTokenMatcher(){
-        super("de", EnumSet.of(MessageTopic.Reiseplanung), 
+        super("de", EnumSet.of(MessageTopic.Reiseplanung),
                 EnumSet.of(Type.Date, Type.Place));
         addRule(String.format("vo(?:n|m) (<%s>)", Type.Place), Hint.from);
         addRule(String.format("nach (<%s>)", Type.Place), Hint.to);
@@ -65,13 +65,13 @@ In German Location mentions often include words that are classified as Adjective
 
 This processor looks for cases like this and changes the Named Entity to also include the adjective.
 
-### Url Extractor 
+### Url Extractor
 
 Uses a Regex pattern to find URLs mentioned in conversations and makrs them as Named Entities with tag `url` and type `misc`. Those Named Entities are later converted to Tokens by the Named Entity Collector.
 
 #### Named Entity Collector
 
-This Analysis Component collects low level Named Entity Annotations and adds `Token` for them to the Conversation. The `type` and `tag` of the Named Entity Annotations are mapped to `Token.Type` and `Hints`. 
+This Analysis Component collects low level Named Entity Annotations and adds `Token` for them to the Conversation. The `type` and `tag` of the Named Entity Annotations are mapped to `Token.Type` and `Hints`.
 
 
 ### Templates
@@ -83,7 +83,7 @@ Templates are higher level models over extracted `Token`. Templates defines Slot
 LATCH is a model for Information Retrieval. The acronym stands for the different search dimensions that are represented as Roles in this template:
 
 * **L**ocation: Spatial (Geo) based search. In Smarti Tokens with the `Place` type are assigned this role
-* **A**lphabet: Refers to the full text component of searches. In Smarti the "surface form" of extracted Keywords and Tokens that do not fall into one of the other dimensions are used. 
+* **A**lphabet: Refers to the full text component of searches. In Smarti the "surface form" of extracted Keywords and Tokens that do not fall into one of the other dimensions are used.
 * **T**time: Refers to the temporal location of the search. In Samrti Tokens with the Time type are assigned this role.
 * **C**ategory: Categorizations are also an important search dimension. In Samrti Tokens with the Category type are assigned this role
 * **H**ierarchy: Refers to hirarchical searchis like Rating Systems ([1..5] Stars, [0..10] Points ...) but could also be used for price ranges and similar things. Currently this dimension is not used by Smarti.
@@ -153,7 +153,7 @@ The following listing shows the JSON if such an configuration
             }
         }
     }
-    
+
 where:
 
 * `_class`: This property needs to refer the Java implementation of the configuration class. The value MUST BE `io.redlink.smarti.query.solr.SolrEndpointConfiguration`
@@ -175,9 +175,9 @@ where:
 *** `latLonPointSpatialField`: Lat/long information of Tokens will be used to create query terms for this field. Spatial Tokens without those information will be ignored.
 *** `rptField`: Lat/long information of Tokens will be used to create query terms for this field. Spatial Tokens without those information will be ignored.
 *** `bboxField`: Lat/long information of Tokens will be used to create query terms for this field. Spatial Tokens without those information will be ignored.
-** temporal: Tokens with the role **T**ime will be considered for temporal searches. 
+** temporal: Tokens with the role **T**ime will be considered for temporal searches.
 *** `enabled`: allows to enable/disable temporal search.
-*** `timeRangeField`: Supports temporal queries on a Solr field using the `DateRangeField` field type 
+*** `timeRangeField`: Supports temporal queries on a Solr field using the `DateRangeField` field type
 *** `startTimeField`: Supports temporal queries on a Solr field using the date field type
 *** `endTimeField`: Optional time range support for Solr schemas that use a start/end date field for storing ranges
 ** `related`: Allows to generate Solr MLT queries to suggest similar documents. This will use the content of the Conversation to search for similar content. Typically this should be only enabled if all other options are disabled.

@@ -1,0 +1,37 @@
+== Smarti Configuration Guide
+
+The configuration of Smarti has two different levels
+
+
+=== Application Configuration
+
+Smarti is deployed as Spring Boot Application. It supports all configuration options as https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[documented for Spring Boot].
+
+The `smarti-application` module includes an `application.properties` file providing defaults. This ensures that Smarti does start correctly without any further configuration needed
+
+To apply custom configuration:
+
+* When using one of the installation packages for Debian or RedHat the main configuration file is located at `etc/smarti/application.properties`.
+* When using the runnable JAR the `application.properties` needs to be in `./config` or directly in the working directory.
+
+A list of well known configuration option can be found [here](TODO)
+
+include::configurations/application-configuration.adoc[]
+
+
+=== Client Configuration
+
+The client configuration allows to define the configuration for specific clients.
+Configuration changes are applied immediately (no restart required).
+Configuration is done via a RESTful service or via the provided configuration UI.
+
+include::configurations/client-configuration-api.adoc[]
+
+include::configurations/client-configuration-ui.adoc[]
+
+
+=== Configuration Endpoints
+
+==== Admin UI
+==== REST API (Swagger)
+==== Rocket.Chat integration JS

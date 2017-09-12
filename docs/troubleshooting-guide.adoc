@@ -1,0 +1,93 @@
+== Smarti Troubleshooting Guide
+
+In some cases, Smarti will not do what you expect it to do.
+Maybe you have encountered an issue that is already known.
+If so, this is the place to be for resolving the problem.
+
+=== General advices
+
+==== System requirements
+
+Only if the <<installation-guide.adoc#_system_requirements,System Requirements>> are fulfilled, Smarti will work correctly.
+E.g. in case of too little memory the system will behave in an unexpected way.
+
+CAUTION: Ensure the machine running Smarti has at least 4GB of RAM!
+
+CAUTION: Ensure your JVM has allocated enough memory for heap space by using the `-Xmx4g` option.
+
+
+==== System information
+
+In case of any problems, it is important to know how to analyze your system.
+Also if you like to report a bug it is quite necessary for other people, willing to help you, that you provide information about your environment and the setup.
+
+TIP: Read section <<installation-guide.adoc#_system_maintenance,System maintenance>> to learn more about:
+Logging, Monitoring, System Health, System Info Start/Stop.
+
+IMPORTANT: Know your system: platform, operating system, runtime environment, software components and release versions.
+
+
+=== External libraries not found or not readable
+
+==== Exception
+
+If external dependencies of Smarti are not in the class path of the JVM, the system health check:
+
+```
+http://${smarti-host}:${smarti-port}/system/health
+```
+will return `{"status":"DOWN"}`. Additional there are some errors logged during server startup in `main.log` like:
+
+```
+ERROR RequiredProvidersHealthCheck - Missing Processor: 'stanfordNlpProcessor'
+ERROR RequiredProvidersHealthCheck - Missing Processor: 'germanTrueCaseExtractor'
+```
+
+==== Impact
+
+If external libs are not in the class path of a running Smarti instance, the system will boot up anyway.
+For example, if the Stanford NLP libs are missing, the text analysis will not work.
+In this case Smarti can not analyze conversations correctly and also the suggested messages will not fit.
+
+==== Reason
+
+This problem can be caused by
+
+* forgotten to download the jars,
+* downloaded the jars to a wrong location
+* insufficient permissions on the file system
+
+
+==== Solution
+
+. *Download the external libraries*
++
+[CAUTION]
+====
+Ensure correct version and make sure they are in the class path.
+```bash
+$ cd ${working-dir}/ext
+$ wget ${ext-file-name}
+```
+====
+
+. *Check the permissions*
++
+[CAUTION]
+====
+Ensure that the user running Smarti has sufficient permissions on the file system.
+```bash
+$ sudo chown -R smarti: /var/lib/smarti/ext
+$ sudo chmod a+x /var/lib/smarti /var/lib/smarti/ext /var/log/smarti
+====
+
+. *Read more about additional components*
++
+NOTE: Read also section <<commons/additional-components.adoc#,Additional components>>.
+
+=== Running Smarti on a container
+bzip missing
+
+=== Not enough memory @build_time
+
+=== Not enough memory @run_time
