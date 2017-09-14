@@ -62,9 +62,11 @@ public class SolrEndpointConfiguration extends ComponentConfiguration implements
     @JsonInclude(content=Include.ALWAYS) //the UI needs to know all possible properties
     public static class SearchConfig {
         
-        private SingleFieldConfig title = new SingleFieldConfig();
-        private SingleFieldConfig fullText = new SingleFieldConfig();
-        private SpatialConfig spatial = new SpatialConfig();
+        //we want a default where fullText and spatial (based on locationName) are enabled
+        //by using the default search field of the index
+        private SingleFieldConfig title = new SingleFieldConfig(false, "");
+        private SingleFieldConfig fullText = new SingleFieldConfig(true, "");
+        private SpatialConfig spatial = new SpatialConfig(true, "");
         private TemporalConfig temporal = new TemporalConfig();
         private MultiFieldConfig related = new MultiFieldConfig();
         
@@ -112,9 +114,16 @@ public class SolrEndpointConfiguration extends ComponentConfiguration implements
     @JsonInclude(content=Include.ALWAYS) //the UI needs to know all possible properties
     public static class SingleFieldConfig{
         
+        public SingleFieldConfig(){}
+        
+        private SingleFieldConfig(boolean enabled, String field){
+            this.enabled = enabled;
+            this.field = field;
+        }
+        
         private boolean enabled = true;
         
-        private String field = "text";
+        private String field = ""; //empty means default search field
 
         public final boolean isEnabled() {
             return enabled;
@@ -193,6 +202,12 @@ public class SolrEndpointConfiguration extends ComponentConfiguration implements
             return enabled;
         }
         
+        public SpatialConfig(){}
+        
+        private SpatialConfig(boolean enabled, String locationNameField){
+            this.enabled = enabled;
+            this.locationNameField = locationNameField;
+        }
         public final void setEnabled(boolean enabled) {
             this.enabled = enabled;
         }
@@ -239,9 +254,14 @@ public class SolrEndpointConfiguration extends ComponentConfiguration implements
         private final List<String> fields;
 
         public MultiFieldConfig(){
-            this(null);
+            this(false, null);
         }
         public MultiFieldConfig(Collection<String> fields){
+            this(false, fields);
+        }
+        
+        private  MultiFieldConfig(boolean enabled, Collection<String> fields){
+            this.enabled = enabled;
             this.fields = fields == null ? new LinkedList<>() : new LinkedList<>(fields);
         }
 

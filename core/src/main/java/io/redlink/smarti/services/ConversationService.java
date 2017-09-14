@@ -20,13 +20,12 @@ package io.redlink.smarti.services;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.events.ConversationProcessCompleteEvent;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.repositories.ConversationRepository;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -35,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -74,7 +75,11 @@ public class ConversationService {
     @Autowired
     private ConfigurationService confService;
 
+    @Autowired
+    private ConversationRepository conversationRepository;
+
     private final ExecutorService processingExecutor;
+    private ApplicationEventPublisher applicationEventPublisher;
 
     public ConversationService(Optional<ExecutorService> processingExecutor) {
         this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
@@ -242,6 +247,8 @@ public class ConversationService {
     }
 
     private Conversation updateQueries(Client client, Conversation conversation) {
+        if (conversation == null) return null;
+
         Configuration config;
         if(client == null){
             config = confService.getClientConfiguration(conversation.getOwner());
@@ -293,4 +300,56 @@ public class ConversationService {
         }
     }
 
+    public Page<Conversation> listConversations(ObjectId clientId, int page, int pageSize) {
+        final PageRequest paging = new PageRequest(page, pageSize);
+        if (java.util.Objects.nonNull(clientId)) {
+            return conversationRepository.findByOwner(clientId, paging);
+        } else {
+            return conversationRepository.findAll(paging);
+        }
+    }
+
+    public Conversation getConversation(ObjectId conversationId) {
+        return storeService.get(conversationId);
+    }
+
+    public List<Conversation> getConversations(ObjectId owner) {
+        return conversationRepository.findByOwner(owner);
+    }
+
+    public void importConversations(ObjectId owner, List<Conversation> conversations) {
+        importConversations(owner, conversations, false);
+    }
+
+    public void importConversations(ObjectId owner, List<Conversation> conversations, boolean replace) {
+        // TODO(westei): implement this method
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public boolean exists(ObjectId conversationId) {
+        return conversationRepository.exists(conversationId);
+    }
+
+    public Conversation updateStatus(ObjectId conversationId, ConversationMeta.Status newStatus) {
+        return publishSaveEvent(updateQueries(null, conversationRepository.updateConversationStatus(conversationId, newStatus)));
+    }
+
+    public boolean deleteMessage(ObjectId conversationId, String messageId) {
+        final boolean success = conversationRepository.deleteMessage(conversationId, messageId);
+        if (success) {
+            final Conversation one = conversationRepository.findOne(conversationId);
+            publishSaveEvent(updateQueries(null, one));
+        }
+        return success;
+    }
+
+    public Conversation updateMessage(ObjectId conversationId, Message updatedMessage) {
+        return publishSaveEvent(updateQueries(null, conversationRepository.updateMessage(conversationId, updatedMessage)));
+    }
+
+    private Conversation publishSaveEvent(Conversation conversation) {
+        Preconditions.checkNotNull(conversation, "Can't publish <null> conversation");
+        eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
+        return conversation;
+    }
 }

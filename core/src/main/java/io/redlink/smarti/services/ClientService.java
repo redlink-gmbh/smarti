@@ -3,9 +3,8 @@ package io.redlink.smarti.services;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.repo.ClientRepository;
+import io.redlink.smarti.repositories.ClientRepository;
 
-import org.bson.BsonDocument;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,0 +1,63 @@
+<!--
+  ~ Copyright 2017 Redlink GmbH
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+<div class="clearfix">
+  <div class="pull-right">
+    <button class="btn btn-default" ng-click="$ctrl.backToList()">Back to List</button>
+  </div>
+  <h2>Conversations for <span ng-bind="$resolve.client.data.name"></span></h2>
+</div>
+<div>
+  <a class="btn btn-default"
+     download="conversations.json"
+     ng-href="{{downloadLink}}">
+    <i class="glyphicon glyphicon-download"></i> Export
+  </a>
+  <button class="btn btn-default"
+          ng-click="$ctrl.import()">
+    <i class="glyphicon glyphicon-upload"></i> Import</button>
+</div>
+<div>
+  <div class="clearfix">
+    <div class="pull-right">
+      <select class="form-control" ng-model="$ctrl.paging.pageSize" ng-options="s for s in [5, 10, 15, 20]"></select>
+    </div>
+  </div>
+  <div>
+    <div class="list-group">
+      <a class="list-group-item" ng-repeat="c in $ctrl.conversations track by c.id"
+         ng-click="$ctrl.openConversation(c.id)">
+          <span class="badge" ng-bind="c.messages.length | number"></span>
+        <h4 class="list-group-item-heading">
+          <span class="" ng-bind="c.messages[0].time | date:'medium'"></span>
+          <span class="small" ng-bind="c.id"></span>
+        </h4>
+        <div class="list-group-item-text">
+          <span ng-bind="c.meta.status"
+                class="label pull-right"
+                ng-class="{'label-default': c.meta.status != 'Complete', 'label-success': c.meta.status == 'Complete' }"></span>
+          <p ng-bind="c.messages[0].content">
+        </div>
+      </a>
+    </div>
+  </div>
+  <div class="text-center">
+    <ul uib-pagination ng-model="$ctrl.paging.currentPage"
+        total-items="$ctrl.paging.totalItems"
+        items-per-page="$ctrl.paging.pageSize"
+    ></ul>
+  </div>
+</div>
