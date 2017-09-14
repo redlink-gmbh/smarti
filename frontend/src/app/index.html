@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="styles/main.css">
   <!-- endbuild -->
 </head>
-<body ng-app="smartiApp">
+<body ng-app="smartiApp" ng-controller="RootCtrl as rootCtrl">
 <!--[if lte IE 8]>
 <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
 <![endif]-->
@@ -61,12 +61,15 @@
 <!-- build:js({.tmp,app}) scripts/scripts.js -->
 <script src="scripts/app.js"></script>
 <script src="scripts/config/toastr.js"></script>
+<script src="scripts/services/userservice.js"></script>
 <script src="scripts/services/clientservice.js"></script>
 <script src="scripts/services/configurationservice.js"></script>
 <script src="scripts/services/conversation.service.js"></script>
 <script src="scripts/models/client.js"></script>
 <script src="scripts/models/configuration.js"></script>
 <script src="scripts/models/componentconfiguration.js"></script>
+<script src="scripts/controllers/root.js"></script>
+<script src="scripts/controllers/login.js"></script>
 <script src="scripts/controllers/overview.js"></script>
 <script src="scripts/controllers/client.js"></script>
 <script src="scripts/controllers/conversation.js"></script>

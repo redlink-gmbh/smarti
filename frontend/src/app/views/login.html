@@ -1,0 +1,71 @@
+<!--
+  ~ Copyright 2017 Redlink GmbH
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+<div ng-if="!user" class="row">
+  <div class="col-xs-6 col-sm-4 col-xs-offset-3 col-sm-offset-4"
+    ng-switch="$ctrl.action">
+    <form ng-switch-default
+      name="loginForm" class="form-horizontal" ng-submit="$ctrl.login()">
+      <div class="form-group">
+        <label for="username" class="col-xs-4 control-label">Username:</label>
+        <div class="col-xs-8">
+          <input id="username" name="username"
+                 type="text" class="form-control"
+                 required
+                 ng-model="$ctrl.userName" />
+        </div>
+      </div>
+      <div class="form-group" ng-if="$ctrl.action == 'signup'">
+        <label for="email" class="col-xs-4 control-label">Email:</label>
+        <div class="col-xs-8">
+          <input id="email" name="email"
+                 type="email" class="form-control"
+                 required
+                 ng-model="$ctrl.userEmail" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password" class="col-xs-4 control-label">Password:</label>
+        <div class="col-xs-8">
+          <input id="password" name="password"
+                 type="password" class="form-control"
+                 required
+                 ng-model="$ctrl.userPasswd" />
+        </div>
+      </div>
+      <div class="form-group text-right">
+        <button ng-if="$ctrl.action != 'signup'" class="btn btn-primary">Login</button>
+        <button ng-if="$ctrl.action == 'signup'" class="btn btn-primary">Signup</button>
+      </div>
+      <div class="row text-center" ng-if="$ctrl.action != 'signup'">
+        <a ng-click="$ctrl.action = 'recover'" type="button">Forgot Password?</a>
+        <a ng-click="$ctrl.action = 'signup'" type="button">Signup!</a>
+      </div>
+      <div class="row text-center" ng-if="$ctrl.action == 'signup'">
+        <a ng-click="$ctrl.action = null" type="button">Login</a>
+      </div>
+    </form>
+    <form ng-switch-when="recover"
+      name="recoverForm" class="form-inline" ng-submit="$ctrl.recoverPassword()">
+      <div class="form-group">
+        <label for="recoverMail">Email</label>
+        <input type="text" class="form-control" id="recoverMail" placeholder="">
+      </div>
+      <button type="reset" ng-click="$ctrl.action = null" class="btn btn-default">Cancel</button>
+      <button type="submit" class="btn btn-primary">Recover</button>
+    </form>
+  </div>
+</div>

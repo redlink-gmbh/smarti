@@ -39,7 +39,7 @@ import org.springframework.security.config.annotation.web.configurers.LogoutConf
  */
 @Configuration
 @EnableWebSecurity
-@ConditionalOnProperty(prefix = "security.config", name = "implementation", havingValue = "mongo")
+@ConditionalOnProperty(prefix = "security.config", name = "implementation", havingValue = "mongo", matchIfMissing = true)
 @Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
 @EnableConfigurationProperties(SecurityConfigurationProperties.class)
 public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {

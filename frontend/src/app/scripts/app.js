@@ -18,12 +18,19 @@ angular
     'ngFileUpload',
     'toastr'
   ])
-  .config(function ($routeProvider) {
+  .config(function ($routeProvider, $httpProvider) {
+    $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+
     $routeProvider
       .when('/', {
         templateUrl: 'views/overview.html',
         controller: 'OverviewCtrl',
         controllerAs: 'overview'
+      })
+      .when('/login', {
+        templateUrl: 'views/login.html',
+        controller: 'LoginCtrl',
+        controllerAs: '$ctrl'
       })
       .when('/client/:id?', {
         templateUrl: 'views/client.html',

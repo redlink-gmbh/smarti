@@ -29,6 +29,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class WebSecurityConfigurationHelper {
 
+    private static final String[] STATIC_RESOURCES = {
+            "/index.html",
+            "/favicon.ico",
+            "/robots.txt",
+            "/fonts/**",
+            "/scripts/**",
+            "/styles/**"
+    };
+
     @Value("${springfox.documentation.swagger.v2.path:/v2/api-docs}")
     private String swaggerPath = "/v2/api-docs";
 
@@ -37,26 +46,34 @@ public class WebSecurityConfigurationHelper {
     public void configure(HttpSecurity http) throws Exception {
         // @formatter:off
         http
-             .cors()
-        .and()
-             .csrf()
+            .cors()
+                .and()
+            .csrf()
                 .disable()
-                .anonymous()
-//        .and()
-//            .authorizeRequests()
-//                .antMatchers("/admin/**")
-//                .hasRole(ROLE_ADMIN)
-        .and() //allow everyone to access swagger
+            .anonymous()
+                .disable()
             .authorizeRequests()
+            // allow everyone to access swagger
                 .antMatchers(swaggerPath)
                 .permitAll()
-        .and()
+                .and()
             .authorizeRequests()
+            // everyone to access the static resources
+                .antMatchers(STATIC_RESOURCES)
+                .permitAll()
+                .and()
+            .authorizeRequests()
+            // roles are checked in Webservice implementations
                 .anyRequest()
-                .authenticated() //roles are checked in Webservice implementations
-        .and()
-            .logout()
+                .authenticated()
+                .and()
+            .formLogin()
                 .disable()
+            .logout()
+                .and()
+            .httpBasic()
+                .realmName("smarti")
+                .and()
         ;
          // @formatter:on
     }

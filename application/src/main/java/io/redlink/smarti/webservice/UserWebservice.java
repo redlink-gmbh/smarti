@@ -14,8 +14,23 @@
  * limitations under the License.
  *
  */
-'use strict';
+package io.redlink.smarti.webservice;
 
-angular
-  .module('smartiApp')
-;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.security.Principal;
+
+@RestController
+@RequestMapping(value = "user", produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
+public class UserWebservice {
+
+    @RequestMapping
+    public Principal getUser(Principal user) {
+        return user;
+    }
+
+
+
+}
