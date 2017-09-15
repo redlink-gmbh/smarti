@@ -27,11 +27,21 @@
 angular.module('smartiApp')
   .controller('RootCtrl', function ($rootScope, $location, $log, UserService) {
 
-    var restActive = false;
+    var rootCtrl = this,
+      restActive = false;
+
+    rootCtrl.logout = logout;
 
     fetchUser();
 
     ////////////////////
+
+    function logout() {
+      return UserService.logout().then(function () {
+        return $location.path('/login')
+      });
+
+    }
 
     function fetchUser() {
       restActive = true;

@@ -25,8 +25,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.encoding.BasePasswordEncoder;
 import org.springframework.security.authentication.encoding.MessageDigestPasswordEncoder;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
@@ -34,6 +36,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
+
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  */
@@ -48,6 +53,7 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
     private final SecurityConfigurationProperties securityConfig;
     private final MongoUserDetailsService mongoUserDetailsService;
     private final WebSecurityConfigurationHelper webSecurityConfigurationHelper;
+    private final BasePasswordEncoder passwordEncoder;
 
     public MongoAuthConfiguration(SecurityConfigurationProperties securityConfig,
                                   MongoUserDetailsService mongoUserDetailsService,
@@ -55,6 +61,11 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
         this.securityConfig = securityConfig;
         this.mongoUserDetailsService = mongoUserDetailsService;
         this.webSecurityConfigurationHelper = webSecurityConfigurationHelper;
+        if (StringUtils.isNotBlank(securityConfig.getMongo().getPasswordHasher())) {
+            passwordEncoder = new MessageDigestPasswordEncoder(securityConfig.getMongo().getPasswordHasher());
+        } else {
+            passwordEncoder = null;
+        }
     }
 
 
@@ -62,8 +73,8 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
         log.info("Configuring Spring-Security with MongoDB based user-management");
         final DaoAuthenticationConfigurer<AuthenticationManagerBuilder, MongoUserDetailsService> authenticationConfigurer = auth.userDetailsService(mongoUserDetailsService);
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getPasswordHasher())) {
-            authenticationConfigurer.passwordEncoder(new MessageDigestPasswordEncoder(securityConfig.getMongo().getPasswordHasher()));
+        if (Objects.nonNull(passwordEncoder)) {
+            authenticationConfigurer.passwordEncoder(passwordEncoder);
         } else {
             log.warn("no password-hasher configured - are you sure you want to store your users' passwords in plain-text?");
         }
@@ -77,7 +88,7 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
         // and enable Form-Login and basic auth
         http.formLogin()
                 .permitAll();
-        http.httpBasic();
+        http.httpBasic().realmName("smarti");
         // and Logout
         final LogoutConfigurer<HttpSecurity> logout = http.logout();
         if (securityConfig.getLogoutRedirect() != null) {
@@ -86,5 +97,15 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
 
         // append the default security settings
         webSecurityConfigurationHelper.configure(http);
+    }
+
+    @Bean
+    public PasswordEncoder getPasswordEncoder() {
+        if (passwordEncoder != null) return p -> passwordEncoder.encodePassword(p, null);
+        return s->s;
+    }
+
+    public interface PasswordEncoder {
+        String encodePassword(String password);
     }
 }

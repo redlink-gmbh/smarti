@@ -16,8 +16,10 @@
  */
 package io.redlink.smarti.auth;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.stereotype.Service;
 
 /**
@@ -49,9 +51,10 @@ public class WebSecurityConfigurationHelper {
             .cors()
                 .and()
             .csrf()
+//                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .disable()
             .anonymous()
-                .disable()
+                .and()
             .authorizeRequests()
             // allow everyone to access swagger
                 .antMatchers(swaggerPath)
@@ -63,18 +66,18 @@ public class WebSecurityConfigurationHelper {
                 .permitAll()
                 .and()
             .authorizeRequests()
+            // allow access to the auth-services
+                .antMatchers("/auth", "/auth/**")
+                .permitAll()
+                .and()
+            .authorizeRequests()
             // roles are checked in Webservice implementations
                 .anyRequest()
                 .authenticated()
                 .and()
-            .formLogin()
-                .disable()
-            .logout()
-                .and()
-            .httpBasic()
-                .realmName("smarti")
-                .and()
         ;
          // @formatter:on
+
+        LoggerFactory.getLogger(WebSecurityConfigurationHelper.class).info(http.toString());
     }
 }

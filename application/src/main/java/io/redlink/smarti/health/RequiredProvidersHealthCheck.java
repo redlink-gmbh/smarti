@@ -17,24 +17,18 @@
 package io.redlink.smarti.health;
 
 import io.redlink.nlp.api.Processor;
-import io.redlink.nlp.stanfordnlp.StanfordNlpProcessor;
-import io.redlink.nlp.truecase.de.GermanTrueCaseExtractor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import java.util.Optional;
-
 @Component
 public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
 
     private final Logger log = LoggerFactory.getLogger(RequiredProvidersHealthCheck.class);
-
+/*
     private final StanfordNlpProcessor stanfordNlpProcessor;
 
     private final GermanTrueCaseExtractor germanTrueCaseExtractor;
@@ -44,7 +38,6 @@ public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
         this.stanfordNlpProcessor = stanfordNlpProcessor.orElse(null);
         this.germanTrueCaseExtractor = germanTrueCaseExtractor.orElse(null);
     }
-
     @PostConstruct
     protected void onStartup() {
         if (stanfordNlpProcessor == null) {
@@ -58,6 +51,7 @@ public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
             log.info("Found Processor: 'germanTrueCaseExtractor'");
         }
     }
+*/
 
     @Override
     protected void doHealthCheck(Health.Builder builder) throws Exception {
@@ -67,11 +61,11 @@ public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
     }
 
     private void checkGermanTrueCaseExtractor(Health.Builder builder) {
-        appendProviderDetails(builder, "germanTrueCaseExtractor", germanTrueCaseExtractor);
+//        appendProviderDetails(builder, "germanTrueCaseExtractor", germanTrueCaseExtractor);
     }
 
     private void checkStanfordNlpProcessor(Health.Builder builder) {
-        appendProviderDetails(builder, "stanfordNlpProcessor", stanfordNlpProcessor);
+//        appendProviderDetails(builder, "stanfordNlpProcessor", stanfordNlpProcessor);
     }
 
     private void appendProviderDetails(Health.Builder builder, String name, Processor processor) {

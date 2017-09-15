@@ -25,7 +25,7 @@
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('LoginCtrl', function ($scope, $location) {
+  .controller('LoginCtrl', function ($scope, $location, UserService) {
 
     var $ctrl = this;
 
@@ -43,10 +43,11 @@ angular.module('smartiApp')
       if ($ctrl.action === 'signup') {
         return signup();
       }
+      return UserService.login($ctrl.userName, $ctrl.userPasswd).then(gotoStart);
     }
 
     function signup() {
-
+      return UserService.signup($ctrl.userName, $ctrl.userEmail, $ctrl.userPasswd).then(gotoStart);
     }
 
     function recoverPassword() {

@@ -25,6 +25,8 @@ import java.util.Map;
  */
 public interface AttributedUserDetails extends UserDetails {
 
+    String ATTR_EMAIL = "email";
+
     boolean isManaged();
 
     String getAttribute(String name);

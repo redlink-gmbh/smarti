@@ -18,4 +18,8 @@
 
 angular
   .module('smartiApp')
+  .config(function ($httpProvider) {
+    $httpProvider.defaults.useXDomain = true;
+    $httpProvider.defaults.withCredentials = true;
+  })
 ;

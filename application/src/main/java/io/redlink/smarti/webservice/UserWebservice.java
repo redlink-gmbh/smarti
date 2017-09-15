@@ -16,21 +16,78 @@
  */
 package io.redlink.smarti.webservice;
 
+import io.redlink.smarti.auth.AttributedUserDetails;
+import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
+import io.redlink.smarti.services.AccountService;
+import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Map;
 
 @RestController
-@RequestMapping(value = "user", produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "auth", produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
+@ConditionalOnBean(MongoUserDetailsService.class)
 public class UserWebservice {
 
-    @RequestMapping
-    public Principal getUser(Principal user) {
-        return user;
+    private final AccountService accountService;
+    private final EmailValidator emailValidator = EmailValidator.getInstance();
+
+    @Autowired
+    public UserWebservice(AccountService accountService) {
+        this.accountService = accountService;
     }
 
+    @RequestMapping(method = RequestMethod.GET)
+    public Principal getUser(Principal user) {
+        return (user);
+    }
 
+    @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserDetailsResponse> signup(@RequestBody  Map<String, String> data) {
+        final String userName = data.get("username"),
+                password = data.get("password"),
+                mail = data.get("email");
+        if ( StringUtils.isNoneBlank(userName, password, mail) && emailValidator.isValid(mail)) {
+            return ResponseEntity.ok(new UserDetailsResponse(accountService.createAccount(userName, mail, password)));
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+
+    }
+
+    @RequestMapping(path = "{username:[^/]+}/recover", method = RequestMethod.POST)
+    public ResponseEntity<?> recoverPassword(
+            @PathVariable("username") String userId,
+            @RequestBody(required = false) Map<String,String> data
+    ) {
+        final String recoveryToken = data.get("token"),
+                newPasswd = data.get("password");
+
+        if (StringUtils.isNotBlank(recoveryToken)) {
+            if (StringUtils.isNotBlank(newPasswd)) {
+                boolean success = accountService.completePasswordRecovery(userId, newPasswd, recoveryToken);
+                if (success) {
+                    return ResponseEntity.ok().build();
+                }
+            }
+        } else {
+            accountService.startPasswordRecovery(userId);
+            return ResponseEntity.accepted().build();
+        }
+
+        return ResponseEntity.badRequest().build();
+    }
+
+    @RequestMapping("check")
+    public boolean isUsernameAvailable(@RequestParam("username") String username) {
+        return !accountService.hasAccount(username);
+    }
 
 }
