@@ -17,6 +17,7 @@
           <input ng-change="saveClient(client)" type="checkbox" ng-model="client.data.defaultClient">
         </td>
         <td>
+          <button class="btn btn-default" ng-click="manageConversations(client.data.id)">conversations</button>
           <button class="btn btn-primary" ng-click="edit(client.data.id)">edit</button>
           <button class="btn btn-default" ng-click="clone(client.data.id)">clone</button>
           <button class="btn btn-danger" ng-click="delete(client)">delete</button>

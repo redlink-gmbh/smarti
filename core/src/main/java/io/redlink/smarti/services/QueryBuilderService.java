@@ -21,6 +21,7 @@ import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.api.QueryBuilderContainer;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.exception.NotFoundException;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
@@ -69,8 +70,23 @@ public class QueryBuilderService {
         }
     }
 
+    public void buildQueries(Client client, Conversation conversation) {
+        if(conversation == null){
+            return;
+        }
+        
+        if(!confService.isConfiguration(client)) return;
+
+        Configuration clientConfig = confService.getClientConfiguration(conversation.getOwner());
+
+        buildQueries(clientConfig, conversation);
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void buildQueries(Conversation conversation) {
+    public void buildQueries(Configuration config, Conversation conversation) {
+        if(config == null){
+            throw new NullPointerException("parsed config MUST NOT be NULL!");
+        }
         log.debug("Building queries for {}", conversation);
         //retrieve the states for the queries
         final Map<Integer,Map<String,State>> queryStates = new HashMap<>();
@@ -85,16 +101,12 @@ public class QueryBuilderService {
             t.setQueries(new LinkedList<>()); //remove the current queries before they are rebuilt
         });
 
-        if(!confService.isConfiguration(conversation.getClientId())) return;
-
-        Configuration clientConfig = confService.getConfiguration(conversation.getClientId());
 
         //build the new queries
         //NOTE: I have no idea how to write this using generics. But the impl. checks for
         //      types safety
-
         for (QueryBuilder queryBuilder : builders.values()) {
-            List<ComponentConfiguration> builderConfigs = (List<ComponentConfiguration>)clientConfig.getConfigurations(queryBuilder);
+            List<ComponentConfiguration> builderConfigs = (List<ComponentConfiguration>)config.getConfigurations(queryBuilder);
             for(ComponentConfiguration cc : builderConfigs){
                 log.trace("build queries [{} | {} | {}]", queryBuilder, cc, conversation);
                 try {
@@ -120,8 +132,8 @@ public class QueryBuilderService {
         });
     }
 
-    public List<? extends Result> execute(String creatorString, Template template, Conversation conversation) throws IOException {
-        Configuration conf = confService.getConfiguration(conversation.getClientId());
+    public List<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation) throws IOException {
+        Configuration conf = confService.getClientConfiguration(client);
         if(conf == null){
             throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
         }

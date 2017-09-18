@@ -1,0 +1,7 @@
+#Stopwords used for any language in addition to language specific words
+
+#Tokens with a value maching one of those entries will be deleted from the
+#conversation.
+
+#Smart case matching is used. All upper case words are matched case sensitive.
+#All other words are matched case insensitive

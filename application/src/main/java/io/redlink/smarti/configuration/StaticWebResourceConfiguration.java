@@ -45,8 +45,11 @@ public class StaticWebResourceConfiguration extends WebMvcConfigurerAdapter {
     @Value("${ui.cache.indexMaxAge:3600}")
     private long maxIndexCacheAge = 60*60; // 1 hour in seconds
 
-    @Autowired(required = false)
-    private PropertyInjectionTransformer propertyInjectionTransformer = null;
+    private final PropertyInjectionTransformer propertyInjectionTransformer;
+
+    public StaticWebResourceConfiguration(@Autowired(required = false) PropertyInjectionTransformer propertyInjectionTransformer) {
+        this.propertyInjectionTransformer = propertyInjectionTransformer;
+    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -57,7 +60,8 @@ public class StaticWebResourceConfiguration extends WebMvcConfigurerAdapter {
                 .addResolver(new PathResourceResolver());
 
         final ResourceChainRegistration registration = registry.addResourceHandler("/**")
-                .addResourceLocations("classpath:/public/", "classpath:/static/")
+                .addResourceLocations("classpath:/public/", "classpath:/static/",
+                        "classpath:/META-INF/resources/")
                 .setCacheControl(createCacheConfig(maxCacheAge))
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver());

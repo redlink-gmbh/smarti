@@ -28,7 +28,6 @@ import io.redlink.nlp.model.pos.LexicalCategory;
 import io.redlink.nlp.model.pos.Pos;
 import io.redlink.nlp.model.pos.PosSet;
 import io.redlink.nlp.model.util.NlpUtils;
-import io.redlink.smarti.api.QueryPreparator;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Message.Origin;
