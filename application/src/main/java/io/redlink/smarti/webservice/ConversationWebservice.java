@@ -14,39 +14,21 @@
  * limitations under the License.
  *
  */
-
 package io.redlink.smarti.webservice;
 
-import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.api.StoreService;
-import io.redlink.smarti.model.*;
-import io.redlink.smarti.model.config.ComponentConfiguration;
-import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.model.result.Result;
-import io.redlink.smarti.services.ClientService;
-import io.redlink.smarti.services.ConfigurationService;
-import io.redlink.smarti.services.ConversationService;
-import io.redlink.smarti.services.QueryBuilderService;
-import io.redlink.smarti.utils.ResponseEntities;
-import io.redlink.smarti.webservice.pojo.QueryUpdate;
-import io.redlink.smarti.webservice.pojo.TemplateResponse;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.Token;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.bson.types.ObjectId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
+import java.net.URI;
 
 
 /**
@@ -59,219 +41,125 @@ import java.util.Optional;
 @Api("conversation")
 public class ConversationWebservice {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    
-    @SuppressWarnings("unused")
-    private enum Vote {
-        up(1),
-        down(-1);
+    @ApiOperation(value = "list conversations", response = Conversation.class, responseContainer = "List")
+    @RequestMapping(method = RequestMethod.GET)
+    public void listConversations() {}
 
-        private final int delta;
-
-        Vote(int delta) {
-            this.delta = delta;
-        }
-
-        public int getDelta() {
-            return delta;
-        }
-    }
-
-    //@Autowired
-    //private StoreService storeService;
-
-    @Autowired
-    private ConversationService conversationService;
-
-    @Autowired
-    private QueryBuilderService queryBuilderService;
-    
-    @Autowired
-    private ConfigurationService configService;
-
-    @Autowired
-    private ClientService clientService;
-    
-    @ApiOperation(value = "create a conversation")
-    @ApiResponses({
-            @ApiResponse(code = 201, message = "Created", response = Conversation.class)
-    })
+    @ApiOperation(value = "create a conversation", response = Conversation.class)
+    @ApiResponses(
+            @ApiResponse(code = 201, message = "conversation created")
+    )
     @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity<?> createConversation(@RequestBody(required = false) Conversation conversation) {
-        conversation = Optional.ofNullable(conversation).orElseGet(Conversation::new);
-        // Create a new Conversation -> id must be null
-        conversation.setId(null);
-        //TODO: set the owner of the conversation based on the current user
-        //FIXME for now the owner needs to be parsed with the conversation!
-        Client client = clientService.get(conversation.getOwner());
-        if(client == null){
-            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(conversationService.update(client, conversation, true, null));
-    }
+    public void createConversation(
+            @RequestBody(required = false) Conversation conversation,
+            @RequestParam(value = "callback", required = false)URI callback,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+            ) {}
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
-    public ResponseEntity<?> getConversation(@PathVariable("id") ObjectId id) {
-        //TODO get the client for the authenticated user
-        final Conversation conversation = conversationService.getConversation(null, id);
-        
-        //TODO: check that the client has the right to access the conversation
-        
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        } else {
-            return ResponseEntity.ok(conversation);
-        }
-    }
+    public void getConversation(
+            @PathVariable("id") ObjectId conversationId
+    ) {}
 
-    @ApiOperation(value = "update a conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}", method = RequestMethod.PUT, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateConversation(@PathVariable("id") ObjectId id,
-                                                @RequestBody Conversation conversation) {
-        // make sure the id is the right one
-        conversation.setId(id);
+    @ApiOperation(value = "update/replace a conversation", response = Conversation.class)
+    @RequestMapping(value = "{id}", method = RequestMethod.PUT)
+    public void updateConversation(
+            @PathVariable("id") ObjectId conversationId,
+            @RequestBody(required = false) Conversation conversation,
+            @RequestParam(value = "callback", required = false)URI callback,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+    ) {}
 
-        //TODO: check that the authenticated user has rights to update messages of this client
-        Client client = clientService.get(conversation.getOwner());
-        if(client == null){
-            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
-        }
-        //TODO: check that the 
-        // * authenticated user has rights to update messages of this client
-        // * the user is from the client the stored conversation as as owner
-        return ResponseEntity.ok(conversationService.update(client, conversation,true, null));
-    }
+    @ApiOperation(value = "delete a conversation", code = 204)
+    @RequestMapping(value = "{id}", method = RequestMethod.DELETE)
+    public void deleteConversation(
+            @PathVariable("id") ObjectId conversationId
+    ) {}
+
+    @ApiOperation(value = "update/modifiy a specific field", response = Conversation.class)
+    @RequestMapping(value = "{id}/{field:.*}", method = RequestMethod.PUT)
+    public void modifyConversationField(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("field") String field,
+            @RequestBody Object data,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+    ) {}
+
+    @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List")
+    @RequestMapping(value = "{id}/message", method = RequestMethod.GET)
+    public void listMessages(
+            @PathVariable("id") ObjectId conversationId
+    ) {}
+
+    @ApiOperation(value = "create a new message", response = Message.class)
+    @ApiResponses(
+            @ApiResponse(code = 201, message = "message created")
+    )
+    @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
+    public void createMessage(
+            @PathVariable("id") ObjectId conversationId,
+            @RequestBody(required = false) Message message,
+            @RequestParam(value = "callback", required = false)URI callback,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+    ) {}
 
     @ApiOperation(value = "append a message to the conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}/message", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> addMessage(@PathVariable("id") ObjectId id,
-                                        @RequestBody Message message) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        }
-        //TODO: check that the authenticated user has rights to update messages of this client
-        Client client = clientService.get(conversation.getOwner());
-        if(client == null){
-            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
-        }
-        return ResponseEntity.ok(conversationService.appendMessage(client, conversation, message));
-    }
+    @ApiResponses(
+            @ApiResponse(code = 201, message = "message created")
+    )
+    @RequestMapping(value = "{id}/append-message", method = RequestMethod.POST)
+    public void appendMessage(
+            @PathVariable("id") ObjectId conversationId,
+            @RequestBody(required = false) Message message,
+            @RequestParam(value = "callback", required = false)URI callback,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+    ) {}
 
-    @ApiOperation(value = "up-/down-vote a message within a conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}/message/{messageId}/{vote}", method = RequestMethod.PUT)
-    public ResponseEntity<?> rateMessage(@PathVariable("id") ObjectId id,
-                                         @PathVariable("messageId") String messageId,
-                                         @PathVariable("vote") Vote vote) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        }
-        //TODO: check that the authenticated user has rights to up/down vote the conversation
-        return ResponseEntity.ok(conversationService.rateMessage(conversation, messageId, vote.getDelta()));
-    }
+    @ApiOperation(value = "retrieve a message", response = Message.class)
+    @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.GET)
+    public void getMessage(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("msgId") ObjectId messageId
+    ) {}
 
-    @ApiOperation(value = "retrieve the analysis result of the conversation", response = Token.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
-    public ResponseEntity<?> prepare(@PathVariable("id") ObjectId id) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
+    @ApiOperation(value = "update/replace a message", response = Message.class)
+    @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.PUT)
+    public void updateMessage(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("msgId") ObjectId messageId,
+            @RequestBody(required = false) Message message,
+            @RequestParam(value = "callback", required = false)URI callback,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+    ) {}
 
-        //TODO: check that the authenticated user has rights to access the conversation
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        } else {
-            return ResponseEntity.ok(conversation.getTokens());
-        }
-    }
+    @ApiOperation(value = "update/modifiy a specific filed of the message", response = Message.class)
+    @RequestMapping(value = "{id}/message/{msgId}/{field}", method = RequestMethod.POST)
+    public void modifyMessageField(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("msgId") ObjectId messageId,
+            @PathVariable("field") String field,
+            @RequestBody Object data,
+            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+    ) {}
 
-    @ApiOperation(value = "retrieve the intents of the conversation", response = TemplateResponse.class)
+    @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List")
+    @RequestMapping(value = "{id}/token", method = RequestMethod.GET)
+    public void getTokens(
+            @PathVariable("id") ObjectId conversationId
+    ) {}
+
+    @ApiOperation(value = "get the (query-)templates in the conversation", response = Template.class, responseContainer = "List")
     @RequestMapping(value = "{id}/template", method = RequestMethod.GET)
-    public ResponseEntity<?> query(@PathVariable("id") ObjectId id) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
+    public void getTemplates(
+            @PathVariable("id") ObjectId conversationId
+    ) {}
 
-        //TODO: check that the authenticated user has rights to access the conversation
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        } else {
-            return ResponseEntity.ok(TemplateResponse.from(conversation));
-        }
-    }
+    @ApiOperation(value = "get a query template", response = Template.class)
+    @RequestMapping(value = "{id}/template/{tmplIdx}", method = RequestMethod.GET)
+    public void getTemplate(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("tmplIdx") int templateIdx
+    ) {}
 
-    @ApiOperation(value = "retrieve the results for a template from a specific creator", response = Result.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/template/{template}/{creator}", method = RequestMethod.GET)
-    public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
-                                        @PathVariable("template") int templateIdx,
-                                        @PathVariable("creator") String creator) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        }
-        //TODO: with authentication in place we need to get the Client from the user and NOT the conversation!!
-        Client client = clientService.get(conversation.getOwner());
-        if(client == null){
-            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
-        }
-
-        try {
-            final Template template = conversation.getTemplates().get(templateIdx);
-
-            return ResponseEntity.ok(conversationService.getInlineResults(client, conversation, template, creator));
-        } catch (IOException e) {
-            return ResponseEntities.serviceUnavailable(e.getMessage(), e);
-        } catch (IndexOutOfBoundsException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @ApiOperation(value = "update a query based on new slot-assignments", response = Query.class)
-    @RequestMapping(value = "{id}/query/{template}/{creator}", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
-                                      @PathVariable("template") int templateIdx,
-                                      @PathVariable("creator") String creator,
-                                      @RequestBody QueryUpdate queryUpdate) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        }
-        //TODO: with authentication in place we need to get the Client from the user and NOT the conversation!!
-        Client client = clientService.get(conversation.getOwner());
-        if(client == null){
-            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
-        }
-        Configuration clientConf = configService.getClientConfiguration(client.getId());
-        if(clientConf == null){
-            log.info("Client {} of Conversation {} has no longer a configuration assigned ... returning 404 NOT FOUND",
-                    conversation.getChannelId(), conversation.getId());
-            return ResponseEntity.notFound().build();
-        }
-        final Template template = conversation.getTemplates().get(templateIdx);
-        if (template == null) return ResponseEntity.notFound().build();
-
-        //NOTE: conversationService.getConversation(..) already update the queries if necessary
-        //so at this place we only need to retrieve the requested query
-        Optional<Query> query = template.getQueries().stream().filter(q -> Objects.equals(creator, q.getCreator())).findFirst();
-        return query.isPresent() ? ResponseEntity.ok(query.get()) : ResponseEntity.notFound().build();
-    }
-
-    @ApiOperation(value = "complete a conversation and add it to indexing", response = Conversation.class)
-    @RequestMapping(value = "{id}/publish", method = RequestMethod.POST)
-    public ResponseEntity<?> complete(@PathVariable("id") ObjectId id) {
-        //TODO: get the Client for the currently authenticated user 
-        final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
-
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        } else {
-            //TODO: only the owner of the conversation can publish it!
-            conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
-            return ResponseEntity.ok(conversationService.completeConversation(conversation));
-        }
-    }
 }
