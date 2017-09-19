@@ -346,7 +346,7 @@
                                 <version>${project.version}</version>
                             </info>
                             <modelSubstitute>/model-substitutes.txt</modelSubstitute>
-                            <swaggerDirectory>${project.build.outputDirectory}</swaggerDirectory>
+                            <swaggerDirectory>${project.build.outputDirectory}/META-INF</swaggerDirectory>
                         </apiSource>
                     </apiSources>
                 </configuration>
