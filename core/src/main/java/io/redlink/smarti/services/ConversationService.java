@@ -352,4 +352,17 @@ public class ConversationService {
         eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
         return conversation;
     }
+
+    public Conversation deleteConversation(ObjectId conversationId) {
+
+        final Conversation one = conversationRepository.findOne(conversationId);
+        conversationRepository.delete(conversationId);
+        return one;
+
+    }
+
+    public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
+        // TODO: check whitelist of allowed fields
+        return conversationRepository.updateConversationField(conversationId, field, data);
+    }
 }

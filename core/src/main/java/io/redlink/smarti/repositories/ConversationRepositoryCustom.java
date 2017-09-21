@@ -60,4 +60,7 @@ public interface ConversationRepositoryCustom {
 
     boolean deleteMessage(ObjectId conversationId, String messageId);
 
+    Conversation updateConversationField(ObjectId conversationId, String field, Object data);
+
+    Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data);
 }

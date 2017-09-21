@@ -16,18 +16,31 @@
  */
 package io.redlink.smarti.webservice;
 
+import com.google.common.collect.ImmutableMap;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.services.ClientService;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.Projection;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 
 /**
@@ -41,59 +54,174 @@ import java.net.URI;
 @Api("conversation")
 public class ConversationWebservice {
 
+    private final AsyncExecutionService asyncExecutionService;
+    private final ConversationService conversationService;
+    private final ClientService clientService;
+
+    @Autowired
+    public ConversationWebservice(AsyncExecutionService asyncExecutionService, ConversationService conversationService, ClientService clientService) {
+        this.asyncExecutionService = asyncExecutionService;
+        this.conversationService = conversationService;
+        this.clientService = clientService;
+    }
+
     @ApiOperation(value = "list conversations", response = Conversation.class, responseContainer = "List")
     @RequestMapping(method = RequestMethod.GET)
-    public void listConversations() {}
+    public Page<Conversation> listConversations(
+            @RequestParam(value = "clientId", required = false) ObjectId owner,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize,
+            @RequestParam(value = "projection", required = false) Projection projection
+    ) {
+
+        //TODO: check authentication
+
+        return conversationService.listConversations(owner, page, pageSize);
+
+    }
 
     @ApiOperation(value = "create a conversation", response = Conversation.class)
     @ApiResponses(
             @ApiResponse(code = 201, message = "conversation created")
     )
     @RequestMapping(method = RequestMethod.POST)
-    public void createConversation(
+    public ResponseEntity<Conversation> createConversation(
+            UriComponentsBuilder uriBuilder,
             @RequestBody(required = false) Conversation conversation,
-            @RequestParam(value = "callback", required = false)URI callback,
+            @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
-            ) {}
+            ) {
+        //TODO: check authentication
+        conversation = Optional.ofNullable(conversation).orElseGet(Conversation::new);
+        // Create a new Conversation -> id must be null
+        conversation.setId(null);
+        //TODO: set the owner of the conversation based on the current auth
+        //FIXME for now the owner needs to be parsed with the conversation!
+        final Client client = clientService
+                .get(ObjectUtils.firstNonNull(conversation.getOwner(), conversation.getClientId()));
+        if(client == null){
+            throw new IllegalStateException("Owner for new conversation not provided!");
+        }
+
+        final Conversation stored = conversationService.update(client, conversation, false, null);
+
+        return asyncExecutionService.execute(
+                () -> conversationService.update(client, stored, true, null),
+                HttpStatus.CREATED, callback, stored.getId(), buildConversationURI(uriBuilder, stored.getId()));
+
+    }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
-    public void getConversation(
-            @PathVariable("id") ObjectId conversationId
-    ) {}
+    public ResponseEntity<Conversation> getConversation(
+            UriComponentsBuilder uriBuilder,
+            @PathVariable("id") ObjectId conversationId,
+            @RequestParam(value = "projection", required = false) Projection projection
+    ) {
+        //TODO get the client for the authenticated user
+        final Conversation conversation = conversationService.getConversation(null, conversationId);
+
+        //TODO: check that the client has the right to access the conversation
+
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.ok(conversation);
+        }
+    }
 
     @ApiOperation(value = "delete a conversation", code = 204)
     @RequestMapping(value = "{id}", method = RequestMethod.DELETE)
-    public void deleteConversation(
+    public ResponseEntity<?> deleteConversation(
             @PathVariable("id") ObjectId conversationId
-    ) {}
+    ) {
+        //TODO get the client for the authenticated user
+
+        //TODO: check that the client has the right to access the conversation
+        final Conversation conversation = conversationService.deleteConversation(conversationId);
+
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.noContent().build();
+        }
+    }
 
     @ApiOperation(value = "update/modify a specific field", response = Conversation.class)
     @RequestMapping(value = "{id}/{field:.*}", method = RequestMethod.PUT)
-    public void modifyConversationField(
+    public ResponseEntity<Conversation> modifyConversationField(
+            UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("field") String field,
             @RequestBody Object data,
+            @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
-    ) {}
+    ) {
+        // TODO: Check Authentication
+
+        if (conversationService.exists(conversationId)) {
+            return asyncExecutionService.execute(
+                    () -> conversationService.updateConversationField(conversationId, field, data),
+                    HttpStatus.OK,
+                    callback,
+                    conversationId, buildConversationURI(uriBuilder, conversationId));
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
     @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List")
     @RequestMapping(value = "{id}/message", method = RequestMethod.GET)
-    public void listMessages(
-            @PathVariable("id") ObjectId conversationId
-    ) {}
+    public ResponseEntity<List<Message>> listMessages(
+            @PathVariable("id") ObjectId conversationId,
+            @RequestParam(value = "projection", required = false) Projection projection
+    ) {
+        //TODO: check authentication
+
+        final Conversation conversation = conversationService.getConversation(conversationId);
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.ok(conversation.getMessages());
+        }
+    }
 
     @ApiOperation(value = "create a new message", response = Message.class)
     @ApiResponses(
             @ApiResponse(code = 201, message = "message created")
     )
     @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
-    public void appendMessage(
+    public ResponseEntity<Message> appendMessage(
+            UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
-            @RequestBody(required = false) Message message,
+            @RequestBody Message message,
             @RequestParam(value = "callback", required = false)URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
-    ) {}
+    ) {
+        //TODO: get the Client for the currently authenticated user
+        final Conversation conversation = conversationService.getConversation(null, conversationId); //TODO: pass the client instead of null
+        if (conversation == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        //TODO: check that the authenticated user has rights to update messages of this client
+        Client client = clientService.get(conversation.getOwner());
+        if(client == null){
+            throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
+        }
+
+        //TODO: delegate id-generation to database
+        if (StringUtils.isBlank(message.getId())) {
+            message.setId(UUID.randomUUID().toString());
+        }
+        return asyncExecutionService.execute(
+                () -> {
+                    final List<Message> theMessages = conversationService.appendMessage(client, conversation, message).getMessages();
+                    return theMessages.get(theMessages.size()-1);
+                },
+                HttpStatus.OK,
+                callback, message.getId(), buildMessageURI(uriBuilder, conversationId, message.getId()));
+    }
 
     @ApiOperation(value = "retrieve a message", response = Message.class)
     @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.GET)
@@ -181,4 +309,22 @@ public class ConversationWebservice {
             @RequestParam(value = "callback", required = false) URI callback
     ) {}
 
+    private URI buildConversationURI(UriComponentsBuilder builder, ObjectId conversationId) {
+        return builder
+                .pathSegment("conversation", "{conversationId}")
+                .buildAndExpand(ImmutableMap.of(
+                        "conversationId", conversationId
+                ))
+                .toUri();
+    }
+
+    private URI buildMessageURI(UriComponentsBuilder builder, ObjectId conversationId, String messageId) {
+        return builder
+                .pathSegment("conversation", "{conversationId}", "message", "{messageId}")
+                .buildAndExpand(ImmutableMap.of(
+                        "conversationId", conversationId,
+                        "messageId", messageId
+                ))
+                .toUri();
+    }
 }

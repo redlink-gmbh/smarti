@@ -99,7 +99,7 @@ public class Conversation {
     public ObjectId getClientId() {
         return getOwner();
     }
-    
+
     /**
      * @deprecated use {@link #setOwner(ObjectId)} instead
      */
@@ -107,7 +107,7 @@ public class Conversation {
     public void setClientId(ObjectId clientId) {
         setOwner(clientId);;
     }
-    
+
     public ObjectId getOwner() {
         return owner;
     }
@@ -160,6 +160,7 @@ public class Conversation {
      * @deprecated use {@link Analysis#getTokens()}
      */
     @Deprecated
+    @JsonIgnore
     public List<Token> getTokens() {
         return analysis.getTokens();
     }
@@ -173,6 +174,7 @@ public class Conversation {
      * @deprecated use {@link Analysis#getTemplates()}
      */
     @Deprecated
+    @JsonIgnore
     public List<Template> getTemplates() {
         return analysis.getTemplates();
     }

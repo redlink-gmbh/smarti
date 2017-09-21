@@ -61,6 +61,7 @@ import java.io.IOException;
         consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @Api("rocket")
+@Deprecated
 public class RocketChatEndpoint {
 
     public static final String ROCKET_CHAT = "rocket.chat";

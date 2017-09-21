@@ -32,6 +32,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -201,6 +202,19 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
+    public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update()
+                .set(field, data)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+
+    @Override
     public boolean deleteMessage(ObjectId conversationId, String messageId) {
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
@@ -209,6 +223,35 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
         final WriteResult result = mongoTemplate.updateFirst(query, update, Conversation.class);
         return result.getN() == 1;
+    }
+
+    @Override
+    public Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId))
+                .addCriteria(Criteria.where("messages._id").is(messageId));
+        final Update update = new Update()
+                .set("messages.$." + field, data)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        // TODO: with mongo 3.4 you could do this with aggregation
+        /*
+        final TypedAggregation aggregation = newAggregation(Conversation.class,
+                Aggregation.match(Criteria.where("_id").is(conversationId)),
+                Aggregation.project("messages"),
+                Aggregation.unwind("messages"),
+                Aggregation.replaceRoot("messages"),
+                Aggregation.match(Criteria.where("_id").is(messageId))
+        );
+        return mongoTemplate.aggregate(aggregation, Message.class).getUniqueMappedResult();
+        */
+
+        return mongoTemplate.findById(conversationId, Conversation.class).getMessages().stream()
+                .filter(m -> messageId.equals(m.getId()))
+                .findFirst().orElse(null);
+
     }
 
     @Override
