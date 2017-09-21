@@ -16,10 +16,9 @@
  */
 package io.redlink.smarti.webservice;
 
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.Template;
-import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.webservice.pojo.Projection;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -34,6 +33,7 @@ import java.net.URI;
 /**
  *
  */
+@SuppressWarnings("unused")
 @CrossOrigin
 @RestController
 @RequestMapping(value = "conversation",
@@ -53,7 +53,7 @@ public class ConversationWebservice {
     public void createConversation(
             @RequestBody(required = false) Conversation conversation,
             @RequestParam(value = "callback", required = false)URI callback,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+            @RequestParam(value = "projection", required = false) Projection projection
             ) {}
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
@@ -62,28 +62,19 @@ public class ConversationWebservice {
             @PathVariable("id") ObjectId conversationId
     ) {}
 
-    @ApiOperation(value = "update/replace a conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}", method = RequestMethod.PUT)
-    public void updateConversation(
-            @PathVariable("id") ObjectId conversationId,
-            @RequestBody(required = false) Conversation conversation,
-            @RequestParam(value = "callback", required = false)URI callback,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
-    ) {}
-
     @ApiOperation(value = "delete a conversation", code = 204)
     @RequestMapping(value = "{id}", method = RequestMethod.DELETE)
     public void deleteConversation(
             @PathVariable("id") ObjectId conversationId
     ) {}
 
-    @ApiOperation(value = "update/modifiy a specific field", response = Conversation.class)
+    @ApiOperation(value = "update/modify a specific field", response = Conversation.class)
     @RequestMapping(value = "{id}/{field:.*}", method = RequestMethod.PUT)
     public void modifyConversationField(
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("field") String field,
             @RequestBody Object data,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+            @RequestParam(value = "projection", required = false) Projection projection
     ) {}
 
     @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List")
@@ -97,23 +88,11 @@ public class ConversationWebservice {
             @ApiResponse(code = 201, message = "message created")
     )
     @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
-    public void createMessage(
-            @PathVariable("id") ObjectId conversationId,
-            @RequestBody(required = false) Message message,
-            @RequestParam(value = "callback", required = false)URI callback,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
-    ) {}
-
-    @ApiOperation(value = "append a message to the conversation", response = Conversation.class)
-    @ApiResponses(
-            @ApiResponse(code = 201, message = "message created")
-    )
-    @RequestMapping(value = "{id}/append-message", method = RequestMethod.POST)
     public void appendMessage(
             @PathVariable("id") ObjectId conversationId,
             @RequestBody(required = false) Message message,
             @RequestParam(value = "callback", required = false)URI callback,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+            @RequestParam(value = "projection", required = false) Projection projection
     ) {}
 
     @ApiOperation(value = "retrieve a message", response = Message.class)
@@ -130,36 +109,76 @@ public class ConversationWebservice {
             @PathVariable("msgId") ObjectId messageId,
             @RequestBody(required = false) Message message,
             @RequestParam(value = "callback", required = false)URI callback,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+            @RequestParam(value = "projection", required = false) Projection projection
     ) {}
 
-    @ApiOperation(value = "update/modifiy a specific filed of the message", response = Message.class)
-    @RequestMapping(value = "{id}/message/{msgId}/{field}", method = RequestMethod.POST)
+    @ApiOperation(value = "delete a message", code = 204)
+    @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.DELETE)
+    public void deleteMessage(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("msgId") ObjectId messageId
+    ) {}
+
+    @ApiOperation(value = "update/modify a specific filed of the message", response = Message.class)
+    @RequestMapping(value = "{id}/message/{msgId}/{field}", method = RequestMethod.PUT)
     public void modifyMessageField(
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("msgId") ObjectId messageId,
             @PathVariable("field") String field,
             @RequestBody Object data,
-            @RequestParam(value = "light", required = false, defaultValue = "false") boolean lightweight
+            @RequestParam(value = "projection", required = false) Projection projection
     ) {}
 
+    @ApiOperation(value = "get the extracted tokes in the conversation", response = Analysis.class)
+    @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
+    public void getAnalysis(
+            @PathVariable("id") ObjectId conversationId
+    ) {}
+
+    @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class)
+    @RequestMapping(value = "{id}/analysis", method = RequestMethod.POST)
+    public void rerunAnalysis(
+            @PathVariable("id") ObjectId conversationId,
+            @RequestBody Analysis updatedAnalysis,
+            @RequestParam(value = "callback", required = false) URI callback
+    ) {}
+
+
     @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/token", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/analysis/token", method = RequestMethod.GET)
     public void getTokens(
             @PathVariable("id") ObjectId conversationId
     ) {}
 
     @ApiOperation(value = "get the (query-)templates in the conversation", response = Template.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/template", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/analysis/template", method = RequestMethod.GET)
     public void getTemplates(
             @PathVariable("id") ObjectId conversationId
     ) {}
 
     @ApiOperation(value = "get a query template", response = Template.class)
-    @RequestMapping(value = "{id}/template/{tmplIdx}", method = RequestMethod.GET)
+    @RequestMapping(value = "{id}/analysis/template/{templateIdx}", method = RequestMethod.GET)
     public void getTemplate(
             @PathVariable("id") ObjectId conversationId,
-            @PathVariable("tmplIdx") int templateIdx
+            @PathVariable("templateIdx") int templateIdx
+    ) {}
+
+    @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List")
+    @RequestMapping(value = "{id}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
+    public void getResults(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("templateIdx") int templateIdx,
+            @PathVariable("creator") int creator
+    ) {}
+
+    @ApiOperation(value = "get inline-results for the selected template from the creator", response = Template.class, responseContainer = "List")
+    @RequestMapping(value = "{id}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
+    public void rerunResults(
+            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("templateIdx") int templateIdx,
+            @PathVariable("creator") int creator,
+            @RequestBody Analysis updatedAnalysis,
+            @RequestParam(value = "callback", required = false) URI callback
     ) {}
 
 }
