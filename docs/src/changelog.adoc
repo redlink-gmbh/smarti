@@ -2,6 +2,28 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+=== 0.6.0
+
+==== Upgrading
+
+With `0.6.0`, the datamodel has changed so data from older installations
+must be migrated to the new model.
+
+A migration script is available and must be applied manually:
+[source,javascript]
+-----------------------------------------------
+var conversations = db.getCollection('conversations'),
+    configuration = db.getCollection('configuration'),
+    client = db.getCollection('client');
+
+conversations.update({ analysis: { $exists: false} }, {
+    $rename: {
+        tokens: 'analysis.tokens',
+        queryTemplates: 'analysis.queryTemplates'
+    }
+}, { multi: true});
+-----------------------------------------------
+
 === 0.5.0
 ==== Bug fixes
 ==== Improvements and Refactoring

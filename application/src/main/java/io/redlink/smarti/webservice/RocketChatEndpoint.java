@@ -19,7 +19,6 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
@@ -43,7 +42,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -188,7 +186,7 @@ public class RocketChatEndpoint {
 
     /**
      * Called by rocket.chat plugins to get the conversationId for the clientId and channelId known to the plugin.
-     * The returned conversationID can later be used for calls to the {@link ConversationWebservice}
+     * The returned conversationID can later be used for calls to the {@link LegacyConversationWebservice}
      * @param clientName the client id
      * @param channelId the channelId
      * @return a <code>200</code> with the conversation id as payload or a <code>404</code> if no conversation is

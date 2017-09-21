@@ -65,11 +65,8 @@ public class Conversation {
     @ApiModelProperty(position = 2, required = true, value = "List of Messages")
     private List<Message> messages = new ArrayList<>();
 
-    @ApiModelProperty(position = 3, value = "Tokens extracted")
-    private List<Token> tokens = new ArrayList<>();
-
-    @ApiModelProperty(position = 4, value = "Templates for possible queries")
-    private List<Template> queryTemplates = new ArrayList<>();
+    @ApiModelProperty(required = true, value = "the analysis results")
+    private Analysis analysis = new Analysis();
 
     @ApiModelProperty(position = 5, value = "conversation context")
     private Context context = new Context();
@@ -151,20 +148,38 @@ public class Conversation {
         this.messages = messages;
     }
 
+    public Analysis getAnalysis() {
+        return analysis;
+    }
+
+    public void setAnalysis(Analysis analysis) {
+        this.analysis = analysis;
+    }
+
+    /**
+     * @deprecated use {@link Analysis#getTokens()}
+     */
+    @Deprecated
     public List<Token> getTokens() {
-        return tokens;
+        return analysis.getTokens();
     }
 
+    @Deprecated
     public void setTokens(List<Token> tokens) {
-        this.tokens = tokens;
+        this.analysis.setTokens(tokens);
     }
 
+    /**
+     * @deprecated use {@link Analysis#getTemplates()}
+     */
+    @Deprecated
     public List<Template> getTemplates() {
-        return queryTemplates;
+        return analysis.getTemplates();
     }
 
+    @Deprecated
     public void setQueryTemplates(List<Template> queryTemplates) {
-        this.queryTemplates = queryTemplates;
+        this.analysis.setQueryTemplates(queryTemplates);
     }
 
     public Context getContext() {
@@ -186,7 +201,7 @@ public class Conversation {
     @Override
     public String toString() {
         return "Conversation [id=" + id + ", channelId=" + channelId + ", user=" + user + ", lastModified="
-                + lastModified + ", " + messages.size() + " messages, " + tokens.size() + "tokens, " + queryTemplates.size() + " templates]";
+                + lastModified + ", " + messages.size() + " messages]";
     }
     
 }
