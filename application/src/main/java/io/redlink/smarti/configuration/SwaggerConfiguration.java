@@ -29,6 +29,7 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.net.URI;
 import java.util.Collections;
 
 /**
@@ -58,7 +59,9 @@ public class SwaggerConfiguration {
                     .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
                     .paths(PathSelectors.any())
                 .build()
-                .directModelSubstitute(ObjectId.class, String.class);
+                .directModelSubstitute(ObjectId.class, String.class)
+                .directModelSubstitute(URI.class, String.class)
+                ;
     }
 
 }

@@ -26,6 +26,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
+import java.net.URI;
 import java.util.List;
 
 @Configuration
@@ -34,8 +35,9 @@ public class JacksonObjectMapperConfiguration extends WebMvcConfigurerAdapter {
     @Bean
     public ObjectMapper objectMapper() {
         Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
-        // serialize ObjectId as String
+        // serialize ObjectId,URI as String
         builder.serializerByType(ObjectId.class, new ToStringSerializer());
+        builder.serializerByType(URI.class, new ToStringSerializer());
         builder.indentOutput(true);
         return builder.build();
     }

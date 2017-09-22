@@ -29,7 +29,7 @@ public class Analysis {
     private List<Token> tokens = new ArrayList<>();
 
     @ApiModelProperty(value = "Templates for possible queries")
-    private List<Template> queryTemplates = new ArrayList<>();
+    private List<Template> templates = new ArrayList<>();
 
     public List<Token> getTokens() {
         return tokens;
@@ -40,15 +40,15 @@ public class Analysis {
     }
 
     public List<Template> getTemplates() {
-        return queryTemplates;
+        return templates;
     }
 
-    public void setQueryTemplates(List<Template> queryTemplates) {
-        this.queryTemplates = queryTemplates;
+    public void setTemplates(List<Template> templates) {
+        this.templates = templates;
     }
 
     @Override
     public String toString() {
-        return "Analysis [" + tokens.size() + "tokens, " + queryTemplates.size() + " templates]";
+        return "Analysis [" + tokens.size() + "tokens, " + templates.size() + " templates]";
     }
 }

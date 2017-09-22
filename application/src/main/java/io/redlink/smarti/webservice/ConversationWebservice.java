@@ -22,10 +22,7 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.Projection;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -33,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.method.P;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -55,6 +53,11 @@ import java.util.UUID;
 @Api("conversation")
 public class ConversationWebservice {
 
+    public static final String API_PARAM_CALLBACK = "URI where to POST the result (triggers async processing)";
+    public static final String API_ASYNC_NOTE = " If a 'callback' is provided, the request will be processed async.";
+    public static final String EDITABLE_CONVERSATION_FIELDS = "meta.status, meta.tags, meta.feedback, context.contextType, context.environmentType, context.domain, context.environment.*";
+    private static final String EDITABLE_MESSAGE_FIELDS = "time, origin, content, private, votes, metadata.*";
+
     private final AsyncExecutionService asyncExecutionService;
     private final ConversationService conversationService;
     private final ClientService clientService;
@@ -66,7 +69,7 @@ public class ConversationWebservice {
         this.clientService = clientService;
     }
 
-    @ApiOperation(value = "list conversations", response = Conversation.class, responseContainer = "List")
+    @ApiOperation(value = "list conversations", response = Page.class)
     @RequestMapping(method = RequestMethod.GET)
     public Page<Conversation> listConversations(
             @RequestParam(value = "clientId", required = false) ObjectId owner,
@@ -81,15 +84,18 @@ public class ConversationWebservice {
 
     }
 
-    @ApiOperation(value = "create a conversation", response = Conversation.class)
-    @ApiResponses(
-            @ApiResponse(code = 201, message = "conversation created")
-    )
+    @ApiOperation(value = "create a conversation",
+            code = 201, response = Conversation.class,
+            notes = "Create a new Conversation." + API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "conversation created (sync)", response = Conversation.class),
+            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+    })
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<Conversation> createConversation(
             UriComponentsBuilder uriBuilder,
             @RequestBody(required = false) Conversation conversation,
-            @RequestParam(value = "callback", required = false) URI callback,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         //TODO: check authentication
@@ -149,14 +155,19 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "update/modify a specific field", response = Conversation.class)
+    @ApiOperation(value = "update/modify a specific field", response = Conversation.class,
+            notes = "Update a single property in the Conversation." + API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "field updated (sync)", response = Conversation.class),
+            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+    })
     @RequestMapping(value = "{id}/{field:.*}", method = RequestMethod.PUT)
     public ResponseEntity<Conversation> modifyConversationField(
             UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
-            @PathVariable("field") String field,
-            @RequestBody Object data,
-            @RequestParam(value = "callback", required = false) URI callback,
+            @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
+            @ApiParam(value = "the new value", required = true) @RequestBody Object data,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         // TODO: Check Authentication
@@ -172,7 +183,8 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List")
+    @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List",
+            notes = "retrieves all messages in the accessed conversation")
     @RequestMapping(value = "{id}/message", method = RequestMethod.GET)
     public ResponseEntity<List<Message>> listMessages(
             @PathVariable("id") ObjectId conversationId,
@@ -188,16 +200,21 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "create a new message", response = Message.class)
-    @ApiResponses(
-            @ApiResponse(code = 201, message = "message created")
-    )
+    @ApiOperation(value = "create a new message", response = Message.class,
+            notes = "this appends the provided message to the conversation. It is the responsibility of the client to ensure" +
+                    "that a messageId passed in is unique. It the client cannot guarantee that, it MUST leave the messageId " +
+                    "empty/null." +
+                    API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 201, message = "message created"),
+            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+    })
     @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
     public ResponseEntity<Message> appendMessage(
             UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
             @RequestBody Message message,
-            @RequestParam(value = "callback", required = false)URI callback,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         //TODO: get the Client for the currently authenticated user
@@ -244,14 +261,20 @@ public class ConversationWebservice {
 
     }
 
-    @ApiOperation(value = "update/replace a message", response = Message.class)
+    @ApiOperation(value = "update/replace a message", response = Message.class,
+            notes = "fully replace a message." +
+                    API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "message updated (sync)", response = Conversation.class),
+            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+    })
     @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.PUT)
     public ResponseEntity<Message> updateMessage(
             UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestBody Message message,
-            @RequestParam(value = "callback", required = false)URI callback,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         // TODO: Check authentication / clientId
@@ -266,13 +289,19 @@ public class ConversationWebservice {
                 HttpStatus.OK, callback, messageId, buildMessageURI(uriBuilder, conversationId, messageId));
     }
 
-    @ApiOperation(value = "delete a message", code = 204)
+    @ApiOperation(value = "delete a message", code = 204,
+            notes = "delete a message and re-run analysis based on the new conversation." +
+                    API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "message deleted (sync)", response = Conversation.class),
+            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+    })
     @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.DELETE)
     public ResponseEntity<Conversation> deleteMessage(
             UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @RequestParam(value = "callback", required = false)URI callback
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback
     ) {
         // TODO: Check Authentication / clientId
 
@@ -291,15 +320,21 @@ public class ConversationWebservice {
                 conversationId, buildConversationURI(uriBuilder, conversationId));
     }
 
-    @ApiOperation(value = "update/modify a specific filed of the message", response = Message.class)
+    
+    @ApiOperation(value = "update/modify a specific filed of the message", response = Message.class,
+            notes = "Update a single property in the Message." + API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "field updated (sync)", response = Message.class),
+            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+    })
     @RequestMapping(value = "{id}/message/{msgId}/{field}", method = RequestMethod.PUT)
     public ResponseEntity<Message> modifyMessageField(
             UriComponentsBuilder uriBuilder,
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @PathVariable("field") String field,
-            @RequestBody Object data,
-            @RequestParam(value = "callback", required = false)URI callback,
+            @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_MESSAGE_FIELDS) @PathVariable("field") String field,
+            @ApiParam(value = "the new value", required = true) @RequestBody Object data,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         // TODO: check Authentication / clientId
@@ -315,7 +350,8 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "get the extracted tokes in the conversation", response = Analysis.class)
+    @ApiOperation(value = "get the analysis-results of the conversation", response = Analysis.class,
+            notes = "retrieve the analysis for this conversation.")
     @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
     public ResponseEntity<Analysis> getAnalysis(
             @PathVariable("id") ObjectId conversationId
@@ -330,12 +366,13 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class)
+    @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class,
+    notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
     @RequestMapping(value = "{id}/analysis", method = RequestMethod.POST)
     public ResponseEntity<Analysis> rerunAnalysis(
             @PathVariable("id") ObjectId conversationId,
             @RequestBody Analysis updatedAnalysis,
-            @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: check Authentication / clientId
 
@@ -425,14 +462,15 @@ public class ConversationWebservice {
         return null;
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List")
+    @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List",
+            notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
     @RequestMapping(value = "{id}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
     public ResponseEntity<? extends List<? extends Result>> rerunResults(
             @PathVariable("id") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") int creator,
             @RequestBody Analysis updatedAnalysis,
-            @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: check Authentication / clientId
 
@@ -456,5 +494,31 @@ public class ConversationWebservice {
                         "messageId", messageId
                 ))
                 .toUri();
+    }
+
+    @ApiModel
+    class Entity {
+        @ApiModelProperty
+        private String id;
+        @ApiModelProperty
+        private URI _uri;
+
+        public String getId() {
+            return id;
+        }
+
+        public Entity setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public URI get_uri() {
+            return _uri;
+        }
+
+        public Entity set_uri(URI _uri) {
+            this._uri = _uri;
+            return this;
+        }
     }
 }

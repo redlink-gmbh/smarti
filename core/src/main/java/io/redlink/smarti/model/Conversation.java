@@ -181,7 +181,7 @@ public class Conversation {
 
     @Deprecated
     public void setQueryTemplates(List<Template> queryTemplates) {
-        this.analysis.setQueryTemplates(queryTemplates);
+        this.analysis.setTemplates(queryTemplates);
     }
 
     public Context getContext() {
