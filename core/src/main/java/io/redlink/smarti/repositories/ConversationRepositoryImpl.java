@@ -32,7 +32,6 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.aggregation.TypedAggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -236,6 +235,11 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
         if (writeResult.getN() < 1) return null;
 
+        return findMessage(conversationId, messageId);
+    }
+
+    @Override
+    public Message findMessage(ObjectId conversationId, String messageId) {
         // TODO: with mongo 3.4 you could do this with aggregation
         /*
         final TypedAggregation aggregation = newAggregation(Conversation.class,
@@ -248,10 +252,22 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         return mongoTemplate.aggregate(aggregation, Message.class).getUniqueMappedResult();
         */
 
-        return mongoTemplate.findById(conversationId, Conversation.class).getMessages().stream()
-                .filter(m -> messageId.equals(m.getId()))
-                .findFirst().orElse(null);
+        final Conversation conversation = mongoTemplate.findById(conversationId, Conversation.class);
+        if (conversation == null) {
+            return null;
+        } else {
+            return conversation.getMessages().stream()
+                    .filter(m -> messageId.equals(m.getId()))
+                    .findFirst().orElse(null);
+        }
+    }
 
+    @Override
+    public boolean exists(ObjectId conversationId, String messageId) {
+        final Query query = Query.query(Criteria
+                .where("_id").is(conversationId)
+                .and("messages._id").is(messageId));
+        return mongoTemplate.exists(query, Conversation.class);
     }
 
     @Override

@@ -79,19 +79,30 @@ public class ConversationService {
     private ConversationRepository conversationRepository;
 
     private final ExecutorService processingExecutor;
-    private ApplicationEventPublisher applicationEventPublisher;
 
-    public ConversationService(Optional<ExecutorService> processingExecutor) {
-        this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
+    public ConversationService(@Autowired(required = false) ExecutorService processingExecutor) {
+        this.processingExecutor = Optional.ofNullable(processingExecutor).orElseGet(() -> Executors.newFixedThreadPool(2));
     }
     
+    /**
+     * Updates/Stores the parsed conversation
+     * @param client the client
+     * @param conversation the conversation (MUST BE owned by the parsed client)
+     * @param process if the conversation needs to be processed (done asynchronously)
+     * @return the updated conversation as stored after the update and likely before processing has completed. Use the
+     * <code>onCompleteCallback</code> to get the updated conversation including processing results
+     */
+    public Conversation update(Client client, Conversation conversation, boolean process) {
+        return update(client, conversation, process, null);
+    }
+
     /**
      * Updates the parsed conversation
      * @param client the client
      * @param conversation the conversation (MUST BE owned by the parsed client)
      * @param process if the conversation needs to be processed (done asynchronously)
      * @param onCompleteCallback called after the operation completes (including the optional asynchronous processing)
-     * @return the updated conversation as stored after the update and likely before processing has completed. Use the 
+     * @return the updated conversation as stored after the update and likely before processing has completed. Use the
      * <code>onCompleteCallback</code> to get the updated conversation including processing results
      */
     public Conversation update(Client client, Conversation conversation, boolean process, Consumer<Conversation> onCompleteCallback) {
@@ -115,8 +126,20 @@ public class ConversationService {
      * @param client the client
      * @param conversation the conversation (MUST BE owned by the parsed client)
      * @param process if the conversation needs to be processed (done asynchronously)
+     * @return the updated conversation as stored after the update and likely before processing has completed. Use the
+     * <code>onCompleteCallback</code> to get the updated conversation including processing results
+     */
+    public Conversation appendMessage(Client client, Conversation conversation, Message message, boolean process) {
+        return appendMessage(client, conversation, message, process, null);
+    }
+
+    /**
+     * Appends a message to the end of the conversation
+     * @param client the client
+     * @param conversation the conversation (MUST BE owned by the parsed client)
+     * @param process if the conversation needs to be processed (done asynchronously)
      * @param onCompleteCallback called after the operation completes (including the optional asynchronous processing)
-     * @return the updated conversation as stored after the update and likely before processing has completed. Use the 
+     * @return the updated conversation as stored after the update and likely before processing has completed. Use the
      * <code>onCompleteCallback</code> to get the updated conversation including processing results
      */
     public Conversation appendMessage(Client client, Conversation conversation, Message message, boolean process, Consumer<Conversation> onCompleteCallback) {
@@ -223,7 +246,7 @@ public class ConversationService {
     }
 
     public Conversation appendMessage(Client client, Conversation conversation, Message message) {
-        return appendMessage(client, conversation, message, true, null);
+        return appendMessage(client, conversation, message, true);
     }
 
     public Conversation completeConversation(Conversation conversation) {
@@ -344,6 +367,7 @@ public class ConversationService {
     }
 
     public Conversation updateMessage(ObjectId conversationId, Message updatedMessage) {
+        // TODO: also re-analyze!
         return publishSaveEvent(updateQueries(null, conversationRepository.updateMessage(conversationId, updatedMessage)));
     }
 
@@ -354,15 +378,33 @@ public class ConversationService {
     }
 
     public Conversation deleteConversation(ObjectId conversationId) {
-
         final Conversation one = conversationRepository.findOne(conversationId);
-        conversationRepository.delete(conversationId);
+        if (one != null) {
+            conversationRepository.delete(conversationId);
+            eventPublisher.publishEvent(StoreServiceEvent.delete(conversationId, this));
+        }
         return one;
-
     }
 
     public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
         // TODO: check whitelist of allowed fields
-        return conversationRepository.updateConversationField(conversationId, field, data);
+        return publishSaveEvent(updateQueries(null, conversationRepository.updateConversationField(conversationId, field, data)));
+    }
+
+    public Message getMessage(ObjectId conversationId, String messageId) {
+        return conversationRepository.findMessage(conversationId, messageId);
+    }
+
+    public boolean exists(ObjectId conversationId, String messageId) {
+        return conversationRepository.exists(conversationId, messageId);
+    }
+
+    public Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+        final Message message = conversationRepository.updateMessageField(conversationId, messageId, field, data);
+        if (message != null) {
+            // TODO: re-analyze
+            // TODO: publishSaveEvent
+        }
+        return message;
     }
 }
