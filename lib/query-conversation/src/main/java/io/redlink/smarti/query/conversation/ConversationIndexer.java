@@ -55,6 +55,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,6 +65,7 @@ import static io.redlink.smarti.query.conversation.ConversationIndexConfiguratio
 
 @Component
 public class ConversationIndexer {
+
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
@@ -286,12 +288,12 @@ public class ConversationIndexer {
                 .filter(e -> StringUtils.isNoneBlank(e.getKey()) && StringUtils.isNoneBlank(e.getValue()))
                 .filter(e -> !NOT_INDEXED_CONTEXT_FIELDS.contains(e.getKey()))
                 .forEach(e -> {
-                    solrDoc.setField("env_" + e.getKey(), e.getValue());
+                    solrDoc.setField(getEnvironmentField(e.getKey()), e.getValue());
                 });
             }
         }
     }
-    
+
     private SolrInputDocument mergeSolrUInputDoc(SolrInputDocument prev, SolrInputDocument current) {
         prev.setField(FIELD_MESSAGE, String.format("%s%n%s", prev.getFieldValue(FIELD_MESSAGE), current.getFieldValue(FIELD_MESSAGE)));
         prev.setField(FIELD_VOTE, Integer.parseInt(String.valueOf(prev.getFieldValue(FIELD_VOTE))) + Integer.parseInt(String.valueOf(current.getFieldValue(FIELD_VOTE))));

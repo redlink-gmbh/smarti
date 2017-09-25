@@ -17,6 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
+import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
@@ -73,14 +74,10 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
 
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
-        //pre #46 code
-//        final String domain = conversation.getContext().getDomain();
-//        if (StringUtils.isNotBlank(domain)) {
-//            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_DOMAIN, ClientUtils.escapeQueryChars(domain)));
-//        } else {
-//             solrQuery.addFilterQuery(String.format("-%s:*", FIELD_DOMAIN));
-//        }
-//
+
+        //with #87 we restrict results to the same expertise
+        addExpertiseFilter(solrQuery, conversation.getContext().getEnvironment(Context.ENV_EXPERTISE));
+        
         return new QueryRequest(solrQuery);
     }
 

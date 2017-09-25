@@ -17,6 +17,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.api.QueryBuilder;
+import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.Template;
@@ -44,7 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 
 /**
@@ -152,6 +153,16 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         solrQuery.addFilterQuery(new StringBuilder(FIELD_OWNER).append(':')
                 .append(conversation.getOwner().toHexString()).toString());
     }
-
+    /**
+     * Adds a FilterQuery for the parsed Expertise
+     * @param solrQuery
+     * @param expertise
+     */
+    protected final void addExpertiseFilter(final SolrQuery solrQuery, final String expertise){
+        if(StringUtils.isNoneBlank(expertise)){
+            solrQuery.addFilterQuery(new StringBuilder(getEnvironmentField(Context.ENV_EXPERTISE)).append(':')
+                    .append(expertise).toString());
+        }
+    }
 
 }
