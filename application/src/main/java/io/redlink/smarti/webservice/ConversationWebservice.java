@@ -41,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -206,7 +207,8 @@ public class ConversationWebservice {
     @RequestMapping(value = "{id}/template/{template}/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
                                         @PathVariable("template") int templateIdx,
-                                        @PathVariable("creator") String creator) {
+                                        @PathVariable("creator") String creator,
+                                        @RequestParam(required = false) MultiValueMap<String, String> params) {
         //TODO: get the Client for the currently authenticated user 
         final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
         if (conversation == null) {
@@ -221,7 +223,7 @@ public class ConversationWebservice {
         try {
             final Template template = conversation.getTemplates().get(templateIdx);
 
-            return ResponseEntity.ok(conversationService.getInlineResults(client, conversation, template, creator));
+            return ResponseEntity.ok(conversationService.getInlineResults(client, conversation, template, creator, params));
         } catch (IOException e) {
             return ResponseEntities.serviceUnavailable(e.getMessage(), e);
         } catch (IndexOutOfBoundsException e) {
@@ -234,6 +236,7 @@ public class ConversationWebservice {
     public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
                                       @PathVariable("template") int templateIdx,
                                       @PathVariable("creator") String creator,
+                                      @RequestParam(required = false) MultiValueMap<String, String> params,
                                       @RequestBody QueryUpdate queryUpdate) {
         //TODO: get the Client for the currently authenticated user 
         final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null

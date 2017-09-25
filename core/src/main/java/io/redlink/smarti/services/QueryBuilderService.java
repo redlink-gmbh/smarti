@@ -37,6 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -132,18 +134,25 @@ public class QueryBuilderService {
         });
     }
 
-    public List<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation) throws IOException {
+    public List<? extends Result> execute(Client client, String creator, Template template, Conversation conversation) throws IOException {
+        return execute(client, creator, template, conversation, new LinkedMultiValueMap<>());
+    }
+
+    public List<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
         Configuration conf = confService.getClientConfiguration(client);
         if(conf == null){
             throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
         }
         final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> creator = getQueryBuilder(creatorString, conf);
         if (creator != null) {
-            return creator.getKey().execute(creator.getValue(), template, conversation);
+            return creator.getKey().execute(creator.getValue(), template, conversation, params);
         } else {
             throw new NotFoundException(QueryBuilder.class, creatorString, "QueryBuilder for creator '"+ creatorString +"' not present");
         }
     }
+
+
+
     /**
      * Getter for the QueryBuilder for the parsed creator string
      * @param creator the creator string formated as '<code>queryBuilder/{queryBuilder#getName()}/{config#getName()}</code>'
@@ -189,4 +198,5 @@ public class QueryBuilderService {
     public Map<String, QueryBuilder> getQueryBuilders() {
         return Collections.unmodifiableMap(builders);
     }
+
 }
