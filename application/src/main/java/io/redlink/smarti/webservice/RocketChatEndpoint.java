@@ -19,7 +19,6 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
@@ -43,7 +42,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,6 +132,7 @@ public class RocketChatEndpoint {
             newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_NAME, payload.getChannelName());
             newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_ID, payload.getChannelId());
             newConversation.getContext().setEnvironment(Context.ENV_TOKEN, payload.getToken());
+            newConversation.getContext().setEnvironment(Context.ENV_EXPERTISE, payload.getExpertise());
             return newConversation;
         });
         if(!conversation.getChannelId().equals(channelId)){

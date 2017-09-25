@@ -42,6 +42,10 @@ public class Context {
      * conversation
      */
     public static final String ENV_TOKEN = "token";
+    /**
+     * the Channel-Topic
+     */
+    public static final String ENV_EXPERTISE = "expertise";
 
     private String contextType; // = "ApplicationHelp"
     private String environmentType; // = "SAP_Application"

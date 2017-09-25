@@ -57,6 +57,8 @@ public class RocketEvent {
 
     private Date timestamp;
 
+    private String expertise;
+
     @JsonDeserialize(using = RocketBot.JacksonDeserializer.class)
     private RocketBot bot;
 
@@ -159,6 +161,15 @@ public class RocketEvent {
 
     public void setOrigin(String origin) {
         this.origin = origin;
+    }
+
+    public String getExpertise() {
+        return expertise;
+    }
+
+    public RocketEvent setExpertise(String expertise) {
+        this.expertise = expertise;
+        return this;
     }
 
     @Override
