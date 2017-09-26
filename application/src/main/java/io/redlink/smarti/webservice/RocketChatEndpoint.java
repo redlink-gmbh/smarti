@@ -19,16 +19,17 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.User;
+import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
+import io.redlink.smarti.model.SearchResult;
 import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -43,13 +44,14 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -79,6 +81,9 @@ public class RocketChatEndpoint {
 
     @Autowired
     private ConversationService conversationService;
+
+    @Autowired(required = false)
+    private ConversationSearchService conversationSearchService;
 
     protected final HttpClientBuilder httpClientBuilder;
 
@@ -211,6 +216,29 @@ public class RocketChatEndpoint {
         } else {
             return ResponseEntity.ok(conversation.getId().toHexString());
         }
+    }
+
+    /**
+     * Allow conversation-independent search.
+     * @param clientName the client id
+     * @param queryParams the actual query-params
+     */
+    @ApiOperation("search for a conversation")
+    @RequestMapping(value = "{clientId}/search", method = RequestMethod.GET)
+    public ResponseEntity<SearchResult<Conversation>> search(
+            @PathVariable(value = "clientId") String clientName,
+            @RequestParam MultiValueMap<String, String> queryParams) {
+
+        final Client client = clientService.getByName(clientName);
+        if (client == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (conversationSearchService != null) {
+            return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+        }
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
     }
 
     public String createChannelId(Client client, String roomId) {

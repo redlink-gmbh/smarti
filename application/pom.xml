@@ -242,7 +242,6 @@
             <groupId>io.redlink.smarti</groupId>
             <artifactId>query-conversation</artifactId>
             <version>${project.version}</version>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- (8) Solr based Information Retrieval -->
