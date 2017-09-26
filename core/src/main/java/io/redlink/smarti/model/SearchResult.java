@@ -16,13 +16,17 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
-import java.util.function.Function;
 
 public class SearchResult<T> {
 
     private long numFound, start;
-    private float maxScore;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Float maxScore;
+
     private List<T> docs;
 
     public SearchResult() {
@@ -52,7 +56,7 @@ public class SearchResult<T> {
         return this;
     }
 
-    public float getMaxScore() {
+    public Float getMaxScore() {
         return maxScore;
     }
 

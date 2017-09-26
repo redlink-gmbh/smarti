@@ -37,13 +37,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
 
 @Service
 public class ConversationSearchService {
@@ -63,11 +62,17 @@ public class ConversationSearchService {
 
     public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
 
-        final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams));
+        final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, "text"));
 
+        solrParams.add(CommonParams.FL, "id");
         solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_OWNER,
                 ClientUtils.escapeQueryChars(client.getId().toHexString())));
-
+        solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_TYPE, "conversation"));
+        if (queryParams.containsKey("text")) {
+            solrParams.set(CommonParams.Q, String.format("{!parent which=\"%s:%s\"}text:%s",
+                    FIELD_TYPE, "conversation",
+                    ClientUtils.escapeQueryChars(queryParams.getFirst("text"))));
+        }
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
 
@@ -85,17 +90,28 @@ public class ConversationSearchService {
         return storeService.get(new ObjectId(String.valueOf(doc.getFirstValue("id"))));
     }
 
-    private static Map<String, String[]> toListOfStringArrays(Map<String, List<String>> in) {
+    private static Map<String, String[]> toListOfStringArrays(Map<String, List<String>> in, String... excludes) {
+        final Set<String> excludeKeys = new HashSet<>(Arrays.asList(excludes));
         final Map<String, String[]> map = new HashMap<>();
-        in.forEach((k, v) -> map.put(k, v.toArray(new String[v.size()])));
+        in.forEach((k, v) -> {
+            if (!excludeKeys.contains(k)) {
+                map.put(k, v.toArray(new String[v.size()]));
+            }
+        });
         return map;
     }
 
     private static <T> SearchResult<T> fromQueryResponse(QueryResponse solrQueryResponse, Function<SolrDocument, T> resultMapper) {
         final SolrDocumentList results = solrQueryResponse.getResults();
 
-        return new SearchResult<>(results.getNumFound(), results.getStart(),
+        final SearchResult<T> searchResult = new SearchResult<>(results.getNumFound(), results.getStart(),
                 results.stream().map(resultMapper).collect(Collectors.toList()));
+
+        if (results.getMaxScore() != null) {
+            searchResult.setMaxScore(results.getMaxScore());
+        }
+
+        return searchResult;
     }
 
 

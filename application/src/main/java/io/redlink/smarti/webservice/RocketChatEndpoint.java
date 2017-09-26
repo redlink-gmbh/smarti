@@ -19,22 +19,14 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Context;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.User;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
-import io.redlink.smarti.model.SearchResult;
 import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -62,7 +54,6 @@ import java.io.IOException;
 @CrossOrigin
 @RestController
 @RequestMapping(value = "rocket",
-        consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @Api("rocket")
 public class RocketChatEndpoint {
@@ -118,7 +109,8 @@ public class RocketChatEndpoint {
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK")
     })
-    @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST)
+    @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST,
+            consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientName,
                                            @RequestBody RocketEvent payload) {
         log.debug("{}: {}", clientName, payload);
@@ -223,11 +215,13 @@ public class RocketChatEndpoint {
      * @param clientName the client id
      * @param queryParams the actual query-params
      */
-    @ApiOperation(value = "search for a conversation", response = SearchResult.class)
+    @ApiOperation(value = "search for a conversation", response = SearchResult.class,
+            notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
     @RequestMapping(value = "{clientId}/search", method = RequestMethod.GET)
     public ResponseEntity<?> search(
             @PathVariable(value = "clientId") String clientName,
-            @RequestParam MultiValueMap<String, String> queryParams) {
+            @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
+            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams) {
 
         final Client client = clientService.getByName(clientName);
         if (client == null) {
