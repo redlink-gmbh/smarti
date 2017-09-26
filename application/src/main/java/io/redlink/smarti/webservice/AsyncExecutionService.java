@@ -18,7 +18,11 @@ package io.redlink.smarti.webservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import io.redlink.smarti.properties.HttpCallbackProperties;
+import io.redlink.smarti.properties.MavenCoordinatesProperties;
 import io.redlink.smarti.webservice.pojo.CallbackPayload;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ConnectionBackoffStrategy;
 import org.apache.http.client.methods.HttpPost;
@@ -26,10 +30,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,6 +50,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 @Service
+@EnableConfigurationProperties({MavenCoordinatesProperties.class, HttpCallbackProperties.class})
 public class AsyncExecutionService {
 
     private final ExecutorService processingExecutor;
@@ -54,15 +59,19 @@ public class AsyncExecutionService {
 
     private final Logger log = LoggerFactory.getLogger(AsyncExecutionService.class);
 
-    public AsyncExecutionService(ObjectMapper objectMapper,
-                                 @Autowired(required = false) ExecutorService processingExecutor) {
+    public AsyncExecutionService(
+            ObjectMapper objectMapper,
+            @Autowired(required = false) ExecutorService processingExecutor,
+            MavenCoordinatesProperties mavenCoordinatesProperties,
+            HttpCallbackProperties httpCallbackProperties
+    ) {
         this.processingExecutor = Optional.ofNullable(processingExecutor)
                 .orElseGet(() -> Executors.newFixedThreadPool(2));
         this.objectMapper = objectMapper;
 
 
         this.httpClientBuilder = HttpClientBuilder.create()
-                .setRetryHandler((exception, executionCount, context) -> executionCount < 3)
+                .setRetryHandler((exception, executionCount, context) -> executionCount < httpCallbackProperties.getRetryCount())
                 .setConnectionBackoffStrategy(new ConnectionBackoffStrategy() {
                     @Override
                     public boolean shouldBackoff(Throwable t) {
@@ -74,11 +83,18 @@ public class AsyncExecutionService {
                         return false;
                     }
                 })
-                .setUserAgent("Smarti/0.0");
+                .setUserAgent(String.format("Smarti/%s AsyncExecutionService", StringUtils.defaultString(mavenCoordinatesProperties.getVersion(), "0.0")));
 
-//        if(StringUtils.isNotBlank(proxyHostname)) {
-//            httpClientBuilder.setProxy(new HttpHost(proxyHostname, proxyPort, proxyScheme));
-//        }
+        log.info("Starting up AsyncExecutionService/{}", mavenCoordinatesProperties.getVersion());
+
+        if(StringUtils.isNotBlank(httpCallbackProperties.getProxy().getHost())) {
+            httpClientBuilder.setProxy(new HttpHost(
+                    httpCallbackProperties.getProxy().getHost(),
+                    httpCallbackProperties.getProxy().getPort(),
+                    httpCallbackProperties.getProxy().getScheme()
+            ));
+        }
+
 
     }
 
