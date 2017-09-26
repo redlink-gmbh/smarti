@@ -16,17 +16,87 @@
  */
 package io.redlink.smarti.query.conversation;
 
+import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.SearchResult;
+import io.redlink.solrlib.SolrCoreContainer;
+import io.redlink.solrlib.SolrCoreDescriptor;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
 
 @Service
 public class ConversationSearchService {
 
-    public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) {
-        return null;
+    private final SolrCoreContainer solrServer;
+    private final SolrCoreDescriptor conversationCore;
+
+    private final StoreService storeService;
+
+    @Autowired
+    public ConversationSearchService(SolrCoreContainer solrServer, @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, StoreService storeService) {
+        this.solrServer = solrServer;
+        this.conversationCore = conversationCore;
+        this.storeService = storeService;
     }
+
+
+    public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
+
+        final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams));
+
+        solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_OWNER,
+                ClientUtils.escapeQueryChars(client.getId().toHexString())));
+
+
+        try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
+
+            final QueryResponse queryResponse = solrClient.query(solrParams);
+
+
+            return fromQueryResponse(queryResponse, this::readConversation);
+
+        } catch (SolrServerException e) {
+            throw new IllegalStateException("Cannot query non-initialized core", e);
+        }
+    }
+
+    private Conversation readConversation(SolrDocument doc) {
+        return storeService.get(new ObjectId(String.valueOf(doc.getFirstValue("id"))));
+    }
+
+    private static Map<String, String[]> toListOfStringArrays(Map<String, List<String>> in) {
+        final Map<String, String[]> map = new HashMap<>();
+        in.forEach((k, v) -> map.put(k, v.toArray(new String[v.size()])));
+        return map;
+    }
+
+    private static <T> SearchResult<T> fromQueryResponse(QueryResponse solrQueryResponse, Function<SolrDocument, T> resultMapper) {
+        final SolrDocumentList results = solrQueryResponse.getResults();
+
+        return new SearchResult<>(results.getNumFound(), results.getStart(),
+                results.stream().map(resultMapper).collect(Collectors.toList()));
+    }
+
 
 }

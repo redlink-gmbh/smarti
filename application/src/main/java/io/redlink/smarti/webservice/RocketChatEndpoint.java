@@ -223,9 +223,9 @@ public class RocketChatEndpoint {
      * @param clientName the client id
      * @param queryParams the actual query-params
      */
-    @ApiOperation("search for a conversation")
+    @ApiOperation(value = "search for a conversation", response = SearchResult.class)
     @RequestMapping(value = "{clientId}/search", method = RequestMethod.GET)
-    public ResponseEntity<SearchResult<Conversation>> search(
+    public ResponseEntity<?> search(
             @PathVariable(value = "clientId") String clientName,
             @RequestParam MultiValueMap<String, String> queryParams) {
 
@@ -235,7 +235,11 @@ public class RocketChatEndpoint {
         }
 
         if (conversationSearchService != null) {
-            return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+            try {
+                return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+            } catch (IOException e) {
+                return ResponseEntities.internalServerError(e);
+            }
         }
 
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();

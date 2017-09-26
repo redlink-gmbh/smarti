@@ -17,10 +17,12 @@
 package io.redlink.smarti.model;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class SearchResult<T> {
 
     private long numFound, start;
+    private float maxScore;
     private List<T> docs;
 
     public SearchResult() {
@@ -47,6 +49,15 @@ public class SearchResult<T> {
 
     public SearchResult setStart(long start) {
         this.start = start;
+        return this;
+    }
+
+    public float getMaxScore() {
+        return maxScore;
+    }
+
+    public SearchResult setMaxScore(float maxScore) {
+        this.maxScore = maxScore;
         return this;
     }
 
