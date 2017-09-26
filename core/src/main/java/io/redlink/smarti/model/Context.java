@@ -45,7 +45,7 @@ public class Context {
     /**
      * the Channel-Topic
      */
-    public static final String ENV_EXPERTISE = "expertise";
+    public static final String ENV_SUPPORT_AREA = "expertise";
 
     private String contextType; // = "ApplicationHelp"
     private String environmentType; // = "SAP_Application"

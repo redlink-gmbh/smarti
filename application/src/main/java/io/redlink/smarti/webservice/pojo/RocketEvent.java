@@ -57,7 +57,8 @@ public class RocketEvent {
 
     private Date timestamp;
 
-    private String expertise;
+    @JsonProperty("support_area")
+    private String supportArea;
 
     @JsonDeserialize(using = RocketBot.JacksonDeserializer.class)
     private RocketBot bot;
@@ -163,12 +164,12 @@ public class RocketEvent {
         this.origin = origin;
     }
 
-    public String getExpertise() {
-        return expertise;
+    public String getSupportArea() {
+        return supportArea;
     }
 
-    public RocketEvent setExpertise(String expertise) {
-        this.expertise = expertise;
+    public RocketEvent setSupportArea(String supportArea) {
+        this.supportArea = supportArea;
         return this;
     }
 

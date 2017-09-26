@@ -76,7 +76,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         addClientFilter(solrQuery, conversation);
 
         //with #87 we restrict results to the same expertise
-        addExpertiseFilter(solrQuery, conversation.getContext().getEnvironment(Context.ENV_EXPERTISE));
+        addExpertiseFilter(solrQuery, conversation.getContext().getEnvironment(Context.ENV_SUPPORT_AREA));
         
         return new QueryRequest(solrQuery);
     }

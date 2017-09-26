@@ -160,7 +160,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      */
     protected final void addExpertiseFilter(final SolrQuery solrQuery, final String expertise){
         if(StringUtils.isNoneBlank(expertise)){
-            solrQuery.addFilterQuery(new StringBuilder(getEnvironmentField(Context.ENV_EXPERTISE)).append(':')
+            solrQuery.addFilterQuery(new StringBuilder(getEnvironmentField(Context.ENV_SUPPORT_AREA)).append(':')
                     .append(expertise).toString());
         }
     }

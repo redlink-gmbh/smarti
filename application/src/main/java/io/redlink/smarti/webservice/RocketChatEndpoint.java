@@ -132,7 +132,7 @@ public class RocketChatEndpoint {
             newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_NAME, payload.getChannelName());
             newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_ID, payload.getChannelId());
             newConversation.getContext().setEnvironment(Context.ENV_TOKEN, payload.getToken());
-            newConversation.getContext().setEnvironment(Context.ENV_EXPERTISE, payload.getExpertise());
+            newConversation.getContext().setEnvironment(Context.ENV_SUPPORT_AREA, payload.getSupportArea());
             return newConversation;
         });
         if(!conversation.getChannelId().equals(channelId)){
