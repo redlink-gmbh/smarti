@@ -26,26 +26,21 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getEnvironmentField;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 
 /**
@@ -154,14 +149,14 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
                 .append(conversation.getOwner().toHexString()).toString());
     }
     /**
-     * Adds a FilterQuery for the parsed Expertise
+     * Adds a FilterQuery for the passed supportArea
      * @param solrQuery
-     * @param expertise
+     * @param supportArea
      */
-    protected final void addExpertiseFilter(final SolrQuery solrQuery, final String expertise){
-        if(StringUtils.isNoneBlank(expertise)){
+    protected final void addSupportAreaFilter(final SolrQuery solrQuery, final String supportArea){
+        if(StringUtils.isNoneBlank(supportArea)){
             solrQuery.addFilterQuery(new StringBuilder(getEnvironmentField(Context.ENV_SUPPORT_AREA)).append(':')
-                    .append(expertise).toString());
+                    .append(supportArea).toString());
         }
     }
 

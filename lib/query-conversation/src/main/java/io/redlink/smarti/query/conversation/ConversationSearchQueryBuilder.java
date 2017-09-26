@@ -17,11 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.model.Context;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.State;
-import io.redlink.smarti.model.Template;
-import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
@@ -29,7 +25,6 @@ import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -40,8 +35,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_DOMAIN;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
 
 /**
@@ -75,8 +68,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
 
-        //with #87 we restrict results to the same expertise
-        addExpertiseFilter(solrQuery, conversation.getContext().getEnvironment(Context.ENV_SUPPORT_AREA));
+        //with #87 we restrict results to the same support-area
+        addSupportAreaFilter(solrQuery, conversation.getContext().getEnvironment(Context.ENV_SUPPORT_AREA));
         
         return new QueryRequest(solrQuery);
     }
