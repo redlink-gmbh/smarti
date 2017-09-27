@@ -30,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.method.P;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -53,9 +52,9 @@ import java.util.UUID;
 @Api("conversation")
 public class ConversationWebservice {
 
-    public static final String API_PARAM_CALLBACK = "URI where to POST the result (triggers async processing)";
-    public static final String API_ASYNC_NOTE = " If a 'callback' is provided, the request will be processed async.";
-    public static final String EDITABLE_CONVERSATION_FIELDS = "meta.status, meta.tags, meta.feedback, context.contextType, context.environmentType, context.domain, context.environment.*";
+    private static final String API_PARAM_CALLBACK = "URI where to POST the result (triggers async processing)";
+    private static final String API_ASYNC_NOTE = " If a 'callback' is provided, the request will be processed async.";
+    private static final String EDITABLE_CONVERSATION_FIELDS = "meta.status, meta.tags, meta.feedback, context.contextType, context.environmentType, context.domain, context.environment.*";
     private static final String EDITABLE_MESSAGE_FIELDS = "time, origin, content, private, votes, metadata.*";
 
     private final AsyncExecutionService asyncExecutionService;
@@ -119,10 +118,10 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
-    @RequestMapping(value = "{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}", method = RequestMethod.GET)
     public ResponseEntity<Conversation> getConversation(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         //TODO get the client for the authenticated user
@@ -139,9 +138,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "delete a conversation", code = 204)
-    @RequestMapping(value = "{id}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "{conversationId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteConversation(
-            @PathVariable("id") ObjectId conversationId
+            @PathVariable("conversationId") ObjectId conversationId
     ) {
         //TODO get the client for the authenticated user
 
@@ -161,10 +160,10 @@ public class ConversationWebservice {
             @ApiResponse(code = 200, message = "field updated (sync)", response = Conversation.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{id}/{field:.*}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.PUT)
     public ResponseEntity<Conversation> modifyConversationField(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
             @ApiParam(value = "the new value", required = true) @RequestBody Object data,
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
@@ -185,9 +184,9 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List",
             notes = "retrieves all messages in the accessed conversation")
-    @RequestMapping(value = "{id}/message", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/message", method = RequestMethod.GET)
     public ResponseEntity<List<Message>> listMessages(
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         //TODO: check authentication
@@ -209,10 +208,10 @@ public class ConversationWebservice {
             @ApiResponse(code = 201, message = "message created"),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{id}/message", method = RequestMethod.POST)
+    @RequestMapping(value = "{conversationId}/message", method = RequestMethod.POST)
     public ResponseEntity<Message> appendMessage(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Message message,
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
@@ -243,9 +242,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "retrieve a message", response = Message.class)
-    @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.GET)
     public ResponseEntity<Message> getMessage(
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
@@ -268,10 +267,10 @@ public class ConversationWebservice {
             @ApiResponse(code = 200, message = "message updated (sync)", response = Conversation.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.PUT)
     public ResponseEntity<Message> updateMessage(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestBody Message message,
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback,
@@ -296,10 +295,10 @@ public class ConversationWebservice {
             @ApiResponse(code = 204, message = "message deleted (sync)", response = Conversation.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{id}/message/{msgId}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.DELETE)
     public ResponseEntity<Conversation> deleteMessage(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false)URI callback
     ) {
@@ -327,10 +326,10 @@ public class ConversationWebservice {
             @ApiResponse(code = 200, message = "field updated (sync)", response = Message.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{id}/message/{msgId}/{field}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{conversationId}/message/{msgId}/{field}", method = RequestMethod.PUT)
     public ResponseEntity<Message> modifyMessageField(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_MESSAGE_FIELDS) @PathVariable("field") String field,
             @ApiParam(value = "the new value", required = true) @RequestBody Object data,
@@ -352,9 +351,9 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "get the analysis-results of the conversation", response = Analysis.class,
             notes = "retrieve the analysis for this conversation.")
-    @RequestMapping(value = "{id}/analysis", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.GET)
     public ResponseEntity<Analysis> getAnalysis(
-            @PathVariable("id") ObjectId conversationId
+            @PathVariable("conversationId") ObjectId conversationId
     ) {
         // TODO: check Authentication / clientId
 
@@ -368,9 +367,9 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class,
     notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
-    @RequestMapping(value = "{id}/analysis", method = RequestMethod.POST)
+    @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST)
     public ResponseEntity<Analysis> rerunAnalysis(
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Analysis updatedAnalysis,
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
@@ -381,9 +380,9 @@ public class ConversationWebservice {
 
 
     @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/analysis/token", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/analysis/token", method = RequestMethod.GET)
     public ResponseEntity<List<Token>> getTokens(
-            @PathVariable("id") ObjectId conversationId
+            @PathVariable("conversationId") ObjectId conversationId
     ) {
         // TODO: check Authentication / clientId
 
@@ -397,9 +396,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "get the (query-)templates in the conversation", response = Template.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/analysis/template", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/analysis/template", method = RequestMethod.GET)
     public ResponseEntity<List<Template>> getTemplates(
-            @PathVariable("id") ObjectId conversationId
+            @PathVariable("conversationId") ObjectId conversationId
     ) {
         // TODO: check Authentication / clientId
 
@@ -413,9 +412,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "get a query template", response = Template.class)
-    @RequestMapping(value = "{id}/analysis/template/{templateIdx}", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}", method = RequestMethod.GET)
     public ResponseEntity<Template> getTemplate(
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx
     ) {
         // TODO: check Authentication / clientId
@@ -437,9 +436,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List")
-    @RequestMapping(value = "{id}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
+    @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
     public ResponseEntity<? extends List<? extends Result>> getResults(
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator
     ) {
@@ -464,9 +463,9 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List",
             notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
-    @RequestMapping(value = "{id}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
+    @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
     public ResponseEntity<? extends List<? extends Result>> rerunResults(
-            @PathVariable("id") ObjectId conversationId,
+            @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") int creator,
             @RequestBody Analysis updatedAnalysis,
