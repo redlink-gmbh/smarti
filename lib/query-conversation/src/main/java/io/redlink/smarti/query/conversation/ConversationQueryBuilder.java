@@ -60,11 +60,10 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) && 
+        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) &&
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
-                    .filter(s -> s.getTokenIndex() >= 0)
-                    .findAny().isPresent();
+                    .anyMatch(s -> s.getTokenIndex() >= 0);
         log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
         return state;
     }
@@ -93,7 +92,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     @Override
     public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
         // TODO: use the queryParams
-        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation);
+        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, queryParams);
         if (solrRequest == null) {
             return new SearchResult<>();
         }
@@ -107,7 +106,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
                 query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
-                query.add("fq",String.format("message_idx:[1 TO *]"));
+                query.add("fq", "message_idx:[1 TO *]");
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
                 //query.setRows(3);
@@ -135,7 +134,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation);
+    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams);
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
@@ -148,8 +147,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      * @param conversation the current conversation
      */
     protected final void addClientFilter(final SolrQuery solrQuery, Conversation conversation) {
-        solrQuery.addFilterQuery(new StringBuilder(FIELD_OWNER).append(':')
-                .append(conversation.getOwner().toHexString()).toString());
+        solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
 
 

@@ -33,10 +33,12 @@ import org.apache.solr.common.SolrDocumentList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 
 import java.util.Date;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -109,7 +111,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation) {
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) {
         final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation);
         if (mltQuery == null) {
             return null;
@@ -120,7 +122,11 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDX));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
-        
+
+        // #39 - paging
+        solrQuery.setStart(toInt(queryParams.getFirst("start"), 0));
+        solrQuery.setRows(toInt(queryParams.getFirst("rows"), 10));
+
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
         //Pre SMARTI #46 code
