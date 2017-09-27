@@ -19,11 +19,7 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Context;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.User;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -54,6 +50,8 @@ import java.io.IOException;
 
 /**
  * Webhook-Endpoint for rocket.chat
+ *
+ *  @deprecated to be removed in favor of {@link ConversationWebservice}
  */
 @CrossOrigin
 @RestController

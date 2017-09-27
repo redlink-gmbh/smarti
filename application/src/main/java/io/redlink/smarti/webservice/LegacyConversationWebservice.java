@@ -17,10 +17,7 @@
 
 package io.redlink.smarti.webservice;
 
-import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.*;
-import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ClientService;
@@ -44,19 +41,19 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 
 
 /**
- *
+ * @deprecated to be removed in favor of {@link ConversationWebservice}
  */
 @CrossOrigin
 @RestController
 @RequestMapping(value = "legacy/conversation",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @Api("conversation-legacy")
+@Deprecated
 public class LegacyConversationWebservice {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
