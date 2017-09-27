@@ -17,10 +17,7 @@
 
 package io.redlink.smarti.webservice;
 
-import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.*;
-import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ClientService;
@@ -45,7 +42,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -203,7 +199,7 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "retrieve the results for a template from a specific creator", response = Result.class, responseContainer = "List")
+    @ApiOperation(value = "retrieve the results for a template from a specific creator", response = InlineSearchResult.class)
     @RequestMapping(value = "{id}/template/{template}/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
                                         @PathVariable("template") int templateIdx,
@@ -276,5 +272,9 @@ public class ConversationWebservice {
             conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
             return ResponseEntity.ok(conversationService.completeConversation(conversation));
         }
+    }
+
+    static class InlineSearchResult extends SearchResult<Result> {
+
     }
 }

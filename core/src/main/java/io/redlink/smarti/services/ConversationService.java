@@ -41,7 +41,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ConcurrentModificationException;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -234,12 +237,12 @@ public class ConversationService {
     }
 
 
-    public List<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
+    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
         return queryBuilderService.execute(client, creator, template, conversation, params);
     }
 
 
-    public List<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
+    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
         return getInlineResults(client, conversation, template, creator, new LinkedMultiValueMap<>());
     }
     

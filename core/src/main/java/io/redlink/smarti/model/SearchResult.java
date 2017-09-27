@@ -18,6 +18,7 @@ package io.redlink.smarti.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.Collections;
 import java.util.List;
 
 public class SearchResult<T> {
@@ -30,6 +31,11 @@ public class SearchResult<T> {
     private List<T> docs;
 
     public SearchResult() {
+        this(Collections.emptyList());
+    }
+
+    public SearchResult(List<T> docs) {
+        this(docs.size(), 0, docs);
     }
 
     public SearchResult(long numFound, long start, List<T> docs) {

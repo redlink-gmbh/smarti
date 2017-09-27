@@ -25,7 +25,6 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.query.solr.SolrEndpointConfiguration.SingleFieldConfig;
 import io.redlink.smarti.query.solr.SolrEndpointConfiguration.SpatialConfig;
 import io.redlink.smarti.services.TemplateRegistry;
-
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -34,23 +33,16 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
-
-import static io.redlink.smarti.intend.IrLatchTemplate.IR_LATCH;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import static io.redlink.smarti.intend.IrLatchTemplate.IR_LATCH;
 
 /**
  */
@@ -106,7 +98,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
     }
 
     @Override
-    public final List<? extends Result> execute(SolrEndpointConfiguration conf, Template template, Conversation conversation) throws IOException {
+    public final SearchResult<? extends Result> execute(SolrEndpointConfiguration conf, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
         throw new UnsupportedOperationException("This QueryBuilder does not support inline results");
     }
     

@@ -19,27 +19,25 @@ package io.redlink.smarti.query.conversation;
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Query;
+import io.redlink.smarti.model.SearchResult;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -93,10 +91,11 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
     @Override
-    public List<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation) throws IOException {
+    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
+        // TODO: use the queryParams
         final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation);
         if (solrRequest == null) {
-            return Collections.emptyList();
+            return new SearchResult<>();
         }
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
@@ -117,7 +116,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
             }
-            return results;
+            return new SearchResult<>(results);
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
