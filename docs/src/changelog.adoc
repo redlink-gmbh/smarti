@@ -1,3 +1,4 @@
+:migration_scripts: ../../dist/src/main/resources/migration
 == Changelog
 
 This document shows the changes that are introduced into Smarti with the releases.
@@ -12,16 +13,7 @@ must be migrated to the new model.
 A migration script is available and must be applied manually:
 [source,javascript]
 -----------------------------------------------
-var conversations = db.getCollection('conversations'),
-    configuration = db.getCollection('configuration'),
-    client = db.getCollection('client');
-
-conversations.update({ analysis: { $exists: false} }, {
-    $rename: {
-        tokens: 'analysis.tokens',
-        queryTemplates: 'analysis.queryTemplates'
-    }
-}, { multi: true});
+include::{migration_scripts}/0.5-to-0.6.js[lines=17..-1]
 -----------------------------------------------
 
 === 0.5.0
@@ -35,111 +27,7 @@ must be migrated to the new model.
 A migration script is available and must be applied manually:
 [source,javascript]
 ------------------------------------------------
-var conversation = 'conversations',
-    configuration = 'configuration',
-    client = 'client';
-
-// create all clients
-db.getCollection(conversation).aggregate([
-    { $project: { domain: '$context.domain' } },
-    { $group: { _id: '$domain'}},
-    { $project: {
-        _id: 0,
-        name: '$_id',
-        lastUpdate: { $literal: ISODate() },
-        defaultClient: { $literal: false }
-    } },
-    { $out: client}
-]);
-db.getCollection(client).find().forEach(function(c) {
-    db.getCollection(conversation).update(
-        { 'context.domain': c.name },
-        { $set: { owner: c._id }},
-        { multi: true }
-    );
-    db.getCollection(configuration).update(
-        { client: c._id },
-        { $setOnInsert: {
-            created: new ISODate(),
-            modified: new ISODate(),
-            config: {
-                "queryBuilder" : [
-                    {
-                        "name" : "conversationmlt",
-                        "displayName" : "Related Conversations",
-                        "type" : "conversationmlt",
-                        "enabled" : true,
-                        "unbound" : false,
-                        "configuration" : {
-
-                        }
-                    },
-                    {
-                        "solrEndpoint" : "http://host.domain.org:8983/solr/change-me",
-                        "search" : {
-                            "title" : {
-                                "enabled" : false,
-                                "field" : ""
-                            },
-                            "fullText" : {
-                                "enabled" : true,
-                                "field" : ""
-                            },
-                            "spatial" : {
-                                "enabled" : true,
-                                "locationNameField" : ""
-                            },
-                            "temporal" : {
-                                "enabled" : false
-                            },
-                            "related" : {
-                                "enabled" : false,
-                                "fields" : [ ]
-                            }
-                        },
-                        "defaults" : {
-                            "rows" : 10,
-                            "fields" : "*,score"
-                        },
-                        "result" : {
-                            "numOfRows": 10,
-                            "mappings" : {
-                                "title": "title",
-                                "description": "description",
-                                "type": "type",
-                                "doctype": "doctype",
-                                "thumb": "thumb",
-                                "link": "link",
-                                "date": "date",
-                                "source": "source"
-                            },
-                        },
-                        "name" : "search-endpoint-0",
-                        "displayName" : "Search Endpoint",
-                        "type" : "solrsearch",
-                        "enabled" : false,
-                        "unbound" : false,
-                        "configuration" : {
-
-                        },
-                        "_class" : "io.redlink.smarti.query.solr.SolrEndpointConfiguration"
-                    },
-                    {
-                        "name" : "conversationsearch",
-                        "displayName" : "conversationsearch",
-                        "type" : "conversationsearch",
-                        "enabled" : true,
-                        "unbound" : false,
-                        "configuration" : {
-
-                        }
-                    }
-                ]
-            }
-        }},
-        { upsert: true }
-    );
-});
+include::{migration_scripts}/0.3-to-0.5.js[lines=17..-1]
 ------------------------------------------------
 
 === Pre 0.4.0
