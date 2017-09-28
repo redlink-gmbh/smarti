@@ -19,11 +19,7 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Context;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.User;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -47,7 +43,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -167,8 +165,9 @@ public class RocketChatEndpoint {
 
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
             final HttpPost post = new HttpPost(callbackUrl);
+            final MultiValueMap<String, String> env = CollectionUtils.toMultiValueMap(conversation.getContext().getEnvironment());
             post.setEntity(new StringEntity(
-                    toJsonString(new SmartiUpdatePing(conversation.getId(), conversation.getContext().getEnvironment(Context.ENV_CHANNEL_ID), token)),
+                    toJsonString(new SmartiUpdatePing(conversation.getId(), env.getFirst(Context.ENV_CHANNEL_ID), token)),
                     ContentType.APPLICATION_JSON
             ));
             httpClient.execute(post, response -> null);

@@ -19,8 +19,7 @@ package io.redlink.smarti.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  */
@@ -50,7 +49,7 @@ public class Context {
     private String contextType; // = "ApplicationHelp"
     private String environmentType; // = "SAP_Application"
     private String domain;
-    private Map<String,String> environment = new HashMap<>();
+    private Map<String,List<String>> environment = new HashMap<>();
 
     public String getContextType() {
         return contextType;
@@ -77,23 +76,23 @@ public class Context {
         return this;
     }
 
-    public Map<String, String> getEnvironment() {
+    public Map<String, List<String>> getEnvironment() {
         return environment;
     }
 
-    public String getEnvironment(String key) {
+    public List<String> getEnvironment(String key) {
         return environment.get(key);
     }
 
-    public String getEnvironment(String key, String defaultValue) {
-        return environment.getOrDefault(key, defaultValue);
-    }
-
-    public void setEnvironment(Map<String, String> environment) {
+    public void setEnvironment(Map<String, List<String>> environment) {
         this.environment = environment;
     }
 
     public void setEnvironment(String key, String value) {
+        setEnvironment(key, new LinkedList<>(Collections.singletonList(value)));
+    }
+
+    public void setEnvironment(String key, List<String> value) {
         environment.put(key, value);
     }
 }

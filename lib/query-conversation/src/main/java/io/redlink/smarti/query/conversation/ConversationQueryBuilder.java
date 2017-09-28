@@ -26,12 +26,12 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -145,18 +145,21 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      * @param conversation the current conversation
      */
     protected final void addClientFilter(final SolrQuery solrQuery, Conversation conversation) {
-        solrQuery.addFilterQuery(new StringBuilder(FIELD_OWNER).append(':')
-                .append(conversation.getOwner().toHexString()).toString());
+        solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
     /**
-     * Adds a FilterQuery for the passed supportArea
+     * Adds a FilterQuery for the passed supportAreas
      * @param solrQuery
-     * @param supportArea
+     * @param supportAreas
      */
-    protected final void addSupportAreaFilter(final SolrQuery solrQuery, final String supportArea){
-        if(StringUtils.isNoneBlank(supportArea)){
-            solrQuery.addFilterQuery(new StringBuilder(getEnvironmentField(Context.ENV_SUPPORT_AREA)).append(':')
-                    .append(supportArea).toString());
+    protected final void addSupportAreaFilter(final SolrQuery solrQuery, final List<String> supportAreas){
+        if (supportAreas != null && !supportAreas.isEmpty()) {
+            final String filterVal = supportAreas.stream()
+                    .map(ClientUtils::escapeQueryChars)
+                    .reduce((a, b) -> a + " OR " + b)
+                    .orElse("");
+            solrQuery.addFilterQuery(
+                    getEnvironmentField(Context.ENV_SUPPORT_AREA) + ":(" + filterVal + ")");
         }
     }
 

@@ -29,7 +29,6 @@ import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -49,15 +48,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -283,13 +274,14 @@ public class ConversationIndexer {
             solrDoc.setField(FIELD_CONTEXT, ctx.getContextType());
             solrDoc.setField(FIELD_ENVIRONMENT, ctx.getEnvironmentType());
             solrDoc.setField(FIELD_DOMAIN, ctx.getDomain());
-            if(ctx.getEnvironment() != null){
+            if (ctx.getEnvironment() != null) {
                 ctx.getEnvironment().entrySet().stream()
-                .filter(e -> StringUtils.isNoneBlank(e.getKey()) && StringUtils.isNoneBlank(e.getValue()))
-                .filter(e -> !NOT_INDEXED_CONTEXT_FIELDS.contains(e.getKey()))
-                .forEach(e -> {
-                    solrDoc.setField(getEnvironmentField(e.getKey()), e.getValue());
-                });
+                        .filter(e -> Objects.nonNull(e.getValue()))
+                        .filter(e -> StringUtils.isNotBlank(e.getKey()) && !e.getValue().isEmpty())
+                        .filter(e -> !NOT_INDEXED_CONTEXT_FIELDS.contains(e.getKey()))
+                        .forEach(e -> {
+                            solrDoc.setField(getEnvironmentField(e.getKey()), e.getValue());
+                        });
             }
         }
     }
