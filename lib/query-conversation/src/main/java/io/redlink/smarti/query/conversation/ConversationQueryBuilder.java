@@ -100,9 +100,10 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
             final NamedList<Object> response = solrClient.request(solrRequest);
             final QueryResponse solrResponse = new QueryResponse(response, solrClient);
+            final SolrDocumentList solrResults = solrResponse.getResults();
 
-            final List<Result> results = new ArrayList<>();
-            for (SolrDocument solrDocument : solrResponse.getResults()) {
+            final List<ConversationResult> results = new ArrayList<>();
+            for (SolrDocument solrDocument : solrResults) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
                 query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
@@ -115,7 +116,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
             }
-            return new SearchResult<>(results);
+            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), results);
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
