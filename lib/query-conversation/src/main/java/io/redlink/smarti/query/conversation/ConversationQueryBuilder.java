@@ -44,10 +44,13 @@ import java.util.Set;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
+
+    public static final String CONFIG_KEY_PAGE_SIZE = "pageSize";
 
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
@@ -91,10 +94,16 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     @Override
     public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
-        // TODO: use the queryParams
-        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, queryParams);
+        // read default page-size from builder-configuration
+        int pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
+        // if present, a queryParam 'rows' takes precedence.
+        pageSize = toInt(queryParams.getFirst("rows"), pageSize);
+        long offset = toInt(queryParams.getFirst("start"), 0);
+
+
+        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, offset, pageSize, queryParams);
         if (solrRequest == null) {
-            return new SearchResult<>();
+            return new SearchResult<ConversationResult>(pageSize);
         }
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
@@ -116,7 +125,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
             }
-            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), results);
+            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
@@ -130,12 +139,17 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     
     @Override
     public ComponentConfiguration getDefaultConfiguration() {
-        return new ComponentConfiguration(); //this queryBuilder has no config params
+        final ComponentConfiguration defaultConfig = new ComponentConfiguration();
+
+        // #39 - make default page-size configurable
+        defaultConfig.setConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
+
+        return defaultConfig;
     }
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams);
+    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams);
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 

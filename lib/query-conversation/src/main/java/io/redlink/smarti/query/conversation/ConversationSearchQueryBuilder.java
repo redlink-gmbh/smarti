@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
-import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  */
@@ -57,7 +56,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) {
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
         final ConversationSearchQuery searchQuery = buildQuery(conf, intent, conversation);
         if (searchQuery == null) {
             return null;
@@ -71,8 +70,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort("vote", SolrQuery.ORDER.desc);
 
         // #39 - paging
-        solrQuery.setStart(toInt(queryParams.getFirst("start"), 0));
-        solrQuery.setRows(toInt(queryParams.getFirst("rows"), 10));
+        solrQuery.setStart((int) offset);
+        solrQuery.setRows(pageSize);
 
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);

@@ -23,7 +23,7 @@ import java.util.List;
 
 public class SearchResult<T> {
 
-    private long numFound, start;
+    private long numFound, start, pageSize;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Float maxScore;
@@ -34,13 +34,22 @@ public class SearchResult<T> {
         this(Collections.emptyList());
     }
 
+    public SearchResult(long pageSize) {
+        this(0, 0, pageSize, Collections.emptyList());
+    }
+
     public SearchResult(List<T> docs) {
         this(docs.size(), 0, docs);
     }
 
     public SearchResult(long numFound, long start, List<T> docs) {
+        this(numFound, start, docs.size(), docs);
+    }
+
+    public SearchResult(long numFound, long start, long pageSize, List<T> docs) {
         this.numFound = numFound;
         this.start = start;
+        this.pageSize = pageSize;
         this.docs = docs;
     }
 
@@ -48,7 +57,7 @@ public class SearchResult<T> {
         return numFound;
     }
 
-    public SearchResult setNumFound(long numFound) {
+    public SearchResult<T> setNumFound(long numFound) {
         this.numFound = numFound;
         return this;
     }
@@ -57,8 +66,17 @@ public class SearchResult<T> {
         return start;
     }
 
-    public SearchResult setStart(long start) {
+    public SearchResult<T> setStart(long start) {
         this.start = start;
+        return this;
+    }
+
+    public long getPageSize() {
+        return pageSize;
+    }
+
+    public SearchResult<T> setPageSize(long pageSize) {
+        this.pageSize = pageSize;
         return this;
     }
 
@@ -66,7 +84,7 @@ public class SearchResult<T> {
         return maxScore;
     }
 
-    public SearchResult setMaxScore(float maxScore) {
+    public SearchResult<T> setMaxScore(float maxScore) {
         this.maxScore = maxScore;
         return this;
     }
@@ -75,7 +93,7 @@ public class SearchResult<T> {
         return docs;
     }
 
-    public SearchResult setDocs(List<T> docs) {
+    public SearchResult<T> setDocs(List<T> docs) {
         this.docs = docs;
         return this;
     }
