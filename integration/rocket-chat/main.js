@@ -301,7 +301,8 @@ function Smarti(options) {
     }
 
     function query(params,success,failure) {
-        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator,
+
+        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?rows=' + params.rows + "&start=" + params.start,
             function(data){
                 success(data);
             }, function(err) {
@@ -672,7 +673,9 @@ function SmartiWidget(element,_options) {
      * }
      * @constructor
      */
-    function ConversationWidget(params,wgt_config) {
+    function ConversationWidget(params,wgt_conf = {}) {
+
+        const numOfRows = wgt_conf.numOfRows || 3; //TODO should be configurable by query builder config
 
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
@@ -684,13 +687,18 @@ function SmartiWidget(element,_options) {
         var msg = $('<div class="no-result">').appendTo(params.elem);
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
-        function getResults() {
+        var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+
+        function getResults(page) {
 
             //TODO get remote
             results.empty();
             loader.show();
+            resultPaging.empty();
 
-            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator},function(data){
+            var start = page*numOfRows;
+
+            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start,rows:numOfRows},function(data){
 
                 loader.hide();
 
@@ -721,7 +729,7 @@ function SmartiWidget(element,_options) {
                     return attachment;
                 }
 
-                $.each(data, function (i, doc) {
+                $.each(data.docs, function (i, doc) {
 
                     function getSubcontent(docs,mainUser) {
                         var result = $('<ul>');
@@ -806,12 +814,39 @@ function SmartiWidget(element,_options) {
                         }
 
                     results.append(docli);
-                })
+                });
+
+                var prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
+                var next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
+
+                if(page > 0) {
+                    prev.click(function(){
+                        tracker.trackEvent(params.query.creator + ".result.paging", page-1);
+                        getResults(page-1)
+                    });
+                } else {
+                    prev.hide();
+                }
+
+                if((data.numFound/numOfRows) > (page+1)) {
+                    next.addClass('active').click(function(){
+                        tracker.trackEvent(params.query.creator + ".result.paging", page+1);
+                        getResults(page+1)
+                    });
+                } else {
+                    next.hide();
+                }
+
+                $('<tr>')
+                    .append($('<td class="pageLink pageLinkLeft">').append(prev))
+                    .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.numFound/numOfRows)))
+                    .append($('<td class="pageLink pageLinkRight">').append(next))
+                    .appendTo(resultPaging);
 
             });
         }
 
-        getResults();
+        getResults(0);
 
         return {
             refresh: refresh
