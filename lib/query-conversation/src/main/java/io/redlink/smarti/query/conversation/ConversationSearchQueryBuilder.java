@@ -17,7 +17,10 @@
 
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.State;
+import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.Token;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
@@ -68,8 +71,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
 
-        //with #87 we restrict results to the same support-area
-        addSupportAreaFilter(solrQuery, conversation.getContext().getEnvironment(Context.ENV_SUPPORT_AREA));
+        addEnvironmentFilters(conf, conversation, solrQuery);
         
         return new QueryRequest(solrQuery);
     }

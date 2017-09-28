@@ -47,6 +47,8 @@ import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDe
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
 
+    public static final String CONFIG_KEY_FILTER = "filter";
+
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 
@@ -58,11 +60,10 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) && 
+        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) &&
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
-                    .filter(s -> s.getTokenIndex() >= 0)
-                    .findAny().isPresent();
+                    .anyMatch(s -> s.getTokenIndex() >= 0);
         log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
         return state;
     }
@@ -127,7 +128,12 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     
     @Override
     public ComponentConfiguration getDefaultConfiguration() {
-        return new ComponentConfiguration(); //this queryBuilder has no config params
+        final ComponentConfiguration defaultConfig = new ComponentConfiguration();
+
+        // with #87 we restrict results to the same support-area
+        defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(Context.ENV_SUPPORT_AREA));
+
+        return defaultConfig;
     }
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
@@ -147,20 +153,22 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     protected final void addClientFilter(final SolrQuery solrQuery, Conversation conversation) {
         solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
-    /**
-     * Adds a FilterQuery for the passed supportAreas
-     * @param solrQuery
-     * @param supportAreas
-     */
-    protected final void addSupportAreaFilter(final SolrQuery solrQuery, final List<String> supportAreas){
-        if (supportAreas != null && !supportAreas.isEmpty()) {
-            final String filterVal = supportAreas.stream()
+
+    protected void addEnvironmentFilters(ComponentConfiguration conf, Conversation conversation, SolrQuery solrQuery) {
+        final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
+        filters.forEach(f -> addEnvironmentFilter(solrQuery, f, conversation.getContext().getEnvironment(f)));
+    }
+
+    protected void addEnvironmentFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
+        if (fieldValues == null || fieldValues.isEmpty()) {
+            solrQuery.addFilterQuery("-" + getEnvironmentField(fieldName) + ":*");
+        } else {
+            final String filterVal = fieldValues.stream()
                     .map(ClientUtils::escapeQueryChars)
                     .reduce((a, b) -> a + " OR " + b)
                     .orElse("");
             solrQuery.addFilterQuery(
-                    getEnvironmentField(Context.ENV_SUPPORT_AREA) + ":(" + filterVal + ")");
+                    getEnvironmentField(fieldName) + ":(" + filterVal + ")");
         }
     }
-
 }
