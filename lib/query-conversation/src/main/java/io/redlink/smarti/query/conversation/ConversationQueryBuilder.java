@@ -17,8 +17,8 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
@@ -131,7 +131,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         final ComponentConfiguration defaultConfig = new ComponentConfiguration();
 
         // with #87 we restrict results to the same support-area
-        defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(Context.ENV_SUPPORT_AREA));
+        defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(ConversationMeta.PROP_SUPPORT_AREA));
 
         return defaultConfig;
     }
@@ -156,10 +156,15 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     protected void addEnvironmentFilters(ComponentConfiguration conf, Conversation conversation, SolrQuery solrQuery) {
         final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
-        filters.forEach(f -> addEnvironmentFilter(solrQuery, f, conversation.getContext().getEnvironment(f)));
+        filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
     }
-
-    protected void addEnvironmentFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
+    /**
+     * Adds a filter based on a {@link ConversationMeta#getProperty(String)}
+     * @param solrQuery the Solr query to add the FilterQuery
+     * @param fieldName the name of the field
+     * @param fieldValues the field values
+     */
+    protected void addPropertyFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
         if (fieldValues == null || fieldValues.isEmpty()) {
             solrQuery.addFilterQuery("-" + getEnvironmentField(fieldName) + ":*");
         } else {

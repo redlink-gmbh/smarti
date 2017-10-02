@@ -65,8 +65,11 @@ public class ConversationIndexer {
     public static final int MIN_COMMIT_WITHIN = 1000; //1sec
     
     //TODO: make configurable
-    private static final Set<String> NOT_INDEXED_CONTEXT_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            Context.ENV_TOKEN))); //do not index the users token
+    private static final Set<String> NOT_INDEXED_META_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            ConversationMeta.PROP_TOKEN))); //do not index the users token
+
+    //TODO: make configurable
+    private static final Set<String> NOT_INDEXED_ENVIRONMENT_FIELDS = Collections.emptySet();
 
     @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
     private int commitWithin = DEFAULT_COMMIT_WITHIN; 
@@ -274,15 +277,24 @@ public class ConversationIndexer {
             solrDoc.setField(FIELD_CONTEXT, ctx.getContextType());
             solrDoc.setField(FIELD_ENVIRONMENT, ctx.getEnvironmentType());
             solrDoc.setField(FIELD_DOMAIN, ctx.getDomain());
-            if (ctx.getEnvironment() != null) {
+            if(ctx.getEnvironment() != null){
                 ctx.getEnvironment().entrySet().stream()
-                        .filter(e -> Objects.nonNull(e.getValue()))
-                        .filter(e -> StringUtils.isNotBlank(e.getKey()) && !e.getValue().isEmpty())
-                        .filter(e -> !NOT_INDEXED_CONTEXT_FIELDS.contains(e.getKey()))
-                        .forEach(e -> {
-                            solrDoc.setField(getEnvironmentField(e.getKey()), e.getValue());
-                        });
+                .filter(e -> Objects.nonNull(e.getValue()))
+                .filter(e -> StringUtils.isNotBlank(e.getKey()) && !e.getValue().isEmpty())
+                .filter(e -> !NOT_INDEXED_ENVIRONMENT_FIELDS.contains(e.getKey()))
+                .forEach(e -> {
+                    solrDoc.setField(getEnvironmentField(e.getKey()), e.getValue());
+                });
             }
+        }
+        if(conversation.getMeta() != null){
+            conversation.getMeta().getProperties().entrySet().stream()
+                    .filter(e -> Objects.nonNull(e.getValue()))
+                    .filter(e -> StringUtils.isNotBlank(e.getKey()) && !e.getValue().isEmpty())
+                    .filter(e -> !NOT_INDEXED_META_FIELDS.contains(e.getKey()))
+                    .forEach(e -> {
+                        solrDoc.setField(getMetaField(e.getKey()), e.getValue());
+                    });
         }
     }
 

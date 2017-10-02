@@ -127,10 +127,10 @@ public class RocketChatEndpoint {
             //newConversation.setOwner(clientId); -> set by the method
             newConversation.getContext().setContextType(ROCKET_CHAT);
             newConversation.getContext().setDomain(clientName);
-            newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_NAME, payload.getChannelName());
-            newConversation.getContext().setEnvironment(Context.ENV_CHANNEL_ID, payload.getChannelId());
-            newConversation.getContext().setEnvironment(Context.ENV_TOKEN, payload.getToken());
-            newConversation.getContext().setEnvironment(Context.ENV_SUPPORT_AREA, payload.getSupportArea());
+            newConversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_NAME, payload.getChannelName());
+            newConversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, payload.getChannelId());
+            newConversation.getMeta().setProperty(ConversationMeta.PROP_TOKEN, payload.getToken());
+            newConversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, payload.getSupportArea());
             return newConversation;
         });
         if(!conversation.getChannelId().equals(channelId)){
@@ -165,9 +165,9 @@ public class RocketChatEndpoint {
 
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
             final HttpPost post = new HttpPost(callbackUrl);
-            final MultiValueMap<String, String> env = CollectionUtils.toMultiValueMap(conversation.getContext().getEnvironment());
+            final MultiValueMap<String, String> props = CollectionUtils.toMultiValueMap(conversation.getMeta().getProperties());
             post.setEntity(new StringEntity(
-                    toJsonString(new SmartiUpdatePing(conversation.getId(), env.getFirst(Context.ENV_CHANNEL_ID), token)),
+                    toJsonString(new SmartiUpdatePing(conversation.getId(), props.getFirst(ConversationMeta.PROP_CHANNEL_ID), token)),
                     ContentType.APPLICATION_JSON
             ));
             httpClient.execute(post, response -> null);

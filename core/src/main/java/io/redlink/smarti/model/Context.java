@@ -26,26 +26,6 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Context {
 
-    /**
-     * {@link #getEnvironment(String) Environment key} to store the name of the channel
-     * the conversation was part of
-     */
-    public static final String ENV_CHANNEL_NAME = "channel";
-    /**
-     * {@link #getEnvironment(String) Environment key} to store the id of the channel
-     * the conversation was part of
-     */
-    public static final String ENV_CHANNEL_ID = "channel_id";
-    /**
-     * {@link #getEnvironment(String) Environment key} to store the user token of the
-     * conversation
-     */
-    public static final String ENV_TOKEN = "token";
-    /**
-     * the Channel-Topic
-     */
-    public static final String ENV_SUPPORT_AREA = "support_area";
-
     private String contextType; // = "ApplicationHelp"
     private String environmentType; // = "SAP_Application"
     private String domain;

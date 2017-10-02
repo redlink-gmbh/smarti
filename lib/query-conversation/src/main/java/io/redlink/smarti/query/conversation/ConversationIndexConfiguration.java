@@ -60,6 +60,12 @@ public class ConversationIndexConfiguration {
         return ENV_FIELD_PREFIX + key;
     }
 
+    private static final String META_FIELD_PREFIX = "meta_";
+
+    public static String getMetaField(String key) {
+        return META_FIELD_PREFIX + key;
+    }
+    
     
     @Bean(name=CONVERSATION_INDEX)
     protected SolrCoreDescriptor getConversationCoreDescriptor() throws IOException {
