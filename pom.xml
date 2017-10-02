@@ -42,6 +42,8 @@
         <module>lib</module>
 
         <module>data</module>
+
+        <module>docs</module>
     </modules>
 
     <licenses>
@@ -228,7 +230,7 @@
                 <artifactId>commons-csv</artifactId>
                 <version>1.4</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
@@ -326,6 +328,11 @@
                             <exclude>**/application-local.properties</exclude>
                         </excludes>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.kongchen</groupId>
+                    <artifactId>swagger-maven-plugin</artifactId>
+                    <version>3.1.5</version>
                 </plugin>
                 <plugin>
                     <groupId>pl.project13.maven</groupId>
