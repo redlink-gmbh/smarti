@@ -37,6 +37,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
@@ -234,8 +236,14 @@ public class ConversationService {
         return storeService.adjustMessageVotes(conversation.getId(), messageId, delta);
     }
 
-    public List<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
-        return queryBuilderService.execute(client, creator, template, conversation);
+
+    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
+        return queryBuilderService.execute(client, creator, template, conversation, params);
+    }
+
+
+    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
+        return getInlineResults(client, conversation, template, creator, new LinkedMultiValueMap<>());
     }
     
     public Conversation getConversation(Client client, ObjectId convId){
