@@ -156,7 +156,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
         query.setUrl(config.getSolrEndpoint() + solrQuery.toQueryString());
-        query.setDisplayTitle(getQueryTitle()+": " + config.getDisplayName());
+        query.setDisplayTitle(config.getDisplayName());
         query.setConfidence(0.8f);
         query.setInlineResultSupport(false); //not yet implemented
         
