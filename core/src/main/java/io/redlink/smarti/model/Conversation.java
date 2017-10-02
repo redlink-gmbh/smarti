@@ -99,6 +99,7 @@ public class Conversation {
      * @deprecated use #getOwner() instead
      */
     @Deprecated
+    @JsonIgnore
     public ObjectId getClientId() {
         return getOwner();
     }
