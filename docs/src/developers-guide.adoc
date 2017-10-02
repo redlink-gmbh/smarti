@@ -187,7 +187,7 @@ NOTE: When running Smarti by directly executing the jar file, you need to create
 
 .plugin-info.txt
 :includedir: _includes
-:sourcedir: ../dist/src/main/resources/
+:sourcedir: ../../dist/src/main/resources
 [source,java]
 ----
 include::{sourcedir}/plugin-info.txt[]
