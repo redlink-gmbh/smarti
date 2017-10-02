@@ -20,15 +20,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.model.*;
+import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
 import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -42,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeTypeUtils;
@@ -56,7 +55,6 @@ import java.io.IOException;
 @CrossOrigin
 @RestController
 @RequestMapping(value = "rocket",
-        consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @Api("rocket")
 public class RocketChatEndpoint {
@@ -75,6 +73,9 @@ public class RocketChatEndpoint {
 
     @Autowired
     private ConversationService conversationService;
+
+    @Autowired(required = false)
+    private ConversationSearchService conversationSearchService;
 
     protected final HttpClientBuilder httpClientBuilder;
 
@@ -109,7 +110,8 @@ public class RocketChatEndpoint {
     @ApiResponses({
             @ApiResponse(code = 200, message = "OK")
     })
-    @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST)
+    @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST,
+            consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientName,
                                            @RequestBody RocketEvent payload) {
         log.debug("{}: {}", clientName, payload);
@@ -209,6 +211,35 @@ public class RocketChatEndpoint {
         } else {
             return ResponseEntity.ok(conversation.getId().toHexString());
         }
+    }
+
+    /**
+     * Allow conversation-independent search.
+     * @param clientName the client id
+     * @param queryParams the actual query-params
+     */
+    @ApiOperation(value = "search for a conversation", response = SearchResult.class,
+            notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
+    @RequestMapping(value = "{clientId}/search", method = RequestMethod.GET)
+    public ResponseEntity<?> search(
+            @PathVariable(value = "clientId") String clientName,
+            @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
+            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams) {
+
+        final Client client = clientService.getByName(clientName);
+        if (client == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (conversationSearchService != null) {
+            try {
+                return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+            } catch (IOException e) {
+                return ResponseEntities.internalServerError(e);
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
     }
 
     public String createChannelId(Client client, String roomId) {
