@@ -302,7 +302,7 @@ function Smarti(options) {
 
     function query(params,success,failure) {
 
-        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?rows=' + params.rows + "&start=" + params.start,
+        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
             function(data){
                 success(data);
             }, function(err) {
@@ -675,8 +675,6 @@ function SmartiWidget(element,_options) {
      */
     function ConversationWidget(params,wgt_conf = {}) {
 
-        const numOfRows = wgt_conf.numOfRows || 3; //TODO should be configurable by query builder config
-
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
         function refresh(data) {
@@ -689,16 +687,16 @@ function SmartiWidget(element,_options) {
 
         var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
-        function getResults(page) {
+        function getResults(page,pageSize) {
 
             //TODO get remote
             results.empty();
             loader.show();
             resultPaging.empty();
 
-            var start = page*numOfRows;
+            var start = pageSize ? page*pageSize : 0;
 
-            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start,rows:numOfRows},function(data){
+            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start},function(data){
 
                 loader.hide();
 
@@ -822,16 +820,16 @@ function SmartiWidget(element,_options) {
                 if(page > 0) {
                     prev.click(function(){
                         tracker.trackEvent(params.query.creator + ".result.paging", page-1);
-                        getResults(page-1)
+                        getResults(page-1,data.pageSize)
                     });
                 } else {
                     prev.hide();
                 }
 
-                if((data.numFound/numOfRows) > (page+1)) {
+                if((data.numFound/data.pageSize) > (page+1)) {
                     next.addClass('active').click(function(){
                         tracker.trackEvent(params.query.creator + ".result.paging", page+1);
-                        getResults(page+1)
+                        getResults(page+1,data.pageSize)
                     });
                 } else {
                     next.hide();
@@ -839,7 +837,7 @@ function SmartiWidget(element,_options) {
 
                 $('<tr>')
                     .append($('<td class="pageLink pageLinkLeft">').append(prev))
-                    .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.numFound/numOfRows)))
+                    .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.numFound/data.pageSize)))
                     .append($('<td class="pageLink pageLinkRight">').append(next))
                     .appendTo(resultPaging);
 
