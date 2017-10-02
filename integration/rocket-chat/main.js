@@ -557,6 +557,8 @@ function SmartiWidget(element,_options) {
             if(page > 0) {
                 //append paging
                 params.query.url += '&start=' + (page*numOfRows);
+            } else {
+                page = 0;
             }
 
             results.empty();
