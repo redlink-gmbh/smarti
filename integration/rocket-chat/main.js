@@ -591,7 +591,7 @@ function SmartiWidget(element,_options) {
                             title: params.query.resultConfig.mappings.title ? doc[params.query.resultConfig.mappings.title] : undefined,
                             description: params.query.resultConfig.mappings.description ? doc[params.query.resultConfig.mappings.description] : undefined,
                             type: params.query.resultConfig.mappings.type ? doc[params.query.resultConfig.mappings.type] : undefined,
-                            doctype: params.query.resultConfig.mappings.doctype ? doc[params.query.resultConfig.mappings.doctype] : undefined,
+                            doctype: params.query.resultConfig.mappings.doctype ? (Utils.mapDocType(doc[params.query.resultConfig.mappings.doctype])) : undefined,
                             link: params.query.resultConfig.mappings.link ? doc[params.query.resultConfig.mappings.link] : undefined,
                             date: params.query.resultConfig.mappings.date ? new Date(doc[params.query.resultConfig.mappings.date]) : undefined
                         };
@@ -602,7 +602,7 @@ function SmartiWidget(element,_options) {
                     $.each(docs,function(i,doc){
                         var docli = $('<li>' +
                             (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
-                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
+                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+(doc.date ? doc.date.toLocaleDateString() : '')+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
                             '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
                             (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
                             '</li>');
