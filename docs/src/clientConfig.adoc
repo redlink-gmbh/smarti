@@ -1,8 +1,8 @@
-## Client Configuration
+== Client Configuration
 
 The configuration module allows to manage client specific configurations. It consists of a storage component, a service layer, REST services and an UI.
 
-### Client API
+=== Client API
 
 __base path:__ `/client`
 
@@ -10,7 +10,7 @@ The configuration REST Services allow to manage clients and configurations via A
 
 All endpoints use `application/json` as media type.
 
-#### Create/Update Client
+==== Create/Update Client
 
 __endpoint:__ `POST /client` +
 __request body:__ `{"name":..., "description":..}` +
@@ -23,13 +23,13 @@ curl -X POST -H "content-type: application/json" "http://localhost:8080/client" 
 
 IMPORTANT: The clients name has to match the pattern [a-z0-9-]+ (it is used also for posting messages)
 
-#### List Clients
+==== List Clients
 
 __endpoint:__ `GET /client` +
 __response body:__ a list of clients `[{"id":"1","name":"client_42","description","Some description"}]`
 
 
-#### Get Client Configuration
+==== Get Client Configuration
 
 __endpoint:__ `POST /client/{client-id}/config` <br>
 __response body:__ the updated client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
@@ -41,7 +41,7 @@ curl -X GET -H "content-type: application/json" "http://localhost:8080/client/cl
 
 ```
 
-#### Update Client Configuration
+==== Update Client Configuration
 
 __endpoint:__ `POST /client/{client-id}/config` +
 __request body:__ `{<conf-cat>: [<comp-conf>,<comp-conf>]}` +
@@ -81,7 +81,7 @@ Server-side parsing is done by [Jackson](https://github.com/FasterXML/jackson). 
 Components that use custom configuration classes can define additional fields. Additioal fields will be handeld as with the base `ComponentConfiguration` class.
 
 
-#### Component Configuration
+==== Component Configuration
 
 The JSON serialization of a configuration has the following base attributes
 
@@ -105,14 +105,14 @@ The JSON serialization of a configuration has the following base attributes
 
 Any other field can be used for the actual configuration of the component. Their are no limitations to the kind of the configuration as long as the Component referenced by the `type` value can understand it.
 
-#### Retrieve Client Configuration
+==== Retrieve Client Configuration
 
 __endpoint__: `GET client/{client-id}/config` +
 __response body__: the created client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
 
 Retrieve the configuration for the client with the `{client-id}`. If no configuration is present a `404 Not Found` is returned
 
-#### Client Configuration Validation
+==== Client Configuration Validation
 
 Configuration are validated on any update. This validation has several steps that are done for every component configuration:
 
