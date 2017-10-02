@@ -53,9 +53,9 @@ import java.io.IOException;
  */
 @CrossOrigin
 @RestController
-@RequestMapping(value = "rocket",
+@RequestMapping(value = "/rocket",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
-@Api("rocket")
+@Api
 public class RocketChatEndpoint {
 
     public static final String ROCKET_CHAT = "rocket.chat";
@@ -191,7 +191,9 @@ public class RocketChatEndpoint {
      * @return a <code>200</code> with the conversation id as payload or a <code>404</code> if no conversation is
      * active for the parsed parameters.
      */
-    @ApiOperation(value = "retrieve a conversation ID for a channel and client id", produces=MimeTypeUtils.TEXT_PLAIN_VALUE)
+    @ApiOperation(value = "retrieve a conversation ID for a channel and client id", nickname = "rocketGetConversation",
+            produces=MimeTypeUtils.TEXT_PLAIN_VALUE
+    )
     @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET,
         produces=MimeTypeUtils.TEXT_PLAIN_VALUE, consumes=MimeTypeUtils.ALL_VALUE)
     public ResponseEntity<?> getConversation(
