@@ -210,10 +210,14 @@ The following configuration options are available for `Conversation Search Query
 [source,json]
 ----------------------
 {
-  "pageSize": 3
+  "pageSize": 3,
+  "filter": [
+    "support_area"
+  ]
 }
 ----------------------
 
 where:
 
 * `pageSize`: the default number of related conversations.
+* `filter`: fields from `metadata` that should be used for filtering (Solr `fq`-parameter)
