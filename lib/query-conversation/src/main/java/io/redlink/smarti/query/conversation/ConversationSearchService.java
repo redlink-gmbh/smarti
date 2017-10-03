@@ -65,8 +65,11 @@ public class ConversationSearchService {
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, "text"));
 
         solrParams.add(CommonParams.FL, "id");
-        solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_OWNER,
-                ClientUtils.escapeQueryChars(client.getId().toHexString())));
+        if (client != null) {
+            // FIXME: once authentication is ready, remove this IF
+            solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_OWNER,
+                    ClientUtils.escapeQueryChars(client.getId().toHexString())));
+        }
         solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_TYPE, "conversation"));
         if (queryParams.containsKey("text")) {
             solrParams.set(CommonParams.Q, String.format("{!parent which=\"%s:%s\"}text:%s",

@@ -19,8 +19,11 @@ package io.redlink.smarti.webservice;
 import com.google.common.collect.ImmutableMap;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
+import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.PagedConversationList;
 import io.redlink.smarti.webservice.pojo.Projection;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
@@ -31,6 +34,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -60,15 +64,19 @@ public class ConversationWebservice {
     private final AsyncExecutionService asyncExecutionService;
     private final ConversationService conversationService;
     private final ClientService clientService;
+    private final ConversationSearchService conversationSearchService;
 
     @Autowired
-    public ConversationWebservice(AsyncExecutionService asyncExecutionService, ConversationService conversationService, ClientService clientService) {
+    public ConversationWebservice(AsyncExecutionService asyncExecutionService, ConversationService conversationService,
+                                  ClientService clientService,
+                                  @Autowired(required = false) ConversationSearchService conversationSearchService) {
         this.asyncExecutionService = asyncExecutionService;
         this.conversationService = conversationService;
         this.clientService = clientService;
+        this.conversationSearchService = conversationSearchService;
     }
 
-    @ApiOperation(value = "list conversations", response = Page.class)
+    @ApiOperation(value = "list conversations", response = PagedConversationList.class)
     @RequestMapping(method = RequestMethod.GET)
     public Page<Conversation> listConversations(
             @RequestParam(value = "clientId", required = false) ObjectId owner,
@@ -115,6 +123,28 @@ public class ConversationWebservice {
                 () -> conversationService.update(client, stored, true),
                 HttpStatus.CREATED, callback, stored.getId(), buildConversationURI(uriBuilder, stored.getId()));
 
+    }
+
+    @ApiOperation(value = "search for a conversation", response = ConversationSearchResult.class,
+            notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
+    @RequestMapping(value = "search", method = RequestMethod.GET)
+    public ResponseEntity<?> searchConversations(
+            @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
+            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
+    ) {
+
+        //TODO get the client for the authenticated user
+        final Client client = null;
+
+        if (conversationSearchService != null) {
+            try {
+                return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+            } catch (IOException e) {
+                return ResponseEntities.internalServerError(e);
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
@@ -522,7 +552,8 @@ public class ConversationWebservice {
     }
 
     @ApiModel
-    static class InlineSearchResult extends SearchResult<Result> {
+    static class InlineSearchResult extends SearchResult<Result> {}
 
-    }
+    @ApiModel
+    static class ConversationSearchResult extends SearchResult<Conversation> {}
 }
