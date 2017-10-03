@@ -5,6 +5,15 @@ This document shows the changes that are introduced into Smarti with the release
 
 === 0.6.0
 
+==== Changes
+
+* [https://github.com/redlink-gmbh/smarti/issues/87[#87]] - related conversations are filtered based on expertise / `support_area`
+* [https://github.com/redlink-gmbh/smarti/issues/62[#62]] - global search for conversations
+* [https://github.com/redlink-gmbh/smarti/issues/39[#39]] - paging and configurable number of suggestions for related conversations
+* [https://github.com/redlink-gmbh/smarti/issues/64[#64]] - `swagger.json` is now generated during build
+* [https://github.com/redlink-gmbh/smarti/issues/90[#90]] - fixed document-icons in smarti-widget
+* [https://github.com/redlink-gmbh/smarti/issues/91[#91]] - removed prefix for suggested answers
+
 ==== Upgrading
 
 With `0.6.0`, the datamodel has changed so data from older installations
