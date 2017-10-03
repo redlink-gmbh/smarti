@@ -16,6 +16,19 @@ A migration script is available and must be applied manually:
 include::{migration_scripts}/0.6-to-0.7.js[lines=17..-1]
 -----------------------------------------------
 
+=== 0.6.0
+
+==== Upgrading
+
+With `0.6.0`, the datamodel has changed so data from older installations
+must be migrated to the new model.
+
+A migration script is available and must be applied manually:
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/0.5-to-0.6.js[lines=17..-1]
+-----------------------------------------------
+
 === 0.5.0
 ==== Bug fixes
 ==== Improvements and Refactoring

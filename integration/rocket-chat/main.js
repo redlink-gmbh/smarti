@@ -301,7 +301,8 @@ function Smarti(options) {
     }
 
     function query(params,success,failure) {
-        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator,
+
+        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
             function(data){
                 success(data);
             }, function(err) {
@@ -556,6 +557,8 @@ function SmartiWidget(element,_options) {
             if(page > 0) {
                 //append paging
                 params.query.url += '&start=' + (page*numOfRows);
+            } else {
+                page = 0;
             }
 
             results.empty();
@@ -588,7 +591,7 @@ function SmartiWidget(element,_options) {
                             title: params.query.resultConfig.mappings.title ? doc[params.query.resultConfig.mappings.title] : undefined,
                             description: params.query.resultConfig.mappings.description ? doc[params.query.resultConfig.mappings.description] : undefined,
                             type: params.query.resultConfig.mappings.type ? doc[params.query.resultConfig.mappings.type] : undefined,
-                            doctype: params.query.resultConfig.mappings.doctype ? doc[params.query.resultConfig.mappings.doctype] : undefined,
+                            doctype: params.query.resultConfig.mappings.doctype ? (Utils.mapDocType(doc[params.query.resultConfig.mappings.doctype])) : undefined,
                             link: params.query.resultConfig.mappings.link ? doc[params.query.resultConfig.mappings.link] : undefined,
                             date: params.query.resultConfig.mappings.date ? new Date(doc[params.query.resultConfig.mappings.date]) : undefined
                         };
@@ -599,7 +602,7 @@ function SmartiWidget(element,_options) {
                     $.each(docs,function(i,doc){
                         var docli = $('<li>' +
                             (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
-                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+doc.date.toLocaleDateString()+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
+                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+(doc.date ? doc.date.toLocaleDateString() : '')+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
                             '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
                             (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
                             '</li>');
@@ -672,7 +675,7 @@ function SmartiWidget(element,_options) {
      * }
      * @constructor
      */
-    function ConversationWidget(params,wgt_config) {
+    function ConversationWidget(params,wgt_conf = {}) {
 
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
@@ -684,13 +687,18 @@ function SmartiWidget(element,_options) {
         var msg = $('<div class="no-result">').appendTo(params.elem);
         var results = $('<ul class="search-results">').appendTo(params.elem);
 
-        function getResults() {
+        var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+
+        function getResults(page,pageSize) {
 
             //TODO get remote
             results.empty();
             loader.show();
+            resultPaging.empty();
 
-            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator},function(data){
+            var start = pageSize ? page*pageSize : 0;
+
+            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start},function(data){
 
                 loader.hide();
 
@@ -721,7 +729,7 @@ function SmartiWidget(element,_options) {
                     return attachment;
                 }
 
-                $.each(data, function (i, doc) {
+                $.each(data.docs, function (i, doc) {
 
                     function getSubcontent(docs,mainUser) {
                         var result = $('<ul>');
@@ -806,12 +814,39 @@ function SmartiWidget(element,_options) {
                         }
 
                     results.append(docli);
-                })
+                });
+
+                var prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
+                var next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
+
+                if(page > 0) {
+                    prev.click(function(){
+                        tracker.trackEvent(params.query.creator + ".result.paging", page-1);
+                        getResults(page-1,data.pageSize)
+                    });
+                } else {
+                    prev.hide();
+                }
+
+                if((data.numFound/data.pageSize) > (page+1)) {
+                    next.addClass('active').click(function(){
+                        tracker.trackEvent(params.query.creator + ".result.paging", page+1);
+                        getResults(page+1,data.pageSize)
+                    });
+                } else {
+                    next.hide();
+                }
+
+                $('<tr>')
+                    .append($('<td class="pageLink pageLinkLeft">').append(prev))
+                    .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.numFound/data.pageSize)))
+                    .append($('<td class="pageLink pageLinkRight">').append(next))
+                    .appendTo(resultPaging);
 
             });
         }
 
-        getResults();
+        getResults(0);
 
         return {
             refresh: refresh

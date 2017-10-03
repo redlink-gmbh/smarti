@@ -57,6 +57,9 @@ public class RocketEvent {
 
     private Date timestamp;
 
+    @JsonProperty("support_area")
+    private String supportArea;
+
     @JsonDeserialize(using = RocketBot.JacksonDeserializer.class)
     private RocketBot bot;
 
@@ -159,6 +162,15 @@ public class RocketEvent {
 
     public void setOrigin(String origin) {
         this.origin = origin;
+    }
+
+    public String getSupportArea() {
+        return supportArea;
+    }
+
+    public RocketEvent setSupportArea(String supportArea) {
+        this.supportArea = supportArea;
+        return this;
     }
 
     @Override

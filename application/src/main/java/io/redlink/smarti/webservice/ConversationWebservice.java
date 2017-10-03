@@ -435,9 +435,9 @@ public class ConversationWebservice {
 
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List")
+    @ApiOperation(value = "get inline-results for the selected template from the creator", response = InlineSearchResult.class)
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
-    public ResponseEntity<? extends List<? extends Result>> getResults(
+    public ResponseEntity<? extends SearchResult<? extends Result>> getResults(
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator
@@ -461,7 +461,7 @@ public class ConversationWebservice {
         return null;
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", response = Result.class, responseContainer = "List",
+    @ApiOperation(value = "get inline-results for the selected template from the creator", response = InlineSearchResult.class,
             notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
     public ResponseEntity<? extends List<? extends Result>> rerunResults(
@@ -496,7 +496,7 @@ public class ConversationWebservice {
     }
 
     @ApiModel
-    class Entity {
+    static class Entity {
         @ApiModelProperty
         private String id;
         @ApiModelProperty
@@ -519,5 +519,10 @@ public class ConversationWebservice {
             this._uri = _uri;
             return this;
         }
+    }
+
+    @ApiModel
+    static class InlineSearchResult extends SearchResult<Result> {
+
     }
 }

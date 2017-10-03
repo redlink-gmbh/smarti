@@ -1,12 +1,17 @@
 package io.redlink.smarti.webservice;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapLikeType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import io.redlink.smarti.model.config.ComponentConfiguration;
+import io.redlink.smarti.model.config.Configuration;
+import io.redlink.smarti.services.ConfigurationService;
+import io.redlink.smarti.utils.ResponseEntities;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,25 +19,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapLikeType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
-import io.redlink.smarti.model.config.ComponentConfiguration;
-import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.services.ConfigurationService;
-import io.redlink.smarti.utils.ResponseEntities;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
-@RequestMapping(value = "config",
+@RequestMapping(value = "/config",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
-@Api("config")
+@Api
 public class ConfigurationWebservice {
 
     private static ObjectMapper objectMapper = new ObjectMapper();

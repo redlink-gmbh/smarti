@@ -54,6 +54,19 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_MODIFIED = "modified";
     
     
+    private static final String ENV_FIELD_PREFIX = "env_";
+    
+    public static String getEnvironmentField(String key) {
+        return ENV_FIELD_PREFIX + key;
+    }
+
+    private static final String META_FIELD_PREFIX = "meta_";
+
+    public static String getMetaField(String key) {
+        return META_FIELD_PREFIX + key;
+    }
+    
+    
     @Bean(name=CONVERSATION_INDEX)
     protected SolrCoreDescriptor getConversationCoreDescriptor() throws IOException {
         return SimpleCoreDescriptor.createFromResource(CONVERSATION_INDEX, "/solr/core/" + CONVERSATION_INDEX, ConversationIndexConfiguration.class);
