@@ -76,7 +76,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
 
-        addEnvironmentFilters(conf, conversation, solrQuery);
+        addPropertyFilters(solrQuery, conversation, conf);
         
         return new QueryRequest(solrQuery);
     }

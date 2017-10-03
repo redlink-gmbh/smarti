@@ -17,11 +17,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.ConversationMeta;
-import io.redlink.smarti.model.Query;
-import io.redlink.smarti.model.SearchResult;
-import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
@@ -168,7 +164,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
 
-    protected void addEnvironmentFilters(ComponentConfiguration conf, Conversation conversation, SolrQuery solrQuery) {
+    protected void addPropertyFilters(SolrQuery solrQuery, Conversation conversation, ComponentConfiguration conf) {
         final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
         filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
     }
