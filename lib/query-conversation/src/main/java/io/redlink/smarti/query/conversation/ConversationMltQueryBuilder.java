@@ -128,13 +128,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
-        //Pre SMARTI #46 code
-//        final String domain = conversation.getContext().getDomain();
-//        if (StringUtils.isNotBlank(domain)) {
-//            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_DOMAIN, ClientUtils.escapeQueryChars(domain)));
-//        } else {
-//             solrQuery.addFilterQuery(String.format("-%s:*", FIELD_DOMAIN));
-//        }
+
+        addPropertyFilters(solrQuery, conversation, conf);
 
         return new ConversationMltRequest(solrQuery, mltQuery.getContent());
 

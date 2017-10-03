@@ -17,10 +17,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Query;
-import io.redlink.smarti.model.SearchResult;
-import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
@@ -31,18 +28,17 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getEnvironmentField;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
@@ -51,6 +47,7 @@ import static org.apache.commons.lang3.math.NumberUtils.toInt;
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
 
     public static final String CONFIG_KEY_PAGE_SIZE = "pageSize";
+    public static final String CONFIG_KEY_FILTER = "filter";
 
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
@@ -143,6 +140,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
         // #39 - make default page-size configurable
         defaultConfig.setConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
+        // with #87 we restrict results to the same support-area
+        defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(ConversationMeta.PROP_SUPPORT_AREA));
 
         return defaultConfig;
     }
@@ -165,5 +164,26 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
 
-
+    protected void addPropertyFilters(SolrQuery solrQuery, Conversation conversation, ComponentConfiguration conf) {
+        final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
+        filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
+    }
+    /**
+     * Adds a filter based on a {@link ConversationMeta#getProperty(String)}
+     * @param solrQuery the Solr query to add the FilterQuery
+     * @param fieldName the name of the field
+     * @param fieldValues the field values
+     */
+    protected void addPropertyFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
+        if (fieldValues == null || fieldValues.isEmpty()) {
+            solrQuery.addFilterQuery("-" + getEnvironmentField(fieldName) + ":*");
+        } else {
+            final String filterVal = fieldValues.stream()
+                    .map(ClientUtils::escapeQueryChars)
+                    .reduce((a, b) -> a + " OR " + b)
+                    .orElse("");
+            solrQuery.addFilterQuery(
+                    getEnvironmentField(fieldName) + ":(" + filterVal + ")");
+        }
+    }
 }
