@@ -34,6 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -55,7 +56,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation) {
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
         final ConversationSearchQuery searchQuery = buildQuery(conf, intent, conversation);
         if (searchQuery == null) {
             return null;
@@ -67,6 +68,10 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         solrQuery.set(CommonParams.DF, "text");
         solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort("vote", SolrQuery.ORDER.desc);
+
+        // #39 - paging
+        solrQuery.setStart((int) offset);
+        solrQuery.setRows(pageSize);
 
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);

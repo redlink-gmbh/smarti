@@ -27,9 +27,14 @@ import io.redlink.smarti.util.QueryBuilderUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -224,8 +229,11 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
                 .findFirst().isPresent();
     }
 
-    public List<? extends Result> execute(C config, Template template, Conversation conversation) throws IOException {
-        return Collections.emptyList();
+    public final SearchResult<? extends Result> execute(C config, Template template, Conversation conversation) throws IOException {
+        return execute(config, template, conversation, new LinkedMultiValueMap<>());
+    }
+    public SearchResult<? extends Result> execute(C config, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
+        return new SearchResult<>();
     }
 
     public boolean isResultSupported() {

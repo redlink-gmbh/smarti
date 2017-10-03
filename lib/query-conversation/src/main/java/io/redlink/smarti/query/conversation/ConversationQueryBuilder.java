@@ -20,6 +20,7 @@ import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Query;
+import io.redlink.smarti.model.SearchResult;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
@@ -35,6 +36,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -42,11 +44,13 @@ import java.util.*;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getEnvironmentField;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
 
+    public static final String CONFIG_KEY_PAGE_SIZE = "pageSize";
     public static final String CONFIG_KEY_FILTER = "filter";
 
     protected final SolrCoreContainer solrServer;
@@ -90,22 +94,30 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
     @Override
-    public List<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation) throws IOException {
-        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation);
+    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
+        // read default page-size from builder-configuration
+        int pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
+        // if present, a queryParam 'rows' takes precedence.
+        pageSize = toInt(queryParams.getFirst("rows"), pageSize);
+        long offset = toInt(queryParams.getFirst("start"), 0);
+
+
+        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, offset, pageSize, queryParams);
         if (solrRequest == null) {
-            return Collections.emptyList();
+            return new SearchResult<ConversationResult>(pageSize);
         }
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
             final NamedList<Object> response = solrClient.request(solrRequest);
             final QueryResponse solrResponse = new QueryResponse(response, solrClient);
+            final SolrDocumentList solrResults = solrResponse.getResults();
 
-            final List<Result> results = new ArrayList<>();
-            for (SolrDocument solrDocument : solrResponse.getResults()) {
+            final List<ConversationResult> results = new ArrayList<>();
+            for (SolrDocument solrDocument : solrResults) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
                 query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
-                query.add("fq",String.format("message_idx:[1 TO *]"));
+                query.add("fq", "message_idx:[1 TO *]");
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
                 //query.setRows(3);
@@ -114,7 +126,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
             }
-            return results;
+            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
@@ -130,6 +142,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     public ComponentConfiguration getDefaultConfiguration() {
         final ComponentConfiguration defaultConfig = new ComponentConfiguration();
 
+        // #39 - make default page-size configurable
+        defaultConfig.setConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
         // with #87 we restrict results to the same support-area
         defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(ConversationMeta.PROP_SUPPORT_AREA));
 
@@ -138,7 +152,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation);
+    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams);
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
