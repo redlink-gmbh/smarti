@@ -146,7 +146,141 @@
             <scope>runtime</scope>
         </dependency>
 
-        
+        <!-- Analysis -->
+        <!-- (1) we need to detect the language -->
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>langdetect</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- (2) OpenNLP for German and English -->
+        <!-- dependency> - we prefer Stanford NLP POS tagging
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-opennlp-de</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency -->
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>ner-opennlp-de</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-opennlp-en</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>ner-opennlp-en</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency -->
+        <!-- (3) StanfordNLP for German and English -->
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-stanfordnlp-de</artifactId>
+            <version>${redlinknlp.version}</version>
+        </dependency>
+        <!-- dependency> - TODO: Not yet implemented in Redlink NLP
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-stanfordnlp-en</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency -->
+        <dependency> <!-- case correction for German based on caseless POS models -->
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-truecase-de</artifactId>
+            <version>${redlinknlp.version}</version>
+        </dependency>
+
+
+        <!-- (4) Stemmer Stopword marking, Negetion Detection -->
+        <dependency> <!-- Use the Lucene stemmer variant as the other conflicts with Solrlib -->
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-stemmer-lucene</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-stopword</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.nlp</groupId>
+            <artifactId>nlp-negation</artifactId>
+            <version>${redlinknlp.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- (5) Hasso Processors -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>hasso-vocabulary-extractors</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- (6) Processors that create Tokens for low level Annotations -->
+        <dependency> <!-- FIXME: change module name -->
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>pos</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency> <!-- FIXME: change module name -->
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>ner</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- (7) Releated Conversation -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>query-conversation</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- (8) Solr based Information Retrieval -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>query-solr</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- (9) Solr MLP Interesting Terms -->
+        <!-- allows to configure external Solr Servier used for MLT queries
+             for interesting terms -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>keyword-solr-mlt</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- (10) SolrCores for Interesting Terms -->
+        <!-- Those require to have the ziped core in a local folder and to
+             configure a application property pointing to that file -->
+        <dependency> <!-- German Wikipedia -->
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>solrcore-wikipedia-de</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency> <!-- Crawl of the DB and DB Systel Webpage -->
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>solrcore-crawl-systel</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- END Analysis dependencies -->
 
         <dependency>
