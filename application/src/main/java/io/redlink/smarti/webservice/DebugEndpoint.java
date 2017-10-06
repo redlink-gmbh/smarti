@@ -33,7 +33,7 @@ import java.util.Map;
  */
 @CrossOrigin
 @RestController
-@RequestMapping(value = "/debug",
+@RequestMapping(value = "debug",
         consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 public class DebugEndpoint {

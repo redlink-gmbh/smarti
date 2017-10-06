@@ -17,12 +17,16 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.api.QueryBuilder;
-import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Query;
+import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,22 +36,20 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
-import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getEnvironmentField;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
-import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
-
-    public static final String CONFIG_KEY_PAGE_SIZE = "pageSize";
-    public static final String CONFIG_KEY_FILTER = "filter";
 
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
@@ -60,10 +62,11 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) &&
+        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) && 
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
-                    .anyMatch(s -> s.getTokenIndex() >= 0);
+                    .filter(s -> s.getTokenIndex() >= 0)
+                    .findAny().isPresent();
         log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
         return state;
     }
@@ -90,30 +93,22 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
     @Override
-    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
-        // read default page-size from builder-configuration
-        int pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
-        // if present, a queryParam 'rows' takes precedence.
-        pageSize = toInt(queryParams.getFirst("rows"), pageSize);
-        long offset = toInt(queryParams.getFirst("start"), 0);
-
-
-        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, offset, pageSize, queryParams);
+    public List<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation) throws IOException {
+        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation);
         if (solrRequest == null) {
-            return new SearchResult<ConversationResult>(pageSize);
+            return Collections.emptyList();
         }
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
             final NamedList<Object> response = solrClient.request(solrRequest);
             final QueryResponse solrResponse = new QueryResponse(response, solrClient);
-            final SolrDocumentList solrResults = solrResponse.getResults();
 
-            final List<ConversationResult> results = new ArrayList<>();
-            for (SolrDocument solrDocument : solrResults) {
+            final List<Result> results = new ArrayList<>();
+            for (SolrDocument solrDocument : solrResponse.getResults()) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
                 query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
-                query.add("fq", "message_idx:[1 TO *]");
+                query.add("fq",String.format("message_idx:[1 TO *]"));
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
                 //query.setRows(3);
@@ -122,7 +117,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
             }
-            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
+            return results;
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
@@ -136,19 +131,12 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     
     @Override
     public ComponentConfiguration getDefaultConfiguration() {
-        final ComponentConfiguration defaultConfig = new ComponentConfiguration();
-
-        // #39 - make default page-size configurable
-        defaultConfig.setConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
-        // with #87 we restrict results to the same support-area
-        defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(ConversationMeta.PROP_SUPPORT_AREA));
-
-        return defaultConfig;
+        return new ComponentConfiguration(); //this queryBuilder has no config params
     }
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams);
+    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation);
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
@@ -161,29 +149,9 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      * @param conversation the current conversation
      */
     protected final void addClientFilter(final SolrQuery solrQuery, Conversation conversation) {
-        solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
+        solrQuery.addFilterQuery(new StringBuilder(FIELD_OWNER).append(':')
+                .append(conversation.getOwner().toHexString()).toString());
     }
 
-    protected void addPropertyFilters(SolrQuery solrQuery, Conversation conversation, ComponentConfiguration conf) {
-        final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
-        filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
-    }
-    /**
-     * Adds a filter based on a {@link ConversationMeta#getProperty(String)}
-     * @param solrQuery the Solr query to add the FilterQuery
-     * @param fieldName the name of the field
-     * @param fieldValues the field values
-     */
-    protected void addPropertyFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
-        if (fieldValues == null || fieldValues.isEmpty()) {
-            solrQuery.addFilterQuery("-" + getEnvironmentField(fieldName) + ":*");
-        } else {
-            final String filterVal = fieldValues.stream()
-                    .map(ClientUtils::escapeQueryChars)
-                    .reduce((a, b) -> a + " OR " + b)
-                    .orElse("");
-            solrQuery.addFilterQuery(
-                    getEnvironmentField(fieldName) + ":(" + filterVal + ")");
-        }
-    }
+
 }

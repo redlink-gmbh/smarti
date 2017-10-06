@@ -33,7 +33,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MultiValueMap;
 
 import java.util.Date;
 
@@ -110,7 +109,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation) {
         final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation);
         if (mltQuery == null) {
             return null;
@@ -121,15 +120,16 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDX));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
-
-        // #39 - paging
-        solrQuery.setStart((int) offset);
-        solrQuery.setRows(pageSize);
-
+        
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
-
-        addPropertyFilters(solrQuery, conversation, conf);
+        //Pre SMARTI #46 code
+//        final String domain = conversation.getContext().getDomain();
+//        if (StringUtils.isNotBlank(domain)) {
+//            solrQuery.addFilterQuery(String.format("%s:%s", FIELD_DOMAIN, ClientUtils.escapeQueryChars(domain)));
+//        } else {
+//             solrQuery.addFilterQuery(String.format("-%s:*", FIELD_DOMAIN));
+//        }
 
         return new ConversationMltRequest(solrQuery, mltQuery.getContent());
 

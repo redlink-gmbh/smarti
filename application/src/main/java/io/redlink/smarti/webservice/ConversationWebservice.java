@@ -17,7 +17,10 @@
 
 package io.redlink.smarti.webservice;
 
+import io.redlink.smarti.api.QueryBuilder;
+import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.ClientService;
@@ -38,10 +41,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -51,9 +54,9 @@ import java.util.Optional;
  */
 @CrossOrigin
 @RestController
-@RequestMapping(value = "/conversation",
+@RequestMapping(value = "conversation",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
-@Api
+@Api("conversation")
 public class ConversationWebservice {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -199,12 +202,11 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "retrieve the results for a template from a specific creator", response = InlineSearchResult.class)
+    @ApiOperation(value = "retrieve the results for a template from a specific creator", response = Result.class, responseContainer = "List")
     @RequestMapping(value = "{id}/template/{template}/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
                                         @PathVariable("template") int templateIdx,
-                                        @PathVariable("creator") String creator,
-                                        @RequestParam(required = false) MultiValueMap<String, String> params) {
+                                        @PathVariable("creator") String creator) {
         //TODO: get the Client for the currently authenticated user 
         final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
         if (conversation == null) {
@@ -219,7 +221,7 @@ public class ConversationWebservice {
         try {
             final Template template = conversation.getTemplates().get(templateIdx);
 
-            return ResponseEntity.ok(conversationService.getInlineResults(client, conversation, template, creator, params));
+            return ResponseEntity.ok(conversationService.getInlineResults(client, conversation, template, creator));
         } catch (IOException e) {
             return ResponseEntities.serviceUnavailable(e.getMessage(), e);
         } catch (IndexOutOfBoundsException e) {
@@ -232,7 +234,6 @@ public class ConversationWebservice {
     public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
                                       @PathVariable("template") int templateIdx,
                                       @PathVariable("creator") String creator,
-                                      @RequestParam(required = false) MultiValueMap<String, String> params,
                                       @RequestBody QueryUpdate queryUpdate) {
         //TODO: get the Client for the currently authenticated user 
         final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
@@ -272,9 +273,5 @@ public class ConversationWebservice {
             conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
             return ResponseEntity.ok(conversationService.completeConversation(conversation));
         }
-    }
-
-    static class InlineSearchResult extends SearchResult<Result> {
-
     }
 }

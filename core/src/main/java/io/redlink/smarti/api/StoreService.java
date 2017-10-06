@@ -102,6 +102,12 @@ public abstract class StoreService implements ApplicationEventPublisherAware {
 
     protected abstract Collection<ObjectId> listConversationIDsByHashedUser(String hashedUserId);
 
+    public abstract List<String> listTagsByInfix(String query, int limit);
+
+    public abstract List<String> listTagsByPrefix(String query, int limit);
+
+    public abstract List<Pair<String, Long>> listTags(int rows, int offset);
+
     public abstract void deleteAll();
 
     public abstract long count();

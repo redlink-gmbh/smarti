@@ -42,8 +42,10 @@ public class SimpleAuthConfiguration extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
             .authorizeRequests()
-                .antMatchers("/rocket/**", "/conversation/**").permitAll()
-                .anyRequest().hasRole("ADMIN")
+                .antMatchers("/admin/**").hasRole("ADMIN")
+                .and()
+            .authorizeRequests()
+                .anyRequest().permitAll()
                 .and()
             .httpBasic()
                 .realmName("smarti admin area")
@@ -59,7 +61,7 @@ public class SimpleAuthConfiguration extends WebSecurityConfigurerAdapter {
             password = UUID.randomUUID().toString();
             log.error("No password configured in 'security.password', using '{}' for user 'admin'", password);
         } else {
-            log.info("Configuring password from 'security.password' for user 'admin'");
+            log.info("Configuring passwort from 'security.password' for user 'admin'");
         }
         auth
             .inMemoryAuthentication()

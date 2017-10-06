@@ -29,6 +29,7 @@ import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -48,7 +49,14 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -57,7 +65,6 @@ import static io.redlink.smarti.query.conversation.ConversationIndexConfiguratio
 @Component
 public class ConversationIndexer {
 
-
     private final Logger log = LoggerFactory.getLogger(getClass());
     
     public static final int DEFAULT_COMMIT_WITHIN = 10*1000; //10sec
@@ -65,11 +72,8 @@ public class ConversationIndexer {
     public static final int MIN_COMMIT_WITHIN = 1000; //1sec
     
     //TODO: make configurable
-    private static final Set<String> NOT_INDEXED_META_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            ConversationMeta.PROP_TOKEN))); //do not index the users token
-
-    //TODO: make configurable
-    private static final Set<String> NOT_INDEXED_ENVIRONMENT_FIELDS = Collections.emptySet();
+    private static final Set<String> NOT_INDEXED_CONTEXT_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            Context.ENV_TOKEN))); //do not index the users token
 
     @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
     private int commitWithin = DEFAULT_COMMIT_WITHIN; 
@@ -279,25 +283,15 @@ public class ConversationIndexer {
             solrDoc.setField(FIELD_DOMAIN, ctx.getDomain());
             if(ctx.getEnvironment() != null){
                 ctx.getEnvironment().entrySet().stream()
-                .filter(e -> Objects.nonNull(e.getValue()))
-                .filter(e -> StringUtils.isNotBlank(e.getKey()) && !e.getValue().isEmpty())
-                .filter(e -> !NOT_INDEXED_ENVIRONMENT_FIELDS.contains(e.getKey()))
+                .filter(e -> StringUtils.isNoneBlank(e.getKey()) && StringUtils.isNoneBlank(e.getValue()))
+                .filter(e -> !NOT_INDEXED_CONTEXT_FIELDS.contains(e.getKey()))
                 .forEach(e -> {
-                    solrDoc.setField(getEnvironmentField(e.getKey()), e.getValue());
+                    solrDoc.setField("env_" + e.getKey(), e.getValue());
                 });
             }
         }
-        if(conversation.getMeta() != null){
-            conversation.getMeta().getProperties().entrySet().stream()
-                    .filter(e -> Objects.nonNull(e.getValue()))
-                    .filter(e -> StringUtils.isNotBlank(e.getKey()) && !e.getValue().isEmpty())
-                    .filter(e -> !NOT_INDEXED_META_FIELDS.contains(e.getKey()))
-                    .forEach(e -> {
-                        solrDoc.setField(getMetaField(e.getKey()), e.getValue());
-                    });
-        }
     }
-
+    
     private SolrInputDocument mergeSolrUInputDoc(SolrInputDocument prev, SolrInputDocument current) {
         prev.setField(FIELD_MESSAGE, String.format("%s%n%s", prev.getFieldValue(FIELD_MESSAGE), current.getFieldValue(FIELD_MESSAGE)));
         prev.setField(FIELD_VOTE, Integer.parseInt(String.valueOf(prev.getFieldValue(FIELD_VOTE))) + Integer.parseInt(String.valueOf(current.getFieldValue(FIELD_VOTE))));
