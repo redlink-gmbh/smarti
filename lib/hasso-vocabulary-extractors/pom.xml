@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.6.0-RC2-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
 
@@ -36,19 +36,19 @@
             <artifactId>regex-csv</artifactId>
             <version>${project.version}</version>
         </dependency-->
-        
+
         <dependency>
             <groupId>io.redlink.smarti</groupId>
             <artifactId>smarti-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>ner-regex</artifactId>
             <version>${redlinknlp.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

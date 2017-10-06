@@ -22,14 +22,14 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.6.0-RC2-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
 
     <artifactId>pos</artifactId>
     <name>Part of Speech</name>
     <description>Collects Tokens for specific PoS tags</description>
-    
+
     <dependencies>
         <dependency>
             <groupId>io.redlink.smarti</groupId>
@@ -50,7 +50,7 @@
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
       </dependency>
-      
+
       <!-- Logging -->
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -85,5 +85,5 @@
         <artifactId>logback-classic</artifactId>
         <scope>test</scope>
       </dependency>
-    </dependencies>    
+    </dependencies>
 </project>

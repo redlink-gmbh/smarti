@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.6.0-RC2-SNAPSHOT</version>
     </parent>
 
     <artifactId>smarti-application</artifactId>
@@ -263,7 +263,7 @@
             <scope>runtime</scope>
         </dependency>
         <!-- (10) SolrCores for Interesting Terms -->
-        <!-- Those require to have the ziped core in a local folder and to 
+        <!-- Those require to have the ziped core in a local folder and to
              configure a application property pointing to that file -->
         <dependency> <!-- German Wikipedia -->
             <groupId>io.redlink.smarti</groupId>
@@ -277,7 +277,7 @@
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
-        
+
         <!-- END Analysis dependencies -->
 
         <dependency>
