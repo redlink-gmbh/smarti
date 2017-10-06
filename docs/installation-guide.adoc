@@ -157,9 +157,9 @@ You can get a detailed information about the build version that is running by ca
 $ curl -X GET http://${smarti-host}:${smarti-port}/system/info
 ```
 
-include::configurations/application-configuration.adoc[]
 
 include::{commonsdir}additional-components.adoc[]
+
 
 === Third-Party Dependencies and Licenses
 
@@ -181,3 +181,7 @@ $ curl http://${smarti-host}:${smarti-port}/THIRD-PARTY.txt
 ```bash
 $ curl http://${smarti-host}:${smarti-port}/3rdPartyLicenses.json
 ```
+
+=== Configuration
+
+Once Smarti is up and running, go ahead and read the next section <<index.adoc#_application_configuration, Application Configuration>> about Smarti's powerful configuration options.

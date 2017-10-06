@@ -26,8 +26,8 @@ import java.util.Map;
  */
 @CrossOrigin
 @RestController
-@RequestMapping(value = "client")
-@Api("client")
+@RequestMapping(value = "/client")
+@Api
 public class ClientWebservice {
 
     @Autowired
