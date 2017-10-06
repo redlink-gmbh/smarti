@@ -44,7 +44,7 @@ public class Template implements Comparable<Template> {
     @ApiModelProperty(notes = "slots to fill with tokens", required = true)
     private Collection<Slot> slots;
 
-    @ApiModelProperty(value = "Queries suggested/executed")
+    @ApiModelProperty(position = 5, value = "Queries suggested/executed")
     private List<Query> queries = new ArrayList<>();
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

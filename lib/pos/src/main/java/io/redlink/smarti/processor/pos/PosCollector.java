@@ -47,10 +47,13 @@ import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTA
 import static io.redlink.smarti.processing.SmartiAnnotations.MESSAGE_IDX_ANNOTATION;
 
 /**
- * Allows to create Tokens for Words with specific Part-of-Speech (POS) tags. By default this component is configured 
- * to create Tokens with the type `Attribute` for words that are classified as adjectives.
- * 
- * A stopword list with words that are ignored is provided in <code>wordlist/ignored_adjectives.txt</code>
+ * This class collects Named Entity Annotations created (by possible
+ * multiple NER components) in the {@link AnalyzedText} and creates 
+ * {@link Token}s in the {@link Conversation} for those contained
+ * in {@link Message}s with {@link Origin#User} and an index greater
+ * as {@link ConversationMeta#getLastMessageAnalyzed()}
+ * <p>
+ * This {@link QueryPreparator} DOES NOT extract Named Entities by itself!
  * 
  * @author Rupert Westenthaler
  *

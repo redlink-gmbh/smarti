@@ -28,10 +28,7 @@
     <field name="owner"                 type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="user_id"               type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="user_name"             type="string"         indexed="true"  stored="true"  multiValued="false"/>
-    <dynamicField name="env_*"          type="string"         indexed="true"  stored="true"  multiValued="true"/>
-    <dynamicField name="meta_*"         type="string"         indexed="true"  stored="true"  multiValued="true"/>
-    <dynamicField name="env_txt_*"      type="text_gen"       indexed="true"  stored="true"  multiValued="true"/>
-    <dynamicField name="meta_txt_*"     type="text_gen"       indexed="true"  stored="true"  multiValued="true"/>
+    <dynamicField name="env_*"          type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="text"                  type="text_de"        indexed="true"  stored="true"  multiValued="true" termVectors="true"/>
     <field name="iterms"                type="text_iterms_de" indexed="true"  stored="true"  multiValued="true" termVectors="true"/>
     
@@ -62,9 +59,6 @@
     <field name="keyword_synonyms"      type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
     <field name="keyword_homonyms"      type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
 
-    <copyField source="env_*" dest="env_txt_*"/>
-    <copyField source="meta_*" dest="meta_txt_*"/>
-
     <copyField source="message" dest="text"/>
     <copyField source="keyword*" dest="text"/>
 
@@ -84,19 +78,6 @@
             <filter class="solr.SnowballPorterFilterFactory" language="German2" />
         </analyzer>
     </fieldType>
-    <fieldType name="text_gen" class="solr.TextField" positionIncrementGap="100">
-        <analyzer type="index">
-            <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterGraphFilterFactory" splitOnCaseChange="1" splitOnNumerics="1" catenateWords="1" catenateNumbers="1" catenateAll="1" preserveOriginal="1"/>
-            <filter class="solr.LowerCaseFilterFactory"/>
-        </analyzer>
-        <analyzer type="query">
-            <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterGraphFilterFactory" splitOnCaseChange="0" splitOnNumerics="0"/>
-            <filter class="solr.LowerCaseFilterFactory"/>
-        </analyzer>
-    </fieldType>
-    
     <fieldType name="text_de" class="solr.TextField" positionIncrementGap="100">
         <analyzer>
             <tokenizer class="solr.StandardTokenizerFactory"/>

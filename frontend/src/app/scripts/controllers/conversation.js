@@ -67,30 +67,18 @@ angular.module('smartiApp')
     }
 
     function importConversations() {
-      return $uibModal.open({
+      $uibModal.open({
         templateUrl: 'views/modal/import-conversations.html',
-        controller: ['$uibModalInstance', function ($uibModalInstance) {
+        controller: function ($uibModalInstance) {
           const $modal = this;
 
-          $modal.inProgress = false;
-          $modal.upload = function ($form) {
-            $modal.serverError = null;
-            $form.$setPristine();
-            $form.$setSubmitted();
-            $modal.inProgress = true;
+          $modal.upload = function () {
             ConversationService.importConversations(client.data.id, $modal.uploadFile, $modal.uploadReplace)
-              .then(
-                $uibModalInstance.close,
-                function (error) {
-                  $modal.serverError = error.data.message;
-                })
-              .finally(function () {
-                $modal.inProgress = false;
-              });
+              .then($uibModalInstance.close, $uibModalInstance.dismiss);
           };
           $modal.cancel = $uibModalInstance.dismiss;
 
-        }],
+        },
         controllerAs: '$modal'
       }).result
         .then(

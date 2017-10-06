@@ -18,19 +18,25 @@
 package io.redlink.smarti.services;
 
 import io.redlink.smarti.api.QueryBuilder;
+import io.redlink.smarti.api.QueryBuilderContainer;
+import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.exception.NotFoundException;
-import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.State;
+import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -126,25 +132,18 @@ public class QueryBuilderService {
         });
     }
 
-    public SearchResult<? extends Result> execute(Client client, String creator, Template template, Conversation conversation) throws IOException {
-        return execute(client, creator, template, conversation, new LinkedMultiValueMap<>());
-    }
-
-    public SearchResult<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
+    public List<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation) throws IOException {
         Configuration conf = confService.getClientConfiguration(client);
         if(conf == null){
             throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
         }
         final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> creator = getQueryBuilder(creatorString, conf);
         if (creator != null) {
-            return creator.getKey().execute(creator.getValue(), template, conversation, params);
+            return creator.getKey().execute(creator.getValue(), template, conversation);
         } else {
             throw new NotFoundException(QueryBuilder.class, creatorString, "QueryBuilder for creator '"+ creatorString +"' not present");
         }
     }
-
-
-
     /**
      * Getter for the QueryBuilder for the parsed creator string
      * @param creator the creator string formated as '<code>queryBuilder/{queryBuilder#getName()}/{config#getName()}</code>'
@@ -190,5 +189,4 @@ public class QueryBuilderService {
     public Map<String, QueryBuilder> getQueryBuilders() {
         return Collections.unmodifiableMap(builders);
     }
-
 }

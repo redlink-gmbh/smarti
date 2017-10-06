@@ -92,6 +92,23 @@ public class MongoDBStoreService extends StoreService {
     }
 
     @Override
+    public List<String> listTagsByInfix(String query, int limit) {
+        final Pattern pattern = Pattern.compile(String.format(".*%s.*", Pattern.quote(query)));
+        return conversationRepository.findTagsByPattern(pattern, limit);
+    }
+
+    @Override
+    public List<String> listTagsByPrefix(String query, int limit) {
+        final Pattern pattern = Pattern.compile(String.format("^%s.*", Pattern.quote(query)));
+        return conversationRepository.findTagsByPattern(pattern, limit);
+    }
+
+    @Override
+    public List<Pair<String, Long>> listTags(int rows, int offset) {
+        return conversationRepository.findTags(rows, offset);
+    }
+
+    @Override
     public void deleteAll() {
         conversationRepository.deleteAll();
     }

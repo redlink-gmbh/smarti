@@ -1,9 +1,0 @@
-== Rocket.Chat Plugin
-
-The Rocket.Chat Plugin consists of three parts:
-
-1. The Rocket.Chat integration code
-2. The Smarti backend adapter
-3. The Smarti frontend plugin
-
-TODO

@@ -19,17 +19,34 @@ package io.redlink.smarti.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Context {
 
+    /**
+     * {@link #getEnvironment(String) Environment key} to store the name of the channel
+     * the conversation was part of
+     */
+    public static final String ENV_CHANNEL_NAME = "channel";
+    /**
+     * {@link #getEnvironment(String) Environment key} to store the id of the channel
+     * the conversation was part of
+     */
+    public static final String ENV_CHANNEL_ID = "channel_id";
+    /**
+     * {@link #getEnvironment(String) Environment key} to store the user token of the
+     * conversation
+     */
+    public static final String ENV_TOKEN = "token";
+
     private String contextType; // = "ApplicationHelp"
     private String environmentType; // = "SAP_Application"
     private String domain;
-    private Map<String,List<String>> environment = new HashMap<>();
+    private Map<String,String> environment = new HashMap<>();
 
     public String getContextType() {
         return contextType;
@@ -56,23 +73,23 @@ public class Context {
         return this;
     }
 
-    public Map<String, List<String>> getEnvironment() {
+    public Map<String, String> getEnvironment() {
         return environment;
     }
 
-    public List<String> getEnvironment(String key) {
+    public String getEnvironment(String key) {
         return environment.get(key);
     }
 
-    public void setEnvironment(Map<String, List<String>> environment) {
+    public String getEnvironment(String key, String defaultValue) {
+        return environment.getOrDefault(key, defaultValue);
+    }
+
+    public void setEnvironment(Map<String, String> environment) {
         this.environment = environment;
     }
 
     public void setEnvironment(String key, String value) {
-        setEnvironment(key, new LinkedList<>(Collections.singletonList(value)));
-    }
-
-    public void setEnvironment(String key, List<String> value) {
         environment.put(key, value);
     }
 }
