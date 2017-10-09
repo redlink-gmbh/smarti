@@ -1,17 +1,4 @@
-## Smarti Configuration
-
-Smarti is deployed as Spring Boot Application. It supports all configuration options as https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[documented for Spring Boot].
-
-The `smarti-application` module includes an `application.properties` file providing defaults. This ensures that Smarti does start correctly without any further configuration needed
-
-To apply custom configuration: 
-
-* When using one of the installation packages for Debian or RedHat the main configuration file is located at `etc/smarti/application.properties`. 
-* When using the runnable JAR the `application.properties` needs to be in `./config` or directly in the working directory.
-
-A list of well known configuration option can be found [here](TODO)
-
-### Overview about Spring Boot Configuration
+==== Overview about Spring Boot Configuration
 
 Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[configuration options] including:
 
@@ -21,13 +8,13 @@ Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/cur
     1. activate the profile by setting `spring.profiles.active`
     2. provide a `application-{profile}.properties` file
 
-Configurations also support Placeholders (e.g. `app.name=Smarti` and later `app.description=${app.name} is a Spring Boot application`). 
+Configurations also support Placeholders (e.g. `app.name=Smarti` and later `app.description=${app.name} is a Spring Boot application`).
 
 As alternative to Java properties file Spring Boot alows to use http://www.yaml.org/start.html[YAML]
 
-### Configuration Properties
+==== Configuration Properties
 
-#### Mongo DB configuration
+===== Mongo DB configuration
 
 Mongo DB is used by Smarti to store client, configuration and conversations.
 
@@ -38,7 +25,7 @@ Mongo DB is used by Smarti to store client, configuration and conversations.
 * `spring.data.mongodb.password =`
 * `spring.data.mongodb.username =`
 
-#### Tomcat AJP-Config
+===== Tomcat AJP-Config
 
 To enable AJP use the following properties
 
@@ -49,9 +36,9 @@ To enable AJP use the following properties
 * `tomcat.ajp.secure=false`
 * `tomcat.ajp.scheme=http`
 
-### Spring Mail Configuration
+==== Spring Mail Configuration
 
-No core component of Smarti does send mails. However in cases where modules want to send notifications per mail those are the properties used by Spring to configure the Mail Server to use. 
+No core component of Smarti does send mails. However in cases where modules want to send notifications per mail those are the properties used by Spring to configure the Mail Server to use.
 
 * `spring.mail.host=`
 * `spring.mail.port=`
@@ -59,7 +46,7 @@ No core component of Smarti does send mails. However in cases where modules want
 * `spring.mail.username=`
 * `spring.mail.password=`
 
-###SolrLib Configuration
+==== SolrLib Configuration
 
 https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to use Solr in Spring. It supports embedded, standalone and cloud versions of Solr by adding the according modules.
 
@@ -71,7 +58,7 @@ https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to us
 * `solrlib.deploy-cores = true`: option to disable automatic configuration update/deployment to remote servers. You might not have the karma to do so. Only used by standalone and cloud
 * `solrlib.delete-on-shutdown = false`: option to delete the solrlib-home upon shutdown. Only used by embedded
 
-### Other properties
+==== Other properties
 
 **UI Cache**
 
@@ -89,40 +76,40 @@ Allows to inject backend properties in the Frontend
 * `resource.transform.inject.text = constants*.js`
 
 **Default Wbservice Error Handler**
- 
+
 * `webservice.errorhandler.writetrace = false`: Note that even if disabled stacktraces for `5**` responses will be logged.
 
 **Jsonp callback**
 
 * `jsonp.callback = callback`: The name of the callback
 
-### Rocket.chat Endpoint
+==== Rocket.chat Endpoint
 
 * `rocketchat.proxy.hostname =`
 * `rocketchat.proxy.port = 80`
 * `rocketchat.proxy.scheme = http`
 
-### Speak Service
+==== Speak Service
 
 The Speak Service managed resource bundles for bot generated replay messages in conversations.
 
 * `message.locale = de_DE`
 * `message.source =`
 
-### Conversation Indexing
+==== Conversation Indexing
 
 Conversation are indexed in Solr managed by SolrLib
 
 * `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
 *  `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 
-### Analysis Configuration
+==== Analysis Configuration
 
 For now Analysis configurations are global. No Client specific configuration is possible.
 
 _NOTE:_ Client specific analysis configurations are planed for a future release
 
-#### Analysis Chain
+===== Analysis Chain
 
 The analysis chain used to process conversations can be configured by the following properties
 
@@ -131,7 +118,7 @@ The analysis chain used to process conversations can be configured by the follow
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
-#### Interesting Term
+===== Interesting Term
 
 Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
@@ -149,7 +136,7 @@ The above configuration requires a Solr Server. To allow the use of embedded Sol
 
 **NOTE:** The archives with the Solr cores are separate downloads. The cores are initialized on the embedded Solr server managed by https://github.com/redlink-gmbh/solrlib/[SolrLib]
 
-#### Token Filter: Stopword
+===== Token Filter: Stopword
 
 This analysis components allows to reference stopword lists for extracted tokens.
 
@@ -164,25 +151,25 @@ where:
 *  `spring-resource` are loaded as https://docs.spring.io/spring/docs/current/spring-framework-reference/html/resources.html[Spring Resource]. Therefore `classpath:`, `file:` and URL resources (`http(s):`, `ftp:`) can be used.
 *  Stopword lists a text files with a single word per line. Empty lines and lines starting with `#` are ignored.
 
-#### Hasso Extraction
+===== Hasso Extraction
 
-Hasso was a spefic use case of the predecessor of Smarti. The module `hasso-vocabulary-extractor` provides two vocabulary based keyword extraction components. 
+Hasso was a spefic use case of the predecessor of Smarti. The module `hasso-vocabulary-extractor` provides two vocabulary based keyword extraction components.
 
 * `smarti.extractor.synonyms.db =`: `CSV` file with `;` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `db-entity`.
 * `smarti.extractor.synonyms.sap =`: `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
 
 
-### Query Builder Defalt Configuration
+==== Query Builder Defalt Configuration
 
-Query Builder are configured per Client via the <<clientConf.adoc#, Client Configuration>> service. However a system wide default configuration can be used to initialize configurations for new clients.
+Query Builder are configured per Client via the <<index.adoc#_client_configuration, Client Configuration>> service. However a system wide default configuration can be used to initialize configurations for new clients.
 
 This section includes configuration properties used to define the default configuration of query builders.
 
-#### Solr Endpoint configuration
+===== Solr Endpoint configuration
 
-A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module.  
+A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module.
 
-_NOTE:_ The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<clientConf.adoc#, Client Configuration>> service.
+_NOTE:_ The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<index.adoc#_client_configuration, Client Configuration>> service.
 
 **Prefix**: `query.solr`
 
@@ -244,5 +231,3 @@ Typical examples include
 * `query.solr.defautls.df = text`: the default search field to `text`
 
 _NOTE:_ Defaults (and invariants) can also be set in the Solr Request hander (`solrconf.xml`). In cases where one has control over the Solr configuration it is preferable to do so.
-
-
