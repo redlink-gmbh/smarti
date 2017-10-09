@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -34,6 +35,7 @@ import java.util.UUID;
 @Configuration
 @EnableWebSecurity
 @Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
+@ConditionalOnProperty(value = "security.enabled", havingValue = "true", matchIfMissing = true)
 public class SimpleAuthConfiguration extends WebSecurityConfigurerAdapter {
 
     private Logger log = LoggerFactory.getLogger(SimpleAuthConfiguration.class);
