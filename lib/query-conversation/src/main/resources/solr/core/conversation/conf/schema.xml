@@ -87,12 +87,12 @@
     <fieldType name="text_gen" class="solr.TextField" positionIncrementGap="100">
         <analyzer type="index">
             <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterGraphFilterFactory" splitOnCaseChange="1" splitOnNumerics="1" catenateWords="1" catenateNumbers="1" catenateAll="1" preserveOriginal="1"/>
+            <filter class="solr.WordDelimiterFilterFactory" splitOnCaseChange="1" splitOnNumerics="1" catenateWords="1" catenateNumbers="1" catenateAll="1" preserveOriginal="1"/>
             <filter class="solr.LowerCaseFilterFactory"/>
         </analyzer>
         <analyzer type="query">
             <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterGraphFilterFactory" splitOnCaseChange="0" splitOnNumerics="0"/>
+            <filter class="solr.WordDelimiterFilterFactory" splitOnCaseChange="0" splitOnNumerics="0"/>
             <filter class="solr.LowerCaseFilterFactory"/>
         </analyzer>
     </fieldType>
