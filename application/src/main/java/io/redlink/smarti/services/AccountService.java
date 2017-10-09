@@ -18,7 +18,6 @@ package io.redlink.smarti.services;
 
 import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.mongo.MongoAuthConfiguration;
-import io.redlink.smarti.auth.mongo.MongoUserDetails;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,8 +60,8 @@ public class AccountService {
         log.info("Created password recovery token for user '{}': '{}', valid until {}", userName, recoveryToken.getToken(), recoveryToken.getExpires());
     }
 
-    public boolean completePasswordRecovery(String userName, String newPasswd, String recoveryToken) {
-        return userDetailsService.updatePassword(userName, passwordEncoder.encodePassword(newPasswd), recoveryToken);
+    public boolean completePasswordRecovery(String userName, String newPassword, String recoveryToken) {
+        return userDetailsService.updatePassword(userName, passwordEncoder.encodePassword(newPassword), recoveryToken);
     }
 
     public boolean hasAccount(String userName) {

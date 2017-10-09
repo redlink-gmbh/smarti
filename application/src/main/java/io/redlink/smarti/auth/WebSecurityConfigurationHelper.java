@@ -19,7 +19,6 @@ package io.redlink.smarti.auth;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.stereotype.Service;
 
 /**
@@ -56,24 +55,18 @@ public class WebSecurityConfigurationHelper {
             .anonymous()
                 .and()
             .authorizeRequests()
-            // allow everyone to access swagger
+                // allow everyone to access swagger
                 .antMatchers(swaggerPath)
-                .permitAll()
-                .and()
-            .authorizeRequests()
-            // everyone to access the static resources
+                    .permitAll()
+                // everyone to access the static resources
                 .antMatchers(STATIC_RESOURCES)
-                .permitAll()
-                .and()
-            .authorizeRequests()
-            // allow access to the auth-services
+                    .permitAll()
+                // allow access to the auth-services
                 .antMatchers("/auth", "/auth/**")
-                .permitAll()
-                .and()
-            .authorizeRequests()
-            // roles are checked in Webservice implementations
+                    .permitAll()
+                // roles/permissions are checked in Webservice implementations
                 .anyRequest()
-                .authenticated()
+                    .authenticated()
                 .and()
         ;
          // @formatter:on

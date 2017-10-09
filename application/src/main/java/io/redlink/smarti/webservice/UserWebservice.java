@@ -16,7 +16,6 @@
  */
 package io.redlink.smarti.webservice;
 
-import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
 import io.redlink.smarti.services.AccountService;
 import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
@@ -50,7 +49,7 @@ public class UserWebservice {
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserDetailsResponse> signup(@RequestBody  Map<String, String> data) {
+    public ResponseEntity<UserDetailsResponse> signUp(@RequestBody  Map<String, String> data) {
         final String userName = data.get("username"),
                 password = data.get("password"),
                 mail = data.get("email");
@@ -68,11 +67,11 @@ public class UserWebservice {
             @RequestBody(required = false) Map<String,String> data
     ) {
         final String recoveryToken = data.get("token"),
-                newPasswd = data.get("password");
+                newPassword = data.get("password");
 
         if (StringUtils.isNotBlank(recoveryToken)) {
-            if (StringUtils.isNotBlank(newPasswd)) {
-                boolean success = accountService.completePasswordRecovery(userId, newPasswd, recoveryToken);
+            if (StringUtils.isNotBlank(newPassword)) {
+                boolean success = accountService.completePasswordRecovery(userId, newPassword, recoveryToken);
                 if (success) {
                     return ResponseEntity.ok().build();
                 }
