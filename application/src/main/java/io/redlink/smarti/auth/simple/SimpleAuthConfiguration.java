@@ -45,6 +45,8 @@ public class SimpleAuthConfiguration extends WebSecurityConfigurerAdapter {
         http
             .authorizeRequests()
                 .antMatchers("/rocket/**", "/conversation/**").permitAll()
+                .antMatchers("/plugin/**").permitAll()
+                .antMatchers("/v1/**", "/v2/**").permitAll()
                 .anyRequest().hasRole("ADMIN")
                 .and()
             .httpBasic()
