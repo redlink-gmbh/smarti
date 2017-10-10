@@ -1,4 +1,4 @@
-:migration_scripts: ../../dist/src/main/resources/migration
+:migration_scripts: ../../scripts
 == Smarti Changelog
 
 This document shows the changes that are introduced into Smarti with the releases.
@@ -22,7 +22,7 @@ must be migrated to the new model.
 A migration script is available and must be applied manually:
 [source,javascript]
 -----------------------------------------------
-include::{migration_scripts}/0.5-to-0.6.js[lines=17..-1]
+include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=68..-1]
 -----------------------------------------------
 
 === Smarti 0.5.0 Release Notes
@@ -57,5 +57,5 @@ must be migrated to the new model.
 A migration script is available and must be applied manually:
 [source,javascript]
 ------------------------------------------------
-include::{migration_scripts}/0.3-to-0.5.js[lines=17..-1]
+include::{migration_scripts}/migrate-02_0.3-to-0.5.js[lines=70..-1]
 ------------------------------------------------
