@@ -218,6 +218,15 @@
                                             </mapper>
                                         </data>
                                         <data>
+                                            <src>${project.basedir}/../scripts</src>
+                                            <type>directory</type>
+                                            <includes>migrate-*.js</includes>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./usr/share/${packageName}/scripts</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
                                             <src>${project.build.outputDirectory}/main/start.sh</src>
                                             <dst>${packageName}</dst>
                                             <type>file</type>
@@ -393,6 +402,17 @@
                                         </source>
                                     </sources>
                                     <directory>/usr/share/${packageName}</directory>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.basedir}/../scripts</location>
+                                            <includes>
+                                                <include>migrate-*.js</include>
+                                            </includes>
+                                        </source>
+                                    </sources>
+                                    <directory>/usr/share/${packageName}/scripts</directory>
                                 </mapping>
                                 <mapping>
                                     <sources>
