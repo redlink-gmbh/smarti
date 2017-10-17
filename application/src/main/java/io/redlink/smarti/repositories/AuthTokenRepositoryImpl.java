@@ -14,22 +14,17 @@
  * limitations under the License.
  *
  */
-'use strict';
+package io.redlink.smarti.repositories;
 
-angular
-  .module('smartiApp')
-  .config(function ($httpProvider) {
-    var user = 'admin',
-      passwd = user;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
-    $httpProvider.defaults.useXDomain = true;
-    $httpProvider.defaults.withCredentials = true;
+public class AuthTokenRepositoryImpl implements AuthTokenRepositoryCustom {
 
-  })
-  .run(function ($rootScope, UserService) {
-    var user = 'admin',
-      passwd = user;
-    return UserService.login(user, passwd);
+    private final MongoTemplate mongoTemplate;
 
-  })
-;
+    public AuthTokenRepositoryImpl(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
+    }
+
+
+}

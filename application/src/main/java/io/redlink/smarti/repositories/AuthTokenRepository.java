@@ -14,22 +14,21 @@
  * limitations under the License.
  *
  */
-'use strict';
+package io.redlink.smarti.repositories;
 
-angular
-  .module('smartiApp')
-  .config(function ($httpProvider) {
-    var user = 'admin',
-      passwd = user;
+import io.redlink.smarti.model.AuthToken;
+import org.bson.types.ObjectId;
+import org.springframework.data.repository.CrudRepository;
 
-    $httpProvider.defaults.useXDomain = true;
-    $httpProvider.defaults.withCredentials = true;
+import java.util.List;
 
-  })
-  .run(function ($rootScope, UserService) {
-    var user = 'admin',
-      passwd = user;
-    return UserService.login(user, passwd);
+public interface AuthTokenRepository extends CrudRepository<AuthToken, String>, AuthTokenRepositoryCustom {
 
-  })
-;
+    List<AuthToken> findByClientId(ObjectId clientId);
+
+    boolean existsByTokenAndAndClientId(String token, ObjectId clientId);
+
+    void deleteByTokenAndClientId(String token, ObjectId clientId);
+
+    AuthToken findOneByTokenAndClientId(String tokenId, ObjectId userId);
+}

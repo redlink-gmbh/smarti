@@ -30,4 +30,37 @@ angular.module('smartiApp')
       return deferred.promise;
     };
 
+    this.loadAuthTokens = function (client) {
+      return $http.get(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token')
+        .then(function (response) {
+          return response.data;
+        });
+    };
+
+    this.createAuthToken = function (client, label) {
+      return $http
+        .post(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token', {
+          label: label
+        })
+        .then(function (response) {
+          return response.data;
+        });
+    };
+
+    this.updateAuthToken = function (client, token) {
+      return $http
+        .post(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.token, token)
+        .then(function (response) {
+          return response.data;
+        });
+    };
+
+    this.revokeAuthToken = function (client, token) {
+      return $http
+        .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.token)
+        .then(function (response) {
+          return response.data;
+        });
+    }
+
   });

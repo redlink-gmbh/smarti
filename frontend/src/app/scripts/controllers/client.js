@@ -10,6 +10,8 @@
 angular.module('smartiApp')
   .controller('ClientCtrl', function ($scope,$window,$location,client,ClientService,ConfigurationService) {
 
+    $scope.authTokens = [];
+
     ConfigurationService.getConfiguration(client).then(function(configuration){
       if(client.isCopy) {
         client.data.id = null;
@@ -23,6 +25,11 @@ angular.module('smartiApp')
     ConfigurationService.getDefaultConfiguration().then(function(configuration){
       $scope.defaultConfiguration = configuration;
     });
+
+    ClientService.loadAuthTokens(client)
+      .then(function (tokens) {
+        $scope.authTokens = tokens;
+      });
 
     $scope.saveClient = function() {
        $scope.client.save().then(function(client){
@@ -49,6 +56,22 @@ angular.module('smartiApp')
       if($window.confirm("Do you really want to remove component " + component.innerData.displayName)) {
         $scope.configuration.removeComponent(type,component);
       }
+    };
+
+    $scope.createAuthToken = function () {
+      ClientService.createAuthToken(client, undefined)
+        .then(function (newToken) {
+          $scope.authTokens.push(newToken);
+        });
+    };
+
+    $scope.revokeAuthToken = function (token) {
+      ClientService.revokeAuthToken(client, token)
+        .then(function () {
+          $scope.authTokens = $scope.authTokens.filter(function(t) {
+            return t.token !== token.token;
+          });
+        });
     };
 
     $scope.editorOptions = {

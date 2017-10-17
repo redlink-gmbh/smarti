@@ -16,15 +16,27 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.Date;
 
+@Document
 public class AuthToken {
 
+    @Id
     private String token;
+
+    @JsonIgnore
+    @Indexed
+    private ObjectId clientId;
 
     private String label;
 
-    private Date created;
+    private Date created = new Date();
 
     public String getToken() {
         return token;
@@ -34,19 +46,30 @@ public class AuthToken {
         this.token = token;
     }
 
+    public ObjectId getClientId() {
+        return clientId;
+    }
+
+    public AuthToken setClientId(ObjectId clientId) {
+        this.clientId = clientId;
+        return this;
+    }
+
     public String getLabel() {
         return label;
     }
 
-    public void setLabel(String label) {
+    public AuthToken setLabel(String label) {
         this.label = label;
+        return this;
     }
 
     public Date getCreated() {
         return created;
     }
 
-    public void setCreated(Date created) {
+    public AuthToken setCreated(Date created) {
         this.created = created;
+        return this;
     }
 }

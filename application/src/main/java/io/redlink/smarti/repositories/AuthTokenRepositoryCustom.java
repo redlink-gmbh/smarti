@@ -14,22 +14,7 @@
  * limitations under the License.
  *
  */
-'use strict';
+package io.redlink.smarti.repositories;
 
-angular
-  .module('smartiApp')
-  .config(function ($httpProvider) {
-    var user = 'admin',
-      passwd = user;
-
-    $httpProvider.defaults.useXDomain = true;
-    $httpProvider.defaults.withCredentials = true;
-
-  })
-  .run(function ($rootScope, UserService) {
-    var user = 'admin',
-      passwd = user;
-    return UserService.login(user, passwd);
-
-  })
-;
+public interface AuthTokenRepositoryCustom {
+}

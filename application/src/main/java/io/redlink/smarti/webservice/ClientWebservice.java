@@ -3,9 +3,11 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
+import io.redlink.smarti.services.AuthTokenService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConfigurationService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -13,6 +15,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +41,9 @@ public class ClientWebservice {
 
     @Autowired
     private ConfigurationService configService;
+
+    @Autowired
+    private AuthTokenService authTokenService;
 
     @ApiOperation(value = "get a client", response = Client.class, responseContainer = "List")
     @RequestMapping(method = RequestMethod.GET)
@@ -94,6 +100,47 @@ public class ClientWebservice {
             return ResponseEntity.notFound().build();
         } else {
             return ConfigurationWebservice.writeSmartiConfig(c);
+        }
+    }
+
+    @RequestMapping(value = "{id}/token", method = RequestMethod.GET)
+    public ResponseEntity<?> listAuthTokens(@PathVariable("id") ObjectId id) {
+        // TODO: check auth!
+        return ResponseEntity.ok(authTokenService.getAuthTokens(id));
+    }
+
+    @RequestMapping(value = "{id}/token", method = RequestMethod.POST)
+    public ResponseEntity<?> createAuthToken(@PathVariable("id") ObjectId id,
+                                             @RequestBody(required = false) AuthToken token) {
+        String label = "new-token";
+        if (token != null) {
+            label = token.getLabel();
+        }
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(authTokenService.createAuthToken(id, label));
+    }
+
+    @RequestMapping(value = "{id}/token/{token}", method = RequestMethod.PUT)
+    public ResponseEntity<?> updateAuthToken(@PathVariable("id") ObjectId id,
+                                             @PathVariable("token") String tokenId,
+                                             @RequestBody AuthToken token) {
+
+        final AuthToken updated = authTokenService.updateAuthToken(tokenId, id, token);
+        if (updated != null) {
+            return ResponseEntity.ok(updated);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+
+    }
+
+    @RequestMapping(value = "{id}/token/{token}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> revokeAuthToken(@PathVariable("id") ObjectId id,
+                                             @PathVariable("token") String tokenId) {
+        if (authTokenService.deleteAuthToken(tokenId, id)) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 

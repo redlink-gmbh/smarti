@@ -49,7 +49,7 @@ angular.module('smartiApp')
         headers: headers
       }).then(
         function (response) {
-          if (response.data.user) {
+          if (response.data.name) {
             $rootScope.user = response.data;
             return response.data;
           } else {

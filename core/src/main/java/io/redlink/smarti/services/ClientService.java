@@ -1,15 +1,13 @@
 package io.redlink.smarti.services;
 
+import com.mongodb.DuplicateKeyException;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.repositories.ClientRepository;
-
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import com.mongodb.DuplicateKeyException;
 
 import java.util.Date;
 import java.util.stream.Collectors;
