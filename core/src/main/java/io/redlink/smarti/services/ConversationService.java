@@ -395,7 +395,8 @@ public class ConversationService {
     }
 
     public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
-        // TODO: check whitelist of allowed fields
+        // TODO(westei): check whitelist of allowed fields
+        // TODO(westei): re-process updated conversation
         return publishSaveEvent(updateQueries(null, conversationRepository.updateConversationField(conversationId, field, data)));
     }
 

@@ -108,6 +108,7 @@ public class ConversationWebservice {
         //TODO: check authentication
         conversation = Optional.ofNullable(conversation).orElseGet(Conversation::new);
         // Create a new Conversation -> id must be null
+        //TODO: check which fields we allow to be set on create...
         conversation.setId(null);
         //TODO: set the owner of the conversation based on the current auth
         //FIXME for now the owner needs to be parsed with the conversation!
@@ -156,6 +157,7 @@ public class ConversationWebservice {
     ) {
         //TODO get the client for the authenticated user
         final Client client = null;
+        // TODO(westei): Check if conversation needs to be re-analyzed/processed
         final Conversation conversation = conversationService.getConversation(client, conversationId);
 
         //TODO: check that the client has the right to access the conversation
@@ -262,6 +264,9 @@ public class ConversationWebservice {
         if (StringUtils.isBlank(message.getId())) {
             message.setId(UUID.randomUUID().toString());
         }
+
+        //TODO(westei): set date if not already set.
+
         return asyncExecutionService.execute(
                 () -> {
                     conversationService.appendMessage(client, conversation, message);
@@ -311,6 +316,8 @@ public class ConversationWebservice {
         //make sure the message-id is the addressed one
         message.setId(messageId);
 
+        // TODO(westei): check that the conversation is re-analyzed/processed
+
         return asyncExecutionService.execute(() -> {
                     conversationService.updateMessage(conversationId, message);
                     return conversationService.getMessage(conversationId, message.getId());
@@ -337,6 +344,8 @@ public class ConversationWebservice {
         if (!conversationService.exists(conversationId, messageId)) {
             return ResponseEntity.notFound().build();
         }
+
+        // TODO(westei): check that the conversation is re-analyzed/processed
 
         return asyncExecutionService.execute(
                 () -> {
@@ -368,6 +377,8 @@ public class ConversationWebservice {
     ) {
         // TODO: check Authentication / clientId
 
+        // TODO(westei): check that the conversation is re-analyzed/processed
+
         if (conversationService.exists(conversationId, messageId)) {
             return asyncExecutionService.execute(() ->
                             conversationService.updateMessageField(conversationId, messageId, field, data),
@@ -387,6 +398,7 @@ public class ConversationWebservice {
     ) {
         // TODO: check Authentication / clientId
 
+        // TODO(westei): Check if conversation needs to be re-analyzed/processed
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -405,6 +417,8 @@ public class ConversationWebservice {
     ) {
         // TODO: check Authentication / clientId
 
+        // TODO: load coversation, replace analysis with retrieved analysis and re-calculate templates
+
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
@@ -416,6 +430,7 @@ public class ConversationWebservice {
     ) {
         // TODO: check Authentication / clientId
 
+        // TODO(westei): Check if conversation needs to be re-analyzed/processed
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -432,6 +447,7 @@ public class ConversationWebservice {
     ) {
         // TODO: check Authentication / clientId
 
+        // TODO(westei): Check if conversation needs to be re-analyzed/processed
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -449,6 +465,7 @@ public class ConversationWebservice {
     ) {
         // TODO: check Authentication / clientId
 
+        // TODO(westei): Check if conversation needs to be re-analyzed/processed
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -477,6 +494,8 @@ public class ConversationWebservice {
         final Conversation conversation = conversationService.getConversation(client, conversationId);
         if (conversation == null) return ResponseEntity.notFound().build();
 
+        // TODO(westei): Check if conversation needs to be re-analyzed/processed
+
         final List<Template> templates = conversation.getAnalysis().getTemplates();
         final Template template;
         if (templateIdx < 0) return ResponseEntity.badRequest().build();
@@ -502,6 +521,8 @@ public class ConversationWebservice {
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: check Authentication / clientId
+
+        // TODO: load coversation, replace analysis with retrieved analysis and re-calculate templates and execute it.
 
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
