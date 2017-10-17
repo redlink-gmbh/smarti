@@ -45,7 +45,7 @@ angular.module('smartiApp')
         headers.authorization = 'Basic ' + btoa(username+':'+password);
       }
 
-      return $http.get(ENV.serviceBaseUrl + 'auth', {
+      return $http.get(ENV.serviceBaseUrl + '/auth', {
         headers: headers
       }).then(
         function (response) {
@@ -65,7 +65,7 @@ angular.module('smartiApp')
     }
 
     function logout() {
-      return $http.post(ENV.serviceBaseUrl + 'logout', undefined)
+      return $http.post(ENV.serviceBaseUrl + '/logout', undefined)
         .finally(
           function () {
             $rootScope.user = null;
@@ -74,7 +74,7 @@ angular.module('smartiApp')
     }
 
     function signup(username, email, password) {
-      return $http.post(ENV.serviceBaseUrl + 'auth', {
+      return $http.post(ENV.serviceBaseUrl + '/auth', {
         username: username,
         password: password,
         email: email

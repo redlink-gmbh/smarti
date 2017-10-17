@@ -10,7 +10,6 @@
  */
 angular
   .module('smartiApp', [
-    'config',
     'ngRoute',
     'ngAnimate',
     'ui.codemirror',
@@ -18,6 +17,9 @@ angular
     'ngFileUpload',
     'toastr'
   ])
+  .constant('ENV', {
+    serviceBaseUrl: '.'
+  })
   .config(function ($routeProvider, $httpProvider) {
     $httpProvider.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
