@@ -20,17 +20,63 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceConstructor;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 @ApiModel
+@Document
+@CompoundIndexes(value={
+        @CompoundIndex(def= "{'conversation': 1, 'date': 1")
+})
 public class Analysis {
 
+    @Id
+    private final ObjectId id;
+    
+    @Indexed
+    private final ObjectId conversation;
+    
+    private final Date date;
+    
+    //TODO: maybe add additional data for user modified analysis
+    
     @ApiModelProperty(value = "extracted tokens")
     private List<Token> tokens = new ArrayList<>();
 
     @ApiModelProperty(value = "Templates for possible queries")
     private List<Template> templates = new ArrayList<>();
 
+    
+    @PersistenceConstructor
+    public Analysis(ObjectId conversationId, Date date) {
+        this(null,conversationId, date);
+    }
+    public Analysis(ObjectId id, ObjectId conversationId, Date date) {
+        this.id = id;
+        this.conversation = conversationId;
+        this.date = date;
+    }
+
+    public ObjectId getId() {
+        return id;
+    }
+    
+    public ObjectId getConversation() {
+        return conversation;
+    }
+    
+    public Date getDate() {
+        return date;
+    }
+    
     public List<Token> getTokens() {
         return tokens;
     }

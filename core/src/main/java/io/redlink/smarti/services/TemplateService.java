@@ -17,6 +17,7 @@
 package io.redlink.smarti.services;
 
 import io.redlink.smarti.api.TemplateBuilder;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Template;
@@ -50,28 +51,18 @@ public class TemplateService {
 
     /**
      * Builds and updates {@link Template}s for the parsed conversation by
-     * considering {@link Token}s from the {@link ConversationMeta#getLastMessageAnalyzed()} 
-     * Message. {@link Token}s with an  {@link Token.Origin#Agent} MUST BE considered independent 
-     * from the {@link Token#getMessageIdx()}
-     * @param con the conversation
-     */
-    public void updateTemplates(Client client, Conversation con) {
-        updateTemplates(client, con, con.getMeta().getLastMessageAnalyzed());
-    }
-    /**
-     * Builds and updates {@link Template}s for the parsed conversation by
      * considering {@link Token}s from {@link Message}s with in index starting
      * of the parsed <code>startMsgIdx</code>. {@link Token}s with an 
      * {@link Token.Origin#Agent} MUST BE considered independent from the {@link Token#getMessageIdx()}
+     * @param client the client to build the templates for 
      * @param con the conversation
-     * @param startMsgIdx the start message index for tokens to be considered when building and updating
-     * templates
+     * @param analysis the analysis results for the conversation
      */
-    public void updateTemplates(Client client, Conversation con, int startMsgIdx) {
+    public void updateTemplates(Client client, Conversation con, Analysis analysis) {
         //TODO: get template configuration for parsed client
-        log.debug("Update QueryTemplates for {} (msgIndx:  {})", con, startMsgIdx);
+        log.debug("Update QueryTemplates for {}", con);
         final long templStart = System.currentTimeMillis();
-        templateBuilders.forEach(builder -> builder.updateTemplate(con, startMsgIdx));
+        templateBuilders.forEach(builder -> builder.updateTemplate(con, analysis));
         log.debug("Created QueryTemplates for {} in {}ms", con, System.currentTimeMillis() - templStart);
     }
 

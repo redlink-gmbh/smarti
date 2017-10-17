@@ -14,29 +14,23 @@
  * limitations under the License.
  *
  */
-package io.redlink.smarti.events;
+
+package io.redlink.smarti.repositories;
 
 import io.redlink.smarti.model.Analysis;
-import io.redlink.smarti.model.Conversation;
 
 /**
- * An event that the processing of a Conversation is complete
+ * Custom repository for Conversations
+ *
+ * @author Sergio Fernandez
  */
-public class ConversationProcessCompleteEvent {
+public interface AnalysisRepositoryCustom {
 
-    private final Conversation conversation;
-    private final Analysis analysis;
+    /**
+     * Replaces the currently 
+     * @param analysis
+     * @return
+     */
+    Analysis updateAnalysis(Analysis analysis);
 
-    public ConversationProcessCompleteEvent(Conversation conversation, Analysis analysis) {
-        this.conversation = conversation;
-        this.analysis = analysis;
-    }
-
-    public Conversation getConversation() {
-        return conversation;
-    }
-    
-    public Analysis getAnalysis() {
-        return analysis;
-    }
 }

@@ -22,6 +22,7 @@ import io.redlink.nlp.api.model.Annotation;
 import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.AnalyzedText.AnalyzedTextBuilder;
 import io.redlink.nlp.model.Section;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
@@ -35,13 +36,18 @@ import static io.redlink.smarti.processing.SmartiAnnotations.*;
 
 public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
     
-    protected ProcessingData(Conversation conversation, AnalyzedText at) {
+    protected ProcessingData(Conversation conversation, Analysis analysis, AnalyzedText at) {
         super(new StringContent(at.getText()), null);
         addAnnotation(AnalyzedText.ANNOTATION, at);
         addAnnotation(CONVERSATION_ANNOTATION, conversation);
+        addAnnotation(ANALYSIS_ANNOTATION, analysis);
     }
     
     public static ProcessingData create(Conversation conversation){
+        return create(conversation, null);
+    }
+    
+    public static ProcessingData create(Conversation conversation, Analysis analysis){
         AnalyzedTextBuilder atb = AnalyzedText.build();
         int numMessages = conversation.getMessages().size();
         for(int i=0;i < numMessages; i++){
@@ -50,7 +56,9 @@ public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
             section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
             section.addAnnotation(MESSAGE_ANNOTATION, message);
         }
-        return new ProcessingData(conversation, atb.create());
+        return new ProcessingData(conversation, 
+                analysis == null ? new Analysis(conversation.getId(), conversation.getLastModified()) : analysis, 
+                atb.create());
     }
     /**
      * Shorthand for {@link #getAnnotation(Annotation)} with {@link #CONVERSATION_ANNOTATION}

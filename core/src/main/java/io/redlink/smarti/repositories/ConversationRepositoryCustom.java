@@ -64,7 +64,7 @@ public interface ConversationRepositoryCustom {
 
     Message findMessage(ObjectId conversationId, String messageId);
 
-    Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data);
+    Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data);
 
     boolean exists(ObjectId conversationId, String messageId);
 }

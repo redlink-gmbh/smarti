@@ -64,7 +64,7 @@ public class QueryBuilderService {
         }
     }
 
-    public void buildQueries(Client client, Conversation conversation) {
+    public void buildQueries(Client client, Conversation conversation, Analysis analysis) {
         if(conversation == null){
             return;
         }
@@ -73,11 +73,11 @@ public class QueryBuilderService {
 
         Configuration clientConfig = confService.getClientConfiguration(conversation.getOwner());
 
-        buildQueries(clientConfig, conversation);
+        buildQueries(clientConfig, conversation, analysis);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void buildQueries(Configuration config, Conversation conversation) {
+    public void buildQueries(Configuration config, Conversation conversation, Analysis analysis) {
         if(config == null){
             throw new NullPointerException("parsed config MUST NOT be NULL!");
         }
@@ -85,7 +85,7 @@ public class QueryBuilderService {
         //retrieve the states for the queries
         final Map<Integer,Map<String,State>> queryStates = new HashMap<>();
         final AtomicInteger idx = new AtomicInteger();
-        conversation.getTemplates().forEach(t -> {
+        analysis.getTemplates().forEach(t -> {
             final Map<String,State> templateQueryStates = new HashMap<>();
             t.getQueries().stream()
                 .filter(q -> q.getCreator() != null)
@@ -104,7 +104,7 @@ public class QueryBuilderService {
             for(ComponentConfiguration cc : builderConfigs){
                 log.trace("build queries [{} | {} | {}]", queryBuilder, cc, conversation);
                 try {
-                    queryBuilder.buildQuery(conversation, cc);
+                    queryBuilder.buildQuery(conversation, analysis, cc);
                 } catch (RuntimeException e) {
                     log.warn("Failed to build Queries using {} with {} for {} ({} - {})",
                             queryBuilder, cc, conversation, e.getClass().getSimpleName(), e.getMessage());
@@ -115,7 +115,7 @@ public class QueryBuilderService {
 
         //recover the state of known queries
         idx.set(0); //rest the template index
-        conversation.getTemplates().forEach(t -> {
+        analysis.getTemplates().forEach(t -> {
             final Map<String,State> templateQueryStates = queryStates.get(Integer.valueOf(idx.getAndIncrement()));
             t.getQueries().stream().forEach(q -> {
                 State state = templateQueryStates.get(q.getCreator());

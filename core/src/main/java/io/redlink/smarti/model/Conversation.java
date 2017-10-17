@@ -30,6 +30,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -63,10 +64,10 @@ public class Conversation {
     private User user = new User(); // TODO: needs discussion for REISEBUDDY-28
 
     @ApiModelProperty(required = true, value = "List of Messages")
-    private List<Message> messages = new ArrayList<>();
+    private final List<Message> messages = new LinkedList<>();
 
-    @ApiModelProperty(required = true, value = "the analysis results")
-    private Analysis analysis = new Analysis();
+//    @ApiModelProperty(required = true, value = "the analysis results")
+//    private Analysis analysis = new Analysis();
 
     @ApiModelProperty(value = "conversation context")
     private Context context = new Context();
@@ -141,48 +142,12 @@ public class Conversation {
         this.user = user;
     }
 
+    /**
+     * Read-/writeable list of {@link Message}s
+     * @return the messages of this conversation
+     */
     public List<Message> getMessages() {
         return messages;
-    }
-
-    public void setMessages(List<Message> messages) {
-        this.messages = messages;
-    }
-
-    public Analysis getAnalysis() {
-        return analysis;
-    }
-
-    public void setAnalysis(Analysis analysis) {
-        this.analysis = analysis;
-    }
-
-    /**
-     * @deprecated use {@link Analysis#getTokens()}
-     */
-    @Deprecated
-    @JsonIgnore
-    public List<Token> getTokens() {
-        return analysis.getTokens();
-    }
-
-    @Deprecated
-    public void setTokens(List<Token> tokens) {
-        this.analysis.setTokens(tokens);
-    }
-
-    /**
-     * @deprecated use {@link Analysis#getTemplates()}
-     */
-    @Deprecated
-    @JsonIgnore
-    public List<Template> getTemplates() {
-        return analysis.getTemplates();
-    }
-
-    @Deprecated
-    public void setQueryTemplates(List<Template> queryTemplates) {
-        this.analysis.setTemplates(queryTemplates);
     }
 
     public Context getContext() {

@@ -33,7 +33,7 @@ import java.util.Map;
  * A message - part of the communication between Customer and Agent
  */
 @ApiModel
-public class Message implements Comparable<Message> {
+public class Message {
 
     public enum Origin {
         User,
@@ -59,6 +59,14 @@ public class Message implements Comparable<Message> {
     @JsonInclude(content=Include.NON_EMPTY) //exclude if empty
     private final Map<String, String> metadata = new HashMap<>();
 
+    public Message() {
+        this(null);
+    }
+    
+    public Message(String id) {
+        this.id = id;
+    }
+    
     public String getId() {
         return id;
     }
@@ -120,8 +128,28 @@ public class Message implements Comparable<Message> {
     }
 
     @Override
-    public int compareTo(Message other) {
-        return time.compareTo(other.time);
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Message other = (Message) obj;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        return true;
     }
 
     @Override

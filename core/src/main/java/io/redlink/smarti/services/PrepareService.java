@@ -19,6 +19,7 @@ package io.redlink.smarti.services;
 
 import io.redlink.nlp.api.ProcessingException;
 import io.redlink.nlp.api.Processor;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.processing.ProcessingData;
@@ -124,13 +125,12 @@ public class PrepareService {
         _processors.clear();
     }
     
-    public void prepare(Client client, Conversation conversation) {
+    public Analysis prepare(Client client, Conversation conversation) {
+        
+        Analysis analysis = new Analysis(conversation.getId(), conversation.getLastModified());
         //TODO: get pipeline and processor configuration for the parsed client
         log.debug("Preparing query for {}", conversation);
-        while(conversation.getTokens().remove(null)){
-            log.warn("Parsed Conversation {} contained a NULL Token", conversation);
-        }
-        ProcessingData pd = ProcessingData.create(conversation);
+        ProcessingData pd = ProcessingData.create(conversation, analysis);
         final long start = System.currentTimeMillis();
         pipeline.forEach(p -> {
             log.debug(" -> calling {}", p.getClass().getSimpleName());
@@ -142,9 +142,8 @@ public class PrepareService {
                 //TODO: check if this was a required or an optional processor
             }
         });
-        log.debug("prepared Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
-        conversation.getMeta().setLastMessageAnalyzed(conversation.getMessages().size()-1);
-        log.trace("set lastMessageAnalyzed: {}", conversation.getMeta().getLastMessageAnalyzed());
+        log.debug("analysed Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
+        return analysis;
     }
 
     

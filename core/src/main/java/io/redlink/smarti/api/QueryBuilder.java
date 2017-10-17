@@ -90,16 +90,16 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
     }
 
 
-    public final void buildQuery(Conversation conversation, C configuration) {
+    public final void buildQuery(Conversation conversation, Analysis analysis, C configuration) {
         if(conversation == null || configuration == null){
             throw new NullPointerException();
         }
-        conversation.getTemplates().stream()
+        analysis.getTemplates().stream()
                 .filter(t -> t.getState() != State.Rejected)
                 .filter(t -> {
                     final TemplateDefinition def = registry.getTemplate(t);
                     if(def != null){
-                        return def.isValid(t, conversation.getTokens());
+                        return def.isValid(t, analysis.getTokens());
                     } else {
                         log.warn("Missing TemplateDefinition for type '{}' (Template: {})", t.getType(), t.getClass().getName());
                         return false;
@@ -154,16 +154,16 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
      * {@link Template} with the parsed role
      * @param role the role
      * @param template the query template
-     * @param conversation the conversation
+     * @param analysis the analysis results for the current conversation
      * @param tokenTypes the allowed types of the token
      * @return the Token or <code>null</code> if not preset or invalid
      */
-    protected Token getToken(String role, Template template, Conversation conversation, Token.Type...tokenTypes) {
+    protected Token getToken(String role, Template template, Analysis analysis, Token.Type...tokenTypes) {
         Set<Token.Type> types = toTypeSet(tokenTypes);
         final Optional<Token> token = template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
                 .filter(s -> s.getTokenIndex() >= 0)
-                .map(s -> conversation.getTokens().get(s.getTokenIndex()))
+                .map(s -> analysis.getTokens().get(s.getTokenIndex()))
                 .filter(t -> types == null || types.contains(t.getType()))
                 .findAny();
         if (token.isPresent()) {
@@ -178,16 +178,16 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
      * {@link Template} with the parsed role
      * @param role the role
      * @param template the query template
-     * @param conversation the conversation
+     * @param analysis the analysis results of the current conversation
      * @param tokenTypes the allowed types of the tokens
      * @return the Token or <code>null</code> if not preset or invalid
      */
-    protected List<Token> getTokens(String role, Template template, Conversation conversation, Token.Type...tokenTypes) {
+    protected List<Token> getTokens(String role, Template template, Analysis analysis, Token.Type...tokenTypes) {
         final Set<Token.Type> types = toTypeSet(tokenTypes);
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
                 .filter(s -> s.getTokenIndex() >= 0)
-                .map(s -> conversation.getTokens().get(s.getTokenIndex()))
+                .map(s -> analysis.getTokens().get(s.getTokenIndex()))
                 .filter(t -> types == null || types.contains(t.getType()))
                 .collect(Collectors.toList());
     }
@@ -215,16 +215,16 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
      * Check if the template has this role assigned to a (valid) token.
      * @param role the role
      * @param template the query template
-     * @param conversation the conversation
+     * @param analysis the analysis results of the current conversation
      * @param tokenTypes the allowed token type
      * @return {@code true} if the template has a token assigned to the provided role
      */
-    protected boolean hasToken(String role, Template template, Conversation conversation, Token.Type...tokenTypes) {
+    protected boolean hasToken(String role, Template template, Analysis analysis, Token.Type...tokenTypes) {
         final Set<Token.Type> types = toTypeSet(tokenTypes);
         return template.getSlots().stream()
                 .filter(s -> StringUtils.equals(s.getRole(), role))
                 .filter(s -> s.getTokenIndex() >= 0)
-                .map(s -> conversation.getTokens().get(s.getTokenIndex()))
+                .map(s -> analysis.getTokens().get(s.getTokenIndex()))
                 .filter(t -> types == null || types.contains(t.getType()))
                 .findFirst().isPresent();
     }

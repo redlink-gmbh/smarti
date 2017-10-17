@@ -70,9 +70,6 @@ public class ConversationMeta {
     @ApiModelProperty("conversation status")
     private Status status = Status.New;
 
-    @ApiModelProperty(value = "message offset", notes = "offset for the next analysis iteration")
-    private int lastMessageAnalyzed = -1;
-
     private Map<String,List<String>> properties = new HashMap<>();
 
     public Status getStatus() {
@@ -81,14 +78,6 @@ public class ConversationMeta {
 
     public void setStatus(Status status) {
         this.status = status;
-    }
-
-    public int getLastMessageAnalyzed() {
-        return lastMessageAnalyzed;
-    }
-
-    public void setLastMessageAnalyzed(int lastMessageAnalyzed) {
-        this.lastMessageAnalyzed = lastMessageAnalyzed;
     }
 
     @JsonAnyGetter

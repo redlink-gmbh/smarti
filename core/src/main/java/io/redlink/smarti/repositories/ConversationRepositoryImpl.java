@@ -225,7 +225,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+    public Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
         final Query query = new Query(Criteria.where("_id").is(conversationId))
                 .addCriteria(Criteria.where("messages._id").is(messageId));
         final Update update = new Update()
@@ -235,7 +235,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
         if (writeResult.getN() < 1) return null;
 
-        return findMessage(conversationId, messageId);
+        return mongoTemplate.findById(conversationId, Conversation.class);
     }
 
     @Override
