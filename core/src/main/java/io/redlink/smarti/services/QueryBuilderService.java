@@ -126,18 +126,18 @@ public class QueryBuilderService {
         });
     }
 
-    public SearchResult<? extends Result> execute(Client client, String creator, Template template, Conversation conversation) throws IOException {
-        return execute(client, creator, template, conversation, new LinkedMultiValueMap<>());
+    public SearchResult<? extends Result> execute(Client client, String creator, Template template, Conversation conversation, Analysis analysis) throws IOException {
+        return execute(client, creator, template, conversation, analysis, new LinkedMultiValueMap<>());
     }
 
-    public SearchResult<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
+    public SearchResult<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> params) throws IOException {
         Configuration conf = confService.getClientConfiguration(client);
         if(conf == null){
             throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
         }
         final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> creator = getQueryBuilder(creatorString, conf);
         if (creator != null) {
-            return creator.getKey().execute(creator.getValue(), template, conversation, params);
+            return creator.getKey().execute(creator.getValue(), template, conversation, analysis, params);
         } else {
             throw new NotFoundException(QueryBuilder.class, creatorString, "QueryBuilder for creator '"+ creatorString +"' not present");
         }

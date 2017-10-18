@@ -246,7 +246,7 @@ public class ConversationService {
 
 
     public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
-        return queryBuilderService.execute(client, creator, template, conversation, params);
+        return queryBuilderService.execute(client, creator, template, conversation, getOrProcessAnalysis(client, conversation), params);
     }
 
 

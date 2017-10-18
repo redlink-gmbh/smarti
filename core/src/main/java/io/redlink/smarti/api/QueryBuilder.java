@@ -229,10 +229,10 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
                 .findFirst().isPresent();
     }
 
-    public final SearchResult<? extends Result> execute(C config, Template template, Conversation conversation) throws IOException {
-        return execute(config, template, conversation, new LinkedMultiValueMap<>());
+    public final SearchResult<? extends Result> execute(C config, Template template, Conversation conversation, Analysis analysis) throws IOException {
+        return execute(config, template, conversation, analysis, new LinkedMultiValueMap<>());
     }
-    public SearchResult<? extends Result> execute(C config, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
+    public SearchResult<? extends Result> execute(C config, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> params) throws IOException {
         return new SearchResult<>();
     }
 
