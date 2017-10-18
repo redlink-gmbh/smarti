@@ -17,10 +17,21 @@
           <input ng-change="saveClient(client)" type="checkbox" ng-model="client.data.defaultClient">
         </td>
         <td>
-          <button class="btn btn-default" ng-click="manageConversations(client.data.id)">conversations</button>
-          <button class="btn btn-primary" ng-click="edit(client.data.id)">edit</button>
-          <button class="btn btn-default" ng-click="clone(client.data.id)">clone</button>
-          <button class="btn btn-danger" ng-click="delete(client)">delete</button>
+          <button class="btn btn-default"
+                  title="Manage Conversations"
+                  ng-click="manageConversations(client.data.id)"><i class="glyphicon glyphicon-list"></i></button>
+          <button class="btn btn-default"
+                  title="Manage Security"
+                  ng-click="manageSecurity(client.data.id)"><i class="glyphicon glyphicon-lock"></i></button>
+          <button class="btn btn-primary"
+                  title="Edit Client Configuration"
+                  ng-click="edit(client.data.id)"><i class="glyphicon glyphicon-edit"></i></button>
+          <button class="btn btn-default"
+                  title="Clone Client"
+                  ng-click="clone(client.data.id)"><i class="glyphicon glyphicon-duplicate"></i></button>
+          <button class="btn btn-danger"
+                  title="Delete Client"
+                  ng-click="delete(client)"><i class="glyphicon glyphicon-trash"></i></button>
         </td>
     </td>
     </tr>

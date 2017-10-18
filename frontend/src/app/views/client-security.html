@@ -1,0 +1,67 @@
+<!--
+  ~ Copyright 2017 Redlink GmbH
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
+<div>
+  <div class="clearfix">
+    <div class="pull-right">
+      <button class="btn btn-default" ng-click="$ctrl.backToList()">Back to List</button>
+    </div>
+    <h2><i class="glyphicon glyphicon-lock"></i> Security / Access Settings for {{client.name}} <small>{{client.id}}</small></h2>
+  </div>
+  <div id="access-tokens">
+    <h3>
+      Access Tokens
+      <button class="btn btn-success btn-sm"
+              ng-click="$ctrl.createAuthToken()">
+        <i class="glyphicon glyphicon-plus"></i></button>
+    </h3>
+    <div class="list-group">
+      <div class="list-group-item"
+           ng-repeat="token in authTokens track by token.id">
+          <span>
+            <span ng-if="!token.editing">
+              <strong ng-bind="token.label">rocket.chat</strong>
+              <i ng-click="token.editing = true" class="glyphicon glyphicon-edit"></i>
+            </span>
+            <span ng-if="token.editing">
+              <input type="text" ng-model="token.label">
+              <i ng-click="$ctrl.updateAuthToken(token)" class="glyphicon glyphicon-floppy-disk"></i>
+            </span>
+          </span>
+        <span ng-bind="token.created | date:'medium'">gestern</span>
+        <span>
+            <code><span ng-bind="token.token"></span></code>
+          </span>
+        <button class="btn btn-default btn-sm"
+                ng-click="$ctrl.revokeAuthToken(token)">
+          <i class="glyphicon glyphicon-trash"></i>
+        </button>
+      </div>
+      <div ng-if="!authTokens.length > 0">
+        No Access-Tokens! Maybe you want to <a ng-click="$ctrl.createAuthToken()">create one</a>?
+      </div>
+    </div>
+  </div>
+  <div id="users">
+    <h3>Users</h3>
+    <div ng-if="!users.length > 0">
+      No Users! Maybe you want to <a ng-click="">create one</a>?
+    </div>
+  </div>
+</div>
+
+

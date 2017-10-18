@@ -8,37 +8,6 @@
         <label for="description">Description:</label>
         <input type="text" class="form-control" id="description" ng-model="client.data.description">
     </div>
-    <div>
-      <h3>
-        Access Tokens
-        <button class="btn btn-success btn-sm"
-                ng-click="createAuthToken()">
-          <i class="glyphicon glyphicon-plus"></i></button>
-      </h3>
-      <div class="list-group">
-        <div class="list-group-item"
-          ng-repeat="token in authTokens track by token.id">
-          <span>
-            <span ng-if="!token.editing">
-              <strong ng-bind="token.label">rocket.chat</strong>
-              <i ng-click="token.editing = true" class="glyphicon glyphicon-edit"></i>
-            </span>
-            <span ng-if="token.editing">
-              <input type="text" ng-model="token.label">
-              <i ng-click="updateAuthToken(token)" class="glyphicon glyphicon-floppy-disk"></i>
-            </span>
-          </span>
-          <span ng-bind="token.created | date:'medium'">gestern</span>
-          <span>
-            <code><span ng-bind="token.token"></span></code>
-          </span>
-          <button class="btn btn-default btn-sm"
-                  ng-click="revokeAuthToken(token)">
-            <i class="glyphicon glyphicon-minus"></i>
-          </button>
-        </div>
-      </div>
-    </div>
 </div>
 <div class="config-part">
     <h2>Query Builders</h2>

@@ -51,6 +51,16 @@ angular
           }
         }
       })
+      .when('/client/:clientId/security', {
+        templateUrl: 'views/client-security.html',
+        controller: 'ClientSecurityCtrl',
+        controllerAs: '$ctrl',
+        resolve: {
+          client: function ($route, ClientService) {
+            return ClientService.getById($route.current.params.clientId);
+          }
+        }
+      })
       .when('/client/:clientId/conversations', {
         templateUrl: 'views/conversations.html',
         controller: 'ConversationCtrl',
