@@ -16,9 +16,13 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.redlink.utils.HashUtils;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -27,32 +31,50 @@ import java.util.Date;
 @Document
 public class AuthToken {
 
+    public static final String TOKEN_SEPARATOR = "/";
+
     @Id
-    private String token;
+    private final String id;
 
     @JsonIgnore
     @Indexed
-    private ObjectId clientId;
+    private final ObjectId clientId;
+
+    @JsonIgnore
+    private String secret;
+
+    @Indexed(unique = true, sparse = true)
+    private String token;
 
     private String label;
 
     private Date created = new Date();
 
+    public AuthToken(ObjectId clientId) {
+        this(null, clientId);
+    }
+
+    @JsonCreator
+    private AuthToken(@JsonProperty("id") String id) {
+        this(id, null);
+    }
+
+    @PersistenceConstructor
+    private AuthToken(String id, ObjectId clientId) {
+        this.id = id;
+        this.clientId = clientId;
+    }
+
+    public String getId() {
+        return id;
+    }
+
     public String getToken() {
         return token;
     }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
-
     public ObjectId getClientId() {
         return clientId;
-    }
-
-    public AuthToken setClientId(ObjectId clientId) {
-        this.clientId = clientId;
-        return this;
     }
 
     public String getLabel() {
@@ -70,6 +92,12 @@ public class AuthToken {
 
     public AuthToken setCreated(Date created) {
         this.created = created;
+        return this;
+    }
+
+    public AuthToken setSecret(String secret) {
+        this.secret = secret;
+        this.token = HashUtils.sha1(getId()) + TOKEN_SEPARATOR + secret;
         return this;
     }
 }

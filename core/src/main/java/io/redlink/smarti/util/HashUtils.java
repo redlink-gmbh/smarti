@@ -23,7 +23,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
+ * @deprecated use {@link io.redlink.utils.HashUtils} instead.
  */
+@Deprecated
 public class HashUtils {
 
     private HashUtils() {

@@ -49,7 +49,7 @@ angular.module('smartiApp')
 
     this.updateAuthToken = function (client, token) {
       return $http
-        .post(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.token, token)
+        .put(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.id, token)
         .then(function (response) {
           return response.data;
         });
@@ -57,7 +57,7 @@ angular.module('smartiApp')
 
     this.revokeAuthToken = function (client, token) {
       return $http
-        .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.token)
+        .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.id)
         .then(function (response) {
           return response.data;
         });

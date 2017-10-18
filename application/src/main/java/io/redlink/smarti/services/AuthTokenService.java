@@ -18,6 +18,7 @@ package io.redlink.smarti.services;
 
 import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.repositories.AuthTokenRepository;
+import io.redlink.utils.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
@@ -40,12 +41,14 @@ public class AuthTokenService {
     public AuthToken createAuthToken(ObjectId clientId, String label) {
         label = StringUtils.defaultString(label, "new-token");
 
-        return authTokenRepository.save(new AuthToken().setLabel(label).setClientId(clientId));
+        final AuthToken authToken = authTokenRepository.save(new AuthToken(clientId).setLabel(label));
+        authToken.setSecret(RandomUtils.nextString(8));
+        return authTokenRepository.save(authToken);
     }
 
     public boolean deleteAuthToken(String token, ObjectId clientId) {
-        if (authTokenRepository.existsByTokenAndAndClientId(token, clientId)) {
-            authTokenRepository.deleteByTokenAndClientId(token, clientId);
+        if (authTokenRepository.existsByIdAndAndClientId(token, clientId)) {
+            authTokenRepository.deleteByIdAndClientId(token, clientId);
             return true;
         } else {
             return false;
@@ -53,7 +56,7 @@ public class AuthTokenService {
     }
 
     public AuthToken updateAuthToken(String tokenId, ObjectId userId, AuthToken token) {
-        final AuthToken stored = authTokenRepository.findOneByTokenAndClientId(tokenId, userId);
+        final AuthToken stored = authTokenRepository.findOneByIdAndClientId(tokenId, userId);
         if (token == null) return stored;
         if (stored == null) {
             return null;

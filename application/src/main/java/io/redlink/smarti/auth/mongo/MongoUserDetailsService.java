@@ -20,7 +20,7 @@ import com.google.common.collect.Collections2;
 import com.mongodb.WriteResult;
 import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.SecurityConfigurationProperties;
-import io.redlink.smarti.util.HashUtils;
+import io.redlink.utils.HashUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
@@ -128,7 +128,7 @@ public class MongoUserDetailsService implements UserDetailsService {
 
         final Date now = new Date(),
                 expiry = DateUtils.addHours(now, 24);
-        final String token = HashUtils.sha256sum(UUID.randomUUID() + userName);
+        final String token = HashUtils.sha256(UUID.randomUUID() + userName);
         final PasswordRecovery recovery = new PasswordRecovery(token, now, expiry);
 
         final WriteResult result = updateMongoUser(userName, Update.update(FIELD_RECOVERY, recovery));

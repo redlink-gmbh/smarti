@@ -74,6 +74,18 @@ angular.module('smartiApp')
         });
     };
 
+    $scope.updateAuthToken = function (token) {
+      ClientService.updateAuthToken(client, token)
+        .then(function (updatedToken) {
+          $scope.authTokens = $scope.authTokens.map(function (t) {
+            if (t.id === updatedToken.id) {
+              return updatedToken;
+            }
+            return t;
+          })
+        });
+    };
+
     $scope.editorOptions = {
       lineWrapping : true,
       lineNumbers: true,

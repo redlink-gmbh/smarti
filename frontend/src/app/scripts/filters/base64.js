@@ -14,21 +14,13 @@
  * limitations under the License.
  *
  */
-package io.redlink.smarti.repositories;
 
-import io.redlink.smarti.model.AuthToken;
-import org.bson.types.ObjectId;
-import org.springframework.data.repository.CrudRepository;
+'use strict';
 
-import java.util.List;
-
-public interface AuthTokenRepository extends CrudRepository<AuthToken, String>, AuthTokenRepositoryCustom {
-
-    List<AuthToken> findByClientId(ObjectId clientId);
-
-    boolean existsByIdAndAndClientId(String id, ObjectId clientId);
-
-    void deleteByIdAndClientId(String id, ObjectId clientId);
-
-    AuthToken findOneByIdAndClientId(String id, ObjectId clientId);
-}
+angular.module('smartiApp')
+  .filter("base64enc", function () {
+    return btoa;
+  })
+  .filter("base64dec", function () {
+    return atob;
+  });
