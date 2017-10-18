@@ -61,11 +61,18 @@ public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
                 atb.create());
     }
     /**
-     * Shorthand for {@link #getAnnotation(Annotation)} with {@link #CONVERSATION_ANNOTATION}
+     * Shorthand for {@link #getAnnotation(Annotation)} with {@link SmartiAnnotations#CONVERSATION_ANNOTATION}
      * @return the Conversation for this {@link ProcessingData}
      */
     public final Conversation getConversation(){
         return getAnnotation(CONVERSATION_ANNOTATION);
+    }
+    /**
+     * Shorthand for {@link #getAnnotation(Annotation)} with {@link SmartiAnnotations#ANALYSIS_ANNOTATION}
+     * @return the Analysis for this {@link ProcessingData}
+     */
+    public final Analysis getAnalysis(){
+        return getAnnotation(ANALYSIS_ANNOTATION);
     }
     
     /**

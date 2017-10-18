@@ -89,7 +89,7 @@ public class ConversationAdminWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("messageId") String messageId) {
 
-        if (conversationService.deleteMessage(conversationId, messageId)) {
+        if (conversationService.deleteMessage(conversationId, messageId, false)) {
             return getConversation(conversationId);
         } else {
             return ResponseEntity.notFound().build();
@@ -105,7 +105,7 @@ public class ConversationAdminWebservice {
 
         // Make sure the messageId does not change
         updatedMessage.setId(messageId);
-        final Conversation updatedConversation = conversationService.updateMessage(conversationId, updatedMessage);
+        final Conversation updatedConversation = conversationService.updateMessage(conversationId, updatedMessage, false);
 
         if (Objects.nonNull(updatedConversation)) {
             return ResponseEntity.ok(updatedConversation);

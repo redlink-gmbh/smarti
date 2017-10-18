@@ -108,7 +108,7 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
                 .filter(this::acceptTemplate)
                 .forEach(t -> {
                     log.trace("build query for {} and {} with {}", t , conversation, this);
-                    doBuildQuery(configuration, t, conversation);
+                    doBuildQuery(configuration, t, conversation, analysis);
                 });
     }
 
@@ -121,7 +121,7 @@ public abstract class QueryBuilder<C extends ComponentConfiguration> implements 
      * @param intent the template 
      * @param conversation the conversation
      */
-    protected abstract void doBuildQuery(C config, Template intent, Conversation conversation);
+    protected abstract void doBuildQuery(C config, Template intent, Conversation conversation, Analysis analysis);
     
     /**
      * Getter for the name of this QueryBuilder implementation (MUST BE a slug name) and unique to all

@@ -18,6 +18,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
@@ -30,6 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.bson.types.ObjectId;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -83,6 +85,8 @@ public class ConversationSolrIT {
     @Autowired
     private ConversationIndexer conversationIndexer;
     
+    private ObjectId owner = new ObjectId();
+    
     @Before
     public void cleanSolr() throws Exception {
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
@@ -96,7 +100,7 @@ public class ConversationSolrIT {
     public void testEventPropagation() throws Exception {
         long docCount = countDocs();
 
-        final Conversation conversation = buildConversation("Servus Hasso, wie geht's denn so?");
+        final Conversation conversation = buildConversation(owner, "Servus Hasso, wie geht's denn so?");
 
         storeService.store(conversation);
         Thread.sleep(2 * conversationIndexer.getCommitWithin());
@@ -112,13 +116,13 @@ public class ConversationSolrIT {
     @Test
     public void testMlt() throws Exception {
 
-        final Conversation conversation1 = buildConversation("Das ist ein test");
-        final Conversation conversation2 = buildConversation("Was anderes");
+        final Conversation conversation1 = buildConversation(owner, "Das ist ein test");
+        final Conversation conversation2 = buildConversation(owner, "Was anderes");
 
         conversation1.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversation2.getMeta().setStatus(ConversationMeta.Status.Complete);
 
-        final Conversation conversation3 = buildConversation("Das ist ein test");
+        final Conversation conversation3 = buildConversation(owner, "Das ist ein test");
 
         storeService.store(conversation1);
         storeService.store(conversation2);
@@ -129,7 +133,7 @@ public class ConversationSolrIT {
 
         ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, null);
 
-        hassoMlt.doBuildQuery(null, null, conversation3);
+        hassoMlt.doBuildQuery(null, null, conversation3, new Analysis(conversation3.getId(), conversation3.getLastModified()));
 
     }
 
@@ -140,8 +144,9 @@ public class ConversationSolrIT {
         }
     }
 
-    private Conversation buildConversation(String content) {
-        final Conversation conversation = new Conversation();
+    private Conversation buildConversation(ObjectId owner, String content) {
+        final Conversation conversation = new Conversation(new ObjectId(), owner);
+        conversation.setLastModified(new Date());
         final Message m = new Message();
         m.setTime(new Date());
         m.setContent(content);

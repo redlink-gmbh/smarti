@@ -86,15 +86,12 @@ public class PosCollectorAndNegationHandlerTest {
     private static final Conversation initConversation(int index) {
         Conversation c = new Conversation();
         c.setMeta(new ConversationMeta());
-        c.getMeta().setLastMessageAnalyzed(-1);
         c.getMeta().setStatus(ConversationMeta.Status.New);
-        List<Message> messages = new ArrayList<>();
         log.trace("Conversation: ");
         for(MsgData md : CONTENTS.get(index).getLeft()){
             log.trace("    {}", md);
-            messages.add(md.toMessage());
+            c.getMessages().add(md.toMessage());
         }
-        c.setMessages(messages);
         c.setUser(new User());
         c.getUser().setDisplayName("Test Dummy");
         c.getUser().setPhoneNumber("+43210123456");
@@ -139,11 +136,11 @@ public class PosCollectorAndNegationHandlerTest {
     private void assertPosProcessingResults(ProcessingData processingData, String[] expected, Hint[] hints) {
         Set<String> expectedSet = new HashSet<>(Arrays.asList(expected)); 
         Conversation conv = processingData.getConversation();
-        Assert.assertFalse(conv.getTokens().isEmpty());
-        for(Token token : conv.getTokens()){
+        Analysis analysis = processingData.getAnalysis();
+        Assert.assertFalse(analysis.getTokens().isEmpty());
+        for(Token token : analysis.getTokens()){
             log.debug("Token(idx: {}, span[{},{}], type: {}): {}", token.getMessageIdx(), token.getStart(), token.getEnd(), token.getType(), token.getValue());
             Assert.assertNotNull(token.getType());
-            Assert.assertTrue(conv.getMeta().getLastMessageAnalyzed() < token.getMessageIdx());
             Assert.assertTrue(conv.getMessages().size() > token.getMessageIdx());
             Message message = conv.getMessages().get(token.getMessageIdx());
             Assert.assertTrue(message.getOrigin() == Origin.User);

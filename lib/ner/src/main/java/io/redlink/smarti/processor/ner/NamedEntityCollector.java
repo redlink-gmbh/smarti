@@ -27,6 +27,7 @@ import io.redlink.nlp.model.ner.NerTag;
 import io.redlink.nlp.model.pos.PosSet;
 import io.redlink.nlp.model.pos.PosTag;
 import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Message.Origin;
@@ -41,6 +42,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.redlink.nlp.model.NlpAnnotations.NER_ANNOTATION;
+import static io.redlink.smarti.processing.SmartiAnnotations.ANALYSIS_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.MESSAGE_IDX_ANNOTATION;
 
@@ -105,8 +107,19 @@ public class NamedEntityCollector extends Processor {
             log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
             return;
         }
-        List<Message> messages = conv.getMessages();
-        int lastAnalyzed = conv.getMeta().getLastMessageAnalyzed();
+        Analysis analysis = processingData.getAnnotation(ANALYSIS_ANNOTATION);
+        if(analysis == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, ANALYSIS_ANNOTATION);
+            return;
+        }
+        
+        List<Message> messages = conv.getMessages();        
+
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int lastAnalyzed = -1;
+
         Iterator<Section> sections = at.getSections();
         while(sections.hasNext()){
             Section section = sections.next();
@@ -115,7 +128,7 @@ public class NamedEntityCollector extends Processor {
                 if(msgIdx > lastAnalyzed && msgIdx < messages.size()){
                     Message message = messages.get(msgIdx);
                     if(Origin.User == message.getOrigin()){
-                        conv.getTokens().addAll(createNamedEntityTokens(section, msgIdx, message));
+                        analysis.getTokens().addAll(createNamedEntityTokens(section, msgIdx, message));
                     }
                 }
             } else { //invalid section

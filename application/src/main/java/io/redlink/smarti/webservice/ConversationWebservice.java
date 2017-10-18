@@ -205,7 +205,9 @@ public class ConversationWebservice {
 
         if (conversationService.exists(conversationId)) {
             return asyncExecutionService.execute(
-                    () -> conversationService.updateConversationField(conversationId, field, data),
+                    //NOTE: for now we deactivate processing for field updates to prevent muliple processing runs on
+                    //      multiple field updates
+                    () -> conversationService.updateConversationField(conversationId, field, data, false),
                     HttpStatus.OK,
                     callback,
                     conversationId, buildConversationURI(uriBuilder, conversationId));
@@ -319,7 +321,8 @@ public class ConversationWebservice {
         // TODO(westei): check that the conversation is re-analyzed/processed
 
         return asyncExecutionService.execute(() -> {
-                    conversationService.updateMessage(conversationId, message);
+                    //NOTE: here we do processing as one will want the changed results
+                    conversationService.updateMessage(conversationId, message, true);
                     return conversationService.getMessage(conversationId, message.getId());
                 },
                 HttpStatus.OK, callback, messageId, buildMessageURI(uriBuilder, conversationId, messageId));
@@ -345,11 +348,10 @@ public class ConversationWebservice {
             return ResponseEntity.notFound().build();
         }
 
-        // TODO(westei): check that the conversation is re-analyzed/processed
-
         return asyncExecutionService.execute(
                 () -> {
-                    final boolean b = conversationService.deleteMessage(conversationId, messageId);
+                    //NOTE: for now we enable processing after deleting a message
+                    final boolean b = conversationService.deleteMessage(conversationId, messageId, true);
                     if (b) return conversationService.getConversation(conversationId);
                     return null;
                 },

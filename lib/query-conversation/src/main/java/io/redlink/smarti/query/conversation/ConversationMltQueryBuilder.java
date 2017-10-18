@@ -17,6 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.State;
@@ -86,7 +87,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected ConversationMltQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation) {
+    protected ConversationMltQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         if (conversation.getMessages().isEmpty()) return null;
 
         // FIXME: compile mlt-request content
@@ -110,8 +111,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     }
 
     @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
-        final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation);
+    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
+        final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation, analysis);
         if (mltQuery == null) {
             return null;
         }
