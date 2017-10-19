@@ -16,19 +16,27 @@
  */
 package io.redlink.smarti.webservice;
 
+import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
+import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.services.AccountService;
+import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(value = "auth", produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
@@ -38,14 +46,17 @@ public class UserWebservice {
     private final AccountService accountService;
     private final EmailValidator emailValidator = EmailValidator.getInstance();
 
+    private final AuthenticationService authenticationService;
+
     @Autowired
-    public UserWebservice(AccountService accountService) {
+    public UserWebservice(AccountService accountService, AuthenticationService authenticationService) {
         this.accountService = accountService;
+        this.authenticationService = authenticationService;
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    public Principal getUser(Principal user) {
-        return (user);
+    public AuthUser getUser(@AuthenticationPrincipal AttributedUserDetails user) {
+        return new AuthUser(user);
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
@@ -63,7 +74,7 @@ public class UserWebservice {
 
     @RequestMapping(path = "{username:[^/]+}/recover", method = RequestMethod.POST)
     public ResponseEntity<?> recoverPassword(
-            @PathVariable("username") String userId,
+            @PathVariable("username") String username,
             @RequestBody(required = false) Map<String,String> data
     ) {
         final String recoveryToken = data.get("token"),
@@ -71,17 +82,38 @@ public class UserWebservice {
 
         if (StringUtils.isNotBlank(recoveryToken)) {
             if (StringUtils.isNotBlank(newPassword)) {
-                boolean success = accountService.completePasswordRecovery(userId, newPassword, recoveryToken);
+                boolean success = accountService.completePasswordRecovery(username, newPassword, recoveryToken);
                 if (success) {
                     return ResponseEntity.ok().build();
                 }
             }
         } else {
-            accountService.startPasswordRecovery(userId);
+            accountService.startPasswordRecovery(username);
             return ResponseEntity.accepted().build();
         }
 
         return ResponseEntity.badRequest().build();
+    }
+
+    @RequestMapping(path = "{username}/password", method = RequestMethod.PUT)
+    public ResponseEntity<?> setPassword(
+            @AuthenticationPrincipal UserDetails authentication,
+            @PathVariable("username") String username,
+            @RequestBody Map<String,String> data
+    ) {
+        // Access only for ADMIN or @me
+        if (authenticationService.hasUsername(authentication, username) && authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
+            throw new AccessDeniedException("No access for " + authentication);
+        }
+        final String newPassword = data.get("password");
+
+        if (StringUtils.isNotBlank(newPassword)) {
+            accountService.setPassword(username, newPassword);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+
     }
 
     @RequestMapping("check")
@@ -89,4 +121,51 @@ public class UserWebservice {
         return !accountService.hasAccount(username);
     }
 
+    private static class AuthUser {
+        private String name, displayName, email;
+        private Set<String> roles;
+
+        public AuthUser(AttributedUserDetails userDetails) {
+            name = userDetails.getUsername();
+            roles = userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(r -> StringUtils.removeStart(r,"ROLE_"))
+                    .collect(Collectors.toSet());
+
+            displayName = userDetails.getAttribute(SmartiUser.ATTR_DISPLAY_NAME);
+            email = userDetails.getAttribute(SmartiUser.ATTR_EMAIL);
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public void setDisplayName(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public Set<String> getRoles() {
+            return roles;
+        }
+
+        public void setRoles(Set<String> roles) {
+            this.roles = roles;
+        }
+    }
 }

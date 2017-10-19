@@ -24,11 +24,6 @@ angular.module('smartiApp')
       $scope.defaultConfiguration = configuration;
     });
 
-    ClientService.loadAuthTokens(client)
-      .then(function (tokens) {
-        $scope.authTokens = tokens;
-      });
-
     $scope.saveClient = function() {
        $scope.client.save().then(function(client){
          $scope.client = client;

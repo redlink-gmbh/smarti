@@ -14,22 +14,22 @@
  * limitations under the License.
  *
  */
-'use strict';
+package io.redlink.smarti.repositories;
 
-angular
-  .module('smartiApp')
-  .config(function ($httpProvider) {
-    var user = 'admin',
-      passwd = user;
+import io.redlink.smarti.model.SmartiUser;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
-    $httpProvider.defaults.useXDomain = true;
-    $httpProvider.defaults.withCredentials = true;
+public class UserRepositoryImpl implements UserRepositoryCustom {
 
-  })
-  .run(function ($rootScope, UserService) {
-    var user = 'foo',
-      passwd = user;
-    return UserService.login(user, passwd);
+    private final MongoTemplate mongoTemplate;
 
-  })
-;
+    public UserRepositoryImpl(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
+    }
+
+    @Override
+    public SmartiUser create(SmartiUser user) {
+        mongoTemplate.insert(user);
+        return mongoTemplate.findById(user.getUsername(), SmartiUser.class);
+    }
+}

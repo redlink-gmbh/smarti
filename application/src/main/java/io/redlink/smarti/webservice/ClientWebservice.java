@@ -5,18 +5,19 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.services.AuthTokenService;
-import io.redlink.smarti.services.ClientService;
-import io.redlink.smarti.services.ConfigurationService;
+import io.redlink.smarti.services.*;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -33,22 +34,36 @@ import java.util.Map;
 @Api("client")
 public class ClientWebservice {
 
-    @Autowired
-    ClientService clientService;
+    private final ClientService clientService;
+
+    private final UserService userService;
+
+    private final ObjectMapper objectMapper;
+
+    private final ConfigurationService configService;
+
+    private final AuthTokenService authTokenService;
+
+    private final AuthenticationService authenticationService;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    public ClientWebservice(ClientService clientService, UserService userService, ObjectMapper objectMapper, ConfigurationService configService, AuthTokenService authTokenService, AuthenticationService authenticationService) {
+        this.clientService = clientService;
+        this.userService = userService;
+        this.objectMapper = objectMapper;
+        this.configService = configService;
+        this.authTokenService = authTokenService;
+        this.authenticationService = authenticationService;
+    }
 
-    @Autowired
-    private ConfigurationService configService;
-
-    @Autowired
-    private AuthTokenService authTokenService;
-
-    @ApiOperation(value = "get a client", response = Client.class, responseContainer = "List")
+    @ApiOperation(value = "list clients", response = Client.class, responseContainer = "List")
     @RequestMapping(method = RequestMethod.GET)
-    public Iterable<Client> listClients() throws IOException {
-        return clientService.list();
+    public Iterable<Client> listClients(Authentication authentication) throws IOException {
+        if (authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
+            return clientService.list();
+        } else {
+            return clientService.list(authenticationService.getClients(authentication));
+        }
     }
 
     @ApiOperation(value = "creates/updates a client", response = Client.class)
@@ -142,6 +157,28 @@ public class ClientWebservice {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @RequestMapping("{id}/user")
+    public ResponseEntity<?> listClientUsers(@PathVariable("id") ObjectId id) {
+        final Client client = clientService.get(id);
+        if (client == null) return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok(userService.getUsersForClient(client));
+    }
+
+    @RequestMapping(value = "{id}/user", method = RequestMethod.POST)
+    public ResponseEntity<?> createClientUser(@PathVariable("id") ObjectId id,
+                                              @RequestBody SmartiUser user) {
+        final Client client = clientService.get(id);
+        if (client == null) return ResponseEntity.notFound().build();
+
+        if (StringUtils.isBlank(user.getUsername())) {
+            return ResponseEntity.unprocessableEntity().build();
+        }
+        user.getClients().clear();
+
+        return ResponseEntity.ok(userService.createUserForClient(user, client));
     }
 
 

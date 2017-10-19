@@ -25,7 +25,7 @@
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('ClientSecurityCtrl', function ($scope, $location, client, ClientService) {
+  .controller('ClientSecurityCtrl', function ($scope, $location, $uibModal, client, ClientService, UserService) {
     var $ctrl = this;
 
     $scope.client = client.data;
@@ -37,12 +37,16 @@ angular.module('smartiApp')
     $ctrl.revokeAuthToken = revokeAuthToken;
     $ctrl.updateAuthToken = updateAuthToken;
 
+    $ctrl.createUser = createUser;
+    $ctrl.setPassword = setPassword;
+
     init();
 
     /////////////////////////////////////
 
     function init() {
       loadAuthTokens();
+      loadClientUsers();
     }
 
     function backToList() {
@@ -54,6 +58,13 @@ angular.module('smartiApp')
         .then(function (tokens) {
           $scope.authTokens = tokens;
         });
+    }
+
+    function loadClientUsers() {
+      return ClientService.listUsers(client)
+        .then(function (users) {
+          $scope.users = users;
+        })
     }
 
     function createAuthToken() {
@@ -83,6 +94,47 @@ angular.module('smartiApp')
             return t;
           })
         });
+    }
+
+    function createUser() {
+      return $uibModal.open({
+        scope: $scope,
+        templateUrl: 'views/modal/create-user.html'
+      }).result.then(
+        function (newUser) {
+          return ClientService.createUser(newUser, client)
+            .then(function (created) {
+              return UserService.setPassword(created, newUser.password)
+                .finally(function (success) {
+                  $scope.users.push(created);
+                  return success;
+                });
+            });
+        },
+        function () {
+          // modal canceled
+        }
+      );
+    }
+
+    function setPassword(user) {
+      return $uibModal.open({
+        scope: $scope,
+        templateUrl: 'views/modal/update-password.html',
+        resolve: {
+          user: user
+        }
+      }).result.then(
+        function (newPassword) {
+          return UserService.setPassword(user, newPassword)
+            .then(function (success) {
+              return success;
+            });
+        },
+        function () {
+          // modal canceled
+        }
+      );
     }
 
   });

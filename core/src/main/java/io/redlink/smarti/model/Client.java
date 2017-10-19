@@ -9,8 +9,6 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -33,12 +31,6 @@ public class Client {
     private Date lastUpdate;
 
     private boolean defaultClient;
-
-    @Indexed(unique = true)
-    private Set<AuthToken> authTokens = new HashSet<>();
-
-    @Indexed
-    private Set<String> users = new HashSet<>();
 
     public ObjectId getId() {
         return id;

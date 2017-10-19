@@ -26,9 +26,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -45,8 +43,6 @@ import java.util.*;
 @Service
 @EnableConfigurationProperties(SecurityConfigurationProperties.class)
 public class MongoUserDetailsService implements UserDetailsService {
-    private static final String USER_COLLECTION = "users";
-
     static final String FIELD_RECOVERY = "recovery";
     static final String FIELD_PASSWORD = "password";
     static final String FIELD_TOKEN = "token";
@@ -70,12 +66,12 @@ public class MongoUserDetailsService implements UserDetailsService {
         final MongoUser mongoUser = getMongoUser(username);
 
         if (mongoUser == null) {
-            log.debug("User {} not found in {}", username, StringUtils.defaultString(securityConfig.getMongo().getCollection(), USER_COLLECTION));
+            log.debug("User {} not found", username, StringUtils.defaultString(securityConfig.getMongo().getCollection()));
             throw new UsernameNotFoundException(String.format("Unknown user: '%s'", username));
         }
 
         final MongoUserDetails userDetails = new MongoUserDetails(username, mongoUser.getPassword(), Collections2.transform(mongoUser.getRoles(),
-                role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase(Locale.ROOT)))
+                role -> new SimpleGrantedAuthority("ROLE_" + StringUtils.upperCase(role, Locale.ROOT)))
         );
         userDetails.addAttributes(mongoUser.getAttributes());
         return userDetails;
@@ -120,7 +116,7 @@ public class MongoUserDetailsService implements UserDetailsService {
         return loadUserByUsername(user.getUsername());
     }
 
-    public PasswordRecovery createPasswordRecoveryToken(String userName) {
+    public MongoUser.PasswordRecovery createPasswordRecoveryToken(String userName) {
         final MongoUser mongoUser = getMongoUser(userName);
         if (mongoUser == null) {
             return null;
@@ -129,7 +125,7 @@ public class MongoUserDetailsService implements UserDetailsService {
         final Date now = new Date(),
                 expiry = DateUtils.addHours(now, 24);
         final String token = HashUtils.sha256(UUID.randomUUID() + userName);
-        final PasswordRecovery recovery = new PasswordRecovery(token, now, expiry);
+        final MongoUser.PasswordRecovery recovery = new MongoUser.PasswordRecovery(token, now, expiry);
 
         final WriteResult result = updateMongoUser(userName, Update.update(FIELD_RECOVERY, recovery));
         if (result.getN() == 1) {
@@ -159,11 +155,7 @@ public class MongoUserDetailsService implements UserDetailsService {
         return updateMongoUser(userName, Update.update(FIELD_PASSWORD, newPassword)).getN() == 1;
     }
 
-    @Document(collection = USER_COLLECTION)
-    public static class MongoUser {
-
-        @Id
-        private String username;
+    public static class MongoUser extends io.redlink.smarti.model.SmartiUser {
 
         /**
          * SHA-2 hashed!
@@ -175,16 +167,6 @@ public class MongoUserDetailsService implements UserDetailsService {
 
         @Field(FIELD_RECOVERY)
         private PasswordRecovery recovery = null;
-
-        private Map<String, String> attributes = new HashMap<>();
-
-        public String getUsername() {
-            return username;
-        }
-
-        public void setUsername(String username) {
-            this.username = username;
-        }
 
         public String getPassword() {
             return password;
@@ -210,54 +192,46 @@ public class MongoUserDetailsService implements UserDetailsService {
             this.recovery = recovery;
         }
 
-        public Map<String, String> getAttributes() {
-            return attributes;
-        }
+        public static class PasswordRecovery {
 
-        public void setAttributes(Map<String, String> attributes) {
-            this.attributes = attributes;
-        }
-    }
+            @Field(FIELD_TOKEN)
+            private String token;
+            private Date created;
+            @Field(FIELD_EXPIRES)
+            private Date expires;
 
-    public static class PasswordRecovery {
+            public PasswordRecovery() {
+            }
 
-        @Field(FIELD_TOKEN)
-        private String token;
-        private Date created;
-        @Field(FIELD_EXPIRES)
-        private Date expires;
+            public PasswordRecovery(String token, Date created, Date expires) {
+                this.token = token;
+                this.created = created;
+                this.expires = expires;
+            }
 
-        public PasswordRecovery() {
-        }
+            public String getToken() {
+                return token;
+            }
 
-        public PasswordRecovery(String token, Date created, Date expires) {
-            this.token = token;
-            this.created = created;
-            this.expires = expires;
-        }
+            public void setToken(String token) {
+                this.token = token;
+            }
 
-        public String getToken() {
-            return token;
-        }
+            public Date getCreated() {
+                return created;
+            }
 
-        public void setToken(String token) {
-            this.token = token;
-        }
+            public void setCreated(Date created) {
+                this.created = created;
+            }
 
-        public Date getCreated() {
-            return created;
-        }
+            public Date getExpires() {
+                return expires;
+            }
 
-        public void setCreated(Date created) {
-            this.created = created;
-        }
-
-        public Date getExpires() {
-            return expires;
-        }
-
-        public void setExpires(Date expires) {
-            this.expires = expires;
+            public void setExpires(Date expires) {
+                this.expires = expires;
+            }
         }
     }
 }

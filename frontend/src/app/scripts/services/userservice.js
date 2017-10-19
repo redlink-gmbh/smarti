@@ -32,11 +32,24 @@ angular.module('smartiApp')
     this.logout = logout;
     this.signup = signup;
     this.recoverPassword = recoverPassword;
+    this.setPassword = setPassword;
+
+    this.checkUsernameAvailable = checkUsernameAvailable;
 
     ///////////////////////////
 
     function getUser() {
-     return login();
+      return login();
+    }
+
+    function enhanceUser(user) {
+
+      user.hasRole = function (role) {
+        return user.roles.indexOf(role.toUpperCase()) >= 0;
+      };
+      user.isAdmin = user.hasRole("ADMIN");
+
+      return user;
     }
 
     function login(username, password) {
@@ -50,7 +63,7 @@ angular.module('smartiApp')
       }).then(
         function (response) {
           if (response.data.name) {
-            $rootScope.user = response.data;
+            $rootScope.user = enhanceUser(response.data);
             return response.data;
           } else {
             $rootScope.user = null;
@@ -88,5 +101,27 @@ angular.module('smartiApp')
       return $q.reject('Not implemented');
     }
 
+    function setPassword(user, newPassword) {
+      var username = user.username || user;
+      return $http
+        .put(ENV.serviceBaseUrl + '/auth/' + username + '/password', {
+          password: newPassword
+        })
+        .then(function (response) {
+          return response.data;
+        });
+    }
+
+    function checkUsernameAvailable(username) {
+      return $http
+        .get(ENV.serviceBaseUrl + '/auth/check', {
+          params: {
+            username: username
+          }
+        })
+        .then(function (response) {
+          return response.data;
+        });
+    }
 
   });

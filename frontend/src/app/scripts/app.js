@@ -12,6 +12,7 @@ angular
   .module('smartiApp', [
     'ngRoute',
     'ngAnimate',
+    'ngMessages',
     'ui.codemirror',
     'ui.bootstrap',
     'ngFileUpload',

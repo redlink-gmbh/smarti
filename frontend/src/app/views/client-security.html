@@ -57,9 +57,34 @@
     </div>
   </div>
   <div id="users">
-    <h3>Users</h3>
+    <h3>Users
+      <button class="btn btn-success btn-sm"
+                     ng-click="$ctrl.createUser()">
+      <i class="glyphicon glyphicon-plus"></i></button>
+      <button class="btn btn-primary btn-sm"
+              ng-click="$ctrl.inviteUser()">
+      <i class="glyphicon glyphicon-inbox"></i></button>
+    </h3>
+    <div class="list-group">
+      <div ng-repeat="user in users"
+           class="list-group-item"
+           ng-class="{'list-group-item-info': user.username === $root.user.name}">
+        <strong>{{user.displayName}}</strong> ({{user.username}})
+        <a ng-href="mailto:{{user.emailAddress}}">{{user.emailAddress}}</a>
+        <button class="btn btn-default btn-sm"
+                title="set password"
+                ng-click="$ctrl.setPassword(user)">
+          <i class="glyphicon glyphicon-lock"></i>
+        </button>
+        <button class="btn btn-danger btn-sm"
+                ng-if="user.username !== $root.user.name"
+                title="remove">
+          <i class="glyphicon glyphicon-link"></i>
+        </button>
+      </div>
+    </div>
     <div ng-if="!users.length > 0">
-      No Users! Maybe you want to <a ng-click="">create one</a>?
+      No Users! Maybe you want to <a ng-click="$ctrl.createUser()">create one</a>?
     </div>
   </div>
 </div>

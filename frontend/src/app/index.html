@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="styles/main.css">
   <!-- endbuild -->
 </head>
-<body ng-app="smartiApp" ng-controller="RootCtrl as rootCtrl">
+<body ng-app="smartiApp" ng-controller="RootCtrl as rootCtrl" ng-cloak>
 <!--[if lte IE 8]>
 <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
 <![endif]-->
@@ -25,7 +25,9 @@
 <!-- Add your site or application content here -->
 <div class="header">
   <div class="container">
-    <button class="btn btn-default btn-sm pull-right" ng-click="rootCtrl.logout()">logout</button>
+    <button class="btn btn-default btn-sm pull-right"
+            ng-if="user"
+            ng-click="rootCtrl.logout()">logout {{user.name}}</button>
     <h1>Smarti Configuration</h1>
   </div>
 </div>
@@ -53,6 +55,7 @@
 <script src="bower_components/angular-toastr/dist/angular-toastr.tpls.js"></script>
 <script src="bower_components/angular-animate/angular-animate.js"></script>
 <script src="bower_components/ng-file-upload/ng-file-upload.js"></script>
+<script src="bower_components/angular-messages/angular-messages.js"></script>
 <!-- endbower -->
 <script src="bower_components/codemirror/mode/javascript/javascript.js"></script>
 <!-- endbuild -->

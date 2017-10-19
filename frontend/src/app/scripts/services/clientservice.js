@@ -11,7 +11,7 @@ angular.module('smartiApp')
   .service('ClientService', function ($http, $q, ENV, Configuration, Client) {
 
     this.list = function() {
-      var deferred = $q.defer();console.log(ENV);
+      var deferred = $q.defer();
 
       $http.get(ENV.serviceBaseUrl + '/client').then(function(data){
         deferred.resolve(data.data.map(function(c){return new Client(c);}));
@@ -58,6 +58,22 @@ angular.module('smartiApp')
     this.revokeAuthToken = function (client, token) {
       return $http
         .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/token/' + token.id)
+        .then(function (response) {
+          return response.data;
+        });
+    };
+
+    this.listUsers = function (client) {
+      return $http
+        .get(ENV.serviceBaseUrl + '/client/' + client.data.id + '/user')
+        .then(function (response) {
+          return response.data;
+        });
+    };
+
+    this.createUser = function (user, client) {
+      return $http
+        .post(ENV.serviceBaseUrl + '/client/' + client.data.id + '/user', user)
         .then(function (response) {
           return response.data;
         });
