@@ -153,7 +153,9 @@
                     <sourceDirectory>${project.basedir}/src</sourceDirectory>
                     <headerFooter>true</headerFooter>
                     <imagesDir>images</imagesDir>
-                    <attributes/>
+                    <attributes>
+                        <allow-uri-read>true</allow-uri-read>
+                    </attributes>
                     <resources>
                         <resource>
                             <directory>src</directory> <!-- or just use . o filter across all files-->
