@@ -66,4 +66,8 @@ public class AuthTokenService {
             return authTokenRepository.save(stored);
         }
     }
+
+    public ObjectId getClientId(String authToken) {
+        return authTokenRepository.findOneByToken(authToken).getClientId();
+    }
 }

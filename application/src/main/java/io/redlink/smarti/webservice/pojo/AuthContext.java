@@ -14,23 +14,25 @@
  * limitations under the License.
  *
  */
-package io.redlink.smarti.repositories;
+package io.redlink.smarti.webservice.pojo;
 
-import io.redlink.smarti.model.AuthToken;
-import org.bson.types.ObjectId;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.security.core.Authentication;
 
-import java.util.List;
+public class AuthContext {
 
-public interface AuthTokenRepository extends CrudRepository<AuthToken, String>, AuthTokenRepositoryCustom {
+    private final String authToken;
+    private final Authentication authentication;
 
-    List<AuthToken> findByClientId(ObjectId clientId);
+    public AuthContext(String authToken, Authentication authentication) {
+        this.authToken = authToken;
+        this.authentication = authentication;
+    }
 
-    boolean existsByIdAndAndClientId(String id, ObjectId clientId);
+    public String getAuthToken() {
+        return authToken;
+    }
 
-    void deleteByIdAndClientId(String id, ObjectId clientId);
-
-    AuthToken findOneByIdAndClientId(String id, ObjectId clientId);
-
-    AuthToken findOneByToken(String authToken);
+    public Authentication getAuthentication() {
+        return authentication;
+    }
 }

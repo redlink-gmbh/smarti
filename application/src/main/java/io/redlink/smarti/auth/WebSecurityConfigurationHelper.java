@@ -66,7 +66,7 @@ public class WebSecurityConfigurationHelper {
                     .permitAll()
                 // roles/permissions are checked in Webservice implementations
                 .anyRequest()
-                    .authenticated()
+                    .permitAll()
                 .and()
         ;
          // @formatter:on

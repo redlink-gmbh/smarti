@@ -1,12 +1,19 @@
 package io.redlink.smarti.webservice;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.PostConstruct;
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapLikeType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import io.redlink.smarti.model.config.ComponentConfiguration;
+import io.redlink.smarti.model.config.Configuration;
+import io.redlink.smarti.services.AuthenticationService;
+import io.redlink.smarti.services.ConfigurationService;
+import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.AuthContext;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,19 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapLikeType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
-import io.redlink.smarti.model.config.ComponentConfiguration;
-import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.services.ConfigurationService;
-import io.redlink.smarti.utils.ResponseEntities;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -38,11 +37,13 @@ public class ConfigurationWebservice {
     private static ObjectMapper objectMapper = new ObjectMapper();
     
     private final ConfigurationService configService;
+    private final AuthenticationService authenticationService;
 
     public static MapLikeType smartiConfigType;
     
-    public ConfigurationWebservice(ConfigurationService configService) {
+    public ConfigurationWebservice(ConfigurationService configService, AuthenticationService authenticationService) {
         this.configService = configService;
+        this.authenticationService = authenticationService;
     }
 
     @PostConstruct
@@ -56,7 +57,8 @@ public class ConfigurationWebservice {
 
     @ApiOperation(value = "retrieve list of the basic configurations", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
     @RequestMapping(method = RequestMethod.GET)
-    public ResponseEntity<?> getConfigurationComponents() throws IOException {
+    public ResponseEntity<?> getConfigurationComponents(AuthContext authContext) throws IOException {
+        authenticationService.assertAuthenticated(authContext);
         return writeSmartiConfig(configService.getDefaultConfiguration());
     }
 
