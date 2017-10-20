@@ -65,7 +65,7 @@ public class AccountService {
     }
 
     public boolean hasAccount(String userName) {
-        return userDetailsService.loadUserByUsername(userName) != null;
+        return userDetailsService.hasAccount(userName);
     }
 
     public void setPassword(String username, String newPassword) {

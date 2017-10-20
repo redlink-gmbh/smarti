@@ -54,4 +54,11 @@ public class UserService {
         return user.getClients();
     }
 
+    public void removeUserFromClient(String username, Client client) {
+        userRepository.removeClient(username, client.getId());
+    }
+
+    public SmartiUser addUserToClient(String username, Client client) {
+        return userRepository.addClient(username, client.getId());
+    }
 }

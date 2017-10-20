@@ -14,11 +14,11 @@
   ~ limitations under the License.
   ~
   -->
-<div ng-if="!user" class="row">
+<div ng-if="!user" class="row" style="margin-top: 2em;">
   <div class="col-xs-6 col-sm-4 col-xs-offset-3 col-sm-offset-4"
-    ng-switch="$ctrl.action">
+       ng-switch="$ctrl.action">
     <form ng-switch-default
-      name="loginForm" class="form-horizontal" ng-submit="$ctrl.login()">
+          name="loginForm" class="form-horizontal" ng-submit="$ctrl.login()">
       <div class="form-group">
         <label for="username" class="col-xs-4 control-label">Username:</label>
         <div class="col-xs-8">
@@ -26,15 +26,6 @@
                  type="text" class="form-control"
                  required
                  ng-model="$ctrl.userName" />
-        </div>
-      </div>
-      <div class="form-group" ng-if="$ctrl.action == 'signup'">
-        <label for="email" class="col-xs-4 control-label">Email:</label>
-        <div class="col-xs-8">
-          <input id="email" name="email"
-                 type="email" class="form-control"
-                 required
-                 ng-model="$ctrl.userEmail" />
         </div>
       </div>
       <div class="form-group">
@@ -47,25 +38,81 @@
         </div>
       </div>
       <div class="form-group text-right">
-        <button ng-if="$ctrl.action != 'signup'" class="btn btn-primary">Login</button>
-        <button ng-if="$ctrl.action == 'signup'" class="btn btn-primary">Signup</button>
+        <button class="btn btn-primary" ng-disabled="loginForm.$invalid">Login</button>
       </div>
-      <div class="row text-center" ng-if="$ctrl.action != 'signup'">
+      <div class="row text-center">
         <a ng-click="$ctrl.action = 'recover'" type="button">Forgot Password?</a>
         <a ng-click="$ctrl.action = 'signup'" type="button">Signup!</a>
       </div>
-      <div class="row text-center" ng-if="$ctrl.action == 'signup'">
+    </form>
+    <form ng-switch-when="signup"
+          name="signupForm" class="form-horizontal" ng-submit="$ctrl.login()">
+      <div class="form-group has-feedback" ng-class="{'has-success': signupForm.username.$valid, 'has-error': signupForm.username.$invalid && signupForm.username.$dirty}">
+        <label for="newUsername" class="col-xs-4 control-label">Username:</label>
+        <div class="col-xs-8">
+          <input id="newUsername" name="username"
+                 type="text" class="form-control"
+                 required username-exists="false"
+                 ng-model="$ctrl.userName" />
+          <span class="glyphicon form-control-feedback"
+                ng-class="{'glyphicon-ok': signupForm.username.$valid, 'glyphicon-remove': signupForm.username.$invalid && signupForm.username.$dirty}"
+                aria-hidden="true"></span>
+        </div>
+        <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.username.$error">
+          <div ng-message="required">please enter a username</div>
+          <div ng-message="usernameExists">username already taken</div>
+        </div>
+      </div>
+      <div class="form-group has-feedback" ng-class="{'has-success': signupForm.email.$valid, 'has-error': signupForm.email.$invalid && signupForm.email.$dirty}">
+        <label for="email" class="col-xs-4 control-label">Email:</label>
+        <div class="col-xs-8">
+          <input id="email" name="email"
+                 type="email" class="form-control"
+                 required
+                 ng-model="$ctrl.userEmail" />
+          <span class="glyphicon form-control-feedback"
+                ng-class="{'glyphicon-ok': signupForm.email.$valid, 'glyphicon-remove': signupForm.email.$invalid && signupForm.email.$dirty}"
+                aria-hidden="true"></span>
+        </div>
+        <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.email.$error">
+          <div ng-message="required">please enter your email-address</div>
+          <div ng-message="email">invalid email-address</div>
+        </div>
+      </div>
+      <div class="form-group has-feedback" ng-class="{'has-success': signupForm.password.$valid, 'has-error': signupForm.password.$invalid && signupForm.password.$dirty}">
+        <label for="newPassword" class="col-xs-4 control-label">Password:</label>
+        <div class="col-xs-8">
+          <input id="newPassword" name="password"
+                 type="password" class="form-control"
+                 required
+                 ng-model="$ctrl.userPasswd" />
+          <span class="glyphicon form-control-feedback"
+                ng-class="{'glyphicon-ok': signupForm.password.$valid, 'glyphicon-remove': signupForm.password.$invalid && signupForm.password.$dirty}"
+                aria-hidden="true"></span>
+        </div>
+        <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.password.$error">
+          <div ng-message="required">please enter your password</div>
+        </div>
+      </div>
+      <div class="form-group text-right">
+        <button class="btn btn-primary" ng-disabled="signupForm.$invalid">Signup</button>
+      </div>
+      <div class="row text-center">
         <a ng-click="$ctrl.action = null" type="button">Login</a>
       </div>
     </form>
     <form ng-switch-when="recover"
-      name="recoverForm" class="form-inline" ng-submit="$ctrl.recoverPassword()">
-      <div class="form-group">
-        <label for="recoverMail">Email</label>
-        <input type="text" class="form-control" id="recoverMail" placeholder="">
+          name="recoverForm" class="form-inline" ng-submit="$ctrl.recoverPassword()">
+      <div class="row">
+        <div class="form-group">
+          <label for="recoverMail">Email</label>
+          <input type="email" name="recoverMail" ng-model="recoverAddress" required class="form-control" id="recoverMail" placeholder="">
+        </div>
+        <button type="submit" class="btn btn-primary" ng-disabled="recoverForm.$invalid">Recover</button>
       </div>
-      <button type="reset" ng-click="$ctrl.action = null" class="btn btn-default">Cancel</button>
-      <button type="submit" class="btn btn-primary">Recover</button>
+      <div class="row text-center">
+        <a ng-click="$ctrl.action = null" type="button">Login</a>
+      </div>
     </form>
   </div>
 </div>

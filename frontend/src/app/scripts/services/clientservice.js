@@ -77,6 +77,22 @@ angular.module('smartiApp')
         .then(function (response) {
           return response.data;
         });
-    }
+    };
+
+    this.addUser = function (username, client) {
+      return $http
+        .put(ENV.serviceBaseUrl + '/client/' + client.data.id + '/user/' + username, undefined)
+        .then(function (response) {
+          return response.data;
+        });
+    };
+
+    this.removeUser = function (user, client) {
+      return $http
+        .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/user/' + user.username)
+        .then(function (response) {
+          return response.data;
+        });
+    };
 
   });

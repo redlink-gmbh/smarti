@@ -69,15 +69,18 @@ public class ClientWebservice {
     @ApiOperation(value = "creates/updates a client", response = Client.class)
     @RequestMapping(method = RequestMethod.POST)
     public Client storeClient(AuthContext authContext, @RequestBody Client client) throws IOException {
-        authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
+        if (client.getId() == null) { // create, only admin
+            authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
+        } else {
+            authenticationService.assertClient(authContext, client.getId());
+        }
         return clientService.save(client);
     }
 
     @ApiOperation(value = "get a client", response = Client.class)
     @RequestMapping(value = "{id}", method = RequestMethod.GET)
     public Client getClient(AuthContext authContext, @PathVariable("id") ObjectId id) throws IOException {
-        authenticationService.assertClient(authContext, id);
-        return clientService.get(id);
+        return authenticationService.assertClient(authContext, id);
     }
 
     @ApiOperation(value = "delete a client")
@@ -185,6 +188,31 @@ public class ClientWebservice {
         user.getClients().clear();
 
         return ResponseEntity.ok(userService.createUserForClient(user, client));
+    }
+
+    @RequestMapping(value = "{id}/user/{user}", method = RequestMethod.PUT)
+    public ResponseEntity<?> addClientUser(AuthContext authContext,
+                                              @PathVariable("id") ObjectId id,
+                                              @PathVariable("user") String username) {
+        final Client client = authenticationService.assertClient(authContext, id);
+
+        final SmartiUser addedUser = userService.addUserToClient(username, client);
+        if (addedUser == null) {
+            return ResponseEntity.notFound().build();
+        } else {
+            return ResponseEntity.ok(addedUser);
+        }
+    }
+
+    @RequestMapping(value = "{id}/user/{user}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> removeClientUser(AuthContext authContext,
+                                              @PathVariable("id") ObjectId id,
+                                              @PathVariable("user") String username) {
+        final Client client = authenticationService.assertClient(authContext, id);
+
+        userService.removeUserFromClient(username, client);
+
+        return ResponseEntity.noContent().build();
     }
 
 

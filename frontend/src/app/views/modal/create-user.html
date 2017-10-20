@@ -15,30 +15,51 @@
   ~
   -->
 
-<form name="$form" class="" ng-submit="$close(newUser)">
+<form name="$form" class="" autocomplete="off" ng-submit="$close(newUser)">
   <div class="modal-header">
     <h3 class="modal-title">Create User</h3>
   </div>
   <div class="modal-body">
-    <div class="form-group" ng-class="{'has-error': $form.userName.$invalid && $form.userName.$dirty}">
+    <div class="form-group has-feedback" ng-class="{'has-error': $form.userName.$invalid && $form.userName.$dirty}">
       <label class="control-label" for="userName">Username:</label>
       <input id="userName" name="userName"
-             class="form-control" ng-model="newUser.username" required />
+             class="form-control" ng-model="newUser.username"
+             required username-exists="false"/>
+      <span class="glyphicon form-control-feedback"
+            ng-class="{'glyphicon-ok text-success': $form.userName.$valid, 'glyphicon-remove': $form.userName.$invalid && $form.userName.$dirty}"
+            aria-hidden="true"></span>
+      <div class="help-block" ng-messages="$form.userName.$error">
+        <div ng-message="required">please enter a username</div>
+        <div ng-message="usernameExists">username already taken</div>
+      </div>
     </div>
     <div class="form-group">
       <label for="displayName">Display Name:</label>
       <input id="displayName" name="displayName"
              class="form-control" ng-model="newUser.displayName" type="text" />
     </div>
-    <div class="form-group">
-      <label for="email">EMail:</label>
-      <input id="email" name="password"
+    <div class="form-group has-feedback" ng-class="{'has-error': $form.email.$invalid && $form.email.$dirty}">
+      <label for="email" class="control-label">EMail:</label>
+      <input id="email" name="email"
              class="form-control" ng-model="newUser.emailAddress" type="email" required />
+      <span class="glyphicon form-control-feedback"
+            ng-class="{'glyphicon-ok text-success': $form.email.$valid, 'glyphicon-remove': $form.email.$invalid && $form.email.$dirty}"
+            aria-hidden="true"></span>
+      <div class="help-block" ng-messages="$form.email.$error">
+        <div ng-message="required">please provide an email-address</div>
+        <div ng-message="email">invalid mail-address</div>
+      </div>
     </div>
-    <div class="form-group">
-      <label for="password">Password:</label>
+    <div class="form-group has-feedback" ng-class="{'has-error': $form.password.$invalid && $form.password.$dirty}">
+      <label for="password" class="control-label">Password:</label>
       <input id="password" name="password"
              class="form-control" ng-model="newUser.password" type="password" required />
+      <span class="glyphicon form-control-feedback"
+            ng-class="{'glyphicon-ok text-success': $form.password.$valid, 'glyphicon-remove': $form.password.$invalid && $form.password.$dirty}"
+            aria-hidden="true"></span>
+      <div class="help-block" ng-messages="$form.password.$error">
+        <div ng-message="required">please enter your password</div>
+      </div>
     </div>
   </div>
   <div class="modal-footer">

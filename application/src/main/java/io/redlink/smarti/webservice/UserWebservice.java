@@ -56,7 +56,7 @@ public class UserWebservice {
 
     @RequestMapping(method = RequestMethod.GET)
     public AuthUser getUser(@AuthenticationPrincipal AttributedUserDetails user) {
-        return new AuthUser(user);
+        return AuthUser.wrap(user);
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
@@ -117,15 +117,15 @@ public class UserWebservice {
     }
 
     @RequestMapping("check")
-    public boolean isUsernameAvailable(@RequestParam("username") String username) {
-        return !accountService.hasAccount(username);
+    public boolean checkUsernameExists(@RequestParam("username") String username) {
+        return accountService.hasAccount(username);
     }
 
     private static class AuthUser {
         private String name, displayName, email;
         private Set<String> roles;
 
-        public AuthUser(AttributedUserDetails userDetails) {
+        private AuthUser(AttributedUserDetails userDetails) {
             name = userDetails.getUsername();
             roles = userDetails.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
@@ -166,6 +166,10 @@ public class UserWebservice {
 
         public void setRoles(Set<String> roles) {
             this.roles = roles;
+        }
+
+        public static AuthUser wrap(AttributedUserDetails userDetails) {
+            return userDetails != null ? new AuthUser(userDetails) : null;
         }
     }
 }

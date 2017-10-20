@@ -16,8 +16,13 @@
  */
 package io.redlink.smarti.repositories;
 
+import com.mongodb.DuplicateKeyException;
 import io.redlink.smarti.model.SmartiUser;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
 public class UserRepositoryImpl implements UserRepositoryCustom {
 
@@ -29,7 +34,32 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
 
     @Override
     public SmartiUser create(SmartiUser user) {
-        mongoTemplate.insert(user);
-        return mongoTemplate.findById(user.getUsername(), SmartiUser.class);
+        try {
+            mongoTemplate.insert(user);
+            return mongoTemplate.findById(user.getUsername(), SmartiUser.class);
+        } catch (DuplicateKeyException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public SmartiUser removeClient(String username, ObjectId id) {
+        return mongoTemplate.findAndModify(
+                byUsername(username),
+                new Update().pull(SmartiUser.FIELD_CLIENTS, id),
+                SmartiUser.class);
+    }
+
+    @Override
+    public SmartiUser addClient(String username, ObjectId id) {
+        return mongoTemplate.findAndModify(
+                byUsername(username),
+                new Update().addToSet(SmartiUser.FIELD_CLIENTS, id),
+                SmartiUser.class
+        );
+    }
+
+    private Query byUsername(String username) {
+        return new Query(Criteria.where("_id").is(username));
     }
 }

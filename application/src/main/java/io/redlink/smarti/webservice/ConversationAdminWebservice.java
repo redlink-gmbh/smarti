@@ -23,7 +23,6 @@ import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.services.AuthenticationService;
-import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.utils.WebserviceUtils;
@@ -53,13 +52,11 @@ public class ConversationAdminWebservice {
 
     private final ObjectMapper jacksonObjectMapper;
     private final ConversationService conversationService;
-    private final ClientService clientService;
     private final AuthenticationService authenticationService;
 
-    public ConversationAdminWebservice(ObjectMapper jacksonObjectMapper, ConversationService conversationService, ClientService clientService, AuthenticationService authenticationService) {
+    public ConversationAdminWebservice(ObjectMapper jacksonObjectMapper, ConversationService conversationService, AuthenticationService authenticationService) {
         this.jacksonObjectMapper = jacksonObjectMapper;
         this.conversationService = conversationService;
-        this.clientService = clientService;
         this.authenticationService = authenticationService;
     }
 

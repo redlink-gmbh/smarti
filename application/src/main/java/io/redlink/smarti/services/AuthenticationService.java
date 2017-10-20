@@ -16,7 +16,6 @@
  */
 package io.redlink.smarti.services;
 
-import com.google.common.collect.ImmutableSet;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
@@ -30,10 +29,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
+/**
+ * Various helper-methods for checking and asserting access permissions
+ */
+@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 @Service
 public class AuthenticationService {
 
@@ -41,11 +42,11 @@ public class AuthenticationService {
     public static final String ANONYMOUS = "ANONYMOUS";
 
     private final UserService userService;
-    
+
     private final ClientService clientService;
 
     private final ConversationService conversationService;
-    
+
     private final AuthTokenService authTokenService;
 
     @Autowired
@@ -56,15 +57,7 @@ public class AuthenticationService {
         this.authTokenService = authTokenService;
     }
 
-    public boolean isAuthenticated(Authentication authentication) {
-        return Objects.nonNull(authentication) && !hasRole(authentication, ANONYMOUS);
-    }
-
     public boolean isAuthenticated(AuthContext authentication) {
-        return Objects.nonNull(authentication) && !hasRole(authentication, ANONYMOUS);
-    }
-
-    public boolean isAuthenticated(UserDetails authentication) {
         return Objects.nonNull(authentication) && !hasRole(authentication, ANONYMOUS);
     }
 
@@ -93,42 +86,40 @@ public class AuthenticationService {
     }
 
     public boolean hasAnyRole(AuthContext authContext, String... roles) {
-        return hasAnyRole(authContext, ImmutableSet.copyOf(roles));
+        return hasAnyRole(authContext, Arrays.asList(roles));
     }
 
     public boolean hasAnyRole(Authentication authentication, String... roles) {
-        return hasAnyRole(authentication, ImmutableSet.copyOf(roles));
+        return hasAnyRole(authentication, Arrays.asList(roles));
     }
     public boolean hasAnyRole(UserDetails authentication, String... roles) {
-        return hasAnyRole(authentication, ImmutableSet.copyOf(roles));
+        return hasAnyRole(authentication, Arrays.asList(roles));
     }
 
-    public boolean hasAnyRole(AuthContext authContext, Set<String> roles) {
+    public boolean hasAnyRole(AuthContext authContext, Collection<String> roles) {
         return Objects.nonNull(authContext) && hasAnyRole(authContext.getAuthentication(), roles);
     }
 
-    public boolean hasAnyRole(Authentication authentication, Set<String> roles) {
+    public boolean hasAnyRole(Authentication authentication, Collection<String> roles) {
         return Objects.nonNull(authentication) &&
                 authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(roles::contains);
+                        .map(GrantedAuthority::getAuthority)
+                        .map(r -> StringUtils.removeStart(r, "ROLE_"))
+                        .anyMatch(roles::contains);
     }
 
-    public boolean hasAnyRole(UserDetails authentication, Set<String> roles) {
+    public boolean hasAnyRole(UserDetails authentication, Collection<String> roles) {
         return Objects.nonNull(authentication) &&
                 authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(roles::contains);
+                        .map(GrantedAuthority::getAuthority)
+                        .map(r -> StringUtils.removeStart(r, "ROLE_"))
+                        .anyMatch(roles::contains);
     }
 
     public Set<ObjectId> getClients(Authentication authentication) {
         return userService.getClientsForUser(authentication.getName());
     }
 
-    public Set<ObjectId> getClients(UserDetails authentication) {
-        return userService.getClientsForUser(authentication.getUsername());
-    }
-    
     public Set<ObjectId> getClients(AuthContext authContext) {
         if (authContext == null) return Collections.emptySet();
         if (StringUtils.isNotBlank(authContext.getAuthToken())) {
@@ -142,30 +133,15 @@ public class AuthenticationService {
         return getClients(authContext.getAuthentication());
     }
 
-    public void assertRole(AuthContext authContext, String role) {
+    public AuthContext assertRole(AuthContext authContext, String role) {
         if (!hasRole(authContext, role)) throw new AccessDeniedException("Access Denied");
+        return authContext;
     }
 
-    public void assertRole(Authentication authContext, String role) {
-        if (!hasRole(authContext, role)) throw new AccessDeniedException("Access Denied");
-    }
-
-    public void assertRole(UserDetails authContext, String role) {
-        if (!hasRole(authContext, role)) throw new AccessDeniedException("Access Denied");
-    }
-
-    public void assertAnyRole(AuthContext authContext, String... role) {
+    public AuthContext assertAnyRole(AuthContext authContext, String... role) {
         if (!hasAnyRole(authContext, role)) throw new AccessDeniedException("Access Denied");
+        return authContext;
     }
-
-    public void assertAnyRole(Authentication authContext, String... role) {
-        if (!hasAnyRole(authContext, role)) throw new AccessDeniedException("Access Denied");
-    }
-
-    public void assertAnyRole(UserDetails authContext, String... role) {
-        if (!hasAnyRole(authContext, role)) throw new AccessDeniedException("Access Denied");
-    }
-
 
     /**
      * Assert that the {@link AuthContext} allows access to the {@link Client} with the
@@ -174,8 +150,7 @@ public class AuthenticationService {
      * @param authContext the auth-context
      * @param clientId the client-id
      * @return the {@link Client} for the provided {@code clientId}, if access is granted for the provided {@link AuthContext}
-     * @throws AccessDeniedException if the provided {@link AuthContext} does not allow access.
-     * @throws NotFoundException if a {@link Client} with the specified {@code clientId} does not exist.
+     * @throws NotFoundException if the provided {@link AuthContext} does not allow access or the {@link Client} with the specified {@code clientId} does not exist.
      */
     public Client assertClient(AuthContext authContext, ObjectId clientId) {
         if (!hasRole(authContext, ADMIN)) {
@@ -191,6 +166,15 @@ public class AuthenticationService {
         return client;
     }
 
+    /**
+     * Assert that the {@link AuthContext} allows access to the {@link Conversation} with the
+     * provided id.
+     *
+     * @param authContext the auth-context
+     * @param conversationId the conversation-id
+     * @return the {@link Conversation} for the provided {@code conversationId}, if access is granted for the provided {@link AuthContext}
+     * @throws NotFoundException if the provided {@link AuthContext} does not allow access or the {@link Conversation} with the specified {@code conversationId} does not exist.
+     */
     public Conversation assertConversation(AuthContext authContext, ObjectId conversationId) {
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
@@ -206,12 +190,19 @@ public class AuthenticationService {
         return conversation;
     }
 
-    public void assertAuthenticated(AuthContext authContext) {
+    /**
+     * Assert that the AuthContext contains a known user.
+     *
+     * @param authContext the {@link AuthContext} to check
+     * @throws AccessDeniedException if un-authorized or anonymous
+     */
+    public AuthContext assertAuthenticated(AuthContext authContext) {
         if (!isAuthenticated(authContext)) throw new AccessDeniedException("Accecss Denied");
+        return authContext;
     }
 
     public boolean hasAccessToClient(AuthContext authContext, ObjectId clientId) {
-        return getClients(authContext).contains(clientId);
+        return hasRole(authContext, ADMIN) || getClients(authContext).contains(clientId);
     }
 
     public boolean hasAccessToConversation(AuthContext authContext, ObjectId conversationId) {

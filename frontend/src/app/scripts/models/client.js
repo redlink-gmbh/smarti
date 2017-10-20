@@ -19,7 +19,7 @@ angular.module('smartiApp')
       this.save = function() {
         var deferred = $q.defer();
 
-        $http.post(ENV.serviceBaseUrl + '/client/', this.data).then(function(data){
+        $http.post(ENV.serviceBaseUrl + '/client', this.data).then(function(data){
           deferred.resolve(new Client(data.data));
         }, function(data){
           deferred.reject(data.data);

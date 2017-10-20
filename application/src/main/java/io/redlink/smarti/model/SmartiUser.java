@@ -20,6 +20,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,11 +32,13 @@ public class SmartiUser {
 
     public static final String ATTR_DISPLAY_NAME = "displayName";
     public static final String ATTR_EMAIL = "email";
+    public static final String FIELD_CLIENTS = "clients";
 
     @Id
     private String username;
 
     @Indexed(sparse = true)
+    @Field(FIELD_CLIENTS)
     private Set<ObjectId> clients = new HashSet<>();
 
     private Map<String, String> attributes = new HashMap<>();

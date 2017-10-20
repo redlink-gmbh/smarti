@@ -34,7 +34,7 @@ angular.module('smartiApp')
     this.recoverPassword = recoverPassword;
     this.setPassword = setPassword;
 
-    this.checkUsernameAvailable = checkUsernameAvailable;
+    this.checkUsernameExists = checkUsernameExists;
 
     ///////////////////////////
 
@@ -112,7 +112,7 @@ angular.module('smartiApp')
         });
     }
 
-    function checkUsernameAvailable(username) {
+    function checkUsernameExists(username) {
       return $http
         .get(ENV.serviceBaseUrl + '/auth/check', {
           params: {

@@ -16,6 +16,7 @@
  */
 package io.redlink.smarti.auth;
 
+import io.redlink.smarti.services.AuthenticationService;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -53,6 +54,7 @@ public class WebSecurityConfigurationHelper {
 //                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .disable()
             .anonymous()
+                .authorities("ROLE_" + AuthenticationService.ANONYMOUS)
                 .and()
             .authorizeRequests()
                 // allow everyone to access swagger

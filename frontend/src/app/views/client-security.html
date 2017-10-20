@@ -62,7 +62,7 @@
                      ng-click="$ctrl.createUser()">
       <i class="glyphicon glyphicon-plus"></i></button>
       <button class="btn btn-primary btn-sm"
-              ng-click="$ctrl.inviteUser()">
+              ng-click="$ctrl.addUser()">
       <i class="glyphicon glyphicon-inbox"></i></button>
     </h3>
     <div class="list-group">
@@ -78,7 +78,8 @@
         </button>
         <button class="btn btn-danger btn-sm"
                 ng-if="user.username !== $root.user.name"
-                title="remove">
+                title="remove"
+                ng-click="$ctrl.removeUser(user)">
           <i class="glyphicon glyphicon-link"></i>
         </button>
       </div>

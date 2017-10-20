@@ -70,8 +70,12 @@ public class MongoUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException(String.format("Unknown user: '%s'", username));
         }
 
-        final MongoUserDetails userDetails = new MongoUserDetails(username, mongoUser.getPassword(), Collections2.transform(mongoUser.getRoles(),
-                role -> new SimpleGrantedAuthority("ROLE_" + StringUtils.upperCase(role, Locale.ROOT)))
+        final MongoUserDetails userDetails = new MongoUserDetails(
+                mongoUser.getUsername(),
+                mongoUser.getPassword(),
+                Collections2.transform(mongoUser.getRoles(),
+                        role -> new SimpleGrantedAuthority("ROLE_" + StringUtils.upperCase(role, Locale.ROOT))
+                )
         );
         userDetails.addAttributes(mongoUser.getAttributes());
         return userDetails;
@@ -153,6 +157,10 @@ public class MongoUserDetailsService implements UserDetailsService {
      */
     public boolean updatePassword(String userName, String newPassword) {
         return updateMongoUser(userName, Update.update(FIELD_PASSWORD, newPassword)).getN() == 1;
+    }
+
+    public boolean hasAccount(String userName) {
+        return mongoTemplate.exists(new Query(Criteria.where("_id").is(userName)), MongoUser.class);
     }
 
     public static class MongoUser extends io.redlink.smarti.model.SmartiUser {

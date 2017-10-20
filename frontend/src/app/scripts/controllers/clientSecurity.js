@@ -38,7 +38,9 @@ angular.module('smartiApp')
     $ctrl.updateAuthToken = updateAuthToken;
 
     $ctrl.createUser = createUser;
+    $ctrl.addUser = addUser;
     $ctrl.setPassword = setPassword;
+    $ctrl.removeUser = removeUser;
 
     init();
 
@@ -100,21 +102,48 @@ angular.module('smartiApp')
       return $uibModal.open({
         scope: $scope,
         templateUrl: 'views/modal/create-user.html'
-      }).result.then(
-        function (newUser) {
-          return ClientService.createUser(newUser, client)
-            .then(function (created) {
-              return UserService.setPassword(created, newUser.password)
-                .finally(function (success) {
-                  $scope.users.push(created);
-                  return success;
-                });
+      }).result
+        .then(
+          function (newUser) {
+            return ClientService.createUser(newUser, client)
+              .then(function (created) {
+                return UserService.setPassword(created, newUser.password)
+                  .finally(function () {
+                    $scope.users.push(created);
+                    return created;
+                  });
+              });
+          },
+          function () {
+            // modal canceled
+          }
+        );
+    }
+
+    function addUser() {
+      return $uibModal.open({
+        scope: $scope,
+        templateUrl: 'views/modal/find-user.html'
+      }).result
+        .then(
+          function (username) {
+            var local = $scope.users.find(function (u) {
+              return u.username === username;
             });
-        },
-        function () {
-          // modal canceled
-        }
-      );
+            if (local) {
+              return local;
+            } else {
+              return ClientService.addUser(username, client)
+                .then(function (addedUser) {
+                  $scope.users.push(addedUser);
+                  return addedUser;
+                });
+            }
+          },
+          function () {
+            // modal canceled
+          }
+        );
     }
 
     function setPassword(user) {
@@ -135,6 +164,11 @@ angular.module('smartiApp')
           // modal canceled
         }
       );
+    }
+
+    function removeUser(user) {
+      return ClientService.removeUser(user, client)
+        .then(loadClientUsers);
     }
 
   });
