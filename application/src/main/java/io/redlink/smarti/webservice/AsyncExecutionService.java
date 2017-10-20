@@ -61,11 +61,11 @@ public class AsyncExecutionService {
 
     public AsyncExecutionService(
             ObjectMapper objectMapper,
-            @Autowired(required = false) ExecutorService processingExecutor,
+            Optional<ExecutorService> processingExecutor,
             MavenCoordinatesProperties mavenCoordinatesProperties,
             HttpCallbackProperties httpCallbackProperties
     ) {
-        this.processingExecutor = Optional.ofNullable(processingExecutor)
+        this.processingExecutor = processingExecutor
                 .orElseGet(() -> Executors.newFixedThreadPool(2));
         this.objectMapper = objectMapper;
 
@@ -112,8 +112,9 @@ public class AsyncExecutionService {
 
 
     public <T> ResponseEntity<T> execute(Supplier<T> task,
-                                         URI callbackUri,
-                                         Function<T, ResponseEntity<T>> syncResponseBuilder, Object entityId, URI entityUri) {
+            URI callbackUri,
+            Function<T, ResponseEntity<T>> syncResponseBuilder,
+            Object entityId, URI entityUri) {
         //noinspection unchecked
         return execute(task, callbackUri, syncResponseBuilder,
                 () -> (ResponseEntity<T>) ResponseEntity
@@ -127,26 +128,27 @@ public class AsyncExecutionService {
                                          URI callbackUri,
                                          Function<T, ResponseEntity<T>> syncResponseBuilder,
                                          Supplier<ResponseEntity<T>> acceptResponseBuilder) {
-        if (Objects.isNull(callbackUri)) {
+        if (Objects.isNull(callbackUri) && syncResponseBuilder != null) {
             return syncResponseBuilder.apply(task.get());
         } else {
             this.processingExecutor.submit(() -> {
                 final CallbackPayload<?> payload = executeTask(task);
-
-                try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
-                    final HttpPost post = new HttpPost(callbackUri);
-                    final String data = objectMapper.writeValueAsString(payload);
-                    post.setEntity(new StringEntity(data, ContentType.APPLICATION_JSON));
-
-                    log.debug("Sending callback: {} '{}' -d '{}'", post.getMethod(), post.getURI(), data);
-                    httpClient.execute(post, response -> null);
-                } catch (IOException e) {
-                    if (log.isDebugEnabled()) {
-                        log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUri, e.getMessage(), e);
-                    } else {
-                        log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUri, e.getMessage());
+                if(callbackUri != null){
+                    try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
+                        final HttpPost post = new HttpPost(callbackUri);
+                        final String data = objectMapper.writeValueAsString(payload);
+                        post.setEntity(new StringEntity(data, ContentType.APPLICATION_JSON));
+    
+                        log.debug("Sending callback: {} '{}' -d '{}'", post.getMethod(), post.getURI(), data);
+                        httpClient.execute(post, response -> null);
+                    } catch (IOException e) {
+                        if (log.isDebugEnabled()) {
+                            log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUri, e.getMessage(), e);
+                        } else {
+                            log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUri, e.getMessage());
+                        }
                     }
-                }
+                } //no callback configured
             });
             return acceptResponseBuilder.get();
         }

@@ -52,6 +52,7 @@ public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
         }
         final Query query = new Query();
         query.addCriteria(Criteria.where("conversation").is(analysis.getConversation()));
+        query.addCriteria(Criteria.where("client").is(analysis.getClient()));
         //TODO: select the system generated analysis as soon as we support storing user modified 
         
         BasicDBObject data = new BasicDBObject();

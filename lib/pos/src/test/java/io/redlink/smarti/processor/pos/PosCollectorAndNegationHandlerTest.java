@@ -28,7 +28,7 @@ import io.redlink.nlp.opennlp.pos.OpenNlpPosProcessor;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.Token.Hint;
-import io.redlink.smarti.processing.ProcessingData;
+import io.redlink.smarti.processing.AnalysisContext;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Assert;
@@ -46,7 +46,7 @@ import java.util.*;
  * This test two {@link QueryPreparator}s<ol>
  * <li> {@link PosCollector}: that creates tokens for {@link PosSet#ADJECTIVES}
  * <li> {@link NegatedTokenMarker}: that adds the {@link Hint#negated} to all Tokens
- * that are within a section marked as {@link ProcessingData#NEGATION_ANNOTATION}
+ * that are within a section marked as {@link AnalysisContext#NEGATION_ANNOTATION}
  * </ol>
  */
 public class PosCollectorAndNegationHandlerTest {
@@ -104,7 +104,7 @@ public class PosCollectorAndNegationHandlerTest {
         negatedTokenMarker = new NegatedTokenMarker();
     }
     
-    private static final void preprocessConversation(ProcessingData pd) throws ProcessingException{
+    private static final void preprocessConversation(AnalysisContext pd) throws ProcessingException{
         for(Processor processor : REQUIRED_PREPERATORS){
             processor.process(pd);
         }
@@ -114,12 +114,12 @@ public class PosCollectorAndNegationHandlerTest {
     @Test
     public void testAll() throws ProcessingException{
         for(int idx = 0 ; idx < CONTENTS.size(); idx++){
-            ProcessingData processingData = processConversation(ProcessingData.create(initConversation(idx)));
+            AnalysisContext processingData = processConversation(AnalysisContext.create(initConversation(idx)));
             assertPosProcessingResults(processingData, CONTENTS.get(idx).getMiddle(),CONTENTS.get(idx).getRight());
         }
     }
 
-    ProcessingData processConversation(ProcessingData processingData) throws ProcessingException {
+    AnalysisContext processConversation(AnalysisContext processingData) throws ProcessingException {
         //NOTE: we statically set the lanugage to "de" here as we do not have a language detection processor in this test
         processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         log.trace(" - preprocess conversation {}", processingData.getConversation());
@@ -133,7 +133,7 @@ public class PosCollectorAndNegationHandlerTest {
     }
 
     
-    private void assertPosProcessingResults(ProcessingData processingData, String[] expected, Hint[] hints) {
+    private void assertPosProcessingResults(AnalysisContext processingData, String[] expected, Hint[] hints) {
         Set<String> expectedSet = new HashSet<>(Arrays.asList(expected)); 
         Conversation conv = processingData.getConversation();
         Analysis analysis = processingData.getAnalysis();

@@ -26,8 +26,11 @@ import io.redlink.smarti.model.Analysis;
 
 public interface AnalysisRepository extends CrudRepository<Analysis, ObjectId>, AnalysisRepositoryCustom {
 
-    Analysis findByConversationAndDate(ObjectId conversation, Date date);
+    Analysis findByClientAndConversationAndDate(ObjectId client, ObjectId conversation, Date date);
 
-    List<Analysis> findByConversation(ObjectId conversationId);
+    List<Analysis> findByClientAndConversation(ObjectId client, ObjectId conversation);
+
+    void deleteByConversation(ObjectId id);
+
     
 }

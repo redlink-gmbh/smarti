@@ -52,15 +52,21 @@ public class ConversationSearchService {
 
     private final StoreService storeService;
 
+    private final Function<SolrDocument,Conversation> solrDocTransformer;
+    
     @Autowired
     public ConversationSearchService(SolrCoreContainer solrServer, @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, StoreService storeService) {
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
         this.storeService = storeService;
+        this.solrDocTransformer = (doc) -> storeService.get(new ObjectId(String.valueOf(doc.getFirstValue("id"))));
     }
 
-
     public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
+        return search(client, queryParams, Function.identity());
+    }
+
+    public <T> SearchResult<T> search(Client client, MultiValueMap<String, String> queryParams, Function<Conversation, T> convTransformer) throws IOException {
 
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, "text"));
 
@@ -81,16 +87,11 @@ public class ConversationSearchService {
 
             final QueryResponse queryResponse = solrClient.query(solrParams);
 
-
-            return fromQueryResponse(queryResponse, this::readConversation);
+            return fromQueryResponse(queryResponse, solrDocTransformer.andThen(convTransformer));
 
         } catch (SolrServerException e) {
             throw new IllegalStateException("Cannot query non-initialized core", e);
         }
-    }
-
-    private Conversation readConversation(SolrDocument doc) {
-        return storeService.get(new ObjectId(String.valueOf(doc.getFirstValue("id"))));
     }
 
     private static Map<String, String[]> toListOfStringArrays(Map<String, List<String>> in, String... excludes) {

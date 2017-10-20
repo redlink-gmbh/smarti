@@ -17,20 +17,10 @@
 
 package io.redlink.smarti.services;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-import io.redlink.smarti.api.StoreService;
-import io.redlink.smarti.api.event.StoreServiceEvent;
-import io.redlink.smarti.events.ConversationProcessCompleteEvent;
-import io.redlink.smarti.model.*;
-import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.model.result.Result;
-import io.redlink.smarti.repositories.AnalysisRepository;
-import io.redlink.smarti.repositories.ConversationRepository;
-import org.apache.commons.collections4.CollectionUtils;
+import java.util.List;
+import java.util.function.Supplier;
+
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,19 +29,18 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
-import java.io.IOException;
-import java.util.ConcurrentModificationException;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+
+import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.api.event.StoreServiceEvent;
+import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.repositories.AnalysisRepository;
+import io.redlink.smarti.repositories.ConversationRepository;
 
 /**
  * Conversation-related services
@@ -64,20 +53,10 @@ public class ConversationService {
     @Autowired
     private StoreService storeService;
 
-    @Autowired
-    private PrepareService prepareService;
 
-    @Autowired
-    private QueryBuilderService queryBuilderService;
-    
-    @Autowired
-    private TemplateService templateService;
-    
     @Autowired
     private ApplicationEventPublisher eventPublisher;
     
-    @Autowired
-    private ConfigurationService confService;
 
     @Autowired
     private ConversationRepository conversationRepository;
@@ -92,34 +71,27 @@ public class ConversationService {
      * Updates/Stores the parsed conversation
      * @param client the client
      * @param conversation the conversation (MUST BE owned by the parsed client)
-     * @param process if the conversation needs to be processed (done asynchronously)
      * @return the updated conversation as stored after the update and likely before processing has completed. Use the
      * <code>onCompleteCallback</code> to get the updated conversation including processing results
      */
-    public Conversation update(Client client, Conversation conversation, boolean process) {
+    public Conversation update(Client client, Conversation conversation) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(client);
         if(!Objects.equal(client.getId(),conversation.getOwner())){
             throw new IllegalStateException("The parsed Client MUST BE the owner of the conversation!");
         }
-        
-        final Conversation storedConversation = storeService.store(conversation);
-        if(process){
-            process(client, storedConversation);
-        }
-        return conversation;
+        return storeService.store(conversation);
     }
     
     /**
      * Appends a message to the end of the conversation
      * @param client the client
      * @param conversation the conversation (MUST BE owned by the parsed client)
-     * @param process if the conversation needs to be processed (done asynchronously)
      * @param onCompleteCallback called after the operation completes (including the optional asynchronous processing)
      * @return the updated conversation as stored after the update and likely before processing has completed. Use the
      * <code>onCompleteCallback</code> to get the updated conversation including processing results
      */
-    public Conversation appendMessage(Client client, Conversation conversation, Message message, boolean process) {
+    public Conversation appendMessage(Client client, Conversation conversation, Message message) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
         Preconditions.checkNotNull(client);
@@ -127,113 +99,7 @@ public class ConversationService {
             throw new IllegalStateException("The parsed Client MUST BE the owner of the conversation!");
         }
 
-        final Conversation storedConversation = storeService.appendMessage(conversation, message);
-
-        if (process) {
-            process(client, storedConversation);
-        }
-
-        return storedConversation;
-    }
-
-    /**
-     * Processes the conversation for the parsed client and saved the processing results if the parsed client is also
-     * the owner of the conversation AND the conversation was not updated in the meantime. 
-     * @param client
-     * @param conversation
-     * @param onCompleteCallback
-     */
-    private Analysis getOrProcessAnalysis(Client client, final Conversation conversation) {
-        Analysis analysis = null;
-        //the last modified date is either the date when the conversation or the configuration was changed last
-        Date date = conversation.getLastModified();
-        Configuration config = getConfig(client, conversation);
-        Date confDate = config.getModified();
-        if(confDate != null && confDate.after(date)){
-            date = confDate;
-        }
-        if(client != null && Objects.equal(client.getId(), conversation.getOwner())){
-            analysis = analysisRepository.findByConversationAndDate(conversation.getId(), date);
-        } //for now we only cache analysis from the conversation owner
-        
-        if(analysis == null){
-            analysis = process(client, conversation);
-        }
-        return analysis;
-    }
-
-    private Analysis process(Client client, final Conversation conversation) {
-        Analysis analysis;
-        analysis = prepareService.prepare(client, conversation);
-   
-        templateService.updateTemplates(client, conversation, analysis);
-        
-        queryBuilderService.buildQueries(client, conversation, analysis);
-   
-        if(client != null && Objects.equal(conversation.getOwner(), client.getId())){
-            analysis = analysisRepository.updateAnalysis(analysis);
-   
-            if (log.isDebugEnabled()) {
-                logConversation(conversation, analysis);
-            }
-   
-            eventPublisher.publishEvent(new ConversationProcessCompleteEvent(conversation, analysis));
-        } //else we do not cache analysis results for clients different as the owner of the conversation
-        return analysis;
-    }
-
-    private Configuration getConfig(Client client, final Conversation conversation) {
-        Configuration config;
-        if(client == null){
-            config = confService.getClientConfiguration(conversation.getOwner());
-        } else {
-            config = confService.getClientConfiguration(client);
-        }
-        if(config == null){
-            log.trace("Client {} does not have a configuration. Will use default configuration", client);
-            config = confService.getDefaultConfiguration();
-        }
-        return config;
-    }
-
-    private void logConversation(Conversation c, Analysis a) {
-        if(!log.isDebugEnabled()) return;
-        log.debug("Conversation[id:{} | channel: {} | modified: {}]", c.getId(), c.getChannelId(),
-                c.getLastModified() != null ? DateFormatUtils.ISO_DATETIME_FORMAT.format(c.getLastModified()) : "unknown");
-        if(c.getUser() != null){
-            log.debug(" > user[id: {}| name: {}] ", c.getUser().getId(), c.getUser().getDisplayName());
-        }
-        if(c.getMessages() != null){
-            log.debug(" > {} messages:", c.getMessages().size());
-            AtomicInteger count = new AtomicInteger(0);
-            c.getMessages().forEach(m -> {
-                log.debug("    {}. {} : {}",count.incrementAndGet(), m.getUser() == null ? m.getOrigin() : m.getUser().getDisplayName(), m.getContent());
-            });
-        }
-        if(a != null){
-            if(a.getTokens() != null){
-                log.debug(" > {} tokens:", a.getTokens().size());
-                AtomicInteger count = new AtomicInteger(0);
-                a.getTokens().forEach(t -> {
-                    log.debug("    {}. {}",count.getAndIncrement(), t);
-                });
-            }
-            if(a.getTemplates() != null){
-                log.debug(" > {} templates:", a.getTemplates().size());
-                AtomicInteger count = new AtomicInteger(0);
-                a.getTemplates().forEach(t -> {
-                    log.debug("    {}. {}", count.getAndIncrement(), t);
-                    if (CollectionUtils.isNotEmpty(t.getQueries())) {
-                        log.debug("    > with {} queries", t.getQueries().size());
-                        t.getQueries().forEach(q -> log.debug("       - {}", q));
-                    }
-                });
-            }
-        }
-    }
-
-    public Conversation appendMessage(Client client, Conversation conversation, Message message) {
-        return appendMessage(client, conversation, message, true);
+        return storeService.appendMessage(conversation, message);
     }
 
     public Conversation completeConversation(Conversation conversation) {
@@ -245,21 +111,8 @@ public class ConversationService {
     }
 
 
-    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
-        return queryBuilderService.execute(client, creator, template, conversation, getOrProcessAnalysis(client, conversation), params);
-    }
-
-
-    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
-        return getInlineResults(client, conversation, template, creator, new LinkedMultiValueMap<>());
-    }
-    
     public Conversation getConversation(Client client, ObjectId convId){
         return storeService.get(convId);
-    }
-    
-    public Analysis getAnalysis(Client client, Conversation conversation){
-        return getOrProcessAnalysis(client, conversation);
     }
     
     public Conversation getCurrentConversationByChannelId(Client client, String channelId) {
@@ -326,24 +179,17 @@ public class ConversationService {
         return publishSaveEvent(conversationRepository.updateConversationStatus(conversationId, newStatus));
     }
 
-    public boolean deleteMessage(ObjectId conversationId, String messageId, boolean process) {
+    public boolean deleteMessage(ObjectId conversationId, String messageId) {
         final boolean success = conversationRepository.deleteMessage(conversationId, messageId);
         if (success) {
             final Conversation one = conversationRepository.findOne(conversationId);
             publishSaveEvent(one);
-            if(process){
-                process(null, one);
-            }
         }
         return success;
     }
 
-    public Conversation updateMessage(ObjectId conversationId, Message updatedMessage, boolean process) {
-        // TODO: also re-analyze!
+    public Conversation updateMessage(ObjectId conversationId, Message updatedMessage) {
         Conversation con = publishSaveEvent(conversationRepository.updateMessage(conversationId, updatedMessage));
-        if(process){
-            process(null, con);
-        }
         return con;
     }
 
@@ -358,17 +204,15 @@ public class ConversationService {
         if (one != null) {
             conversationRepository.delete(conversationId);
             eventPublisher.publishEvent(StoreServiceEvent.delete(conversationId, this));
+            analysisRepository.deleteByConversation(one.getId());
         }
         return one;
     }
 
-    public Conversation updateConversationField(ObjectId conversationId, String field, Object data, boolean process) {
+    public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
         // TODO(westei): check whitelist of allowed fields
         Conversation con = publishSaveEvent(conversationRepository.updateConversationField(conversationId, field, data));
         // re-process updated conversation
-        if(process){
-            process(null, con);
-        }
         return con;
     }
 
@@ -380,13 +224,10 @@ public class ConversationService {
         return conversationRepository.exists(conversationId, messageId);
     }
 
-    public Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data, boolean process) {
+    public Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
         final Conversation con = conversationRepository.updateMessageField(conversationId, messageId, field, data);
         if (con != null) {
             publishSaveEvent(con);
-            if(process){
-                process(null, con);
-            }
         }
         return con.getMessages().stream()
                 .filter(m -> messageId.equals(m.getId()))

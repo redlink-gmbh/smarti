@@ -31,6 +31,8 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @ApiModel
 @Document
 @CompoundIndexes(value={
@@ -38,12 +40,23 @@ import org.springframework.data.mongodb.core.mapping.Document;
 })
 public class Analysis {
 
+    /*
+     * NOTE about JSON serialization: 
+     * Used embedded into the ConversationData so we do not need id, conversation and date
+     */
     @Id
+    @JsonIgnore 
     private final ObjectId id;
     
     @Indexed
+    @JsonIgnore
+    private final ObjectId client;
+    
+    @Indexed
+    @JsonIgnore
     private final ObjectId conversation;
     
+    @JsonIgnore
     private final Date date;
     
     //TODO: maybe add additional data for user modified analysis
@@ -56,17 +69,22 @@ public class Analysis {
 
     
     @PersistenceConstructor
-    public Analysis(ObjectId conversationId, Date date) {
-        this(null,conversationId, date);
+    public Analysis(ObjectId clientId, ObjectId conversationId, Date date) {
+        this(null, clientId, conversationId, date);
     }
-    public Analysis(ObjectId id, ObjectId conversationId, Date date) {
+    public Analysis(ObjectId id, ObjectId clientId, ObjectId conversationId, Date date) {
         this.id = id;
         this.conversation = conversationId;
+        this.client = clientId;
         this.date = date;
     }
 
     public ObjectId getId() {
         return id;
+    }
+    
+    public ObjectId getClient() {
+        return client;
     }
     
     public ObjectId getConversation() {
