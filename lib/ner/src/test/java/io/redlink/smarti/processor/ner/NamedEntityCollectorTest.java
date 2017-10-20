@@ -26,7 +26,7 @@ import io.redlink.nlp.negation.de.GermanNegationRule;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.Token.Hint;
-import io.redlink.smarti.processing.AnalysisContext;
+import io.redlink.smarti.processing.AnalysisData;
 import io.redlink.smarti.processor.pos.NegatedTokenMarker;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,7 +48,7 @@ import java.util.concurrent.*;
  * Tests collecting {@link Token}s for {@link Annotations#NER_ANNOTATION}s
  * present in the {@link AnalyzedText}. In addition this also tests that the
  * {@link NegationHandler} also marks Named Entity Tokens as {@link Hint#negated}
- * if they are in a text section that is marked as {@link AnalysisContext#NEGATION_ANNOTATION}.
+ * if they are in a text section that is marked as {@link AnalysisData#NEGATION_ANNOTATION}.
  * 
  * @author Rupert Westenthaler
  *
@@ -137,7 +137,7 @@ public class NamedEntityCollectorTest {
         negationHandler = new NegatedTokenMarker();
     }
     
-    private static final void preprocessConversation(AnalysisContext pd) throws ProcessingException{
+    private static final void preprocessConversation(AnalysisData pd) throws ProcessingException{
         for(Processor processor : REQUIRED_PREPERATORS){
             processor.process(pd);
         }
@@ -148,13 +148,13 @@ public class NamedEntityCollectorTest {
     public void testSingle() throws ProcessingException{
         int idx = Math.round((float)Math.random()*(CONTENTS.size()-1));
         Conversation conversation = initConversation(idx);
-        AnalysisContext processingData = AnalysisContext.create(conversation);
+        AnalysisData processingData = AnalysisData.create(conversation);
         processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         processConversation(processingData);
         assertNerProcessingResults(processingData, CONTENTS.get(idx).getRight());
     }
 
-    void processConversation(AnalysisContext processingData) throws ProcessingException {
+    void processConversation(AnalysisData processingData) throws ProcessingException {
         log.trace(" - preprocess conversation {}", processingData.getConversation());
         preprocessConversation(processingData);
         log.trace(" - start processing");
@@ -213,7 +213,7 @@ public class NamedEntityCollectorTest {
         executor.shutdown();
     }
     
-    private void assertNerProcessingResults(AnalysisContext processingData, List<Pair<String,Hint[]>> expected) {
+    private void assertNerProcessingResults(AnalysisData processingData, List<Pair<String,Hint[]>> expected) {
         expected = new LinkedList<>(expected); //copy so we can remove
         Conversation conv = processingData.getConversation();
         Analysis analysis = processingData.getAnalysis();
@@ -240,12 +240,12 @@ public class NamedEntityCollectorTest {
     private class ConversationProcessor implements Callable<ConversationProcessor> {
 
         private final int idx;
-        private final AnalysisContext processingData;
+        private final AnalysisData processingData;
         private int duration;
 
         ConversationProcessor(int idx, String lang){
             this.idx = idx;
-            this.processingData = AnalysisContext.create(initConversation(idx));
+            this.processingData = AnalysisData.create(initConversation(idx));
             this.processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         }
         
@@ -262,7 +262,7 @@ public class NamedEntityCollectorTest {
             return idx;
         }
         
-        public AnalysisContext getProcessingData() {
+        public AnalysisData getProcessingData() {
             return processingData;
         }
         

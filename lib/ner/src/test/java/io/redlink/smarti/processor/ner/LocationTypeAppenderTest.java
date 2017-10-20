@@ -25,7 +25,7 @@ import io.redlink.nlp.regex.ner.RegexNerProcessor;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.Token.Hint;
-import io.redlink.smarti.processing.AnalysisContext;
+import io.redlink.smarti.processing.AnalysisData;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -116,13 +116,13 @@ public class LocationTypeAppenderTest {
     public void testSingle() throws ProcessingException{
         int idx = Math.round((float)Math.random()*(CONTENTS.size()-1));
         Conversation conversation = initConversation(idx);
-        AnalysisContext processingData = AnalysisContext.create(conversation);
+        AnalysisData processingData = AnalysisData.create(conversation);
         processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         processConversation(processingData);
         assertNerProcessingResults(processingData, CONTENTS.get(idx).getRight());
     }
 
-    void processConversation(AnalysisContext processingData) throws ProcessingException {
+    void processConversation(AnalysisData processingData) throws ProcessingException {
         log.trace(" - preprocess conversation {}", processingData.getConversation());
         for(Processor processor : REQUIRED_PRE_PREPERATORS){
             processor.process(processingData);
@@ -186,7 +186,7 @@ public class LocationTypeAppenderTest {
         executor.shutdown();
     }
     
-    private void assertNerProcessingResults(AnalysisContext processingData, List<Pair<String,Hint[]>> expected) {
+    private void assertNerProcessingResults(AnalysisData processingData, List<Pair<String,Hint[]>> expected) {
         expected = new LinkedList<>(expected); //copy so we can remove
         Conversation conv = processingData.getConversation();
         Analysis analysis = processingData.getAnalysis();
@@ -214,12 +214,12 @@ public class LocationTypeAppenderTest {
     private class ConversationProcessor implements Callable<ConversationProcessor> {
 
         private final int idx;
-        private final AnalysisContext processingData;
+        private final AnalysisData processingData;
         private int duration;
 
         ConversationProcessor(int idx, String lang){
             this.idx = idx;
-            this.processingData = AnalysisContext.create((initConversation(idx)));
+            this.processingData = AnalysisData.create((initConversation(idx)));
             this.processingData.getConfiguration().put(Configuration.LANGUAGE, lang);
         }
         
@@ -236,7 +236,7 @@ public class LocationTypeAppenderTest {
             return idx;
         }
         
-        public AnalysisContext getProcessingData() {
+        public AnalysisData getProcessingData() {
             return processingData;
         }
         

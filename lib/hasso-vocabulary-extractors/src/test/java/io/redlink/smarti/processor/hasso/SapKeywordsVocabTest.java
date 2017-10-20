@@ -24,7 +24,7 @@ import io.redlink.nlp.model.util.NlpUtils;
 import io.redlink.nlp.regex.ner.RegexNerProcessor;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
-import io.redlink.smarti.processing.AnalysisContext;
+import io.redlink.smarti.processing.AnalysisData;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -53,7 +53,7 @@ public class SapKeywordsVocabTest {
         final Message m = new Message();
         m.setContent("Was ist der tCode für GIS?");
         c.getMessages().add(m);
-        AnalysisContext data = AnalysisContext.create(c);
+        AnalysisData data = AnalysisData.create(c);
         data.getConfiguration().put(LANGUAGE,"de"); //this test does not have a language detector
         extractor.process(data);
         

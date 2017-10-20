@@ -23,7 +23,7 @@ import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.processing.AnalysisContext;
+import io.redlink.smarti.processing.AnalysisData;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +130,7 @@ public class PrepareService {
         Analysis analysis = new Analysis(client.getId(), conversation.getId(), date);
         //TODO: get pipeline and processor configuration for the parsed client
         log.debug("Preparing query for {}", conversation);
-        AnalysisContext pd = AnalysisContext.create(conversation, analysis);
+        AnalysisData pd = AnalysisData.create(conversation, analysis);
         final long start = System.currentTimeMillis();
         pipeline.forEach(p -> {
             log.debug(" -> calling {}", p.getClass().getSimpleName());
