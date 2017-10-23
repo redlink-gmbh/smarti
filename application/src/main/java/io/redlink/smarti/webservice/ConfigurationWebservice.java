@@ -29,9 +29,9 @@ import java.util.Map;
 
 @CrossOrigin
 @RestController
-@RequestMapping(value = "config",
+@RequestMapping(value = "/config",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
-@Api("config")
+@Api
 public class ConfigurationWebservice {
 
     private static ObjectMapper objectMapper = new ObjectMapper();

@@ -29,6 +29,8 @@ import org.bson.types.ObjectId;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
+import static io.redlink.smarti.model.ConversationMeta.PROP_TAGS;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -126,47 +128,6 @@ public class InMemoryStoreService extends StoreService {
     @Override
     public Conversation get(ObjectId conversationId) {
         return storage.get(conversationId);
-    }
-
-    @Override
-    public List<String> listTagsByInfix(String query, int limit) {
-        return listTagsBy(t -> StringUtils.containsIgnoreCase(t, query), limit);
-    }
-
-    @Override
-    public List<String> listTagsByPrefix(String query, int limit) {
-        return listTagsBy(t -> StringUtils.startsWithIgnoreCase(t, query), limit);
-    }
-
-    protected List<String> listTagsBy(Predicate<String> predicate, int limit) {
-        return storage.values().stream()
-                .filter(Objects::nonNull)
-                .map(Conversation::getMeta)
-                .map(ConversationMeta::getTags)
-                .flatMap(Collection::stream)
-                .filter(predicate)
-                .collect(Collectors.groupingBy(s -> s, Collectors.counting()))
-            .entrySet().stream()
-                .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue()))
-                .limit(limit)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Pair<String, Long>> listTags(int rows, int offset) {
-        return storage.values().stream()
-                .filter(Objects::nonNull)
-                .map(Conversation::getMeta)
-                .map(ConversationMeta::getTags)
-                .flatMap(Collection::stream)
-                .collect(Collectors.groupingBy(s -> s, Collectors.counting()))
-            .entrySet().stream()
-                .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue()))
-                .skip(offset)
-                .limit(rows)
-                .map(e -> ImmutablePair.of(e.getKey(), e.getValue()))
-                .collect(Collectors.toList());
     }
 
     @Override

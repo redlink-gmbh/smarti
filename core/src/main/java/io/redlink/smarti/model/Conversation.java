@@ -42,7 +42,7 @@ import java.util.List;
 public class Conversation {
 
     @Id
-    @ApiModelProperty(position = 0)
+    @ApiModelProperty
     @Indexed
     @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
@@ -55,23 +55,23 @@ public class Conversation {
     @JsonIgnore
     private ObjectId owner;
     
-    @ApiModelProperty(position = 0, value = "metadata")
+    @ApiModelProperty(value = "metadata")
     private ConversationMeta meta = new ConversationMeta();
 
     @JsonProperty(required = true)
-    @ApiModelProperty(position = 1, required = true)
+    @ApiModelProperty(required = true)
     private User user = new User(); // TODO: needs discussion for REISEBUDDY-28
 
-    @ApiModelProperty(position = 2, required = true, value = "List of Messages")
+    @ApiModelProperty(required = true, value = "List of Messages")
     private List<Message> messages = new ArrayList<>();
 
-    @ApiModelProperty(position = 3, value = "Tokens extracted")
+    @ApiModelProperty(value = "Tokens extracted")
     private List<Token> tokens = new ArrayList<>();
 
-    @ApiModelProperty(position = 4, value = "Templates for possible queries")
+    @ApiModelProperty(value = "Templates for possible queries")
     private List<Template> queryTemplates = new ArrayList<>();
 
-    @ApiModelProperty(position = 5, value = "conversation context")
+    @ApiModelProperty(value = "conversation context")
     private Context context = new Context();
 
     private Date lastModified = null;
@@ -99,6 +99,7 @@ public class Conversation {
      * @deprecated use #getOwner() instead
      */
     @Deprecated
+    @JsonIgnore
     public ObjectId getClientId() {
         return getOwner();
     }

@@ -26,7 +26,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.6.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>smarti-documentation</artifactId>
@@ -67,6 +67,31 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>swagger</id>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dependency</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>smarti-application</artifactId>
+                                    <version>${project.version}</version>
+                                    <includes>**/swagger.json</includes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
 
             <!-- generate the documentation -->
             <plugin>
@@ -125,19 +150,34 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <sourceDirectory>${project.basedir}</sourceDirectory>
+                    <sourceDirectory>${project.basedir}/src</sourceDirectory>
                     <headerFooter>true</headerFooter>
                     <imagesDir>images</imagesDir>
-                    <attributes/>
+                    <attributes>
+                        <allow-uri-read>true</allow-uri-read>
+                    </attributes>
                     <resources>
                         <resource>
-                            <directory>.</directory> <!-- or just use . o filter across all files-->
-                            <exclude>**/pom.xml</exclude>
+                            <directory>src</directory> <!-- or just use . o filter across all files-->
+                        </resource>
+                        <resource>
+                            <directory>${project.build.directory}/dependency/META-INF</directory>
+                            <includes>
+                                <include>swagger.json</include>
+                            </includes>
                         </resource>
                     </resources>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>smarti-application</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>

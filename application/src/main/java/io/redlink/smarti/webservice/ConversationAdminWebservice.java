@@ -45,9 +45,9 @@ import java.util.Objects;
 
 @CrossOrigin
 @RestController
-@RequestMapping(value = "admin/conversation",
+@RequestMapping(value = "/admin/conversation",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
-@Api("conversation-admin")
+@Api
 public class ConversationAdminWebservice {
 
     private final ObjectMapper jacksonObjectMapper;
@@ -76,7 +76,7 @@ public class ConversationAdminWebservice {
         return ResponseEntity.ok(conversationService.listConversations(client.getId(), page, pageSize));
     }
 
-    @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
+    @ApiOperation(value = "retrieve a conversation", nickname = "adminGetConversation", response = Conversation.class)
     @RequestMapping(value = "{conversationId}", method = RequestMethod.GET)
     public ResponseEntity<?> getConversation(
             AuthContext authContext,
@@ -181,7 +181,7 @@ public class ConversationAdminWebservice {
             AuthContext authContext,
             @RequestParam("owner") ObjectId owner,
             @RequestParam(value = "replace", defaultValue = "false", required = false) boolean replace,
-            @RequestParam("file") MultipartFile file
+            @RequestPart("file") MultipartFile file
     ) {
 
         if (authenticationService.hasAccessToClient(authContext, owner)) {
