@@ -167,36 +167,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>fetch-ext</id>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <phase>prepare-package</phase>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/ext-dependency</outputDirectory>
-                            <stripClassifier>false</stripClassifier>
-                            <stripVersion>false</stripVersion>
-
-                            <overWriteIfNewer>true</overWriteIfNewer>
-                            <overWriteSnapshots>true</overWriteSnapshots>
-                            <artifactItems>
-                                <!--
-                                <artifactItem>
-                                    <groupId>edu.stanford.nlp</groupId>
-                                    <artifactId>stanford-corenlp</artifactId>
-                                    <version>${stanford-nlp.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>edu.stanford.nlp</groupId>
-                                    <artifactId>stanford-corenlp</artifactId>
-                                    <version>${stanford-nlp.version}</version>
-                                    <classifier>models-german</classifier>
-                                </artifactItem>
-                                -->
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>extract-3rd-party</id>
                         <goals>
                             <goal>unpack</goal>
