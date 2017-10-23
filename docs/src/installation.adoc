@@ -11,6 +11,29 @@ CAUTION: In order to build & run Smarti the <<system-requirements.adoc#,System r
 
 == Deploy
 
+=== Deploy with Docker
+
+```bash
+$ docker run -d --name mongodb mongo
+$ docker run -d --name smarti --link mongodb:mongo -p 8080:8080 redlinkgmbh/smarti
+```
+
+The provided docker-image does not contain some required (GPL-licensed) dependencies. To build a
+contained image, use the following snippet:
+```bash
+$ docker build -t smarti-with-stanfordnlp -<EOF
+FROM redlinkgmbh/smarti
+
+USER root
+ADD [\
+    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar", \
+    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar", \
+    "/opt/ext/"]
+RUN chmod -R a+r /opt/ext/
+USER smarti
+EOF
+```
+
 === Deploy on Debian
 
 ```bash
