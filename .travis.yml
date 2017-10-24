@@ -17,8 +17,6 @@ jdk:
 before_install:
   - gem install sass
   - gem install compass
-  - sudo apt-get update
-  - sudo apt-get install -y rpm
 
 install:
   - mvn -B clean install -Dquick
@@ -28,6 +26,7 @@ script:
 
 jobs:
   include:
+    - stage: test
     - stage: documentation
       if: branch IN (master, documentation) AND type IN (push, api)
       script: cd docs/target/html
@@ -38,6 +37,9 @@ jobs:
                   && git push --force --quiet "https://$GH_TOKEN@$GH_REF" master:gh-pages > /dev/null 2>&1
     - stage: release
       if: tag =~ ^smarti- AND type = push
+      before_script:
+        - sudo apt-get -qq update
+        - sudo apt-get install -y rpm
       script: mvn -B -f dist/ package -Pdeb,rpm
       deploy:
         provider: releases
