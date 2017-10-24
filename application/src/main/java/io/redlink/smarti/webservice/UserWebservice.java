@@ -56,11 +56,13 @@ public class UserWebservice {
 
     @RequestMapping(method = RequestMethod.GET)
     public AuthUser getUser(@AuthenticationPrincipal AttributedUserDetails user) {
+        // Public access
         return AuthUser.wrap(user);
     }
 
     @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDetailsResponse> signUp(@RequestBody  Map<String, String> data) {
+        // Public access
         final String userName = data.get("username"),
                 password = data.get("password"),
                 mail = data.get("email");
@@ -77,6 +79,7 @@ public class UserWebservice {
             @PathVariable("username") String username,
             @RequestBody(required = false) Map<String,String> data
     ) {
+        // Public access
         final String recoveryToken = data.get("token"),
                 newPassword = data.get("password");
 
@@ -118,6 +121,7 @@ public class UserWebservice {
 
     @RequestMapping("check")
     public boolean checkUsernameExists(@RequestParam("username") String username) {
+        // Public access
         return accountService.hasAccount(username);
     }
 

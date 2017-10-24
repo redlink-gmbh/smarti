@@ -50,6 +50,7 @@ public class DebugEndpoint {
     @RequestMapping(value = "{path}", method = RequestMethod.POST)
     public ResponseEntity<?> debugRocketEvent(@PathVariable("path") String path,
                                               @RequestBody Map<String, Object> payload) {
+        // Public access
         try {
             log.info("received '{}' event:\n{}", path, om.writeValueAsString(payload));
             return ResponseEntity.accepted().build();

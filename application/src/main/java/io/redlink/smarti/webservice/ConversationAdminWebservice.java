@@ -143,6 +143,7 @@ public class ConversationAdminWebservice {
             AuthContext authContext,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Date expiryDate) {
+        authenticationService.assertConversation(authContext, conversationId);
         // TODO[#59]: implement this
         return ResponseEntities.notImplemented();
     }

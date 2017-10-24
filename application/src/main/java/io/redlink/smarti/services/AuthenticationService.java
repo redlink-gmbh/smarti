@@ -30,6 +30,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Various helper-methods for checking and asserting access permissions
@@ -211,5 +212,24 @@ public class AuthenticationService {
         return conversation != null
                 && (hasRole(authContext, ADMIN) || getClients(authContext).contains(conversation.getOwner()));
 
+    }
+
+    public Set<Client> assertClients(AuthContext authContext) {
+        final Set<Client> clients = assertClientIds(authContext).stream()
+                .map(clientService::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (clients.isEmpty()) {
+            throw new AccessDeniedException("Access Denied");
+        }
+        return clients;
+    }
+
+    public Set<ObjectId> assertClientIds(AuthContext authContext) {
+        final Set<ObjectId> clientIds = getClients(authContext);
+        if (clientIds.isEmpty()) {
+            throw new AccessDeniedException("Access Denied");
+        }
+        return clientIds;
     }
 }

@@ -21,9 +21,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
+import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.AuthContext;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
 import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
 import io.swagger.annotations.*;
@@ -74,6 +76,9 @@ public class RocketChatEndpoint {
     @Autowired
     private ConversationService conversationService;
 
+    @Autowired
+    private AuthenticationService authenticationService;
+
     @Autowired(required = false)
     private ConversationSearchService conversationSearchService;
 
@@ -112,9 +117,14 @@ public class RocketChatEndpoint {
     })
     @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST,
             consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientName,
-                                           @RequestBody RocketEvent payload) {
+    public ResponseEntity<?> onRocketEvent(
+            AuthContext authContext,
+            @PathVariable("clientId") String clientName,
+            @RequestBody RocketEvent payload
+    ) {
         log.debug("{}: {}", clientName, payload);
+
+        //FIXME: How to check authentication here?
 
         Client client = clientService.getByName(clientName);
         if(client == null) { //TODO: make client generation configurable
@@ -200,10 +210,11 @@ public class RocketChatEndpoint {
     @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET,
         produces=MimeTypeUtils.TEXT_PLAIN_VALUE, consumes=MimeTypeUtils.ALL_VALUE)
     public ResponseEntity<?> getConversation(
+            AuthContext authContext,
             @PathVariable(value="clientId") String clientName,
             @PathVariable(value="channelId") String channelId) {
         Client client = clientService.getByName(clientName);
-        if(client == null){
+        if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())){
             return ResponseEntity.notFound().build();
         }
         Conversation conversation = conversationService.getCurrentConversationByChannelId(
@@ -224,12 +235,14 @@ public class RocketChatEndpoint {
             notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
     @RequestMapping(value = "{clientId}/search", method = RequestMethod.GET)
     public ResponseEntity<?> search(
+            AuthContext authContext,
             @PathVariable(value = "clientId") String clientName,
             @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
-            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams) {
+            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
+    ) {
 
         final Client client = clientService.getByName(clientName);
-        if (client == null) {
+        if (client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
             return ResponseEntity.notFound().build();
         }
 
