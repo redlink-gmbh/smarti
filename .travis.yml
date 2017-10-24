@@ -51,6 +51,7 @@ jobs:
           - dist/target/rpm/smarti/RPMS/noarch/*.rpm
         skip_cleanup: true
         name: ${TRAVIS_TAG}
+        target_commitish: ${TRAVIS_COMMIT}
         draft: true
         on:
           repo: redlink-gmbh/smarti
