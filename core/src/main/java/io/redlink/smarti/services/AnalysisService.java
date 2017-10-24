@@ -155,22 +155,36 @@ public class AnalysisService {
      * TODO: provide async version of the inline result methods
      */
     public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator) throws IOException {
-        return getInlineResults(client, conversation, template, creator, new LinkedMultiValueMap<>());
+        return getInlineResults(client, conversation, null, template, creator, new LinkedMultiValueMap<>());
     }
 
     public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
-        try {
-            return queryBuilderService.execute(client, creator, template, conversation, analyze(client, conversation).get(), params);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return null;
-        } catch (ExecutionException e) {
-            if(e.getCause() instanceof RuntimeException){
-                throw (RuntimeException) e.getCause();
-            } else {
-                throw new RuntimeException(e.getCause());
+        return getInlineResults(client, conversation, null, template, creator, params);
+    } 
+    
+    /*
+     * TODO: provide async version of the inline result methods
+     */
+    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Analysis analysis, Template template, String creator) throws IOException {
+        return getInlineResults(client, conversation, template, creator, new LinkedMultiValueMap<>());
+    }
+
+    public SearchResult<? extends Result> getInlineResults(Client client, Conversation conversation, Analysis analysis, Template template, String creator, MultiValueMap<String, String> params) throws IOException {
+        if(analysis == null){
+            try {
+                analysis = analyze(client, conversation).get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            } catch (ExecutionException e) {
+                if(e.getCause() instanceof RuntimeException){
+                    throw (RuntimeException) e.getCause();
+                } else {
+                    throw new RuntimeException(e.getCause());
+                }
             }
         }
+        return queryBuilderService.execute(client, creator, template, conversation, analysis, params);
     }
 
 

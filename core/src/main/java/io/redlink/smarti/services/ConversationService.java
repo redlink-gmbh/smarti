@@ -223,14 +223,19 @@ public class ConversationService {
     public boolean exists(ObjectId conversationId, String messageId) {
         return conversationRepository.exists(conversationId, messageId);
     }
-
-    public Message updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+    /**
+     * Updates a field of a message within the conversation
+     * @param conversationId
+     * @param messageId
+     * @param field
+     * @param data
+     * @return The conversation on an update or <code>null</code> of no update was performed
+     */
+    public Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
         final Conversation con = conversationRepository.updateMessageField(conversationId, messageId, field, data);
         if (con != null) {
             publishSaveEvent(con);
         }
-        return con.getMessages().stream()
-                .filter(m -> messageId.equals(m.getId()))
-                .findFirst().orElse(null);
+        return con;
     }
 }

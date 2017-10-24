@@ -143,6 +143,8 @@ public class PrepareService {
             }
         });
         log.debug("analysed Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
+        //now sort the Tokens
+        Collections.sort(analysis.getTokens());
         return analysis;
     }
 
