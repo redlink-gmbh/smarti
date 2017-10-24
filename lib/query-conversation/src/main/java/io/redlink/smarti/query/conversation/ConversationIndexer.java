@@ -197,7 +197,7 @@ public class ConversationIndexer {
         final SolrInputDocument solrConversation = new SolrInputDocument();
 
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
-        solrConversation.setField(FIELD_TYPE, "conversation");
+        solrConversation.setField(FIELD_TYPE, TYPE_CONVERSATION);
         solrConversation.setField(FIELD_MODIFIED, conversation.getLastModified());
         
         //add owner and context information
@@ -234,6 +234,8 @@ public class ConversationIndexer {
 
                 }
             }
+            //we want the content of the messages also stored with the conversation (e.g. for highlighting)
+            messages.forEach(m -> solrConversation.addField(FIELD_MESSAGE, m.getFieldValues(FIELD_MESSAGE)));
             solrConversation.addChildDocuments(messages);
         }
 
@@ -252,7 +254,7 @@ public class ConversationIndexer {
         solrMsg.setField(FIELD_CONVERSATION_ID, conversation.getId());
         solrMsg.setField(FIELD_MESSAGE_ID, message.getId());
         solrMsg.setField(FIELD_MESSAGE_IDX, i);
-        solrMsg.setField(FIELD_TYPE, "message");
+        solrMsg.setField(FIELD_TYPE, TYPE_MESSAGE);
         if (message.getUser() != null) {
             solrMsg.setField(FIELD_USER_ID, message.getUser().getId());
             solrMsg.setField(FIELD_USER_NAME, message.getUser().getDisplayName());

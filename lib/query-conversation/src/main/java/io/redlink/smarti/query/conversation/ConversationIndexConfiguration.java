@@ -31,6 +31,8 @@ public class ConversationIndexConfiguration {
     
     public static final String FIELD_ID = "id";
     public static final String FIELD_TYPE = "type";
+    public static final String TYPE_MESSAGE = "message";
+    public static final String TYPE_CONVERSATION = "conversation";
     public static final String FIELD_OWNER = "owner";
     public static final String FIELD_USER_ID = "user_id";
     public static final String FIELD_USER_NAME = "user_name";
