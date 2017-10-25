@@ -18,7 +18,9 @@ RUN mkdir -p /opt/ext/
 #    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar", \
 #    "/opt/ext/"]
 #RUN chmod -R a+r /opt/ext/
-ADD target/classes/docker/ ${HOME}/
+ADD target/classes/docker/*.properties target/classes/docker/*.xml ${HOME}/
+ADD target/classes/docker/smarti.sh /opt/smarti.sh
+RUN chmod a+x /opt/smarti.sh
 ADD target/dependency/smarti.jar /opt/smarti.jar
 
 # smarti shoud run as it's own user
@@ -31,8 +33,7 @@ VOLUME ${HOME}
 WORKDIR ${HOME}
 
 # inherit entrypoint to sub-images
-ONBUILD ENTRYPOINT [ "java", "-Dloader.path=BOOT-INF/lib,/opt/ext", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/opt/smarti.jar" ]
-ENTRYPOINT [ "java", "-Dloader.path=BOOT-INF/lib,/opt/ext", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/opt/smarti.jar" ]
-
+ONBUILD ENTRYPOINT [ "/opt/smarti.sh" ]
+ENTRYPOINT [ "/opt/smarti.sh" ]
 # let's go!
 CMD ["--smarti.required-providers.fail-on-missing=false"]
