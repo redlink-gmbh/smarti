@@ -79,7 +79,7 @@ public class ConversationSearchService {
                     .filter(StringUtils::isNotBlank).collect(Collectors.joining(" ")));
             if(query != null){
                 log.debug("query text:({}) (search Terms: {})", query, searchTerms);
-                solrParams.set(CommonParams.Q, String.format("{!parent which=\"%s:%s\"}text:(%s) +%s:%s",
+                solrParams.set(CommonParams.Q, String.format("{!parent which=\"%s:%s\"}+text:(%s) +%s:%s",
                         FIELD_TYPE, TYPE_CONVERSATION,
                         query,
                         FIELD_TYPE, TYPE_MESSAGE));
