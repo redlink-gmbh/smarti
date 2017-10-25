@@ -235,7 +235,7 @@ public class ConversationIndexer {
                 }
             }
             //we want the content of the messages also stored with the conversation (e.g. for highlighting)
-            messages.forEach(m -> solrConversation.addField(FIELD_MESSAGE, m.getFieldValues(FIELD_MESSAGE)));
+            messages.forEach(m -> solrConversation.addField(FIELD_MESSAGES, m.getFieldValues(FIELD_MESSAGE)));
             solrConversation.addChildDocuments(messages);
         }
 
