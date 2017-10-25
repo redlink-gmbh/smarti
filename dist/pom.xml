@@ -384,6 +384,7 @@
                                 <require>/usr/sbin/groupadd</require>
                             </prereqs>
                             <requires>
+                                <require>/bin/mongo</require>
                                 <require>java-1.8.0-headless</require>
                             </requires>
 
