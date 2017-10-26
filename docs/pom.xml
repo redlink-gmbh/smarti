@@ -21,22 +21,22 @@
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.redlink.smarti</groupId>
-        <artifactId>smarti</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
-    </parent>
+  <parent>
+    <groupId>io.redlink.smarti</groupId>
+    <artifactId>smarti</artifactId>
+    <version>0.6.0-RC2-SNAPSHOT</version>
+  </parent>
 
-    <artifactId>smarti-documentation</artifactId>
-    <name>smarti :: Documentation</name>
+  <artifactId>smarti-documentation</artifactId>
+  <name>smarti :: Documentation</name>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <asciidoctor.maven.plugin.version>1.5.5</asciidoctor.maven.plugin.version>
-        <asciidoctorj.pdf.version>1.5.0-alpha.16</asciidoctorj.pdf.version>
-    </properties>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <asciidoctor.maven.plugin.version>1.5.5</asciidoctor.maven.plugin.version>
+    <asciidoctorj.pdf.version>1.5.0-alpha.16</asciidoctorj.pdf.version>
+  </properties>
 
     <build>
         <defaultGoal>compile</defaultGoal>
