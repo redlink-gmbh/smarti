@@ -66,6 +66,10 @@ const localize = new Localize({
         "en": "Page $[1] of $[2] results",
         "de": "Seite $[1] von $[2] Ergebnissens"
     },
+    "widget.latch.query.remove.all": {
+        "en": "Clear all",
+        "de": "Alle löschen"
+    },
     "widget.latch.query.paging.next":{
         "en": "Next",
         "de": "Nächste"
@@ -490,6 +494,19 @@ function SmartiWidget(element,_options) {
         }
 
         var termPills = $('<div class="smarti-token-pills">').appendTo(content);
+        var termPillCancel = $('<div class="smarti-token-pills-remove">').append(
+            $('<button>').text(
+                Utils.localize({code:'widget.latch.query.remove.all'})
+            ).click(function(){
+                clearAllTokens();
+            })
+        ).appendTo(content);
+
+        function clearAllTokens() {
+            termPills.children().each(function(){
+                $(this).hide();
+            })
+        }
 
         function perparePillTokens(slots,tokens) {
             var pillTokens = [];
@@ -556,6 +573,8 @@ function SmartiWidget(element,_options) {
                 getResults(0);
             }
         });
+
+
 
         params.elem.append(inputForm);
         var resultCount = $('<h3></h3>').appendTo(params.elem);
