@@ -120,6 +120,19 @@ const Utils = {
             case 'application/xhtml+xml': return 'html';
         }
         return doctype.substring(doctype.indexOf('/')+1).slice(0,4);
+    },
+    cropLabel: function(label,max_length,replace,mode) {
+        max_length = max_length-replace.length;
+
+        if(label.length <= max_length) return label;
+
+        switch(mode) {
+            case 'start': return label.substring(0,max_length) + replace;
+            case 'end': return replace + label.substring(label.length-max_length);
+            default:
+                var partLength = Math.floor(max_length/2);
+                return label.substring(0,partLength) + replace + label.substring(label.length-partLength);
+        }
     }
 };
 
@@ -389,6 +402,13 @@ function SmartiWidget(element,_options) {
             onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
             category: "knowledgebase"
         },
+        ui: {
+          tokenpill: {
+              textlength: 30,
+              textreplace: '...',
+              textreplacemode: 'middle'
+          }
+        },
         lang: 'de'
     };
 
@@ -445,7 +465,10 @@ function SmartiWidget(element,_options) {
         function createTermPill(token) {
 
             return $('<div class="smarti-token-pill">')
-                .append($('<span>').text(token.value))
+                .append($('<span>')
+                    .text(
+                        Utils.cropLabel(token.value, options.ui.tokenpill.textlength, options.ui.tokenpill.textreplace, options.ui.tokenpill.textreplacemode))
+                    ).attr('title', token.value)
                 .append('<i class="icon-cancel"></i>')
                 .data('token',token)
                 .click(function(){
