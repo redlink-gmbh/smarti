@@ -505,7 +505,9 @@ function SmartiWidget(element,_options) {
         function clearAllTokens() {
             termPills.children().each(function(){
                 $(this).hide();
-            })
+            });
+            getResults(0);
+            tracker.trackEvent(params.query.creator + ".tag.remove-all");
         }
 
         function perparePillTokens(slots,tokens) {
