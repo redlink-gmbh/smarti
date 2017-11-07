@@ -680,7 +680,7 @@ function SmartiWidget(element,_options) {
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
         function refresh(data) {
-            getResults();
+            getResults(0);
         }
 
         var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
