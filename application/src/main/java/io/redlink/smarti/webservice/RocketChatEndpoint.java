@@ -124,13 +124,9 @@ public class RocketChatEndpoint {
     ) {
         log.debug("{}: {}", clientName, payload);
 
-        //FIXME: How to check authentication here?
-
-        Client client = clientService.getByName(clientName);
-        if(client == null) { //TODO: make client generation configurable
-            client = new Client();
-            client.setName(clientName);
-            client = clientService.save(client);
+        final Client client = clientService.getByName(clientName);
+        if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
+            return ResponseEntity.notFound().build();
         }
 
         final String channelId = createChannelId(client, payload.getChannelId());
