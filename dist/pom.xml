@@ -48,6 +48,19 @@
             <classifier>exec</classifier>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>smarti-db-migrator</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>smarti-db-migrator</artifactId>
+            <version>${project.version}</version>
+            <classifier>exec</classifier>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -156,6 +169,13 @@
                                     <classifier>exec</classifier>
                                     <destFileName>${binaryName}.jar</destFileName>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>smarti-db-migrator</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>exec</classifier>
+                                    <destFileName>db-migrator.jar</destFileName>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
@@ -211,6 +231,14 @@
                                         <!-- the main binary -->
                                         <data>
                                             <src>${project.build.directory}/dependency/${binaryName}.jar</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./usr/share/${packageName}</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.directory}/dependency/db-migrator.jar</src>
                                             <type>file</type>
                                             <mapper>
                                                 <type>perm</type>
@@ -384,7 +412,6 @@
                                 <require>/usr/sbin/groupadd</require>
                             </prereqs>
                             <requires>
-                                <require>/bin/mongo</require>
                                 <require>java-1.8.0-headless</require>
                             </requires>
 
@@ -400,6 +427,9 @@
                                     <sources>
                                         <source>
                                             <location>${project.build.directory}/dependency/${binaryName}.jar</location>
+                                        </source>
+                                        <source>
+                                            <location>${project.build.directory}/dependency/db-migrator.jar</location>
                                         </source>
                                     </sources>
                                     <directory>/usr/share/${packageName}</directory>
