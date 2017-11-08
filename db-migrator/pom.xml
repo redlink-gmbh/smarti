@@ -42,10 +42,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
@@ -65,13 +61,6 @@
                     <classifier>exec</classifier>
                     <mainClass>io.redlink.smarti.migration.MongoMigration</mainClass>
                     <layout>JAR</layout>
-
-                    <!-- jars that requires to be unpacked -->
-                    <requiresUnpack>
-                    </requiresUnpack>
-                    <!-- GPL licensed, needs to be installed manually -->
-                    <excludes>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

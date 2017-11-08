@@ -16,7 +16,6 @@
  */
 package io.redlink.smarti.migration;
 
-import com.google.common.base.Charsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -70,8 +70,7 @@ public class MongoDbMigrationService {
         log.debug("Running database-migration script {}", scriptFile);
         try {
             final String script = "function() {\n" +
-                    new String(Files.readAllBytes(scriptFile), Charsets.UTF_8) +
-                    "\n" +
+                    new String(Files.readAllBytes(scriptFile), Charset.forName("UTF-8")) + "\n" +
                     "}\n";
 
             final ExecutableMongoScript migrationScript = new ExecutableMongoScript(script);

@@ -18,6 +18,7 @@ package io.redlink.smarti.migration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -35,6 +36,7 @@ public class MongoMigration {
 
     public static void main(String... args) {
         final SpringApplication app = new SpringApplication(MongoMigration.class);
+        app.setBannerMode(Banner.Mode.OFF);
 
         boolean hasError = false;
         try (ConfigurableApplicationContext context = app.run(args)) {
