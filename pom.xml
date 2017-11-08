@@ -34,6 +34,7 @@
 
         <module>frontend</module>
         <module>application</module>
+        <module>db-migrator</module>
 
         <module>integration/rocket-chat</module>
 
