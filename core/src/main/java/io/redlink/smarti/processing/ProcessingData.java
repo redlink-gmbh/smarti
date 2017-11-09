@@ -31,6 +31,8 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.commons.lang3.StringUtils;
+
 import static io.redlink.smarti.processing.SmartiAnnotations.*;
 
 public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
@@ -44,11 +46,15 @@ public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
     public static ProcessingData create(Conversation conversation){
         AnalyzedTextBuilder atb = AnalyzedText.build();
         int numMessages = conversation.getMessages().size();
+        boolean first = true;
         for(int i=0;i < numMessages; i++){
             Message message = conversation.getMessages().get(i);
-            Section section = atb.appendSection(i > 0 ? "\n" : null, message.getContent(), "\n");
-            section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
-            section.addAnnotation(MESSAGE_ANNOTATION, message);
+            if(StringUtils.isNoneBlank(message.getContent())){
+                Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
+                section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
+                section.addAnnotation(MESSAGE_ANNOTATION, message);
+                first = false;
+            } //else ignore blank messages for analysis
         }
         return new ProcessingData(conversation, atb.create());
     }
