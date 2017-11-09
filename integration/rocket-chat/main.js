@@ -66,6 +66,10 @@ const localize = new Localize({
         "en": "Page $[1] of $[2] results",
         "de": "Seite $[1] von $[2] Ergebnissens"
     },
+    "widget.latch.query.remove.all": {
+        "en": "Clear all",
+        "de": "Alle löschen"
+    },
     "widget.latch.query.paging.next":{
         "en": "Next",
         "de": "Nächste"
@@ -120,6 +124,19 @@ const Utils = {
             case 'application/xhtml+xml': return 'html';
         }
         return doctype.substring(doctype.indexOf('/')+1).slice(0,4);
+    },
+    cropLabel: function(label,max_length,replace,mode) {
+        max_length = max_length-replace.length;
+
+        if(label.length <= max_length) return label;
+
+        switch(mode) {
+            case 'start': return label.substring(0,max_length) + replace;
+            case 'end': return replace + label.substring(label.length-max_length);
+            default:
+                var partLength = Math.floor(max_length/2);
+                return label.substring(0,partLength) + replace + label.substring(label.length-partLength);
+        }
     }
 };
 
@@ -389,6 +406,13 @@ function SmartiWidget(element,_options) {
             onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
             category: "knowledgebase"
         },
+        ui: {
+          tokenpill: {
+              textlength: 30,
+              textreplace: '...',
+              textreplacemode: 'middle'
+          }
+        },
         lang: 'de'
     };
 
@@ -445,7 +469,10 @@ function SmartiWidget(element,_options) {
         function createTermPill(token) {
 
             return $('<div class="smarti-token-pill">')
-                .append($('<span>').text(token.value))
+                .append($('<span>')
+                    .text(
+                        Utils.cropLabel(token.value, options.ui.tokenpill.textlength, options.ui.tokenpill.textreplace, options.ui.tokenpill.textreplacemode))
+                    ).attr('title', token.value)
                 .append('<i class="icon-cancel"></i>')
                 .data('token',token)
                 .click(function(){
@@ -467,6 +494,21 @@ function SmartiWidget(element,_options) {
         }
 
         var termPills = $('<div class="smarti-token-pills">').appendTo(content);
+        var termPillCancel = $('<div class="smarti-token-pills-remove">').append(
+            $('<button>').text(
+                Utils.localize({code:'widget.latch.query.remove.all'})
+            ).click(function(){
+                clearAllTokens();
+            })
+        ).appendTo(content);
+
+        function clearAllTokens() {
+            termPills.children().each(function(){
+                $(this).hide();
+            });
+            getResults(0);
+            tracker.trackEvent(params.query.creator + ".tag.remove-all");
+        }
 
         function perparePillTokens(slots,tokens) {
             var pillTokens = [];
@@ -533,6 +575,8 @@ function SmartiWidget(element,_options) {
                 getResults(0);
             }
         });
+
+
 
         params.elem.append(inputForm);
         var resultCount = $('<h3></h3>').appendTo(params.elem);
@@ -680,7 +724,7 @@ function SmartiWidget(element,_options) {
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
         function refresh(data) {
-            getResults();
+            getResults(0);
         }
 
         var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);

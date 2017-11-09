@@ -20,7 +20,7 @@
 
     <luceneMatchVersion>6.1.0</luceneMatchVersion>
     <dataDir>${solr.data.dir:}</dataDir>
-
+    <schemaFactory class="ClassicIndexSchemaFactory"/>
     <directoryFactory name="DirectoryFactory"
                       class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}">
     </directoryFactory>
