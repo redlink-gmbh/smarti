@@ -22,6 +22,8 @@ import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.services.AccountService;
 import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +43,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping(value = "auth", produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @ConditionalOnBean(MongoUserDetailsService.class)
+@Api
 public class UserWebservice {
 
     private final AccountService accountService;
@@ -54,12 +57,14 @@ public class UserWebservice {
         this.authenticationService = authenticationService;
     }
 
+    @ApiOperation("retrieve current user details")
     @RequestMapping(method = RequestMethod.GET)
     public AuthUser getUser(@AuthenticationPrincipal AttributedUserDetails user) {
         // Public access
         return AuthUser.wrap(user);
     }
 
+    @ApiOperation(value = "signup", notes = "create a new account", response = UserDetailsResponse.class)
     @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDetailsResponse> signUp(@RequestBody  Map<String, String> data) {
         // Public access
@@ -74,6 +79,7 @@ public class UserWebservice {
 
     }
 
+    @ApiOperation(value = "password recover", notes = "recover password: either start or complete the password recovery process")
     @RequestMapping(path = "{username:[^/]+}/recover", method = RequestMethod.POST)
     public ResponseEntity<?> recoverPassword(
             @PathVariable("username") String username,
@@ -98,6 +104,7 @@ public class UserWebservice {
         return ResponseEntity.badRequest().build();
     }
 
+    @ApiOperation("update password")
     @RequestMapping(path = "{username}/password", method = RequestMethod.PUT)
     public ResponseEntity<?> setPassword(
             @AuthenticationPrincipal UserDetails authentication,
@@ -105,20 +112,23 @@ public class UserWebservice {
             @RequestBody Map<String,String> data
     ) {
         // Access only for ADMIN or @me
-        if (authenticationService.hasUsername(authentication, username) && authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
-            throw new AccessDeniedException("No access for " + authentication);
-        }
-        final String newPassword = data.get("password");
+        if (authenticationService.hasUsername(authentication, username)
+                || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
+            final String newPassword = data.get("password");
 
-        if (StringUtils.isNotBlank(newPassword)) {
-            accountService.setPassword(username, newPassword);
-            return ResponseEntity.noContent().build();
+            if (StringUtils.isNotBlank(newPassword)) {
+                accountService.setPassword(username, newPassword);
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.badRequest().build();
+            }
         } else {
-            return ResponseEntity.badRequest().build();
+            throw new AccessDeniedException("No access for " + authentication);
         }
 
     }
 
+    @ApiOperation(value = "check username", notes = "check if the provided username is already taken")
     @RequestMapping("check")
     public boolean checkUsernameExists(@RequestParam("username") String username) {
         // Public access

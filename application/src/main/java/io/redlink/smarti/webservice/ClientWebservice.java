@@ -121,12 +121,14 @@ public class ClientWebservice {
         }
     }
 
+    @ApiOperation(value = "retireve auth-tokens for a client", response = AuthToken.class, responseContainer = "Set")
     @RequestMapping(value = "{id}/token", method = RequestMethod.GET)
     public ResponseEntity<?> listAuthTokens(AuthContext authContext, @PathVariable("id") ObjectId id) {
         final Client client = authenticationService.assertClient(authContext, id);
         return ResponseEntity.ok(authTokenService.getAuthTokens(client.getId()));
     }
 
+    @ApiOperation(value = "create an auth-token", response = AuthToken.class)
     @RequestMapping(value = "{id}/token", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthToken(AuthContext authContext,
                                              @PathVariable("id") ObjectId id,
@@ -140,6 +142,7 @@ public class ClientWebservice {
         return ResponseEntity.status(HttpStatus.CREATED).body(authTokenService.createAuthToken(client.getId(), label));
     }
 
+    @ApiOperation(value = "update an auth-token", response = AuthToken.class)
     @RequestMapping(value = "{id}/token/{token}", method = RequestMethod.PUT)
     public ResponseEntity<?> updateAuthToken(AuthContext authContext,
                                              @PathVariable("id") ObjectId id,
@@ -156,6 +159,7 @@ public class ClientWebservice {
 
     }
 
+    @ApiOperation("revoke an auth-token")
     @RequestMapping(value = "{id}/token/{token}", method = RequestMethod.DELETE)
     public ResponseEntity<?> revokeAuthToken(AuthContext authContext,
                                              @PathVariable("id") ObjectId id,
@@ -168,6 +172,7 @@ public class ClientWebservice {
         }
     }
 
+    @ApiOperation(value = "list users", notes = "retrieve users assigned to the given client")
     @RequestMapping("{id}/user")
     public ResponseEntity<?> listClientUsers(AuthContext authContext,
                                              @PathVariable("id") ObjectId id) {
@@ -176,6 +181,7 @@ public class ClientWebservice {
         return ResponseEntity.ok(userService.getUsersForClient(client));
     }
 
+    @ApiOperation(value = "create user", notes = "create a new user and assign it to the client", response = SmartiUser.class)
     @RequestMapping(value = "{id}/user", method = RequestMethod.POST)
     public ResponseEntity<?> createClientUser(AuthContext authContext,
                                               @PathVariable("id") ObjectId id,
@@ -190,6 +196,7 @@ public class ClientWebservice {
         return ResponseEntity.ok(userService.createUserForClient(user, client));
     }
 
+    @ApiOperation(value = "assign user", notes = "assign an existing user with the client", response = SmartiUser.class)
     @RequestMapping(value = "{id}/user/{user}", method = RequestMethod.PUT)
     public ResponseEntity<?> addClientUser(AuthContext authContext,
                                               @PathVariable("id") ObjectId id,
@@ -204,6 +211,7 @@ public class ClientWebservice {
         }
     }
 
+    @ApiOperation(value = "remove user", notes = "unassign a user from the client")
     @RequestMapping(value = "{id}/user/{user}", method = RequestMethod.DELETE)
     public ResponseEntity<?> removeClientUser(AuthContext authContext,
                                               @PathVariable("id") ObjectId id,
