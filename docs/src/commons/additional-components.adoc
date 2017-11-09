@@ -6,7 +6,7 @@ To enable these additional modules, you need to put the missing libraries into t
 When installed with the provided `deb` or `rpm` package, this folder is located at `/var/lib/smarti/ext` by default and contains a simple readme.
 
 .plugin-info.txt
-:sourcedir: ../../dist/src/main/resources/
+:sourcedir: ../../../dist/src/main/resources
 [source,txt]
 ----
 include::{sourcedir}/plugin-info.txt[]

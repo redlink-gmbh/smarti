@@ -55,7 +55,7 @@ const localize = new Localize({
         "en": "Widget $[1] has problems while quering: $[2]"
     },
     "widget.latch.query.no-results":{
-        "de":"Keine Ergbenisse",
+        "de":"Keine Ergebnisse",
         "en":"No results"
     },
     "widget.latch.query.header":{

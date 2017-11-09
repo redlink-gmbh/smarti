@@ -1,3 +1,4 @@
+:migration_scripts: ../../scripts
 == Smarti Changelog
 
 This document shows the changes that are introduced into Smarti with the releases.
@@ -19,6 +20,7 @@ This release introduces a brand new search API that allows:
 
 ==== Improved in Smarti 0.6.0
 * https://github.com/redlink-gmbh/smarti/issues/62[#62 - Added conversation independent search API]
+* https://github.com/redlink-gmbh/smarti/issues/112[#112 - Added automatic database migration]
 * https://github.com/redlink-gmbh/smarti/issues/87[#87 - Improved suggestions by filtering the related conversations by topics/expertise]
 * https://github.com/redlink-gmbh/smarti/issues/39[#39 - Improved suggestions by enabling paging and making the number of suggestion configurable]
 * https://github.com/redlink-gmbh/smarti/issues/91[#91 - Improved component configuration for more flexible label configuration]
@@ -32,12 +34,14 @@ This release introduces a brand new search API that allows:
 With `0.6.0`, the datamodel has changed so data from older installations
 must be migrated to the new model.
 
-A migration script is available and must be applied manually:
+A migration script is available. When using the installation packages, the migration
+will happen automatically on the first startup. Alternatively, the following script
+must be applied manually:
+
 [source,javascript]
 -----------------------------------------------
-include::../dist/src/main/resources/migration/0.5-to-0.6.js[lines=17..-1]
+include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=112..-1]
 -----------------------------------------------
-
 
 === Smarti 0.5.0 Release Notes
 07 August, 2017
@@ -68,8 +72,11 @@ This release introduces an API that allows to manage the lifecycle of stored con
 With `0.5.0`, the datamodel has changed so data from older installations
 must be migrated to the new model.
 
-A migration script is available and must be applied manually:
+A migration script is available. When using the installation packages, the migration
+will happen automatically on the first startup. Alternatively, the following script
+must be applied manually:
+
 [source,javascript]
 ------------------------------------------------
-include::../dist/src/main/resources/migration/0.3-to-0.5.js[lines=17..-1]
+include::{migration_scripts}/migrate-02_0.3-to-0.5.js[lines=112..-1]
 ------------------------------------------------

@@ -23,57 +23,45 @@
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
         <version>0.6.0-RC4</version>
-        <relativePath>../../</relativePath>
     </parent>
 
-    <artifactId>query-solr</artifactId>
-    <name>Query :: Solr</name>
-    <description>
-        A highly configureable Query Provider intended to be used for
-        Solr Search Endpoints
-    </description>
+    <artifactId>smarti-db-migrator</artifactId>
+    <name>smarti :: Database-Migrator</name>
+
 
     <dependencies>
-    
-        <dependency>
-            <groupId>io.redlink.smarti</groupId>
-            <artifactId>smarti-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-core</artifactId>
-        </dependency>
-    
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
-    
-    
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
-            <scope>test</scope>
-        </dependency>
-        
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- repackage -->
+                    <classifier>exec</classifier>
+                    <mainClass>io.redlink.smarti.migration.MongoMigration</mainClass>
+                    <layout>JAR</layout>
+                </configuration>
             </plugin>
         </plugins>
     </build>
-
 
 </project>

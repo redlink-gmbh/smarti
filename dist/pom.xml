@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.0-RC2-SNAPSHOT</version>
+        <version>0.6.0-RC4</version>
     </parent>
 
     <artifactId>smarti-dist</artifactId>
@@ -44,6 +44,19 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>smarti-application</artifactId>
+            <version>${project.version}</version>
+            <classifier>exec</classifier>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>smarti-db-migrator</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>smarti-db-migrator</artifactId>
             <version>${project.version}</version>
             <classifier>exec</classifier>
             <scope>runtime</scope>
@@ -156,6 +169,13 @@
                                     <classifier>exec</classifier>
                                     <destFileName>${binaryName}.jar</destFileName>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>smarti-db-migrator</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>exec</classifier>
+                                    <destFileName>db-migrator.jar</destFileName>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
@@ -215,6 +235,23 @@
                                             <mapper>
                                                 <type>perm</type>
                                                 <prefix>./usr/share/${packageName}</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.directory}/dependency/db-migrator.jar</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./usr/share/${packageName}</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.basedir}/../scripts</src>
+                                            <type>directory</type>
+                                            <includes>migrate-*.js</includes>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./usr/share/${packageName}/scripts</prefix>
                                             </mapper>
                                         </data>
                                         <data>
@@ -391,8 +428,22 @@
                                         <source>
                                             <location>${project.build.directory}/dependency/${binaryName}.jar</location>
                                         </source>
+                                        <source>
+                                            <location>${project.build.directory}/dependency/db-migrator.jar</location>
+                                        </source>
                                     </sources>
                                     <directory>/usr/share/${packageName}</directory>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.basedir}/../scripts</location>
+                                            <includes>
+                                                <include>migrate-*.js</include>
+                                            </includes>
+                                        </source>
+                                    </sources>
+                                    <directory>/usr/share/${packageName}/scripts</directory>
                                 </mapping>
                                 <mapping>
                                     <sources>

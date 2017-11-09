@@ -1,6 +1,5 @@
 == Smarti Developer Guide
 
-:imagedir: _images/
 :commonsdir: commons/
 
 === Introduction
@@ -153,7 +152,7 @@ java -Xmx4g -jar -Xdebug application/target/smarti-${smarti-version}-exec.jar\
 +
 Create a debug configuration for the `Remote Java Application` and set the specified `${smarti-debug-port}`.
 +
-image::{imagedir}debug-configuration.png[]
+image::debug-configuration.png[]
 
 '''
 
