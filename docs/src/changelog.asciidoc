@@ -21,6 +21,7 @@ This release introduces a brand new search API that allows:
 ==== Improved in Smarti 0.6.0
 * https://github.com/redlink-gmbh/smarti/issues/62[#62 - Added conversation independent search API]
 * https://github.com/redlink-gmbh/smarti/issues/127[#127 - Added automatic database migration]
+* https://github.com/redlink-gmbh/smarti/issues/140[#140 - Added AWS CloudWatch as possible log-destination]
 * https://github.com/redlink-gmbh/smarti/issues/87[#87 - Improved suggestions by filtering the related conversations by topics/expertise]
 * https://github.com/redlink-gmbh/smarti/issues/39[#39 - Improved suggestions by enabling paging and making the number of suggestion configurable]
 * https://github.com/redlink-gmbh/smarti/issues/91[#91 - Improved component configuration for more flexible label configuration]
