@@ -310,6 +310,16 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.redlink.ext.logback</groupId>
+            <artifactId>logback-ext-cloudwatch-appender</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.redlink.ext.logback</groupId>
+            <artifactId>logback-ext-jackson</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>

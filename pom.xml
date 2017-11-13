@@ -107,6 +107,8 @@
         <!-- frontend versions -->
         <node.version>v6.9.1</node.version>
         <npm.version>3.10.8</npm.version>
+
+        <redlink.logback.extension>1.0-SNAPSHOT</redlink.logback.extension>
     </properties>
 
     <scm>
@@ -258,6 +260,17 @@
                 <groupId>org.opensextant</groupId>
                 <artifactId>solr-text-tagger</artifactId>
                 <version>${solr.text.tagger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.redlink.ext.logback</groupId>
+                <artifactId>logback-ext-cloudwatch-appender</artifactId>
+                <version>${redlink.logback.extension}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.redlink.ext.logback</groupId>
+                <artifactId>logback-ext-jackson</artifactId>
+                <version>${redlink.logback.extension}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
