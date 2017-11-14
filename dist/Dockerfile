@@ -7,8 +7,8 @@ EXPOSE 8080/tcp
 
 ENV HOME=/var/lib/smarti
 
-# healthcheck
-HEALTHCHECK --start-period=30s \
+# healthcheck --start-period=30s
+HEALTHCHECK \
     CMD curl -sf http://localhost:8080/system/health || exit 1
 
 RUN mkdir -p /opt/ext/
