@@ -18,12 +18,14 @@
 package io.redlink.smarti.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.annotations.ApiModel;
 
 import java.util.*;
 
 /**
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@ApiModel(description = "conversation context")
 public class Context {
 
     private String contextType; // = "ApplicationHelp"
