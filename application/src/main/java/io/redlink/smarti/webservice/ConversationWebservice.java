@@ -27,10 +27,7 @@ import io.redlink.smarti.services.QueryBuilderService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.QueryUpdate;
 import io.redlink.smarti.webservice.pojo.TemplateResponse;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -232,7 +229,7 @@ public class ConversationWebservice {
     public ResponseEntity<?> getQuery(@PathVariable("id") ObjectId id,
                                       @PathVariable("template") int templateIdx,
                                       @PathVariable("creator") String creator,
-                                      @RequestParam(required = false) MultiValueMap<String, String> params,
+                                      @ApiParam(hidden = true) @RequestParam(required = false) MultiValueMap<String, String> params,
                                       @RequestBody QueryUpdate queryUpdate) {
         //TODO: get the Client for the currently authenticated user 
         final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
