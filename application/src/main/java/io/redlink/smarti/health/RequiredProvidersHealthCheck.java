@@ -19,17 +19,20 @@ package io.redlink.smarti.health;
 import io.redlink.nlp.api.Processor;
 import io.redlink.nlp.stanfordnlp.StanfordNlpProcessor;
 import io.redlink.nlp.truecase.de.GermanTrueCaseExtractor;
+import io.redlink.smarti.properties.RequiredProvidersHealthCheckProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.Optional;
 
 @Component
+@EnableConfigurationProperties(RequiredProvidersHealthCheckProperties.class)
 public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
 
     private final Logger log = LoggerFactory.getLogger(RequiredProvidersHealthCheck.class);
@@ -38,10 +41,14 @@ public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
 
     private final GermanTrueCaseExtractor germanTrueCaseExtractor;
 
-    public RequiredProvidersHealthCheck(Optional<StanfordNlpProcessor> stanfordNlpProcessor,
-                                        Optional<GermanTrueCaseExtractor> germanTrueCaseExtractor) {
-        this.stanfordNlpProcessor = stanfordNlpProcessor.orElse(null);
-        this.germanTrueCaseExtractor = germanTrueCaseExtractor.orElse(null);
+    private final RequiredProvidersHealthCheckProperties requiredProvidersHealthCheckProperties;
+
+    public RequiredProvidersHealthCheck(RequiredProvidersHealthCheckProperties requiredProvidersHealthCheckProperties,
+                                        @Autowired(required = false) StanfordNlpProcessor stanfordNlpProcessor,
+                                        @Autowired(required = false) GermanTrueCaseExtractor germanTrueCaseExtractor) {
+        this.stanfordNlpProcessor = stanfordNlpProcessor;
+        this.germanTrueCaseExtractor = germanTrueCaseExtractor;
+        this.requiredProvidersHealthCheckProperties = requiredProvidersHealthCheckProperties;
     }
 
     @PostConstruct
@@ -83,8 +90,11 @@ public class RequiredProvidersHealthCheck extends AbstractHealthIndicator {
                     ;
         } else {
             sub.outOfService();
-            builder.down();
+            if (requiredProvidersHealthCheckProperties.isFailOnMissing() &&
+                    requiredProvidersHealthCheckProperties.getFailIfMissing().getOrDefault(name, true)) {
+                builder.down();
+            }
         }
-        builder.withDetail(name, sub);
+        builder.withDetail(name, sub.build());
     }
 }
