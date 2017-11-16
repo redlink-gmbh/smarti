@@ -201,7 +201,7 @@ public class ConversationWebservice {
     public ResponseEntity<?> getResults(@PathVariable("id") ObjectId id,
                                         @PathVariable("template") int templateIdx,
                                         @PathVariable("creator") String creator,
-                                        @RequestParam(required = false) MultiValueMap<String, String> params) {
+                                        @ApiParam(hidden = true) @RequestParam(required = false) MultiValueMap<String, String> params) {
         //TODO: get the Client for the currently authenticated user 
         final Conversation conversation = conversationService.getConversation(null, id); //TODO: parse the client instead of null
         if (conversation == null) {

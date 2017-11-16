@@ -19,6 +19,7 @@ package io.redlink.smarti.configuration;
 
 import io.swagger.annotations.Api;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
@@ -37,21 +38,31 @@ import java.util.Collections;
 @EnableSwagger2
 public class SwaggerConfiguration {
 
+    @Value("${swagger.api.version:1.0}")
+    private String apiVersion = "1.0";
+
+    @Value("${project.organization.name:Redlink GmbH}")
+    private String apiContactName = "Redlink GmbH";
+    @Value("${project.organization.url:http://redlink.co}")
+    private String apiContactUrl = "http://redlink.co";
+
+
+
     @Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(new ApiInfo(
                         "Smarti",
                         "the smart in assistify",
-                        "1.0",
+                        apiVersion,
                         null,
                         new Contact(
-                                "Redlink GmbH",
-                                "http://redlink.co",
+                                apiContactName,
+                                apiContactUrl,
                                 "hello@redlink.co"
                         ),
-                        "proprietary",
-                        "http://dev.redlink.io/terms/",
+                        "Apache 2.0",
+                        "https://www.apache.org/licenses/LICENSE-2.0",
                         Collections.emptyList()
                 ))
                 .select()
