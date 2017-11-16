@@ -690,7 +690,7 @@ function SmartiWidget(element,_options) {
 
         var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
-        function getResults(page,pageSize) {
+        function getResults(page, pageSize) {
 
             //TODO get remote
             results.empty();
@@ -699,14 +699,20 @@ function SmartiWidget(element,_options) {
 
             var start = pageSize ? page*pageSize : 0;
 
-            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start},function(data){
+            smarti.query({
+                conversationId: params.id,
+                template: params.tempid,
+                creator: params.query.creator,
+                start: start
+            }, function(data){
 
                 loader.hide();
 
-                if(data.length == 0) {
-                    msg.text(Utils.localize({code:'widget.conversation.no-results'}));
-                } else {
+                if (data.numFound > 0) {
                     msg.empty();
+                } else {
+                    msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
+                    return;
                 }
 
                 function buildLink(msgid) {
