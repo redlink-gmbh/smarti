@@ -106,9 +106,46 @@
       <div class="row">
         <div class="form-group">
           <label for="recoverMail">Email</label>
-          <input type="email" name="recoverMail" ng-model="recoverAddress" required class="form-control" id="recoverMail" placeholder="">
+          <input type="email" name="recoverMail" ng-model="$ctrl.recoverAddress" required class="form-control" id="recoverMail" placeholder="">
         </div>
         <button type="submit" class="btn btn-primary" ng-disabled="recoverForm.$invalid">Recover</button>
+      </div>
+      <div class="row text-center">
+        <a ng-click="$ctrl.action = null" type="button">Login</a>
+        <a ng-click="$ctrl.action = 'set-password'" type="button">Verify Token</a>
+      </div>
+    </form>
+    <form ng-switch-when="set-password"
+          name="resetPassword" class="form-horizontal" ng-submit="$ctrl.resetPassword()">
+      <div class="form-group">
+        <label for="rUsername" class="col-xs-4 control-label">Username:</label>
+        <div class="col-xs-8">
+          <input id="rUsername" name="username"
+                 type="text" class="form-control"
+                 required
+                 ng-model="$ctrl.userName" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="rPassword" class="col-xs-4 control-label">New Password:</label>
+        <div class="col-xs-8">
+          <input id="rPassword" name="password"
+                 type="password" class="form-control"
+                 required
+                 ng-model="$ctrl.userPasswd" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="rToken" class="col-xs-4 control-label">Token:</label>
+        <div class="col-xs-8">
+          <input id="rToken" name="token"
+                 type="text" class="form-control"
+                 required
+                 ng-model="$ctrl.recoveryToken" />
+        </div>
+      </div>
+      <div class="form-group text-right">
+        <button class="btn btn-primary" ng-disabled="resetPassword.$invalid">Reset Password</button>
       </div>
       <div class="row text-center">
         <a ng-click="$ctrl.action = null" type="button">Login</a>

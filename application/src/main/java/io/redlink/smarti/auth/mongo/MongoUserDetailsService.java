@@ -120,23 +120,38 @@ public class MongoUserDetailsService implements UserDetailsService {
         return loadUserByUsername(user.getUsername());
     }
 
-    public MongoUser.PasswordRecovery createPasswordRecoveryToken(String userName) {
-        final MongoUser mongoUser = getMongoUser(userName);
+    public MongoUser createPasswordRecoveryToken(String userName) {
+        final MongoUser mongoUser = findMongoUser(userName);
         if (mongoUser == null) {
             return null;
         }
 
         final Date now = new Date(),
                 expiry = DateUtils.addHours(now, 24);
-        final String token = HashUtils.sha256(UUID.randomUUID() + userName);
+        final String token = HashUtils.sha256(UUID.randomUUID() + mongoUser.getUsername());
         final MongoUser.PasswordRecovery recovery = new MongoUser.PasswordRecovery(token, now, expiry);
 
-        final WriteResult result = updateMongoUser(userName, Update.update(FIELD_RECOVERY, recovery));
+        final WriteResult result = updateMongoUser(mongoUser.getUsername(), Update.update(FIELD_RECOVERY, recovery));
         if (result.getN() == 1) {
-            return recovery;
+            return getMongoUser(mongoUser.getUsername());
         } else {
             return null;
         }
+    }
+
+    public MongoUser findMongoUser(String userName) {
+        MongoUser mongoUser = getMongoUser(userName);
+        if (mongoUser != null) {
+            return mongoUser;
+        }
+
+        final Query byMailQuery = new Query(Criteria.where("attributes.email").is(userName));
+        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
+            mongoUser = mongoTemplate.findOne(byMailQuery, MongoUser.class, securityConfig.getMongo().getCollection());
+        } else {
+            mongoUser = mongoTemplate.findOne(byMailQuery, MongoUser.class);
+        }
+        return mongoUser;
     }
 
     /**

@@ -29,7 +29,7 @@ angular
   .run(function ($rootScope, UserService) {
     var user = 'admin',
       passwd = user;
-    return UserService.login(user, passwd);
+    // return UserService.login(user, passwd);
 
   })
 ;

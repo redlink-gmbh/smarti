@@ -32,6 +32,7 @@ angular.module('smartiApp')
     this.logout = logout;
     this.signup = signup;
     this.recoverPassword = recoverPassword;
+    this.completePasswordRecovery = completePasswordRecovery;
     this.setPassword = setPassword;
 
     this.checkUsernameExists = checkUsernameExists;
@@ -98,7 +99,26 @@ angular.module('smartiApp')
     }
 
     function recoverPassword(email) {
-      return $q.reject('Not implemented');
+      return $http.post(ENV.serviceBaseUrl + '/auth/recover', undefined, {
+        params: {
+          user: email
+        }
+      });
+    }
+
+    function completePasswordRecovery(user, password, token) {
+      return $http
+        .post(ENV.serviceBaseUrl + '/auth/recover', {
+          token: token,
+          password: password
+        }, {
+          params: {
+            user: user
+          }
+        })
+        .then(function () {
+          return login(user, password)
+        });
     }
 
     function setPassword(user, newPassword) {

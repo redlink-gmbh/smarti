@@ -54,10 +54,14 @@ public class AccountService {
         return userDetailsService.createUserDetail(user);
     }
 
-    public void startPasswordRecovery(String userName) {
-        final MongoUserDetailsService.MongoUser.PasswordRecovery recoveryToken = userDetailsService.createPasswordRecoveryToken(userName);
-        // TODO: Send a mail
-        log.info("Created password recovery token for user '{}': '{}', valid until {}", userName, recoveryToken.getToken(), recoveryToken.getExpires());
+    public boolean startPasswordRecovery(String userName) {
+        final MongoUserDetailsService.MongoUser mongoUser = userDetailsService.createPasswordRecoveryToken(userName);
+        if (mongoUser != null) {
+            final MongoUserDetailsService.MongoUser.PasswordRecovery passwordRecovery = mongoUser.getRecovery();
+            // TODO: Send a mail
+            log.info("Created password recovery link for user '{}': <http://localhost:8080/#!/login?user={}&token={}>, valid until {}", mongoUser.getUsername(), mongoUser.getUsername(), passwordRecovery.getToken(), passwordRecovery.getExpires());
+        }
+        return mongoUser != null;
     }
 
     public boolean completePasswordRecovery(String userName, String newPassword, String recoveryToken) {

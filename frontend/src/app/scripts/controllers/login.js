@@ -25,13 +25,20 @@
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('LoginCtrl', function ($scope, $location, UserService) {
+  .controller('LoginCtrl', function ($scope, $location, $routeParams, UserService) {
 
     var $ctrl = this;
 
-    $ctrl.action = null; // 'login' as default
+    $ctrl.action = $routeParams.action; // 'login' as default
     $ctrl.login = login;
     $ctrl.recoverPassword = recoverPassword;
+    $ctrl.resetPassword = resetPassword;
+
+    $ctrl.userName = $routeParams.user;
+    $ctrl.recoveryToken = $routeParams.token;
+    if ($ctrl.userName && $ctrl.recoveryToken) {
+      $ctrl.action = 'set-password'
+    }
 
     if ($scope.user) {
       gotoStart();
@@ -51,10 +58,21 @@ angular.module('smartiApp')
     }
 
     function recoverPassword() {
+      return UserService.recoverPassword($ctrl.recoverAddress)
+        .then(function () {
+          $ctrl.action = 'set-password';
+        });
+    }
 
+    function resetPassword() {
+      return UserService.completePasswordRecovery($ctrl.userName, $ctrl.userPasswd, $ctrl.recoveryToken)
+        .then(function () {
+          return UserService.login($ctrl.userName, $ctrl.userPasswd);
+        })
+        .then(gotoStart);
     }
 
     function gotoStart() {
-      $location.path('/')
+      $location.path('/').search({})
     }
   });

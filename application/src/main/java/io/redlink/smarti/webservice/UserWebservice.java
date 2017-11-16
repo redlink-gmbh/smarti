@@ -36,6 +36,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -80,12 +81,13 @@ public class UserWebservice {
     }
 
     @ApiOperation(value = "password recover", notes = "recover password: either start or complete the password recovery process")
-    @RequestMapping(path = "{username:[^/]+}/recover", method = RequestMethod.POST)
+    @RequestMapping(path = "/recover", method = RequestMethod.POST)
     public ResponseEntity<?> recoverPassword(
-            @PathVariable("username") String username,
+            @RequestParam("user") String username,
             @RequestBody(required = false) Map<String,String> data
     ) {
         // Public access
+        if (data == null) data = new HashMap<>();
         final String recoveryToken = data.get("token"),
                 newPassword = data.get("password");
 
@@ -97,8 +99,11 @@ public class UserWebservice {
                 }
             }
         } else {
-            accountService.startPasswordRecovery(username);
-            return ResponseEntity.accepted().build();
+            if (accountService.startPasswordRecovery(username)) {
+                return ResponseEntity.accepted().build();
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         }
 
         return ResponseEntity.badRequest().build();
