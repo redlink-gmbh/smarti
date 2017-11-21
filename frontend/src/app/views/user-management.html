@@ -21,9 +21,9 @@
     <th>Login</th>
     <th>Name</th>
     <th>Email</th>
-    <th>Admin</th>
-    <th>Clients</th>
-    <th><i class="glyphicon glyphicon-cog"></i></th>
+    <th class="text-center">Admin</th>
+    <th class="text-right">Clients</th>
+    <th class="text-right"><i class="glyphicon glyphicon-cog"></i></th>
   </tr>
   </thead>
   <tbody>
@@ -31,11 +31,11 @@
       <td><span ng-bind="user.username"></span></td>
       <td><span ng-bind="user.displayName"></span></td>
       <td><span ng-bind="user.emailAddress"></span></td>
-      <td>
+      <td class="text-center">
         <i class="glyphicon" ng-class="[user.isAdmin?'glyphicon-check':'glyphicon-unchecked']"></i>
       </td>
-      <td><span ng-bind="user.clients.length | number"></span></td>
-      <td>
+      <td class="text-right"><span ng-bind="user.clients.length | number"></span></td>
+      <td class="text-right">
         <button class="btn btn-default btn-xs">
           <i class="glyphicon glyphicon-edit"></i>
         </button>
