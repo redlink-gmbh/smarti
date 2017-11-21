@@ -27,6 +27,7 @@
 angular.module('smartiApp')
   .service('UserService', function ($rootScope, $http, $q, ENV) {
 
+    this.listUsers = listUsers;
     this.getUser = getUser;
     this.login = login;
     this.logout = logout;
@@ -44,6 +45,7 @@ angular.module('smartiApp')
     }
 
     function enhanceUser(user) {
+      user.roles = user.roles || [];
 
       user.hasRole = function (role) {
         return user.roles.indexOf(role.toUpperCase()) >= 0;
@@ -51,6 +53,13 @@ angular.module('smartiApp')
       user.isAdmin = user.hasRole("ADMIN");
 
       return user;
+    }
+
+    function listUsers() {
+      return $http.get(ENV.serviceBaseUrl + '/admin/users')
+        .then(function (response) {
+          return response.data.map(enhanceUser);
+        });
     }
 
     function login(username, password) {

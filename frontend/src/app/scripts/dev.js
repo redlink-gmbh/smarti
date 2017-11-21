@@ -27,9 +27,9 @@ angular
 
   })
   .run(function ($rootScope, UserService) {
-    var user = 'admin',
-      passwd = user;
-    // return UserService.login(user, passwd);
+    var user = 'admin1',
+      passwd = 'c4bf0b7d-5ebf-42ae-9fcd-8270e62858b6';
+    return UserService.login(user, passwd);
 
   })
 ;

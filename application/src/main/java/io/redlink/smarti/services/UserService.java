@@ -61,4 +61,8 @@ public class UserService {
     public SmartiUser addUserToClient(String username, Client client) {
         return userRepository.addClient(username, client.getId());
     }
+
+    public List<? extends SmartiUser> listUsers(String filter) {
+        return userRepository.findAllWithFilter(filter);
+    }
 }

@@ -19,10 +19,14 @@ package io.redlink.smarti.repositories;
 import io.redlink.smarti.model.SmartiUser;
 import org.bson.types.ObjectId;
 
+import java.util.List;
+
 public interface UserRepositoryCustom {
     SmartiUser create(SmartiUser user);
 
     SmartiUser removeClient(String username, ObjectId id);
 
     SmartiUser addClient(String username, ObjectId id);
+
+    List<? extends SmartiUser> findAllWithFilter(String filter);
 }

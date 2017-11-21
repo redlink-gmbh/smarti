@@ -17,12 +17,17 @@
 package io.redlink.smarti.repositories;
 
 import com.mongodb.DuplicateKeyException;
+import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
 import io.redlink.smarti.model.SmartiUser;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+
+import java.util.List;
+import java.util.regex.Pattern;
 
 public class UserRepositoryImpl implements UserRepositoryCustom {
 
@@ -57,6 +62,22 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
                 new Update().addToSet(SmartiUser.FIELD_CLIENTS, id),
                 SmartiUser.class
         );
+    }
+
+    @Override
+    public List<? extends SmartiUser> findAllWithFilter(String filter) {
+        final Query query = new Query();
+        if (StringUtils.isNotBlank(filter)) {
+            final Pattern p = Pattern.compile("^" + Pattern.quote(filter) + ".*");
+            query.addCriteria(new Criteria()
+                            .orOperator(
+                                    Criteria.where("_id").regex(p),
+                                    Criteria.where(SmartiUser.ATTR_FIELD(SmartiUser.ATTR_EMAIL)).regex(p),
+                                    Criteria.where(SmartiUser.ATTR_FIELD(SmartiUser.ATTR_EMAIL)).regex(p)
+                            )
+            );
+        }
+        return mongoTemplate.find(query, MongoUserDetailsService.MongoUser.class);
     }
 
     private Query byUsername(String username) {

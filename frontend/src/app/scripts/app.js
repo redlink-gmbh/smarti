@@ -85,6 +85,11 @@ angular
           }
         }
       })
+      .when('/user', {
+        templateUrl: 'views/user-management.html',
+        controller: 'UserManagementCtrl',
+        controllerAs: '$ctrl'
+      })
       .otherwise({
         redirectTo: '/'
       });

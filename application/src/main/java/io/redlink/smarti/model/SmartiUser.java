@@ -33,6 +33,11 @@ public class SmartiUser {
     public static final String ATTR_DISPLAY_NAME = "displayName";
     public static final String ATTR_EMAIL = "email";
     public static final String FIELD_CLIENTS = "clients";
+    public static final String FIELD_ATTRIBUTES = "attributes";
+
+    public static String ATTR_FIELD(String ATTR) {
+        return FIELD_ATTRIBUTES + "." + ATTR;
+    }
 
     @Id
     private String username;
@@ -41,6 +46,7 @@ public class SmartiUser {
     @Field(FIELD_CLIENTS)
     private Set<ObjectId> clients = new HashSet<>();
 
+    @Field(FIELD_ATTRIBUTES)
     private Map<String, String> attributes = new HashMap<>();
 
     public String getUsername() {

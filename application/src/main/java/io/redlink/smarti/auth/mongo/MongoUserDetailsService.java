@@ -16,6 +16,7 @@
  */
 package io.redlink.smarti.auth.mongo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Collections2;
 import com.mongodb.WriteResult;
 import io.redlink.smarti.auth.AttributedUserDetails;
@@ -228,12 +229,14 @@ public class MongoUserDetailsService implements UserDetailsService {
          * SHA-2 hashed!
          */
         @Field(FIELD_PASSWORD)
+        @JsonIgnore
         private String password;
 
         @Field(FIELD_ROLES)
         private Set<String> roles = new HashSet<>();
 
         @Field(FIELD_RECOVERY)
+        @JsonIgnore
         private PasswordRecovery recovery = null;
 
         public String getPassword() {

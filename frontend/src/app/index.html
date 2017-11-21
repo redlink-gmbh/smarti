@@ -23,14 +23,36 @@
 <![endif]-->
 
 <!-- Add your site or application content here -->
-<div class="header">
+<nav class="navbar navbar-default">
   <div class="container">
-    <button class="btn btn-default btn-sm pull-right"
-            ng-if="user"
-            ng-click="rootCtrl.logout()">logout {{user.name}}</button>
-    <h1>Smarti Configuration</h1>
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Smarti</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li><a href="#!/">Clients</a></li>
+        <li><a href="#!/user">User</a></li>
+      </ul>
+
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+          <a ng-if="user" ng-click="rootCtrl.logout()">
+            <i class="glyphicon glyphicon-user"></i>
+            logout {{user.name}}
+          </a>
+        </li>
+      </ul>
+    </div><!-- /.navbar-collapse -->
   </div>
-</div>
+</nav>
 
 <div class="container">
   <div ng-view=""></div>
@@ -83,6 +105,7 @@
 
 <!-- build:remove -->
 <script src="scripts/dev.js"></script>
+<script src="scripts/controllers/userManagement.js"></script>
 <!-- endbuild -->
 </body>
 </html>
