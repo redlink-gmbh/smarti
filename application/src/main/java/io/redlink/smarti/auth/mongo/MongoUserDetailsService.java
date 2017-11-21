@@ -36,6 +36,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 
 /**
@@ -45,6 +46,7 @@ import java.util.*;
 public class MongoUserDetailsService implements UserDetailsService {
     static final String FIELD_RECOVERY = "recovery";
     static final String FIELD_PASSWORD = "password";
+    static final String FIELD_ROLES = "roles";
     static final String FIELD_TOKEN = "token";
     static final String FIELD_EXPIRES = "expires";
 
@@ -53,11 +55,53 @@ public class MongoUserDetailsService implements UserDetailsService {
     private final MongoTemplate mongoTemplate;
 
     private final SecurityConfigurationProperties securityConfig;
+    private final MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder;
 
-    public MongoUserDetailsService(MongoTemplate mongoTemplate, SecurityConfigurationProperties securityConfig) {
+    public MongoUserDetailsService(MongoTemplate mongoTemplate, SecurityConfigurationProperties securityConfig, MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder) {
         this.mongoTemplate = mongoTemplate;
         this.securityConfig = securityConfig;
+        this.passwordEncoder = passwordEncoder;
     }
+
+    @PostConstruct
+    protected void initialize() {
+        // Check for at least one admin-user
+        final long adminUsers;
+        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
+            adminUsers = mongoTemplate.count(Query.query(Criteria.where(FIELD_ROLES).is("ADMIN")), MongoUser.class, securityConfig.getMongo().getCollection());
+        } else {
+            adminUsers = mongoTemplate.count(Query.query(Criteria.where(FIELD_ROLES).is("ADMIN")), MongoUser.class);
+        }
+        if (adminUsers < 1) {
+            log.debug("No admin-users found, creating");
+            String adminUser = "admin";
+            int i = 0;
+            final String password = UUID.randomUUID().toString();
+            final String encodedPassword = passwordEncoder.encodePassword(password);
+            while (!createAdminUser(adminUser, encodedPassword)) {
+                adminUser = String.format("admin%d", ++i);
+            }
+            log.error("Created new Admin-User '{}' with password '{}'", adminUser, password);
+        } else {
+            log.debug("Found {} Admin-Users", adminUsers);
+        }
+    }
+
+    private boolean createAdminUser(String userName, String password) {
+        Query q = Query.query(Criteria.where("_id").is(userName));
+        Update u = new Update()
+                .setOnInsert(FIELD_ROLES, Collections.singleton("ADMIN"))
+                .setOnInsert(FIELD_PASSWORD, password);
+        WriteResult writeResult;
+        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
+            writeResult = mongoTemplate.upsert(q, u, MongoUser.class, securityConfig.getMongo().getCollection());
+        } else {
+            writeResult = mongoTemplate.upsert(q, u, MongoUser.class);
+        }
+        return writeResult.getN() > 0 && !writeResult.isUpdateOfExisting();
+
+    }
+
 
     @Override
     public AttributedUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -186,6 +230,7 @@ public class MongoUserDetailsService implements UserDetailsService {
         @Field(FIELD_PASSWORD)
         private String password;
 
+        @Field(FIELD_ROLES)
         private Set<String> roles = new HashSet<>();
 
         @Field(FIELD_RECOVERY)

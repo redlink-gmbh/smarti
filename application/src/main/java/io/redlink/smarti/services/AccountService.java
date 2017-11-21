@@ -17,7 +17,7 @@
 package io.redlink.smarti.services;
 
 import io.redlink.smarti.auth.AttributedUserDetails;
-import io.redlink.smarti.auth.mongo.MongoAuthConfiguration;
+import io.redlink.smarti.auth.mongo.MongoPasswordHasherConfiguration;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +32,10 @@ public class AccountService {
 
     private Logger log = LoggerFactory.getLogger(AccountService.class);
 
-    private final MongoAuthConfiguration.PasswordEncoder passwordEncoder;
+    private final MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder;
     private final MongoUserDetailsService userDetailsService;
 
-    public AccountService(MongoUserDetailsService userDetailsService, MongoAuthConfiguration.PasswordEncoder passwordEncoder) {
+    public AccountService(MongoUserDetailsService userDetailsService, MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
     }

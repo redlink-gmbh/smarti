@@ -18,18 +18,15 @@ package io.redlink.smarti.auth.mongo;
 
 import io.redlink.smarti.auth.SecurityConfigurationProperties;
 import io.redlink.smarti.auth.WebSecurityConfigurationHelper;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.encoding.BasePasswordEncoder;
-import org.springframework.security.authentication.encoding.MessageDigestPasswordEncoder;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -38,7 +35,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 
 import java.util.Objects;
-import java.util.function.Function;
 
 /**
  */
@@ -57,15 +53,12 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
 
     public MongoAuthConfiguration(SecurityConfigurationProperties securityConfig,
                                   MongoUserDetailsService mongoUserDetailsService,
-                                  WebSecurityConfigurationHelper webSecurityConfigurationHelper) {
+                                  WebSecurityConfigurationHelper webSecurityConfigurationHelper,
+                                  BasePasswordEncoder passwordEncoder) {
         this.securityConfig = securityConfig;
         this.mongoUserDetailsService = mongoUserDetailsService;
         this.webSecurityConfigurationHelper = webSecurityConfigurationHelper;
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getPasswordHasher())) {
-            passwordEncoder = new MessageDigestPasswordEncoder(securityConfig.getMongo().getPasswordHasher());
-        } else {
-            passwordEncoder = null;
-        }
+        this.passwordEncoder = passwordEncoder;
     }
 
 
@@ -99,13 +92,4 @@ public class MongoAuthConfiguration extends WebSecurityConfigurerAdapter {
         webSecurityConfigurationHelper.configure(http);
     }
 
-    @Bean
-    public PasswordEncoder getPasswordEncoder() {
-        if (passwordEncoder != null) return p -> passwordEncoder.encodePassword(p, null);
-        return s->s;
-    }
-
-    public interface PasswordEncoder {
-        String encodePassword(String password);
-    }
 }
