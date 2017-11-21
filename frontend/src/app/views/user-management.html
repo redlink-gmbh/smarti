@@ -27,7 +27,7 @@
   </tr>
   </thead>
   <tbody>
-    <tr ng-repeat="user in users">
+    <tr ng-repeat="user in users track by user.username">
       <td><span ng-bind="user.username"></span></td>
       <td><span ng-bind="user.displayName"></span></td>
       <td><span ng-bind="user.emailAddress"></span></td>
@@ -36,19 +36,21 @@
       </td>
       <td class="text-right"><span ng-bind="user.clients.length | number"></span></td>
       <td class="text-right">
-        <button class="btn btn-default btn-xs">
+        <button class="btn btn-default btn-xs"
+                ng-click="$ctrl.editUser(user)">
           <i class="glyphicon glyphicon-edit"></i>
         </button>
-        <button class="btn btn-default btn-xs">
+        <button class="btn btn-default btn-xs"
+                ng-click="$ctrl.setPassword(user)">
           <i class="glyphicon glyphicon-lock"></i>
         </button>
-        <button class="btn btn-danger btn-xs">
+        <button class="btn btn-danger btn-xs" disabled>
           <i class="glyphicon glyphicon-trash"></i>
         </button>
       </td>
     </tr>
   </tbody>
   <tfoot>
-
+    <tr></tr>
   </tfoot>
 </table>

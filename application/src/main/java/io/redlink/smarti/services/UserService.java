@@ -65,4 +65,8 @@ public class UserService {
     public List<? extends SmartiUser> listUsers(String filter) {
         return userRepository.findAllWithFilter(filter);
     }
+
+    public SmartiUser getUser(String username) {
+        return userRepository.findOne(username);
+    }
 }

@@ -29,6 +29,7 @@ angular.module('smartiApp')
 
     this.listUsers = listUsers;
     this.getUser = getUser;
+    this.updateUser = updateUser;
     this.login = login;
     this.logout = logout;
     this.signup = signup;
@@ -56,10 +57,19 @@ angular.module('smartiApp')
     }
 
     function listUsers() {
-      return $http.get(ENV.serviceBaseUrl + '/admin/users')
+      return $http.get(ENV.serviceBaseUrl + '/user')
         .then(function (response) {
           return response.data.map(enhanceUser);
         });
+    }
+    function createUser(user) {
+      return $q.reject(user);
+    }
+    function updateUser(user) {
+      return $q.reject(user);
+    }
+    function deleteUser(user) {
+      return $q.reject(user);
     }
 
     function login(username, password) {
@@ -97,7 +107,7 @@ angular.module('smartiApp')
     }
 
     function signup(username, email, password) {
-      return $http.post(ENV.serviceBaseUrl + '/auth', {
+      return $http.post(ENV.serviceBaseUrl + '/auth/signup', {
         username: username,
         password: password,
         email: email
@@ -133,12 +143,15 @@ angular.module('smartiApp')
     function setPassword(user, newPassword) {
       var username = user.username || user;
       return $http
-        .put(ENV.serviceBaseUrl + '/auth/' + username + '/password', {
+        .put(ENV.serviceBaseUrl + '/user/' + username + '/password', {
           password: newPassword
         })
         .then(function (response) {
           return response.data;
         });
+    }
+    function setRoles(user, newRoles) {
+      $q.reject(user);
     }
 
     function checkUsernameExists(username) {

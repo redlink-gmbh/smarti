@@ -89,7 +89,7 @@ public class MongoUserDetailsService implements UserDetailsService {
     }
 
     private boolean createAdminUser(String userName, String password) {
-        Query q = Query.query(Criteria.where("_id").is(userName));
+        Query q = Query.query(byUsername(userName));
         Update u = new Update()
                 .setOnInsert(FIELD_ROLES, Collections.singleton("ADMIN"))
                 .setOnInsert(FIELD_PASSWORD, password);
@@ -132,7 +132,7 @@ public class MongoUserDetailsService implements UserDetailsService {
         return updateMongoUser(username, new Query(), update);
     }
     private WriteResult updateMongoUser(String username, Query query, Update update) {
-        query.addCriteria(Criteria.where("_id").is(username));
+        query.addCriteria(byUsername(username));
 
         WriteResult result;
         if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
@@ -142,6 +142,10 @@ public class MongoUserDetailsService implements UserDetailsService {
         }
         return result;
 
+    }
+
+    private static Criteria byUsername(String username) {
+        return Criteria.where("_id").is(username);
     }
 
     private MongoUser getMongoUser(String username) {
@@ -220,7 +224,15 @@ public class MongoUserDetailsService implements UserDetailsService {
     }
 
     public boolean hasAccount(String userName) {
-        return mongoTemplate.exists(new Query(Criteria.where("_id").is(userName)), MongoUser.class);
+        return mongoTemplate.exists(new Query(byUsername(userName)), MongoUser.class);
+    }
+
+    public boolean updateRoles(String username, Set<String> roles) {
+        return updateMongoUser(username, Update.update(FIELD_ROLES, roles)).getN() == 1;
+    }
+
+    public boolean deleteUser(String username) {
+        return mongoTemplate.remove(new Query(byUsername(username)), MongoUser.class).getN() == 1;
     }
 
     public static class MongoUser extends io.redlink.smarti.model.SmartiUser {

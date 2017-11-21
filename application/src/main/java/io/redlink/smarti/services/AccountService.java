@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Set;
 
 @Service
 @ConditionalOnBean(MongoUserDetailsService.class)
@@ -74,5 +75,13 @@ public class AccountService {
 
     public void setPassword(String username, String newPassword) {
         userDetailsService.updatePassword(username, passwordEncoder.encodePassword(newPassword));
+    }
+
+    public boolean setRoles(String username, Set<String> roles) {
+        return userDetailsService.updateRoles(username, roles);
+    }
+
+    public boolean deleteUser(String username) {
+        return userDetailsService.deleteUser(username);
     }
 }

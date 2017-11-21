@@ -21,6 +21,9 @@ import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
 import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.services.AccountService;
 import io.redlink.smarti.services.AuthenticationService;
+import io.redlink.smarti.services.UserService;
+import io.redlink.smarti.webservice.pojo.AuthContext;
+import io.redlink.smarti.webservice.pojo.AuthUser;
 import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -30,43 +33,43 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value = "auth", produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
+@RequestMapping(produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @ConditionalOnBean(MongoUserDetailsService.class)
 @Api
 public class UserWebservice {
 
-    private final AccountService accountService;
     private final EmailValidator emailValidator = EmailValidator.getInstance();
 
+    private final AccountService accountService;
     private final AuthenticationService authenticationService;
+    private final UserService userService;
 
     @Autowired
-    public UserWebservice(AccountService accountService, AuthenticationService authenticationService) {
+    public UserWebservice(AccountService accountService, AuthenticationService authenticationService, UserService userService) {
         this.accountService = accountService;
         this.authenticationService = authenticationService;
+        this.userService = userService;
     }
 
     @ApiOperation("retrieve current user details")
-    @RequestMapping(method = RequestMethod.GET)
+    @RequestMapping(value = "/auth", method = RequestMethod.GET)
     public AuthUser getUser(@AuthenticationPrincipal AttributedUserDetails user) {
         // Public access
         return AuthUser.wrap(user);
     }
 
     @ApiOperation(value = "signup", notes = "create a new account", response = UserDetailsResponse.class)
-    @RequestMapping(method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/auth/signup", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDetailsResponse> signUp(@RequestBody  Map<String, String> data) {
         // Public access
         final String userName = data.get("username"),
@@ -81,7 +84,7 @@ public class UserWebservice {
     }
 
     @ApiOperation(value = "password recover", notes = "recover password: either start or complete the password recovery process")
-    @RequestMapping(path = "/recover", method = RequestMethod.POST)
+    @RequestMapping(path = "/auth/recover", method = RequestMethod.POST)
     public ResponseEntity<?> recoverPassword(
             @RequestParam("user") String username,
             @RequestBody(required = false) Map<String,String> data
@@ -109,10 +112,67 @@ public class UserWebservice {
         return ResponseEntity.badRequest().build();
     }
 
+    @RequestMapping(value = "/user", method = RequestMethod.GET)
+    public List<? extends SmartiUser> listUsers(AuthContext authContext, @RequestParam(name = "filter", required = false) String filter) {
+        authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
+
+        return userService.listUsers(filter);
+    }
+
+    @RequestMapping(value = "/user", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    public SmartiUser createUser(AuthContext authContext,
+                                 @RequestBody MongoUserDetailsService.MongoUser user) {
+        authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
+
+        // TODO: implement
+
+        return user;
+    }
+
+    @RequestMapping(value = "/user/{username}", method = RequestMethod.GET)
+    public SmartiUser getUser(AuthContext authentication,
+                              @PathVariable("username") String username) {
+        // Access only for ADMIN or @me
+        if (authenticationService.hasUsername(authentication, username)
+                || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
+            return userService.getUser(username);
+        } else {
+            throw new AccessDeniedException("No access for " + authentication);
+        }
+    }
+
+    @RequestMapping(value = "/user/{username}", method = RequestMethod.PUT, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    public SmartiUser updateUser(AuthContext authentication,
+                                 @PathVariable("username") String username,
+                                 @RequestBody MongoUserDetailsService.MongoUser user) {
+        // Access only for ADMIN or @me
+        if (authenticationService.hasUsername(authentication, username)
+                || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
+
+            // FIXME: must not set roles if not ADMIN!
+            user.setUsername(username);
+            return user;
+        } else {
+            throw new AccessDeniedException("No access for " + authentication);
+        }
+    }
+
+    @RequestMapping(value = "/user/{username}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> deleteUser(AuthContext authContext,
+                                        @PathVariable("username") String username) {
+        authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
+
+        if (accountService.deleteUser(username)) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @ApiOperation("update password")
-    @RequestMapping(path = "{username}/password", method = RequestMethod.PUT)
+    @RequestMapping(path = "/user/{username}/password", method = RequestMethod.PUT)
     public ResponseEntity<?> setPassword(
-            @AuthenticationPrincipal UserDetails authentication,
+            AuthContext authentication,
             @PathVariable("username") String username,
             @RequestBody Map<String,String> data
     ) {
@@ -130,65 +190,28 @@ public class UserWebservice {
         } else {
             throw new AccessDeniedException("No access for " + authentication);
         }
+    }
 
+    @RequestMapping(path = "/user/{username}/roles", method = RequestMethod.PUT)
+    public ResponseEntity<?> setRoles(
+            AuthContext authentication,
+            @PathVariable("username") String username,
+            @RequestBody Set<String> roles
+    ) {
+        authenticationService.assertRole(authentication, AuthenticationService.ADMIN);
+
+        if (accountService.setRoles(username, roles)) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @ApiOperation(value = "check username", notes = "check if the provided username is already taken")
-    @RequestMapping("check")
+    @RequestMapping("/auth/check")
     public boolean checkUsernameExists(@RequestParam("username") String username) {
         // Public access
         return accountService.hasAccount(username);
     }
 
-    private static class AuthUser {
-        private String name, displayName, email;
-        private Set<String> roles;
-
-        private AuthUser(AttributedUserDetails userDetails) {
-            name = userDetails.getUsername();
-            roles = userDetails.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .map(r -> StringUtils.removeStart(r,"ROLE_"))
-                    .collect(Collectors.toSet());
-
-            displayName = userDetails.getAttribute(SmartiUser.ATTR_DISPLAY_NAME);
-            email = userDetails.getAttribute(SmartiUser.ATTR_EMAIL);
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-
-        public void setDisplayName(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public Set<String> getRoles() {
-            return roles;
-        }
-
-        public void setRoles(Set<String> roles) {
-            this.roles = roles;
-        }
-
-        public static AuthUser wrap(AttributedUserDetails userDetails) {
-            return userDetails != null ? new AuthUser(userDetails) : null;
-        }
-    }
 }
