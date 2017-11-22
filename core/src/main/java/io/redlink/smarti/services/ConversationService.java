@@ -25,6 +25,7 @@ import io.redlink.smarti.events.ConversationProcessCompleteEvent;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.processing.ProcessingConfiguration;
 import io.redlink.smarti.repositories.ConversationRepository;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +34,7 @@ import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -44,9 +46,7 @@ import java.io.IOException;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -55,6 +55,7 @@ import java.util.function.Supplier;
  * Conversation-related services
  */
 @Service
+@EnableConfigurationProperties(ProcessingConfiguration.class)
 public class ConversationService {
 
     private final Logger log = LoggerFactory.getLogger(ConversationService.class);
@@ -81,10 +82,10 @@ public class ConversationService {
     private ConversationRepository conversationRepository;
 
     private final ExecutorService processingExecutor;
-    private ApplicationEventPublisher applicationEventPublisher;
 
-    public ConversationService(Optional<ExecutorService> processingExecutor) {
-        this.processingExecutor = processingExecutor.orElseGet(() -> Executors.newFixedThreadPool(2));
+    
+    public ConversationService(ProcessingConfiguration processingConfiguration) {
+        this.processingExecutor = processingConfiguration.createExecuterService();
     }
     
     /**
@@ -146,13 +147,14 @@ public class ConversationService {
      * Processes the conversation for the parsed client and saved the processing results if the parsed client is also
      * the owner of the conversation AND the conversation was not updated in the meantime. 
      * @param client
-     * @param conversation
+     * @param conv
      * @param onCompleteCallback
      */
-    private void process(Client client, final Conversation conversation, Consumer<Conversation> onCompleteCallback) {
-        final Date lastModified = conversation.getLastModified();
+    private void process(Client client, final Conversation conv, Consumer<Conversation> onCompleteCallback) {
+        final Date lastModified = conv.getLastModified();
         processingExecutor.submit(() -> {
             try {
+                Conversation conversation = conv;
                 prepareService.prepare(client, conversation);
 
                 templateService.updateTemplates(client, conversation);
@@ -170,8 +172,6 @@ public class ConversationService {
     
                         eventPublisher.publishEvent(new ConversationProcessCompleteEvent(result));
                     } else { 
-                        //TODO: Cache processing results when a cache Service allows to store processing results for 
-                        //clients other as the owner of the conversaition
                         result = conversation;
                     }
                     if (onCompleteCallback != null) {
