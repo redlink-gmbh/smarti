@@ -23,7 +23,7 @@
     <div class="form-group has-feedback" ng-class="{'has-error': $form.userName.$invalid && $form.userName.$dirty}">
       <label class="control-label" for="userName">Username:</label>
       <input id="userName" name="userName"
-             class="form-control" ng-model="newUser.username"
+             class="form-control" ng-model="newUser.login"
              required username-exists="false"/>
       <span class="glyphicon form-control-feedback"
             ng-class="{'glyphicon-ok text-success': $form.userName.$valid, 'glyphicon-remove': $form.userName.$invalid && $form.userName.$dirty}"
@@ -36,12 +36,12 @@
     <div class="form-group">
       <label for="displayName">Display Name:</label>
       <input id="displayName" name="displayName"
-             class="form-control" ng-model="newUser.displayName" type="text" />
+             class="form-control" ng-model="newUser.name" type="text" />
     </div>
     <div class="form-group has-feedback" ng-class="{'has-error': $form.email.$invalid && $form.email.$dirty}">
       <label for="email" class="control-label">EMail:</label>
       <input id="email" name="email"
-             class="form-control" ng-model="newUser.emailAddress" type="email" required />
+             class="form-control" ng-model="newUser.email" type="email" required />
       <span class="glyphicon form-control-feedback"
             ng-class="{'glyphicon-ok text-success': $form.email.$valid, 'glyphicon-remove': $form.email.$invalid && $form.email.$dirty}"
             aria-hidden="true"></span>

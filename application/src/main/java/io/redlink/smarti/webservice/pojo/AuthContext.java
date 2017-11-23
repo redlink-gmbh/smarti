@@ -35,4 +35,20 @@ public class AuthContext {
     public Authentication getAuthentication() {
         return authentication;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder builder = new StringBuilder()
+                .append(getClass().getSimpleName())
+                .append("(token=")
+                .append(authToken)
+                .append(",login=");
+
+        if (authentication != null) {
+            builder.append(authentication.getName());
+        } else {
+            builder.append("null");
+        }
+        return builder.append(")").toString();
+    }
 }

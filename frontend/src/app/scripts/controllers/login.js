@@ -35,14 +35,19 @@ angular.module('smartiApp')
     $ctrl.resetPassword = resetPassword;
 
     $ctrl.userName = $routeParams.user;
+    $ctrl.userPasswd = null;
+    $ctrl.userEmail = null;
+    $ctrl.recoverAddress = null;
     $ctrl.recoveryToken = $routeParams.token;
     if ($ctrl.userName && $ctrl.recoveryToken) {
       $ctrl.action = 'set-password'
     }
 
-    if ($scope.user) {
-      gotoStart();
-    }
+    $scope.$watch('$user', function (newVal, oldVal) {
+      if (newVal && newVal !== oldVal) {
+        gotoStart();
+      }
+    });
 
     ///////////////////////////////////////////
 

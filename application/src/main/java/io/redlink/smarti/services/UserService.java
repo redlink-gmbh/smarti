@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -62,11 +63,18 @@ public class UserService {
         return userRepository.addClient(username, client.getId());
     }
 
-    public List<? extends SmartiUser> listUsers(String filter) {
+    public List<SmartiUser> listUsers(String filter) {
         return userRepository.findAllWithFilter(filter);
     }
 
-    public SmartiUser getUser(String username) {
-        return userRepository.findOne(username);
+    public SmartiUser getUser(String login) {
+        return userRepository.findOne(login);
+    }
+
+    public SmartiUser updateProfile(String login, Map<String, String> profile) {
+        return userRepository.updateProfile(login, profile);
+    }
+    public SmartiUser updateProfile(String login, SmartiUser user) {
+        return updateProfile(login, user.getProfile());
     }
 }

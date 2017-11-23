@@ -16,45 +16,60 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Document(collection = "users")
 public class SmartiUser {
 
-    public static final String ATTR_DISPLAY_NAME = "displayName";
+    public static final String ATTR_DISPLAY_NAME = "name";
     public static final String ATTR_EMAIL = "email";
     public static final String FIELD_CLIENTS = "clients";
-    public static final String FIELD_ATTRIBUTES = "attributes";
+    public static final String FIELD_PROFILE = "profile";
+    public static final String FIELD_RECOVERY = "recovery";
+    public static final String FIELD_PASSWORD = "password";
+    public static final String FIELD_ROLES = "roles";
+    public static final String FIELD_TOKEN = "token";
+    public static final String FIELD_EXPIRES = "expires";
 
-    public static String ATTR_FIELD(String ATTR) {
-        return FIELD_ATTRIBUTES + "." + ATTR;
+    public static String PROFILE_FIELD(String ATTR) {
+        return FIELD_PROFILE + "." + ATTR;
     }
 
     @Id
-    private String username;
+    private String login;
+
+    @Field(FIELD_PASSWORD)
+    @JsonIgnore
+    private String password;
+
+    @Field(FIELD_ROLES)
+    private Set<String> roles = new HashSet<>();
+
+    @Field(FIELD_RECOVERY)
+    @JsonIgnore
+    private SmartiUser.PasswordRecovery recovery = null;
 
     @Indexed(sparse = true)
     @Field(FIELD_CLIENTS)
     private Set<ObjectId> clients = new HashSet<>();
 
-    @Field(FIELD_ATTRIBUTES)
-    private Map<String, String> attributes = new HashMap<>();
+    @Field(FIELD_PROFILE)
+    private Map<String, String> profile = new HashMap<>();
 
-    public String getUsername() {
-        return username;
+
+    public String getLogin() {
+        return login;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setLogin(String login) {
+        this.login = login;
     }
 
     public Set<ObjectId> getClients() {
@@ -65,27 +80,78 @@ public class SmartiUser {
         this.clients = clients;
     }
 
-    public String getDisplayName() {
-        return attributes.get(ATTR_DISPLAY_NAME);
+    public Map<String, String> getProfile() {
+        return profile;
     }
 
-    public void setDisplayName(String displayName) {
-        attributes.put(ATTR_DISPLAY_NAME, displayName);
+    public void setProfile(Map<String, String> profile) {
+        this.profile = profile;
     }
 
-    public String getEMailAddress() {
-        return attributes.get(ATTR_EMAIL);
+    public String getPassword() {
+        return password;
     }
 
-    public void setEMailAddress(String eMailAddress) {
-        attributes.put(ATTR_EMAIL, eMailAddress);
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public Map<String, String> getAttributes() {
-        return attributes;
+    public Set<String> getRoles() {
+        return roles;
     }
 
-    public void setAttributes(Map<String, String> attributes) {
-        this.attributes = attributes;
+    public void setRoles(Set<String> roles) {
+        this.roles = roles;
     }
+
+    public PasswordRecovery getRecovery() {
+        return recovery;
+    }
+
+    public void setRecovery(PasswordRecovery recovery) {
+        this.recovery = recovery;
+    }
+
+    public static class PasswordRecovery {
+
+        @Field(FIELD_TOKEN)
+        private String token;
+        private Date created;
+        @Field(FIELD_EXPIRES)
+        private Date expires;
+
+        public PasswordRecovery() {
+        }
+
+        public PasswordRecovery(String token, Date created, Date expires) {
+            this.token = token;
+            this.created = created;
+            this.expires = expires;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public void setToken(String token) {
+            this.token = token;
+        }
+
+        public Date getCreated() {
+            return created;
+        }
+
+        public void setCreated(Date created) {
+            this.created = created;
+        }
+
+        public Date getExpires() {
+            return expires;
+        }
+
+        public void setExpires(Date expires) {
+            this.expires = expires;
+        }
+    }
+
 }

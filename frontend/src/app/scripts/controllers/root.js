@@ -49,21 +49,21 @@ angular.module('smartiApp')
         .then(
           function (user) {
             if (user) {
-              $log.debug('Current User is ' + user.name);
+              $log.debug('Current User is ' + user.login);
             } else {
               $log.debug('No user!')
             }
-            $rootScope.user = user;
+            $rootScope.$user = user;
           },
           function (err) {
             $log.debug('Could not retrieve user');
-            $rootScope.user = null;
+            $rootScope.$user = null;
           }
         )
         .finally(function () {
           restActive = false;
-          onUserChange($rootScope.user);
-          $rootScope.$watch('user', onUserChange);
+          onUserChange($rootScope.$user);
+          $rootScope.$watch('$user', onUserChange);
         })
     }
 

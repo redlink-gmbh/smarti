@@ -19,6 +19,7 @@ package io.redlink.smarti.services;
 import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.mongo.MongoPasswordHasherConfiguration;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
+import io.redlink.smarti.model.SmartiUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -46,21 +47,22 @@ public class AccountService {
     }
 
     public AttributedUserDetails createAccount(String userName, String mail, String password) {
-        MongoUserDetailsService.MongoUser user = new MongoUserDetailsService.MongoUser();
-        user.setUsername(userName);
+        SmartiUser user = new SmartiUser();
+        user.setLogin(userName);
         user.setPassword(passwordEncoder.encodePassword(password));
         user.setRoles(Collections.emptySet());
-        user.setAttributes(Collections.singletonMap(AttributedUserDetails.ATTR_EMAIL, mail));
+        user.setProfile(Collections.singletonMap(AttributedUserDetails.ATTR_EMAIL, mail));
 
         return userDetailsService.createUserDetail(user);
     }
 
-    public boolean startPasswordRecovery(String userName) {
-        final MongoUserDetailsService.MongoUser mongoUser = userDetailsService.createPasswordRecoveryToken(userName);
+    public boolean startPasswordRecovery(String login) {
+        final SmartiUser mongoUser = userDetailsService.createPasswordRecoveryToken(login);
         if (mongoUser != null) {
-            final MongoUserDetailsService.MongoUser.PasswordRecovery passwordRecovery = mongoUser.getRecovery();
+            final SmartiUser.PasswordRecovery passwordRecovery = mongoUser.getRecovery();
             // TODO: Send a mail
-            log.info("Created password recovery link for user '{}': <http://localhost:8080/#!/login?user={}&token={}>, valid until {}", mongoUser.getUsername(), mongoUser.getUsername(), passwordRecovery.getToken(), passwordRecovery.getExpires());
+            log.info("Created password recovery link for user '{}': <http://localhost:8080/#!/login?user={}&token={}>, valid until {}",
+                    mongoUser.getLogin(), mongoUser.getLogin(), passwordRecovery.getToken(), passwordRecovery.getExpires());
         }
         return mongoUser != null;
     }

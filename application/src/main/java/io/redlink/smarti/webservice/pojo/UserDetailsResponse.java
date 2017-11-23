@@ -17,28 +17,35 @@
 package io.redlink.smarti.webservice.pojo;
 
 import io.redlink.smarti.auth.AttributedUserDetails;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.GrantedAuthority;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserDetailsResponse {
 
-    private final AttributedUserDetails user;
+    private final String login;
+    private final Set<String> roles;
 
-    public UserDetailsResponse(AttributedUserDetails user) {
-        this.user = user;
+    private UserDetailsResponse(AttributedUserDetails userDetails) {
+        login = userDetails.getUsername();
+        roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(r -> StringUtils.removeStart(r,"ROLE_"))
+                .collect(Collectors.toSet());
     }
 
-    public Map<String, String> getAttributes() {
-        return user.getAttributes();
+    public String getLogin() {
+        return login;
     }
 
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return user.getAuthorities();
+    public Set<String> getRoles() {
+        return roles;
     }
 
-    public String getUsername() {
-        return user.getUsername();
+    public static UserDetailsResponse wrap(AttributedUserDetails attributedUserDetails) {
+        return Objects.nonNull(attributedUserDetails)?new UserDetailsResponse(attributedUserDetails):null;
     }
 }

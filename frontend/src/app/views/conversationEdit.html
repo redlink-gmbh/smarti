@@ -39,7 +39,7 @@
        id="#{{$index+1}}">
     <div class="panel-heading">
       #{{$index+1}}
-      <span ng-bind="m.user.displayName"></span>
+      <span ng-bind="m.user.name"></span>
       <span class="pull-right" style="display: inline-block">
         <button ng-if="m.editing" class="btn btn-default btn-xs" ng-click="$ctrl.saveMessage(m)"><i class="glyphicon glyphicon-floppy-disk"></i></button>
         <button ng-if="!m.editing" class="btn btn-default btn-xs" ng-click="m.editing = true"><i class="glyphicon glyphicon-pencil"></i></button>

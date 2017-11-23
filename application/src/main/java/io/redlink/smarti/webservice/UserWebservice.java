@@ -23,7 +23,6 @@ import io.redlink.smarti.services.AccountService;
 import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.UserService;
 import io.redlink.smarti.webservice.pojo.AuthContext;
-import io.redlink.smarti.webservice.pojo.AuthUser;
 import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -63,20 +62,20 @@ public class UserWebservice {
 
     @ApiOperation("retrieve current user details")
     @RequestMapping(value = "/auth", method = RequestMethod.GET)
-    public AuthUser getUser(@AuthenticationPrincipal AttributedUserDetails user) {
+    public UserDetailsResponse getUser(@AuthenticationPrincipal AttributedUserDetails user) {
         // Public access
-        return AuthUser.wrap(user);
+        return UserDetailsResponse.wrap(user);
     }
 
     @ApiOperation(value = "signup", notes = "create a new account", response = UserDetailsResponse.class)
     @RequestMapping(value = "/auth/signup", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDetailsResponse> signUp(@RequestBody  Map<String, String> data) {
         // Public access
-        final String userName = data.get("username"),
+        final String login = data.get("login"),
                 password = data.get("password"),
                 mail = data.get("email");
-        if ( StringUtils.isNoneBlank(userName, password, mail) && emailValidator.isValid(mail)) {
-            return ResponseEntity.ok(new UserDetailsResponse(accountService.createAccount(userName, mail, password)));
+        if ( StringUtils.isNoneBlank(login, password, mail) && emailValidator.isValid(mail)) {
+            return ResponseEntity.ok(UserDetailsResponse.wrap(accountService.createAccount(login, mail, password)));
         } else {
             return ResponseEntity.badRequest().build();
         }
@@ -86,7 +85,7 @@ public class UserWebservice {
     @ApiOperation(value = "password recover", notes = "recover password: either start or complete the password recovery process")
     @RequestMapping(path = "/auth/recover", method = RequestMethod.POST)
     public ResponseEntity<?> recoverPassword(
-            @RequestParam("user") String username,
+            @RequestParam("user") String login,
             @RequestBody(required = false) Map<String,String> data
     ) {
         // Public access
@@ -96,13 +95,13 @@ public class UserWebservice {
 
         if (StringUtils.isNotBlank(recoveryToken)) {
             if (StringUtils.isNotBlank(newPassword)) {
-                boolean success = accountService.completePasswordRecovery(username, newPassword, recoveryToken);
+                boolean success = accountService.completePasswordRecovery(login, newPassword, recoveryToken);
                 if (success) {
                     return ResponseEntity.ok().build();
                 }
             }
         } else {
-            if (accountService.startPasswordRecovery(username)) {
+            if (accountService.startPasswordRecovery(login)) {
                 return ResponseEntity.accepted().build();
             } else {
                 return ResponseEntity.notFound().build();
@@ -113,7 +112,7 @@ public class UserWebservice {
     }
 
     @RequestMapping(value = "/user", method = RequestMethod.GET)
-    public List<? extends SmartiUser> listUsers(AuthContext authContext, @RequestParam(name = "filter", required = false) String filter) {
+    public List<SmartiUser> listUsers(AuthContext authContext, @RequestParam(name = "filter", required = false) String filter) {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
 
         return userService.listUsers(filter);
@@ -121,7 +120,7 @@ public class UserWebservice {
 
     @RequestMapping(value = "/user", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public SmartiUser createUser(AuthContext authContext,
-                                 @RequestBody MongoUserDetailsService.MongoUser user) {
+                                 @RequestBody SmartiUser user) {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
 
         // TODO: implement
@@ -129,40 +128,38 @@ public class UserWebservice {
         return user;
     }
 
-    @RequestMapping(value = "/user/{username}", method = RequestMethod.GET)
+    @RequestMapping(value = "/user/{login}", method = RequestMethod.GET)
     public SmartiUser getUser(AuthContext authentication,
-                              @PathVariable("username") String username) {
+                              @PathVariable("login") String login) {
         // Access only for ADMIN or @me
-        if (authenticationService.hasUsername(authentication, username)
+        if (authenticationService.hasLogin(authentication, login)
                 || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
-            return userService.getUser(username);
+            return userService.getUser(login);
         } else {
             throw new AccessDeniedException("No access for " + authentication);
         }
     }
 
-    @RequestMapping(value = "/user/{username}", method = RequestMethod.PUT, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/user/{login}", method = RequestMethod.PUT, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public SmartiUser updateUser(AuthContext authentication,
-                                 @PathVariable("username") String username,
-                                 @RequestBody MongoUserDetailsService.MongoUser user) {
+                                 @PathVariable("login") String login,
+                                 @RequestBody SmartiUser user) {
         // Access only for ADMIN or @me
-        if (authenticationService.hasUsername(authentication, username)
+        if (authenticationService.hasLogin(authentication, login)
                 || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
 
-            // FIXME: must not set roles if not ADMIN!
-            user.setUsername(username);
-            return user;
+            return userService.updateProfile(login, user);
         } else {
             throw new AccessDeniedException("No access for " + authentication);
         }
     }
 
-    @RequestMapping(value = "/user/{username}", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/user/{login}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteUser(AuthContext authContext,
-                                        @PathVariable("username") String username) {
+                                        @PathVariable("login") String login) {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
 
-        if (accountService.deleteUser(username)) {
+        if (accountService.deleteUser(login)) {
             return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.notFound().build();
@@ -170,20 +167,20 @@ public class UserWebservice {
     }
 
     @ApiOperation("update password")
-    @RequestMapping(path = "/user/{username}/password", method = RequestMethod.PUT)
+    @RequestMapping(path = "/user/{login}/password", method = RequestMethod.PUT)
     public ResponseEntity<?> setPassword(
             AuthContext authentication,
-            @PathVariable("username") String username,
+            @PathVariable("login") String login,
             @RequestBody Map<String,String> data
     ) {
         // Access only for ADMIN or @me
-        if (authenticationService.hasUsername(authentication, username)
+        if (authenticationService.hasLogin(authentication, login)
                 || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
             final String newPassword = data.get("password");
 
             if (StringUtils.isNotBlank(newPassword)) {
-                accountService.setPassword(username, newPassword);
-                return ResponseEntity.noContent().build();
+                accountService.setPassword(login, newPassword);
+                return ResponseEntity.ok(userService.getUser(login));
             } else {
                 return ResponseEntity.badRequest().build();
             }
@@ -192,26 +189,26 @@ public class UserWebservice {
         }
     }
 
-    @RequestMapping(path = "/user/{username}/roles", method = RequestMethod.PUT)
+    @RequestMapping(path = "/user/{login}/roles", method = RequestMethod.PUT)
     public ResponseEntity<?> setRoles(
             AuthContext authentication,
-            @PathVariable("username") String username,
+            @PathVariable("login") String login,
             @RequestBody Set<String> roles
     ) {
         authenticationService.assertRole(authentication, AuthenticationService.ADMIN);
 
-        if (accountService.setRoles(username, roles)) {
-            return ResponseEntity.noContent().build();
+        if (accountService.setRoles(login, roles)) {
+            return ResponseEntity.ok(userService.getUser(login));
         } else {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @ApiOperation(value = "check username", notes = "check if the provided username is already taken")
+    @ApiOperation(value = "check login", notes = "check if the provided login is already taken")
     @RequestMapping("/auth/check")
-    public boolean checkUsernameExists(@RequestParam("username") String username) {
+    public boolean checkLoginExists(@RequestParam("login") String login) {
         // Public access
-        return accountService.hasAccount(username);
+        return accountService.hasAccount(login);
     }
 
 }

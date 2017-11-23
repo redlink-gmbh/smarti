@@ -16,11 +16,11 @@
  */
 package io.redlink.smarti.auth.mongo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Collections2;
 import com.mongodb.WriteResult;
 import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.SecurityConfigurationProperties;
+import io.redlink.smarti.model.SmartiUser;
 import io.redlink.utils.HashUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -45,34 +44,22 @@ import java.util.*;
 @Service
 @EnableConfigurationProperties(SecurityConfigurationProperties.class)
 public class MongoUserDetailsService implements UserDetailsService {
-    static final String FIELD_RECOVERY = "recovery";
-    static final String FIELD_PASSWORD = "password";
-    static final String FIELD_ROLES = "roles";
-    static final String FIELD_TOKEN = "token";
-    static final String FIELD_EXPIRES = "expires";
 
     private Logger log = LoggerFactory.getLogger(MongoUserDetailsService.class);
 
     private final MongoTemplate mongoTemplate;
 
-    private final SecurityConfigurationProperties securityConfig;
     private final MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder;
 
-    public MongoUserDetailsService(MongoTemplate mongoTemplate, SecurityConfigurationProperties securityConfig, MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder) {
+    public MongoUserDetailsService(MongoTemplate mongoTemplate, MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder) {
         this.mongoTemplate = mongoTemplate;
-        this.securityConfig = securityConfig;
         this.passwordEncoder = passwordEncoder;
     }
 
     @PostConstruct
     protected void initialize() {
         // Check for at least one admin-user
-        final long adminUsers;
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
-            adminUsers = mongoTemplate.count(Query.query(Criteria.where(FIELD_ROLES).is("ADMIN")), MongoUser.class, securityConfig.getMongo().getCollection());
-        } else {
-            adminUsers = mongoTemplate.count(Query.query(Criteria.where(FIELD_ROLES).is("ADMIN")), MongoUser.class);
-        }
+        final long adminUsers = mongoTemplate.count(Query.query(Criteria.where(SmartiUser.FIELD_ROLES).is("ADMIN")), SmartiUser.class);
         if (adminUsers < 1) {
             log.debug("No admin-users found, creating");
             String adminUser = "admin";
@@ -88,118 +75,98 @@ public class MongoUserDetailsService implements UserDetailsService {
         }
     }
 
-    private boolean createAdminUser(String userName, String password) {
-        Query q = Query.query(byUsername(userName));
+    private boolean createAdminUser(String login, String password) {
+        Query q = Query.query(byLogin(login));
         Update u = new Update()
-                .setOnInsert(FIELD_ROLES, Collections.singleton("ADMIN"))
-                .setOnInsert(FIELD_PASSWORD, password);
-        WriteResult writeResult;
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
-            writeResult = mongoTemplate.upsert(q, u, MongoUser.class, securityConfig.getMongo().getCollection());
-        } else {
-            writeResult = mongoTemplate.upsert(q, u, MongoUser.class);
-        }
-        return writeResult.getN() > 0 && !writeResult.isUpdateOfExisting();
+                .setOnInsert(SmartiUser.FIELD_ROLES, Collections.singleton("ADMIN"))
+                .setOnInsert(SmartiUser.FIELD_PASSWORD, password);
+        final WriteResult writeResult = mongoTemplate.upsert(q, u, SmartiUser.class);
 
+        return writeResult.getN() > 0 && !writeResult.isUpdateOfExisting();
     }
 
 
     @Override
-    public AttributedUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        username = username.toLowerCase(Locale.ROOT);
+    public AttributedUserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
+        login = login.toLowerCase(Locale.ROOT);
 
-        final MongoUser mongoUser = getMongoUser(username);
+        final SmartiUser smartiUser = getSmaritUser(login);
 
-        if (mongoUser == null) {
-            log.debug("User {} not found", username, StringUtils.defaultString(securityConfig.getMongo().getCollection()));
-            throw new UsernameNotFoundException(String.format("Unknown user: '%s'", username));
+        if (smartiUser == null) {
+            log.debug("User {} not found", login);
+            throw new UsernameNotFoundException(String.format("Unknown user: '%s'", login));
         }
 
         final MongoUserDetails userDetails = new MongoUserDetails(
-                mongoUser.getUsername(),
-                mongoUser.getPassword(),
-                Collections2.transform(mongoUser.getRoles(),
+                smartiUser.getLogin(),
+                smartiUser.getPassword(),
+                Collections2.transform(smartiUser.getRoles(),
                         role -> new SimpleGrantedAuthority("ROLE_" + StringUtils.upperCase(role, Locale.ROOT))
                 )
         );
-        userDetails.addAttributes(mongoUser.getAttributes());
+        userDetails.addAttributes(smartiUser.getProfile());
         return userDetails;
     }
 
 
 
-    private WriteResult updateMongoUser(String username, Update update) {
-        return updateMongoUser(username, new Query(), update);
+    private WriteResult updateMongoUser(String login, Update update) {
+        return updateMongoUser(login, new Query(), update);
     }
-    private WriteResult updateMongoUser(String username, Query query, Update update) {
-        query.addCriteria(byUsername(username));
+    private WriteResult updateMongoUser(String login, Query query, Update update) {
+        query.addCriteria(byLogin(login));
 
-        WriteResult result;
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
-            result = mongoTemplate.updateFirst(query, update, securityConfig.getMongo().getCollection());
-        } else {
-            result = mongoTemplate.updateFirst(query, update, MongoUser.class);
-        }
-        return result;
-
+        return mongoTemplate.updateFirst(query, update, SmartiUser.class);
     }
 
-    private static Criteria byUsername(String username) {
-        return Criteria.where("_id").is(username);
+    private static Criteria byLogin(String login) {
+        return Criteria.where("_id").is(login);
     }
 
-    private MongoUser getMongoUser(String username) {
-        MongoUser mongoUser;
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
-            mongoUser = mongoTemplate.findById(username, MongoUser.class, securityConfig.getMongo().getCollection());
-        } else {
-            mongoUser = mongoTemplate.findById(username, MongoUser.class);
-        }
-        return mongoUser;
+    private SmartiUser getSmaritUser(String login) {
+        return mongoTemplate.findById(login, SmartiUser.class);
     }
 
-    public AttributedUserDetails createUserDetail(MongoUser user) {
+    public AttributedUserDetails createUserDetail(SmartiUser user) {
+        mongoTemplate.insert(user);
 
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
-            mongoTemplate.insert(user, securityConfig.getMongo().getCollection());
-        } else {
-            mongoTemplate.insert(user);
-        }
-
-        return loadUserByUsername(user.getUsername());
+        return loadUserByUsername(user.getLogin());
     }
 
-    public MongoUser createPasswordRecoveryToken(String userName) {
-        final MongoUser mongoUser = findMongoUser(userName);
+    public SmartiUser createPasswordRecoveryToken(String login) {
+        final SmartiUser mongoUser = findUser(login);
         if (mongoUser == null) {
             return null;
         }
 
         final Date now = new Date(),
                 expiry = DateUtils.addHours(now, 24);
-        final String token = HashUtils.sha256(UUID.randomUUID() + mongoUser.getUsername());
-        final MongoUser.PasswordRecovery recovery = new MongoUser.PasswordRecovery(token, now, expiry);
+        final String token = HashUtils.sha256(UUID.randomUUID() + mongoUser.getLogin());
+        final SmartiUser.PasswordRecovery recovery = new SmartiUser.PasswordRecovery(token, now, expiry);
 
-        final WriteResult result = updateMongoUser(mongoUser.getUsername(), Update.update(FIELD_RECOVERY, recovery));
+        final WriteResult result = updateMongoUser(mongoUser.getLogin(), Update.update(SmartiUser.FIELD_RECOVERY, recovery));
         if (result.getN() == 1) {
-            return getMongoUser(mongoUser.getUsername());
+            return getSmaritUser(mongoUser.getLogin());
         } else {
             return null;
         }
     }
 
-    public MongoUser findMongoUser(String userName) {
-        MongoUser mongoUser = getMongoUser(userName);
+    /**
+     * Find a user. If a user with the provided parameter is not found, this method looks for
+     * a user with a matching email-address.
+     * @param login the login (username) or email-address
+     * @return
+     */
+    public SmartiUser findUser(String login) {
+        SmartiUser mongoUser = getSmaritUser(login);
         if (mongoUser != null) {
             return mongoUser;
         }
 
-        final Query byMailQuery = new Query(Criteria.where("attributes.email").is(userName));
-        if (StringUtils.isNotBlank(securityConfig.getMongo().getCollection())) {
-            mongoUser = mongoTemplate.findOne(byMailQuery, MongoUser.class, securityConfig.getMongo().getCollection());
-        } else {
-            mongoUser = mongoTemplate.findOne(byMailQuery, MongoUser.class);
-        }
+        final Query byMailQuery = new Query(Criteria.where(SmartiUser.PROFILE_FIELD(SmartiUser.ATTR_EMAIL)).is(login));
+        mongoUser = mongoTemplate.findOne(byMailQuery, SmartiUser.class);
+
         return mongoUser;
     }
 
@@ -207,114 +174,32 @@ public class MongoUserDetailsService implements UserDetailsService {
      *
      * @param newPassword already hashed password
      */
-    public boolean updatePassword(String userName, String newPassword, String recoveryToken) {
+    public boolean updatePassword(String login, String newPassword, String recoveryToken) {
         return updateMongoUser(
-                userName,
-                Query.query(Criteria.where(FIELD_RECOVERY + "." + FIELD_TOKEN).is(recoveryToken)
-                        .and(FIELD_RECOVERY + "." + FIELD_EXPIRES).gte(new Date())),
-                Update.update(FIELD_PASSWORD, newPassword)
+                login,
+                Query.query(Criteria.where(SmartiUser.FIELD_RECOVERY + "." + SmartiUser.FIELD_TOKEN).is(recoveryToken)
+                        .and(SmartiUser.FIELD_RECOVERY + "." + SmartiUser.FIELD_EXPIRES).gte(new Date())),
+                Update.update(SmartiUser.FIELD_PASSWORD, newPassword)
         ).getN() == 1;
     }
 
     /**
      * @param newPassword already hashed password
      */
-    public boolean updatePassword(String userName, String newPassword) {
-        return updateMongoUser(userName, Update.update(FIELD_PASSWORD, newPassword)).getN() == 1;
+    public boolean updatePassword(String login, String newPassword) {
+        return updateMongoUser(login, Update.update(SmartiUser.FIELD_PASSWORD, newPassword)).getN() == 1;
     }
 
-    public boolean hasAccount(String userName) {
-        return mongoTemplate.exists(new Query(byUsername(userName)), MongoUser.class);
+    public boolean hasAccount(String login) {
+        return mongoTemplate.exists(new Query(byLogin(login)), SmartiUser.class);
     }
 
-    public boolean updateRoles(String username, Set<String> roles) {
-        return updateMongoUser(username, Update.update(FIELD_ROLES, roles)).getN() == 1;
+    public boolean updateRoles(String login, Set<String> roles) {
+        return updateMongoUser(login, Update.update(SmartiUser.FIELD_ROLES, roles)).getN() == 1;
     }
 
-    public boolean deleteUser(String username) {
-        return mongoTemplate.remove(new Query(byUsername(username)), MongoUser.class).getN() == 1;
+    public boolean deleteUser(String login) {
+        return mongoTemplate.remove(new Query(byLogin(login)), SmartiUser.class).getN() == 1;
     }
 
-    public static class MongoUser extends io.redlink.smarti.model.SmartiUser {
-
-        /**
-         * SHA-2 hashed!
-         */
-        @Field(FIELD_PASSWORD)
-        @JsonIgnore
-        private String password;
-
-        @Field(FIELD_ROLES)
-        private Set<String> roles = new HashSet<>();
-
-        @Field(FIELD_RECOVERY)
-        @JsonIgnore
-        private PasswordRecovery recovery = null;
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public Set<String> getRoles() {
-            return roles;
-        }
-
-        public void setRoles(Set<String> roles) {
-            this.roles = roles;
-        }
-
-        public PasswordRecovery getRecovery() {
-            return recovery;
-        }
-
-        public void setRecovery(PasswordRecovery recovery) {
-            this.recovery = recovery;
-        }
-
-        public static class PasswordRecovery {
-
-            @Field(FIELD_TOKEN)
-            private String token;
-            private Date created;
-            @Field(FIELD_EXPIRES)
-            private Date expires;
-
-            public PasswordRecovery() {
-            }
-
-            public PasswordRecovery(String token, Date created, Date expires) {
-                this.token = token;
-                this.created = created;
-                this.expires = expires;
-            }
-
-            public String getToken() {
-                return token;
-            }
-
-            public void setToken(String token) {
-                this.token = token;
-            }
-
-            public Date getCreated() {
-                return created;
-            }
-
-            public void setCreated(Date created) {
-                this.created = created;
-            }
-
-            public Date getExpires() {
-                return expires;
-            }
-
-            public void setExpires(Date expires) {
-                this.expires = expires;
-            }
-        }
-    }
 }

@@ -29,13 +29,18 @@ angular.module('smartiApp')
 
     this.listUsers = listUsers;
     this.getUser = getUser;
+    this.createUser = createUser;
     this.updateUser = updateUser;
+    this.deleteUser = deleteUser;
+
     this.login = login;
     this.logout = logout;
     this.signup = signup;
     this.recoverPassword = recoverPassword;
     this.completePasswordRecovery = completePasswordRecovery;
+
     this.setPassword = setPassword;
+    this.setRoles = setRoles;
 
     this.checkUsernameExists = checkUsernameExists;
 
@@ -45,6 +50,10 @@ angular.module('smartiApp')
       return login();
     }
 
+    /**
+     * @param {object} user
+     * @returns {user}
+     */
     function enhanceUser(user) {
       user.roles = user.roles || [];
 
@@ -63,13 +72,23 @@ angular.module('smartiApp')
         });
     }
     function createUser(user) {
-      return $q.reject(user);
+      return $http.post(ENV.serviceBaseUrl + '/user', user)
+        .then(function (response) {
+          return enhanceUser(response.data);
+        });
     }
     function updateUser(user) {
-      return $q.reject(user);
+      return $http.put(ENV.serviceBaseUrl + '/user/' + user.login, user)
+        .then(function (response) {
+          return enhanceUser(response.data);
+        });
     }
     function deleteUser(user) {
-      return $q.reject(user);
+      var username = user.login || user;
+      return $http.delete(ENV.serviceBaseUrl + '/user/' + username)
+        .then(function () {
+          return true;
+        });
     }
 
     function login(username, password) {
@@ -78,30 +97,44 @@ angular.module('smartiApp')
         headers.authorization = 'Basic ' + btoa(username+':'+password);
       }
 
-      return $http.get(ENV.serviceBaseUrl + '/auth', {
-        headers: headers
-      }).then(
-        function (response) {
-          if (response.data.name) {
-            $rootScope.user = enhanceUser(response.data);
-            return response.data;
-          } else {
-            $rootScope.user = null;
+      return $http
+        .get(ENV.serviceBaseUrl + '/auth', {
+          headers: headers
+        })
+        .then(
+          function (response) {
+            if (response.data.login) {
+              $rootScope.$user = enhanceUser(response.data);
+              return response.data;
+            } else {
+              $rootScope.$user = null;
+              return null;
+            }
+          },
+          function (err) {
+            $rootScope.$user = null;
             return null;
           }
-        },
-        function (err) {
-          $rootScope.user = null;
-          return null;
-        }
-      )
+        )
+        .then(function (login) {
+          return $http.get(ENV.serviceBaseUrl + '/user/' + login.login)
+            .then(function (response) {
+              if (response.data.login) {
+                $rootScope.$user = enhanceUser(response.data);
+                return $rootScope.$user;
+              } else {
+                $rootScope.$user = null;
+                return null;
+              }
+            });
+        })
     }
 
     function logout() {
       return $http.post(ENV.serviceBaseUrl + '/logout', undefined)
         .finally(
           function () {
-            $rootScope.user = null;
+            $rootScope.$user = null;
           }
         );
     }
@@ -141,24 +174,29 @@ angular.module('smartiApp')
     }
 
     function setPassword(user, newPassword) {
-      var username = user.username || user;
+      var username = user.login || user;
       return $http
         .put(ENV.serviceBaseUrl + '/user/' + username + '/password', {
           password: newPassword
         })
         .then(function (response) {
-          return response.data;
+          return enhanceUser(response.data);
         });
     }
     function setRoles(user, newRoles) {
-      $q.reject(user);
+      var username = user.login || user;
+      return $http
+        .put(ENV.serviceBaseUrl + '/user/' + username + '/roles', newRoles || [])
+        .then(function (response) {
+          return enhanceUser(response.data);
+        });
     }
 
-    function checkUsernameExists(username) {
+    function checkUsernameExists(login) {
       return $http
         .get(ENV.serviceBaseUrl + '/auth/check', {
           params: {
-            username: username
+            login: login
           }
         })
         .then(function (response) {

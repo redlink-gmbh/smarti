@@ -68,16 +68,16 @@
     <div class="list-group">
       <div ng-repeat="user in users"
            class="list-group-item"
-           ng-class="{'list-group-item-info': user.username === $root.user.name}">
-        <strong>{{user.displayName}}</strong> ({{user.username}})
-        <a ng-href="mailto:{{user.emailAddress}}">{{user.emailAddress}}</a>
+           ng-class="{'list-group-item-info': user.login === $root.user.login}">
+        <strong>{{user.name}}</strong> ({{user.login}})
+        <a ng-href="mailto:{{user.email}}">{{user.email}}</a>
         <button class="btn btn-default btn-sm"
                 title="set password"
                 ng-click="$ctrl.setPassword(user)">
           <i class="glyphicon glyphicon-lock"></i>
         </button>
         <button class="btn btn-danger btn-sm"
-                ng-if="user.username !== $root.user.name"
+                ng-if="user.login !== $root.user.login"
                 title="remove"
                 ng-click="$ctrl.removeUser(user)">
           <i class="glyphicon glyphicon-link"></i>

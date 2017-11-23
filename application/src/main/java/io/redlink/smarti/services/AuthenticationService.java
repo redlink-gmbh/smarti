@@ -62,16 +62,16 @@ public class AuthenticationService {
         return Objects.nonNull(authentication) && !hasRole(authentication, ANONYMOUS);
     }
 
-    public boolean hasUsername(Authentication authentication, String username) {
-        return Objects.nonNull(authentication) && Objects.equals(authentication.getName(), username);
+    public boolean hasLogin(Authentication authentication, String login) {
+        return Objects.nonNull(authentication) && Objects.equals(authentication.getName(), login);
     }
 
-    public boolean hasUsername(AuthContext authContext, String username) {
-        return Objects.nonNull(authContext) && hasUsername(authContext.getAuthentication(), username);
+    public boolean hasLogin(AuthContext authContext, String login) {
+        return Objects.nonNull(authContext) && hasLogin(authContext.getAuthentication(), login);
     }
 
-    public boolean hasUsername(UserDetails authentication, String username) {
-        return Objects.nonNull(authentication) && Objects.equals(authentication.getUsername(), username);
+    public boolean hasLogin(UserDetails authentication, String login) {
+        return Objects.nonNull(authentication) && Objects.equals(authentication.getUsername(), login);
     }
 
     public boolean hasRole(AuthContext authContext, String role) {

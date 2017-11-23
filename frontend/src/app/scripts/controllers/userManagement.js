@@ -13,9 +13,10 @@ angular.module('smartiApp')
 
     $scope.users = [];
 
+    $ctrl.createUser = createUser;
     $ctrl.editUser = editUser;
     $ctrl.setPassword  = setPassword;
-
+    $ctrl.deleteUser = deleteUser;
     init();
 
     ///////////////////////////
@@ -25,6 +26,29 @@ angular.module('smartiApp')
         .then(function (users) {
           $scope.users = users;
         });
+    }
+
+    function createUser() {
+      return $uibModal.open({
+        scope: $scope,
+        templateUrl: 'views/modal/create-user.html'
+      }).result
+        .then(
+          function (newUser) {
+            return UserService.createUser(newUser)
+              .then(function (created) {
+                return UserService.setPassword(created, newUser.password)
+                  .finally(function () {
+                    $scope.users.push(created);
+                    return created;
+                  });
+              });
+          },
+          function () {
+            // modal canceled
+          }
+        );
+
     }
 
     function editUser(user) {
@@ -40,14 +64,17 @@ angular.module('smartiApp')
       }).result
         .then(
           function (updatedUser) {
-            updatedUser.roles = updatedUser.roles || [];
+            var roles = [];
             if (updatedUser.isAdmin) {
-              updatedUser.roles.push('ADMIN');
+              roles.push('ADMIN');
             }
             return UserService.updateUser(updatedUser)
               .then(function (savedUser) {
+                return UserService.setRoles(savedUser, roles);
+              })
+              .then(function (savedUser) {
                 $scope.users = $scope.users.map(function (u) {
-                  if (u.username === savedUser.username) {
+                  if (u.login === savedUser.login) {
                     return savedUser;
                   } else {
                     return u;
@@ -84,6 +111,15 @@ angular.module('smartiApp')
           // modal canceled
         }
       );
+    }
+
+    function deleteUser(user) {
+      return UserService.deleteUser(user)
+        .then(function() {
+          $scope.users = $scope.users.filter(function(u) {
+            return u.login !== user.login;
+          });
+        });
     }
 
 

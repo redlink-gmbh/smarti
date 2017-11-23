@@ -17,11 +17,8 @@
 package io.redlink.smarti.auth;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.core.io.Resource;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  */
@@ -64,17 +61,7 @@ public class SecurityConfigurationProperties {
 
     public static class MongoProperties {
 
-        private String collection = null;
-
         private String passwordHasher = "SHA-256";
-
-        public String getCollection() {
-            return collection;
-        }
-
-        public void setCollection(String collection) {
-            this.collection = collection;
-        }
 
         public String getPasswordHasher() {
             return passwordHasher;

@@ -39,14 +39,14 @@
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
         <li><a href="#!/">Clients</a></li>
-        <li><a href="#!/user">User</a></li>
+        <li ng-show="$user.isAdmin"><a href="#!/user">User</a></li>
       </ul>
 
       <ul class="nav navbar-nav navbar-right">
         <li>
-          <a ng-if="user" ng-click="rootCtrl.logout()">
+          <a ng-if="$user" ng-click="rootCtrl.logout()">
             <i class="glyphicon glyphicon-user"></i>
-            logout {{user.name}}
+            logout {{$user.profile.name || $user.login}}
           </a>
         </li>
       </ul>

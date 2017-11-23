@@ -24,6 +24,7 @@ import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class AuthTokenService {
@@ -68,6 +69,7 @@ public class AuthTokenService {
     }
 
     public ObjectId getClientId(String authToken) {
-        return authTokenRepository.findOneByToken(authToken).getClientId();
+        final AuthToken client = authTokenRepository.findOneByToken(authToken);
+        return Objects.nonNull(client)?client.getClientId():null;
     }
 }

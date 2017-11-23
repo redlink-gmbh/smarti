@@ -24,6 +24,7 @@ import org.springframework.security.core.GrantedAuthority;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class AuthUser {
     private String name, displayName, email;
     private Set<String> roles;

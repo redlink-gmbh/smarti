@@ -1,7 +1,5 @@
 package io.redlink.smarti.webservice;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.model.Client;
@@ -21,8 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -96,16 +92,11 @@ public class ClientWebservice {
 
     @ApiOperation(value = "creates/updates a client config", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
     @RequestMapping(value = "{id}/config", method = RequestMethod.POST)
-    public ResponseEntity<?> storeConfig(AuthContext authContext, @PathVariable("id") ObjectId id, @RequestBody(required=true) String jsonData) throws IOException {
+    public ResponseEntity<?> storeConfig(AuthContext authContext, @PathVariable("id") ObjectId id,
+                                         @RequestBody(required=true) Configuration configuration) throws IOException {
         final Client client = authenticationService.assertClient(authContext, id);
 
-        Map<String,List<ComponentConfiguration>> config;
-        try {
-            config = objectMapper.readValue(jsonData, ConfigurationWebservice.smartiConfigType);
-        } catch (JsonParseException | JsonMappingException e) {
-            return ResponseEntities.badRequest(e.getClass().getSimpleName() + ": " + e.getMessage());
-        }
-        return ConfigurationWebservice.writeSmartiConfig(configService.storeConfiguration(client, config));
+        return ResponseEntity.ok(configService.storeConfiguration(client, configuration.getConfig()));
     }
 
     @ApiOperation(value = "get a client config", response = ComponentConfiguration.class, responseContainer ="{'category': [..]}")
@@ -117,7 +108,7 @@ public class ClientWebservice {
         if (c == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ConfigurationWebservice.writeSmartiConfig(c);
+            return ResponseEntity.ok(c);
         }
     }
 
@@ -188,7 +179,7 @@ public class ClientWebservice {
                                               @RequestBody SmartiUser user) {
         final Client client = authenticationService.assertClient(authContext, id);
 
-        if (StringUtils.isBlank(user.getUsername())) {
+        if (StringUtils.isBlank(user.getLogin())) {
             return ResponseEntity.unprocessableEntity().build();
         }
         user.getClients().clear();
