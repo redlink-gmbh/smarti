@@ -274,7 +274,16 @@
                                             </mapper>
                                         </data>
                                         <data>
-                                            <src>${project.build.outputDirectory}/main/plugin-info.txt</src>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.json</src>
+                                            <dst>plugin-info.json</dst>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./var/lib/${packageName}/ext</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.readme</src>
                                             <dst>README.txt</dst>
                                             <type>file</type>
                                             <mapper>
@@ -482,7 +491,16 @@
                                 <mapping>
                                     <sources>
                                         <source>
-                                            <location>${project.build.outputDirectory}/main/plugin-info.txt</location>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.json</location>
+                                            <destination>plugin-info.json</destination>
+                                        </source>
+                                    </sources>
+                                    <directory>/var/lib/${packageName}/ext</directory>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.readme</location>
                                             <destination>README.txt</destination>
                                         </source>
                                     </sources>
