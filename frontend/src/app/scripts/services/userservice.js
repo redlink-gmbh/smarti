@@ -108,15 +108,16 @@ angular.module('smartiApp')
               return response.data;
             } else {
               $rootScope.$user = null;
-              return null;
+              return $q.reject(response);
             }
           },
           function (err) {
             $rootScope.$user = null;
-            return null;
+            return $q.reject(err);
           }
         )
         .then(function (login) {
+          if (!login) return login;
           return $http.get(ENV.serviceBaseUrl + '/user/' + login.login)
             .then(function (response) {
               if (response.data.login) {
@@ -124,7 +125,7 @@ angular.module('smartiApp')
                 return $rootScope.$user;
               } else {
                 $rootScope.$user = null;
-                return null;
+                return $q.reject(response);
               }
             });
         })

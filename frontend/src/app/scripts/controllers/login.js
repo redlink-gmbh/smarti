@@ -25,12 +25,13 @@
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('LoginCtrl', function ($scope, $location, $routeParams, UserService) {
+  .controller('LoginCtrl', function ($scope, $location, $routeParams, $log, toastr, UserService) {
 
     var $ctrl = this;
 
     $ctrl.action = $routeParams.action; // 'login' as default
     $ctrl.login = login;
+    $ctrl.signUp = signup;
     $ctrl.recoverPassword = recoverPassword;
     $ctrl.resetPassword = resetPassword;
 
@@ -52,32 +53,54 @@ angular.module('smartiApp')
     ///////////////////////////////////////////
 
     function login() {
-      if ($ctrl.action === 'signup') {
-        return signup();
-      }
-      return UserService.login($ctrl.userName, $ctrl.userPasswd).then(gotoStart);
+      return UserService.login($ctrl.userName, $ctrl.userPasswd)
+        .then(function(u) {
+          toastr.success('Welcome ' + (u.profile.name || u.login), 'Login successful');
+          gotoStart();
+        }, function (response) {
+          $ctrl.userPasswd = null;
+          toastr.error('Login Failed');
+        });
     }
 
     function signup() {
-      return UserService.signup($ctrl.userName, $ctrl.userEmail, $ctrl.userPasswd).then(gotoStart);
+      return UserService.signup($ctrl.userName, $ctrl.userEmail, $ctrl.userPasswd)
+        .then(function(u) {
+          toastr.success('Welcome ' + (u.profile.name || u.login), 'Sign-Up successful');
+          gotoStart();
+        }, function (response) {
+          $ctrl.userPasswd = null;
+          toastr.error('Please try again', 'Sign-Up Failed');
+        });
     }
 
     function recoverPassword() {
       return UserService.recoverPassword($ctrl.recoverAddress)
         .then(function () {
+          toastr.success('Please check your mailbox for further instructions', 'Recovery-Token created');
           $ctrl.action = 'set-password';
+        }, function (response) {
+          toastr.error('Could not initialize password-recovery workflow. Is you mail-address correct?', 'Error');
         });
     }
 
     function resetPassword() {
       return UserService.completePasswordRecovery($ctrl.userName, $ctrl.userPasswd, $ctrl.recoveryToken)
         .then(function () {
-          return UserService.login($ctrl.userName, $ctrl.userPasswd);
-        })
-        .then(gotoStart);
+          return login($ctrl.userName, $ctrl.userPasswd);
+        }, function (response) {
+          $ctrl.userPasswd = null;
+          toastr.error('Password reset failed: Did you provide the correct token?', 'Error')
+        });
     }
 
     function gotoStart() {
       $location.path('/').search({})
+    }
+
+    function showError(response) {
+      $log.error(response);
+      toastr.error("Error");
+
     }
   });

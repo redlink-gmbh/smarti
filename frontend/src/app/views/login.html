@@ -46,7 +46,7 @@
       </div>
     </form>
     <form ng-switch-when="signup"
-          name="signupForm" class="form-horizontal" ng-submit="$ctrl.login()">
+          name="signupForm" class="form-horizontal" ng-submit="$ctrl.signUp()">
       <div class="form-group has-feedback" ng-class="{'has-success': signupForm.username.$valid, 'has-error': signupForm.username.$invalid && signupForm.username.$dirty}">
         <label for="newUsername" class="col-xs-4 control-label">Username:</label>
         <div class="col-xs-8">
