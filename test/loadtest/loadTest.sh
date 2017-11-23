@@ -6,6 +6,7 @@ CLIENT=${CLIENT:-loadtest}
 CHANNELS=10
 MESSAGES=20
 CALLBACK=${CALLBACK}
+TOKEN=
 
 while [ $# -gt 0 ]; do
     _arg="$1"
@@ -19,11 +20,13 @@ while [ $# -gt 0 ]; do
 	    CLIENT="$1"; shift ;;
 	-s|--smarti)
 	    SMARTI_URL="$1"; shift ;;
+	-T|--token)
+	    TOKEN="-H X-Auth-Token:$1"; shift ;;
 	--callback)
 	    CALLBACK="$1"; shift ;;
-    --)
-        exec "$@"
-        exit $? ;;
+        --)
+            exec "$@"
+            exit $? ;;
 	*)
 	    echo "Unknow param $_arg" >&2
 	    exit 1 ;;
@@ -48,7 +51,7 @@ function pushMessage() {
              --arg h "${CALLBACK:-${SMARTI_URL%/}/debug/${CLIENT}_${_m}}" \
              --argjson d "${5:-null}" \
              '{message_id: $m, channel_id: $c, text: $t, token: null, user_id: $u, timestamp: $d, webhook_url: $h}' \
-        | curl -sX POST \
+        | curl $TOKEN -sX POST \
                "${SMARTI_URL%/}/rocket/${CLIENT}" \
                -H 'Content-Type: application/json' \
                --data-binary @-
@@ -56,9 +59,9 @@ function pushMessage() {
 
 function closeChannel() {
     echo -n "Closing channel $1"
-    _cID=$(curl -s "${SMARTI_URL%/}/rocket/${CLIENT}/${1}/conversationid")
+    _cID=$(curl $TOKEN -s "${SMARTI_URL%/}/rocket/${CLIENT}/${1}/conversationid")
     echo " = conversation $_cID"
-    curl -sX POST "${SMARTI_URL%/}/conversation/${_cID}/publish" \
+    curl $TOKEN -sX POST "${SMARTI_URL%/}/conversation/${_cID}/publish" \
          | jq '{id:.id,status:.meta.status}'
 }
 
