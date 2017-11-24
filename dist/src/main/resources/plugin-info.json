@@ -1,22 +1,27 @@
 {
-    "plugins" : [ {
-        "groupId" : "edu.stanford.nlp" ,
-        "artifactId" : "stanford-corenlp",
-        "version" : "3.6.0",
-        "licenses" : [{
-            "name" : "GNU General Public License Version 3",
-            "url" : "http://www.gnu.org/licenses/gpl-3.0.txt"
+  "plugins" : [{
+    "title": "Stanford CoreNLP (German)",
+    "description": "Stanford CoreNLP provides a set of human language technology tools. It can give the base forms of words, their parts of speech, whether they are names of companies, people, etc., normalize dates, times, and numeric quantities, mark up the structure of sentences in terms of phrases and syntactic dependencies, indicate which noun phrases refer to the same entities, indicate sentiment, extract particular or open-class relations between entity mentions, get the quotes people said, etc.",
+    "dependencies": [{
+      "groupId": "edu.stanford.nlp",
+      "artifactId": "stanford-corenlp",
+      "version": "3.6.0",
+      "licenses": [{
+        "name": "GNU General Public License Version 3",
+        "url": "http://www.gnu.org/licenses/gpl-3.0.txt"
+      }],
+      "url": "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar"
+    },
+      {
+        "groupId": "edu.stanford.nlp",
+        "artifactId": "stanford-corenlp",
+        "version": "3.6.0",
+        "classifier": "models-german",
+        "licenses": [{
+          "name": "GNU General Public License Version 3",
+          "url": "http://www.gnu.org/licenses/gpl-3.0.txt"
         }],
-        "url" : "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar"
-    },{
-        "groupId" : "edu.stanford.nlp" ,
-        "artifactId" : "stanford-corenlp",
-        "version" : "3.6.0",
-        "classifier" : "models-german",
-        "licenses" : [{
-            "name" : "GNU General Public License Version 3",
-            "url" : "http://www.gnu.org/licenses/gpl-3.0.txt"
-        }],
-        "url" : "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar"
-    }]
+        "url": "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar"
+      }]
+  }]
 }
