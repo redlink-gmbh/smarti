@@ -1,0 +1,84 @@
+:migration_scripts: ../../scripts
+== Smarti Changelog
+
+This document shows the changes that are introduced into Smarti with the releases.
+
+
+=== Smarti 0.6.0 Release Notes
+06 October, 2017
+
+Smarti 0.6.0 is a search feature release.
+Conversations stored in Smarti can now be searched explicit, there is no need to create conversations in order to search within the knowledge base anymore.
+Smarti 0.6.0 enables more relevant suggestions for conversations by introducing conversation-filtering.
+
+==== New in Smarti 0.6.0
+This release introduces a brand new search API that allows:
+
+* explicit full text search over all the stored conversations,
+* filtering related conversations based on meta data such as classifications or topics,
+* paging over suggestions, that can be configured.
+
+==== Improved in Smarti 0.6.0
+* https://github.com/redlink-gmbh/smarti/issues/62[#62 - Added conversation independent search API]
+* https://github.com/redlink-gmbh/smarti/issues/127[#127 - Added automatic database migration]
+* https://github.com/redlink-gmbh/smarti/issues/140[#140 - Added AWS CloudWatch as possible log-destination]
+* https://github.com/redlink-gmbh/smarti/issues/87[#87 - Improved suggestions by filtering the related conversations by topics/expertise]
+* https://github.com/redlink-gmbh/smarti/issues/39[#39 - Improved suggestions by enabling paging and making the number of suggestion configurable]
+* https://github.com/redlink-gmbh/smarti/issues/91[#91 - Improved component configuration for more flexible label configuration]
+* https://github.com/redlink-gmbh/smarti/issues/94[#94 - Improved authentication rules]
+* https://github.com/redlink-gmbh/smarti/issues/64[#64 - Improved documentation by auto-generating the 'swagger.json' at build time]
+* https://github.com/redlink-gmbh/smarti/issues/90[#90 - Fixed issue where document icons were not displayed correctly]
+* https://github.com/redlink-gmbh/smarti/issues/104[#104 - Fixed issue the generated swagger-file has a broken schema]
+* https://github.com/redlink-gmbh/smarti/issues/115[#115 - Fixed typo in rocket.chat integration]
+
+==== Upgrading
+
+With `0.6.0`, the datamodel has changed so data from older installations
+must be migrated to the new model.
+
+A migration script is available. When using the installation packages, the migration
+will happen automatically on the first startup. Alternatively, the following script
+must be applied manually:
+
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=112..-1]
+-----------------------------------------------
+
+=== Smarti 0.5.0 Release Notes
+07 August, 2017
+
+Smarti 0.5.0 is a technical architecture release. For now basic decisions about the fundamental software design are not complete.
+In short this version of Smarti solves some security aspects, ensures backward compatibility to version 0.3.0 and fixes some bugs.
+Next to a https://assistify.github.io/smarti/[new comprehensive development documentation] Smarti 0.5.0 introduces lifecycle management for stored conversations.
+
+==== New in Smarti 0.5.0
+This release introduces an API that allows to manage the lifecycle of stored conversation, including:
+
+* JSON-based im- and export of conversations,
+* mark conversations obsolete by setting an expiration date,
+* authors may now edit their conversation's texts or remove messages
+
+==== Improved in Smarti 0.5.0
+* https://github.com/redlink-gmbh/smarti/issues/32[#32 - Added an API for conversational lifecycle management]
+* https://github.com/redlink-gmbh/smarti/issues/33[#33 - Added an UI for conversational lifecycle management]
+* https://github.com/redlink-gmbh/smarti/issues/37[#37 - Added support for JSON-based conversation im- and export]
+* https://github.com/redlink-gmbh/smarti/issues/55[#55 - Added a complete documentation for the `application.properties`]
+* https://github.com/redlink-gmbh/smarti/issues/12[#12 - Added support for integrated Swagger UI in order to access REST API documentation]
+* https://github.com/redlink-gmbh/smarti/issues/56[#56 - Improved the client model in order to implement the authentication concept]
+* https://github.com/redlink-gmbh/smarti/issues/31[#31 - Fixed issue where greetings like 'Hi' have been extracted as keywords]
+* https://github.com/redlink-gmbh/smarti/issues/46[#46 - Fixed issue where clients have been allowed to access conversations of other clients]
+* https://github.com/redlink-gmbh/smarti/issues/53[#53 - Fixed issue where queries have to be recalculate if the client configuration has changed]
+
+==== Upgrading
+With `0.5.0`, the datamodel has changed so data from older installations
+must be migrated to the new model.
+
+A migration script is available. When using the installation packages, the migration
+will happen automatically on the first startup. Alternatively, the following script
+must be applied manually:
+
+[source,javascript]
+------------------------------------------------
+include::{migration_scripts}/migrate-02_0.3-to-0.5.js[lines=112..-1]
+------------------------------------------------

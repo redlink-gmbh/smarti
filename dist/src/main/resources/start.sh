@@ -1,3 +1,7 @@
 #!/usr/bin/env bash
 
-${JVM:-java} ${JVM_ARGS} -jar /usr/share/${packageName}/${binaryName}.jar ${ARGS}
+_INSTALL=/usr/share/${packageName}
+
+${JVM:-java} ${JVM_ARGS} -jar ${_INSTALL}/db-migrator.jar ${ARGS} \
+    || { echo "Error running database-migration scripts, refusing to start!"; exit 35; }
+${JVM:-java} ${JVM_ARGS} -jar ${_INSTALL}/${binaryName}.jar ${ARGS}

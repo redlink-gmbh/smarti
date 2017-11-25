@@ -1,0 +1,5 @@
+== Smarti Integration Guide
+
+include::integrations/conversational-api.adoc[]
+
+include::integrations/rocketchat.adoc[]

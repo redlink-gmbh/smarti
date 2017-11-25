@@ -1,0 +1,27 @@
+=== System requirements
+
+*Server sizing*
+
+* [*] DualCore-CPU (> 2GHz)
+* [*] 4GB RAM
+* [*] 2GB temporary Storage
+
+*Operating systems*
+
+* [*] Debian (e.g. http://releases.ubuntu.com/16.04/[Ubuntu 16.04. LTS])
+* [*] Red Hat (e.g. https://access.redhat.com/articles/3078#RHEL7[Red Hat Enterprise Linux 7])
+* [*] Amazon (e.g. https://aws.amazon.com/amazon-linux-ami/2017.03-release-notes/[Amazon Linux 2017.03])
+
+*System components*
+
+* [*] https://java.com/[JavaVM], version 1.8 (application default port: `8080`)
+* [*] https://www.mongodb.com/[MongoDB], version >= 2.6 (database default port: `27017`)
+
+CAUTION: Ensure your platform / environment running Smarti on fulfills these system requirements.
+
+[NOTE]
+
+====
+*Additional components & https://github.com/stanfordnlp/CoreNLP[Stanford CoreNLP]* +
+Except the Stanford NLP libraries (GPL licensed), all direct runtime-dependencies such as third-party libraries are packaged with the main executable. Where to get and place the Stanford NLP libraries is explained in section <<developer-guide.adoc#,Enable Stanford NLP>>.
+====
