@@ -17,7 +17,8 @@ jdk:
 before_install:
   - gem install sass
   - gem install compass
-
+  - sudo apt-get -qq update
+  - sudo apt-get install -y pbzip2
 install:
   - mvn -B clean install -Dquick
 
@@ -27,7 +28,7 @@ script:
 
 after_success:
   - SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
-  - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | bzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
+  - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
   - ls -lh dist/target/
 
 jobs:
@@ -45,11 +46,11 @@ jobs:
       if: tag =~ ^smarti- AND type = push
       before_script:
         - sudo apt-get -qq update
-        - sudo apt-get install -y rpm
-      script: mvn -B -f dist/ package -Pdeb,rpm,docker
+        - sudo apt-get install -y rpm pbzip2
+      script: mvn -B -f dist/ install -Pdeb,rpm,docker
       before_deploy:
         - SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
-        - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | bzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
+        - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
       deploy:
         provider: releases
         api_key:
