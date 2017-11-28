@@ -1,4 +1,13 @@
-== Rocket.Chat Plugin
+=== Rocket.Chat Plugin
+
+For now Smarti is working with https://rocket.chat[Rocket.Chat] conversations, where it can be smoothly integrated via a https://github.com/assistify/Rocket.Chat[RC plugin].
+
+  http://${smarti-host}:${smarti-port}/plugin/v1/rocket.chat.js
+
+[NOTE]
+
+====
+*TODO*
 
 The Rocket.Chat Plugin consists of three parts:
 
@@ -6,4 +15,4 @@ The Rocket.Chat Plugin consists of three parts:
 2. The Smarti backend adapter
 3. The Smarti frontend plugin
 
-TODO
+====

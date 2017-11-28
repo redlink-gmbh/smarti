@@ -21,7 +21,7 @@
 
     <groupId>io.redlink.smarti</groupId>
     <artifactId>smarti</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.6.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>smarti</name>
@@ -34,6 +34,7 @@
 
         <module>frontend</module>
         <module>application</module>
+        <module>db-migrator</module>
 
         <module>integration/rocket-chat</module>
 
@@ -106,6 +107,8 @@
         <!-- frontend versions -->
         <node.version>v6.9.1</node.version>
         <npm.version>3.10.8</npm.version>
+
+        <redlink.logback.extension>1.0-SNAPSHOT</redlink.logback.extension>
     </properties>
 
     <scm>
@@ -257,6 +260,17 @@
                 <groupId>org.opensextant</groupId>
                 <artifactId>solr-text-tagger</artifactId>
                 <version>${solr.text.tagger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.redlink.ext.logback</groupId>
+                <artifactId>logback-ext-cloudwatch-appender</artifactId>
+                <version>${redlink.logback.extension}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.redlink.ext.logback</groupId>
+                <artifactId>logback-ext-jackson</artifactId>
+                <version>${redlink.logback.extension}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

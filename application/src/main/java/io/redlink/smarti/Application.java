@@ -17,6 +17,7 @@
 
 package io.redlink.smarti;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -58,7 +59,7 @@ public class Application {
 
         try {
             //http://localhost:8080/admin/index.html
-            URI uri = new URI(
+            final URI uri = new URI(
                     (env.getProperty("server.ssl.enabled", Boolean.class, false) ? "https" : "http"),
                     null,
                     (env.getProperty("server.address", "localhost")),
