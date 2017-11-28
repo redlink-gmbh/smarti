@@ -51,9 +51,12 @@ public class MongoUserDetailsService implements UserDetailsService {
 
     private final MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder;
 
-    public MongoUserDetailsService(MongoTemplate mongoTemplate, MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder) {
+    private final SecurityConfigurationProperties securityConfigurationProperties;
+
+    public MongoUserDetailsService(MongoTemplate mongoTemplate, MongoPasswordHasherConfiguration.PasswordEncoder passwordEncoder, SecurityConfigurationProperties securityConfigurationProperties) {
         this.mongoTemplate = mongoTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.securityConfigurationProperties = securityConfigurationProperties;
     }
 
     @PostConstruct
@@ -64,12 +67,16 @@ public class MongoUserDetailsService implements UserDetailsService {
             log.debug("No admin-users found, creating");
             String adminUser = "admin";
             int i = 0;
-            final String password = UUID.randomUUID().toString();
+            final String password = StringUtils.defaultString(securityConfigurationProperties.getMongo().getAdminPassword(), UUID.randomUUID().toString());
             final String encodedPassword = passwordEncoder.encodePassword(password);
             while (!createAdminUser(adminUser, encodedPassword)) {
                 adminUser = String.format("admin%d", ++i);
             }
-            log.error("Created new Admin-User '{}' with password '{}'", adminUser, password);
+            if (StringUtils.isNotBlank(securityConfigurationProperties.getMongo().getAdminPassword())) {
+                log.error("Created new Admin-User '{}' with password passed as 'security.config.mongo.admin-password'", adminUser);
+            } else {
+                log.error("Created new Admin-User '{}' with password '{}'", adminUser, password);
+            }
         } else {
             log.debug("Found {} Admin-Users", adminUsers);
         }
@@ -156,7 +163,6 @@ public class MongoUserDetailsService implements UserDetailsService {
      * Find a user. If a user with the provided parameter is not found, this method looks for
      * a user with a matching email-address.
      * @param login the login (username) or email-address
-     * @return
      */
     public SmartiUser findUser(String login) {
         SmartiUser mongoUser = getSmaritUser(login);

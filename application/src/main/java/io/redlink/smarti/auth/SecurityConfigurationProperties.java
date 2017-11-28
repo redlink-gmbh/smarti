@@ -63,12 +63,22 @@ public class SecurityConfigurationProperties {
 
         private String passwordHasher = "SHA-256";
 
+        private String adminPassword = null;
+
         public String getPasswordHasher() {
             return passwordHasher;
         }
 
         public void setPasswordHasher(String passwordHasher) {
             this.passwordHasher = passwordHasher;
+        }
+
+        public String getAdminPassword() {
+            return adminPassword;
+        }
+
+        public void setAdminPassword(String adminPassword) {
+            this.adminPassword = adminPassword;
         }
     }
 }
