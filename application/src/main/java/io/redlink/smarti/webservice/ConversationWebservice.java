@@ -27,10 +27,7 @@ import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.AuthContext;
 import io.redlink.smarti.webservice.pojo.QueryUpdate;
 import io.redlink.smarti.webservice.pojo.TemplateResponse;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,7 +141,7 @@ public class ConversationWebservice {
         conversation.setId(storedC.getId());
         final Client client = authenticationService.assertClient(authContext, conversation.getOwner());
 
-        //TODO: check that the 
+        //TODO: check that the
         // * the user is from the client the stored conversation as as owner
         return ResponseEntity.ok(conversationService.update(client, conversation,true, null));
     }
@@ -205,7 +202,7 @@ public class ConversationWebservice {
             @PathVariable("id") ObjectId id,
             @PathVariable("template") int templateIdx,
             @PathVariable("creator") String creator,
-            @RequestParam(required = false) MultiValueMap<String, String> params
+            @ApiParam(hidden = true) @RequestParam(required = false) MultiValueMap<String, String> params
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, id);
         final Client client = authenticationService.assertClient(authContext, conversation.getOwner());
@@ -228,7 +225,7 @@ public class ConversationWebservice {
             @PathVariable("id") ObjectId id,
             @PathVariable("template") int templateIdx,
             @PathVariable("creator") String creator,
-            @RequestParam(required = false) MultiValueMap<String, String> params,
+            @ApiParam(hidden = true) @RequestParam(required = false) MultiValueMap<String, String> params,
             @RequestBody QueryUpdate queryUpdate
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, id);

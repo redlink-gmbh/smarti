@@ -20,19 +20,16 @@ package io.redlink.smarti.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.redlink.smarti.model.profile.Recap;
-import io.redlink.smarti.model.profile.Setting;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
  * A User - a Customer - of Reisebuddy
  */
-@ApiModel
+@ApiModel(description = "a user - taking part in a conversation")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class User {
 

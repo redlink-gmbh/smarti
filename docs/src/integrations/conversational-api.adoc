@@ -1,0 +1,14 @@
+=== Conversational API
+
+Through Smarti's conversational RESTful-API it can be seamlessly integrated into any Chat-based communication platform.
+
+  http://${smarti-host}:${smarti-port}/v2/api-docs
+
+[NOTE]
+====
+*TODO*
+
+. How to work with Swagger?
+. Example code using curl
+. Demacration to API doc
+====

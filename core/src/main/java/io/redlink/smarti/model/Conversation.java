@@ -37,7 +37,7 @@ import java.util.List;
  *
  * <strong>ATTENTION</strong> If you change something here, you need to update {@link io.redlink.smarti.repositories.ConversationRepositoryImpl#saveIfNotLastModifiedAfter(io.redlink.smarti.model.Conversation, java.util.Date)}!
  */
-@ApiModel
+@ApiModel(description = "a conversation, the central entitiy in smarti")
 @Document(collection = "conversations")
 public class Conversation {
 
@@ -55,7 +55,7 @@ public class Conversation {
     @JsonIgnore
     private ObjectId owner;
     
-    @ApiModelProperty(value = "metadata")
+    @ApiModelProperty
     private ConversationMeta meta = new ConversationMeta();
 
     @JsonProperty(required = true)
@@ -71,7 +71,7 @@ public class Conversation {
     @ApiModelProperty(value = "Templates for possible queries")
     private List<Template> queryTemplates = new ArrayList<>();
 
-    @ApiModelProperty(value = "conversation context")
+    @ApiModelProperty
     private Context context = new Context();
 
     private Date lastModified = null;

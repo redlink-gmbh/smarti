@@ -55,7 +55,7 @@ const localize = new Localize({
         "en": "Widget $[1] has problems while quering: $[2]"
     },
     "widget.latch.query.no-results":{
-        "de":"Keine Ergbenisse",
+        "de":"Keine Ergebnisse",
         "en":"No results"
     },
     "widget.latch.query.header":{
@@ -142,7 +142,7 @@ const Utils = {
 
 /**
  * Manages the interaction between Plugin and RocketChat/Smarti
- * @param options: {
+ * @param {object} options: {
  *      DDP: {
  *          endpoint: STRING
  *      },
@@ -155,7 +155,7 @@ const Utils = {
  *      },
  *      tracker: Tracker
  * }
- * @returns {
+ * @returns {object} {
  *      login: function(success,failure,username,password),
  *      init: function(success, failure),
  *      subscribe: function(id,handler),
@@ -269,7 +269,7 @@ function Smarti(options) {
     }
 
     /**
-     *
+     * @param success
      * @param failure
      */
     function init(success, failure) {
@@ -368,6 +368,7 @@ function Smarti(options) {
 /**
  * A tracker wrapper
  * @param category
+ * @param roomId
  * @param onEvent the real tracker methode which is called
  * @constructor
  */
@@ -381,8 +382,8 @@ function Tracker(category, roomId, onEvent) {
 
 /**
  * Generates a smarti widget and appends it to element
- * @param element a dom element
- * @param config: {
+ * @param {element} element a dom element
+ * @param {object} _options: {
  *       socketEndpoint: "ws://localhost:3000/websocket/",
  *       smartiEndpoint: 'http://localhost:8080/',
  *       channel: 'GENERAL',
@@ -391,7 +392,7 @@ function Tracker(category, roomId, onEvent) {
  *       lang:'de',
  *       inputFieldSelector: '.selector'
  *   }
- * @returns {
+ * @returns {object
  *
  * }
  * @constructor
@@ -462,7 +463,7 @@ function SmartiWidget(element,_options) {
     /**
      * @param params
      * @param wgt_conf
-     * @returns {
+     * @returns {object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -722,7 +723,7 @@ function SmartiWidget(element,_options) {
     /**
      * @param params
      * @param wgt_conf
-     * @returns {
+     * @returns {object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -741,7 +742,7 @@ function SmartiWidget(element,_options) {
 
         var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
-        function getResults(page,pageSize) {
+        function getResults(page, pageSize) {
 
             //TODO get remote
             results.empty();
@@ -750,14 +751,20 @@ function SmartiWidget(element,_options) {
 
             var start = pageSize ? page*pageSize : 0;
 
-            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start},function(data){
+            smarti.query({
+                conversationId: params.id,
+                template: params.tempid,
+                creator: params.query.creator,
+                start: start
+            }, function(data){
 
                 loader.hide();
 
-                if(data.length == 0) {
-                    msg.text(Utils.localize({code:'widget.conversation.no-results'}));
-                } else {
+                if (data.numFound > 0) {
                     msg.empty();
+                } else {
+                    msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
+                    return;
                 }
 
                 function buildLink(msgid) {
