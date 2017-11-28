@@ -118,6 +118,17 @@ The analysis chain used to process conversations can be configured by the follow
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
+===== Analysis Threads
+
+* `smarti.processing.numThreads =`: The number of analysis threads can be configured by  the default value is `2`. For every thread one should preserve `~500MByte` additional Java Heap space. For the best usage of CPU power the number of threads should be the same as the number of cores.
+
+===== Stanford NLP
+
+* `nlp.stanfordnlp.de.posModel=` (default: `edu/stanford/nlp/models/pos-tagger/german/german-hgc.tagger`)
+* `nlp.stanfordnlp.de.nerModel=` (default: `edu/stanford/nlp/models/ner/german.conll.hgc_175m_600.crf.ser.gz`): Allows to include custom built NER models. Multiple models are separated by `,`.
+* `nlp.stanfordnlp.de.parseModel=` (default: `edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`): The default is a good tradeof on quality, memory and speed. Consider `edu/stanford/nlp/models/srparser/germanSR.ser.gz` for lower memory footprint and higher speed.
+* `nlp.stanfordnlp.de.parseMaxlen=` (default: `30`): Memory consumption increases with the square of this number. `30` is ok for `4g` heap.
+
 ===== Interesting Term
 
 Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.

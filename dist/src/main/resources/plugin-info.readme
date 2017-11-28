@@ -5,9 +5,9 @@ into this folder to have it added to smarti on the next restart of the applicati
 
 # plugin-info.json
 
-This files contains JSON formatted information about required plugins. 
+This files contains JSON formatted information about required plugins.
 Typically this is required for GPL licensed modules where the License does not
 allow to include them in the installation package.
 
 However this can also be used to distribute huge dependences (e.g. machine learning
-models) 
+models)

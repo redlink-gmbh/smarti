@@ -157,7 +157,8 @@ public class RocketChatEndpoint {
             message.getMetadata().put("bot_id", payload.getBot().getIdentifier());
         }
 
-        conversation = conversationService.appendMessage(client, conversation, message, (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
+        conversation = conversationService.appendMessage(client, conversation, message, 
+                StringUtils.isBlank(payload.getCallbackUrl()) ? null : (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
 
         return ResponseEntity.ok().build();
     }

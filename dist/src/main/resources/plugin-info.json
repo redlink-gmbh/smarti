@@ -5,23 +5,23 @@
     "dependencies": [{
       "groupId": "edu.stanford.nlp",
       "artifactId": "stanford-corenlp",
-      "version": "3.6.0",
+      "version": "3.8.0",
       "licenses": [{
         "name": "GNU General Public License Version 3",
         "url": "http://www.gnu.org/licenses/gpl-3.0.txt"
       }],
-      "url": "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar"
+      "url": "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0.jar"
     },
       {
         "groupId": "edu.stanford.nlp",
         "artifactId": "stanford-corenlp",
-        "version": "3.6.0",
+        "version": "3.8.0",
         "classifier": "models-german",
         "licenses": [{
           "name": "GNU General Public License Version 3",
           "url": "http://www.gnu.org/licenses/gpl-3.0.txt"
         }],
-        "url": "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar"
+        "url": "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0-models-german.jar"
       }]
   }]
 }
