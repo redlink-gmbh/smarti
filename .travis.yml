@@ -17,19 +17,12 @@ jdk:
 before_install:
   - gem install sass
   - gem install compass
-  - sudo apt-get -qq update
-  - sudo apt-get install -y pbzip2
+
 install:
   - mvn -B clean install -Dquick
 
 script:
   - mvn -B -DargLine="-Xmx2g" test
-  - mvn -B -f dist install -Pdocker
-
-after_success:
-  - SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
-  - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
-  - ls -lh dist/target/
 
 jobs:
   include:
