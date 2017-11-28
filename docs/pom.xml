@@ -26,7 +26,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>smarti-documentation</artifactId>
@@ -157,7 +157,9 @@
                     </sourceDocumentExtensions>
                     <headerFooter>true</headerFooter>
                     <imagesDir>_images</imagesDir>
-                    <attributes />
+                    <attributes>
+                        <allow-uri-read>true</allow-uri-read>
+                    </attributes>
                     <resources>
                         <resource>
                             <directory>src</directory> <!-- or just use . o filter across all files-->
