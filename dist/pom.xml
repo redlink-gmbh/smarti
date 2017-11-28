@@ -73,6 +73,14 @@
                 <targetPath>main</targetPath>
             </resource>
             <resource>
+                <directory>../scripts</directory>
+                <filtering>false</filtering>
+                <targetPath>db-migration</targetPath>
+                <includes>
+                    <include>migrate-*.js</include>
+                </includes>
+            </resource>
+            <resource>
                 <directory>src/deb/resources</directory>
                 <filtering>true</filtering>
                 <targetPath>deb</targetPath>
@@ -253,9 +261,8 @@
                                             </mapper>
                                         </data>
                                         <data>
-                                            <src>${project.basedir}/../scripts</src>
+                                            <src>${project.build.outputDirectory}/db-migration</src>
                                             <type>directory</type>
-                                            <includes>migrate-*.js</includes>
                                             <mapper>
                                                 <type>perm</type>
                                                 <prefix>./usr/share/${packageName}/scripts</prefix>
@@ -453,10 +460,7 @@
                                 <mapping>
                                     <sources>
                                         <source>
-                                            <location>${project.basedir}/../scripts</location>
-                                            <includes>
-                                                <include>migrate-*.js</include>
-                                            </includes>
+                                            <location>${project.build.outputDirectory}/db-migration</location>
                                         </source>
                                     </sources>
                                     <directory>/usr/share/${packageName}/scripts</directory>
