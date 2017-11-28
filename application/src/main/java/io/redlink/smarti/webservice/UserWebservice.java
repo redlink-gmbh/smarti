@@ -119,13 +119,15 @@ public class UserWebservice {
     }
 
     @RequestMapping(value = "/user", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public SmartiUser createUser(AuthContext authContext,
+    public ResponseEntity<SmartiUser> createUser(AuthContext authContext,
                                  @RequestBody SmartiUser user) {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
 
-        // TODO: implement
+        if (StringUtils.isBlank(user.getLogin())) {
+            return ResponseEntity.unprocessableEntity().build();
+        }
 
-        return user;
+        return ResponseEntity.ok(userService.createUser(user));
     }
 
     @RequestMapping(value = "/user/{login}", method = RequestMethod.GET)

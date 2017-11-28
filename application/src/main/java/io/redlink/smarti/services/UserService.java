@@ -19,6 +19,7 @@ package io.redlink.smarti.services;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.repositories.UserRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
 
@@ -44,9 +45,17 @@ public class UserService {
         return userRepository.findByClientsContains(client.getId());
     }
 
+    public SmartiUser createUser(SmartiUser user) {
+        if (StringUtils.isBlank(user.getLogin())) {
+            throw new IllegalArgumentException("login needs to be set");
+        }
+
+        return userRepository.create(user);
+    }
+
     public SmartiUser createUserForClient(SmartiUser user, Client client) {
         user.getClients().add(client.getId());
-        return userRepository.create(user);
+        return createUser(user);
     }
 
     public Set<ObjectId> getClientsForUser(String username) {
