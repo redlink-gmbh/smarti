@@ -61,6 +61,10 @@ public class SecurityConfigurationProperties {
 
     public static class MongoProperties {
 
+        private boolean enableSignup = false;
+
+        private boolean enablePasswordRecovery = false;
+
         private String passwordHasher = "SHA-256";
 
         private String adminPassword = null;
@@ -71,6 +75,24 @@ public class SecurityConfigurationProperties {
 
         public void setPasswordHasher(String passwordHasher) {
             this.passwordHasher = passwordHasher;
+        }
+
+        public boolean isEnableSignup() {
+            return enableSignup;
+        }
+
+        public MongoProperties setEnableSignup(boolean enableSignup) {
+            this.enableSignup = enableSignup;
+            return this;
+        }
+
+        public boolean isEnablePasswordRecovery() {
+            return enablePasswordRecovery;
+        }
+
+        public MongoProperties setEnablePasswordRecovery(boolean enablePasswordRecovery) {
+            this.enablePasswordRecovery = enablePasswordRecovery;
+            return this;
         }
 
         public String getAdminPassword() {

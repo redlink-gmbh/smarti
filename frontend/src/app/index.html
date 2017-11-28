@@ -32,12 +32,12 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="#">Smarti</a>
+      <a class="navbar-brand" href="#!/">Smarti</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-      <ul class="nav navbar-nav">
+      <ul class="nav navbar-nav" ng-if="$user">
         <li><a href="#!/">Clients</a></li>
         <li ng-show="$user.isAdmin"><a href="#!/user">User</a></li>
       </ul>

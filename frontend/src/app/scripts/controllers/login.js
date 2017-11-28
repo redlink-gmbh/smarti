@@ -29,7 +29,7 @@ angular.module('smartiApp')
 
     var $ctrl = this;
 
-    $ctrl.action = $routeParams.action; // 'login' as default
+    $ctrl.action = 'login'; //$routeParams.action; // 'login' as default
     $ctrl.login = login;
     $ctrl.signUp = signup;
     $ctrl.recoverPassword = recoverPassword;
@@ -39,7 +39,8 @@ angular.module('smartiApp')
     $ctrl.userPasswd = null;
     $ctrl.userEmail = null;
     $ctrl.recoverAddress = null;
-    $ctrl.recoveryToken = $routeParams.token;
+    $ctrl.recoveryToken = null; //$routeParams.token;
+    $ctrl.error = $routeParams.error || false;
     if ($ctrl.userName && $ctrl.recoveryToken) {
       $ctrl.action = 'set-password'
     }
@@ -98,9 +99,4 @@ angular.module('smartiApp')
       $location.path('/').search({})
     }
 
-    function showError(response) {
-      $log.error(response);
-      toastr.error("Error");
-
-    }
   });

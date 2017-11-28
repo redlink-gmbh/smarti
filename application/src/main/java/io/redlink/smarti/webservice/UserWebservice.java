@@ -17,6 +17,7 @@
 package io.redlink.smarti.webservice;
 
 import io.redlink.smarti.auth.AttributedUserDetails;
+import io.redlink.smarti.auth.SecurityConfigurationProperties;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
 import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.services.AccountService;
@@ -30,6 +31,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,6 +46,7 @@ import java.util.Set;
 @RestController
 @RequestMapping(produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @ConditionalOnBean(MongoUserDetailsService.class)
+@EnableConfigurationProperties(SecurityConfigurationProperties.class)
 @Api
 public class UserWebservice {
 
@@ -52,12 +55,14 @@ public class UserWebservice {
     private final AccountService accountService;
     private final AuthenticationService authenticationService;
     private final UserService userService;
+    private final SecurityConfigurationProperties securityConfigurationProperties;
 
     @Autowired
-    public UserWebservice(AccountService accountService, AuthenticationService authenticationService, UserService userService) {
+    public UserWebservice(AccountService accountService, AuthenticationService authenticationService, UserService userService, SecurityConfigurationProperties securityConfigurationProperties) {
         this.accountService = accountService;
         this.authenticationService = authenticationService;
         this.userService = userService;
+        this.securityConfigurationProperties = securityConfigurationProperties;
     }
 
     @ApiOperation("retrieve current user details")
@@ -70,6 +75,9 @@ public class UserWebservice {
     @ApiOperation(value = "signup", notes = "create a new account", response = UserDetailsResponse.class)
     @RequestMapping(value = "/auth/signup", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDetailsResponse> signUp(@RequestBody  Map<String, String> data) {
+        if (!securityConfigurationProperties.getMongo().isEnableSignup()) {
+            return ResponseEntity.badRequest().build();
+        }
         // Public access
         final String login = data.get("login"),
                 password = data.get("password"),
@@ -88,6 +96,10 @@ public class UserWebservice {
             @RequestParam("user") String login,
             @RequestBody(required = false) Map<String,String> data
     ) {
+        if (!securityConfigurationProperties.getMongo().isEnablePasswordRecovery()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         // Public access
         if (data == null) data = new HashMap<>();
         final String recoveryToken = data.get("token"),

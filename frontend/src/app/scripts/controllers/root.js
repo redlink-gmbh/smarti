@@ -33,12 +33,21 @@ angular.module('smartiApp')
     rootCtrl.logout = logout;
 
     fetchUser();
+    $rootScope.$on('$routeChangeStart', function($event, next, current) {
+      if (!$rootScope.$user) {
+        if (next.$$route.controller !== "LoginCtrl") {
+          $log.debug(next);
+          $event.preventDefault();
+          $location.path('/login').search({error:'login-required'});
+        }
+      }
+    });
 
     ////////////////////
 
     function logout() {
       return UserService.logout().then(function () {
-        return $location.path('/login')
+        return $location.path('/login').search({})
       });
 
     }
@@ -69,7 +78,7 @@ angular.module('smartiApp')
 
     function onUserChange(user) {
       if (!restActive && !user) {
-        $location.path('/login');
+        $location.path('/login').search({});
       }
     }
 

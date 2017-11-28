@@ -14,142 +14,168 @@
   ~ limitations under the License.
   ~
   -->
-<div ng-if="!user" class="row" style="margin-top: 2em;">
-  <div class="col-xs-6 col-sm-4 col-xs-offset-3 col-sm-offset-4"
-       ng-switch="$ctrl.action">
-    <form ng-switch-default
-          name="loginForm" class="form-horizontal" ng-submit="$ctrl.login()">
-      <div class="form-group">
-        <label for="username" class="col-xs-4 control-label">Username:</label>
-        <div class="col-xs-8">
-          <input id="username" name="username"
-                 type="text" class="form-control"
-                 required
-                 ng-model="$ctrl.userName" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label for="password" class="col-xs-4 control-label">Password:</label>
-        <div class="col-xs-8">
-          <input id="password" name="password"
-                 type="password" class="form-control"
-                 required
-                 ng-model="$ctrl.userPasswd" />
-        </div>
-      </div>
-      <div class="form-group text-right">
-        <button class="btn btn-primary" ng-disabled="loginForm.$invalid">Login</button>
-      </div>
-      <div class="row text-center">
-        <a ng-click="$ctrl.action = 'recover'" type="button">Forgot Password?</a>
-        <a ng-click="$ctrl.action = 'signup'" type="button">Signup!</a>
-      </div>
-    </form>
-    <form ng-switch-when="signup"
-          name="signupForm" class="form-horizontal" ng-submit="$ctrl.signUp()">
-      <div class="form-group has-feedback" ng-class="{'has-success': signupForm.username.$valid, 'has-error': signupForm.username.$invalid && signupForm.username.$dirty}">
-        <label for="newUsername" class="col-xs-4 control-label">Username:</label>
-        <div class="col-xs-8">
-          <input id="newUsername" name="username"
-                 type="text" class="form-control"
-                 required username-exists="false"
-                 ng-model="$ctrl.userName" />
-          <span class="glyphicon form-control-feedback"
-                ng-class="{'glyphicon-ok': signupForm.username.$valid, 'glyphicon-remove': signupForm.username.$invalid && signupForm.username.$dirty}"
-                aria-hidden="true"></span>
-        </div>
-        <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.username.$error">
-          <div ng-message="required">please enter a username</div>
-          <div ng-message="usernameExists">username already taken</div>
-        </div>
-      </div>
-      <div class="form-group has-feedback" ng-class="{'has-success': signupForm.email.$valid, 'has-error': signupForm.email.$invalid && signupForm.email.$dirty}">
-        <label for="email" class="col-xs-4 control-label">Email:</label>
-        <div class="col-xs-8">
-          <input id="email" name="email"
-                 type="email" class="form-control"
-                 required
-                 ng-model="$ctrl.userEmail" />
-          <span class="glyphicon form-control-feedback"
-                ng-class="{'glyphicon-ok': signupForm.email.$valid, 'glyphicon-remove': signupForm.email.$invalid && signupForm.email.$dirty}"
-                aria-hidden="true"></span>
-        </div>
-        <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.email.$error">
-          <div ng-message="required">please enter your email-address</div>
-          <div ng-message="email">invalid email-address</div>
-        </div>
-      </div>
-      <div class="form-group has-feedback" ng-class="{'has-success': signupForm.password.$valid, 'has-error': signupForm.password.$invalid && signupForm.password.$dirty}">
-        <label for="newPassword" class="col-xs-4 control-label">Password:</label>
-        <div class="col-xs-8">
-          <input id="newPassword" name="password"
-                 type="password" class="form-control"
-                 required
-                 ng-model="$ctrl.userPasswd" />
-          <span class="glyphicon form-control-feedback"
-                ng-class="{'glyphicon-ok': signupForm.password.$valid, 'glyphicon-remove': signupForm.password.$invalid && signupForm.password.$dirty}"
-                aria-hidden="true"></span>
-        </div>
-        <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.password.$error">
-          <div ng-message="required">please enter your password</div>
-        </div>
-      </div>
-      <div class="form-group text-right">
-        <button class="btn btn-primary" ng-disabled="signupForm.$invalid">Signup</button>
-      </div>
-      <div class="row text-center">
-        <a ng-click="$ctrl.action = null" type="button">Login</a>
-      </div>
-    </form>
-    <form ng-switch-when="recover"
-          name="recoverForm" class="form-inline" ng-submit="$ctrl.recoverPassword()">
-      <div class="row">
+<div ng-if="$ctrl.error" class="row">
+  <div class="col-xs-6 col-sm-4 col-xs-offset-3 col-sm-offset-4 text-center text-danger">
+    <div class="well well-lg bg-danger">
+      <p>
+        <strong>Authentication required!</strong>
+      </p>
+      <p>Please login to continue.</p>
+    </div>
+  </div>
+</div>
+<div ng-if="!user" class="row" style="--margin-top: 1em;">
+  <div class="col-xs-6 col-sm-4 col-xs-offset-3 col-sm-offset-4">
+    <div class="well-lg"
+         ng-switch="$ctrl.action">
+      <form ng-switch-default
+            name="loginForm" class="form-horizontal" ng-submit="$ctrl.login()">
         <div class="form-group">
-          <label for="recoverMail">Email</label>
-          <input type="email" name="recoverMail" ng-model="$ctrl.recoverAddress" required class="form-control" id="recoverMail" placeholder="">
+          <label for="username" class="col-xs-4 control-label">Username:</label>
+          <div class="col-xs-8">
+            <input id="username" name="username"
+                   type="text" class="form-control"
+                   required
+                   ng-model="$ctrl.userName" />
+          </div>
         </div>
-        <button type="submit" class="btn btn-primary" ng-disabled="recoverForm.$invalid">Recover</button>
-      </div>
-      <div class="row text-center">
-        <a ng-click="$ctrl.action = null" type="button">Login</a>
-        <a ng-click="$ctrl.action = 'set-password'" type="button">Verify Token</a>
-      </div>
-    </form>
-    <form ng-switch-when="set-password"
-          name="resetPassword" class="form-horizontal" ng-submit="$ctrl.resetPassword()">
-      <div class="form-group">
-        <label for="rUsername" class="col-xs-4 control-label">Username:</label>
-        <div class="col-xs-8">
-          <input id="rUsername" name="username"
-                 type="text" class="form-control"
-                 required
-                 ng-model="$ctrl.userName" />
+        <div class="form-group">
+          <label for="password" class="col-xs-4 control-label">Password:</label>
+          <div class="col-xs-8">
+            <input id="password" name="password"
+                   type="password" class="form-control"
+                   required
+                   ng-model="$ctrl.userPasswd" />
+          </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="rPassword" class="col-xs-4 control-label">New Password:</label>
-        <div class="col-xs-8">
-          <input id="rPassword" name="password"
-                 type="password" class="form-control"
-                 required
-                 ng-model="$ctrl.userPasswd" />
+        <div class="form-group text-right">
+          <div class="col-xs-12">
+            <button class="btn btn-primary" ng-disabled="loginForm.$invalid">Login</button>
+          </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label for="rToken" class="col-xs-4 control-label">Token:</label>
-        <div class="col-xs-8">
-          <input id="rToken" name="token"
-                 type="text" class="form-control"
-                 required
-                 ng-model="$ctrl.recoveryToken" />
+        <div class="row text-center" ng-if="false">
+          <div class="col-xs-12">
+            <a ng-click="$ctrl.action = 'recover'" type="button">Forgot Password?</a>
+            <a ng-click="$ctrl.action = 'signup'" type="button">Signup!</a>
+          </div>
         </div>
-      </div>
-      <div class="form-group text-right">
-        <button class="btn btn-primary" ng-disabled="resetPassword.$invalid">Reset Password</button>
-      </div>
-      <div class="row text-center">
-        <a ng-click="$ctrl.action = null" type="button">Login</a>
-      </div>
-    </form>
+      </form>
+      <form ng-switch-when="signup"
+            name="signupForm" class="form-horizontal" ng-submit="$ctrl.signUp()">
+        <div class="form-group has-feedback" ng-class="{'has-success': signupForm.username.$valid, 'has-error': signupForm.username.$invalid && signupForm.username.$dirty}">
+          <label for="newUsername" class="col-xs-4 control-label">Username:</label>
+          <div class="col-xs-8">
+            <input id="newUsername" name="username"
+                   type="text" class="form-control"
+                   required username-exists="false"
+                   ng-model="$ctrl.userName" />
+            <span class="glyphicon form-control-feedback"
+                  ng-class="{'glyphicon-ok': signupForm.username.$valid, 'glyphicon-remove': signupForm.username.$invalid && signupForm.username.$dirty}"
+                  aria-hidden="true"></span>
+          </div>
+          <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.username.$error">
+            <div ng-message="required">please enter a username</div>
+            <div ng-message="usernameExists">username already taken</div>
+          </div>
+        </div>
+        <div class="form-group has-feedback" ng-class="{'has-success': signupForm.email.$valid, 'has-error': signupForm.email.$invalid && signupForm.email.$dirty}">
+          <label for="email" class="col-xs-4 control-label">Email:</label>
+          <div class="col-xs-8">
+            <input id="email" name="email"
+                   type="email" class="form-control"
+                   required
+                   ng-model="$ctrl.userEmail" />
+            <span class="glyphicon form-control-feedback"
+                  ng-class="{'glyphicon-ok': signupForm.email.$valid, 'glyphicon-remove': signupForm.email.$invalid && signupForm.email.$dirty}"
+                  aria-hidden="true"></span>
+          </div>
+          <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.email.$error">
+            <div ng-message="required">please enter your email-address</div>
+            <div ng-message="email">invalid email-address</div>
+          </div>
+        </div>
+        <div class="form-group has-feedback" ng-class="{'has-success': signupForm.password.$valid, 'has-error': signupForm.password.$invalid && signupForm.password.$dirty}">
+          <label for="newPassword" class="col-xs-4 control-label">Password:</label>
+          <div class="col-xs-8">
+            <input id="newPassword" name="password"
+                   type="password" class="form-control"
+                   required
+                   ng-model="$ctrl.userPasswd" />
+            <span class="glyphicon form-control-feedback"
+                  ng-class="{'glyphicon-ok': signupForm.password.$valid, 'glyphicon-remove': signupForm.password.$invalid && signupForm.password.$dirty}"
+                  aria-hidden="true"></span>
+          </div>
+          <div class="help-block col-xs-8 col-xs-offset-4" ng-messages="signupForm.password.$error">
+            <div ng-message="required">please enter your password</div>
+          </div>
+        </div>
+        <div class="form-group text-right">
+          <div class="col-xs-12">
+            <button class="btn btn-primary" ng-disabled="signupForm.$invalid">Signup</button>
+          </div>
+        </div>
+        <div class="row text-center">
+          <div class="col-xs-12">
+            <a ng-click="$ctrl.action = null" type="button">Login</a>
+          </div>
+        </div>
+      </form>
+      <form ng-switch-when="recover"
+            name="recoverForm" class="form-inline" ng-submit="$ctrl.recoverPassword()">
+        <div class="row">
+          <div class="form-group">
+            <label for="recoverMail">Email</label>
+            <input type="email" name="recoverMail" ng-model="$ctrl.recoverAddress" required class="form-control" id="recoverMail" placeholder="">
+          </div>
+          <button type="submit" class="btn btn-primary" ng-disabled="recoverForm.$invalid">Recover</button>
+        </div>
+        <div class="row text-center">
+          <div class="col-xs-12">
+            <a ng-click="$ctrl.action = null" type="button">Login</a>
+            <a ng-click="$ctrl.action = 'set-password'" type="button">Verify Token</a>
+          </div>
+        </div>
+      </form>
+      <form ng-switch-when="set-password"
+            name="resetPassword" class="form-horizontal" ng-submit="$ctrl.resetPassword()">
+        <div class="form-group">
+          <label for="rUsername" class="col-xs-4 control-label">Username:</label>
+          <div class="col-xs-8">
+            <input id="rUsername" name="username"
+                   type="text" class="form-control"
+                   required
+                   ng-model="$ctrl.userName" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rPassword" class="col-xs-4 control-label">New Password:</label>
+          <div class="col-xs-8">
+            <input id="rPassword" name="password"
+                   type="password" class="form-control"
+                   required
+                   ng-model="$ctrl.userPasswd" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="rToken" class="col-xs-4 control-label">Token:</label>
+          <div class="col-xs-8">
+            <input id="rToken" name="token"
+                   type="text" class="form-control"
+                   required
+                   ng-model="$ctrl.recoveryToken" />
+          </div>
+        </div>
+        <div class="form-group text-right">
+          <div class="col-xs-12">
+            <button class="btn btn-primary" ng-disabled="resetPassword.$invalid">Reset Password</button>
+          </div>
+        </div>
+        <div class="row text-center">
+          <div class="col-xs-12">
+            <a ng-click="$ctrl.action = null" type="button">Login</a>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
