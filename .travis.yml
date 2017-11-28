@@ -23,7 +23,7 @@ install:
 
 script:
   - mvn -B -DargLine="-Xmx2g" test
-  - mvn -B -f dist package -Pdocker
+  - mvn -B -f dist install -Pdocker
 
 after_success:
   - SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
