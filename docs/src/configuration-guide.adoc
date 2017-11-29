@@ -29,11 +29,7 @@ include::configurations/client-configuration-api.adoc[]
 
 include::configurations/client-configuration-ui.adoc[]
 
-
-=== Components Configuration
-
-include::configurations/component-configuration.adoc[]
-
+include::configurations/query-builder-configuration.adoc[]
 
 === Configuration Endpoints
 

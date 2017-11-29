@@ -105,22 +105,25 @@ Conversation are indexed in Solr managed by SolrLib
 
 ==== Analysis Configuration
 
-For now Analysis configurations are global. No Client specific configuration is possible.
+This section describes the configuration of the analysis workflow and the <<analysis-components.adoc#,Analysis Components>>
 
-_NOTE:_ Client specific analysis configurations are planed for a future release
+WARNING: For now Analysis configurations are global. No Client specific configuration is possible.
 
-===== Analysis Chain
+NOTE: Client specific analysis configurations are planed for a future release. They will use the <<Client Configuration API>>
 
-The analysis chain used to process conversations can be configured by the following properties
+
+===== Analysis Workflow
+
+The analysis workflow used to process conversations can be configured by the following properties
 
 * `smarti.analysis.required =`: comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
 * `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
-===== Interesting Term
+===== Interesting Term Configuration
 
-Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
+The <<analysis-components.asciidoc#_interesting_terms,Interesting Terms>> component performs a keyword extraction. It uses `tf–idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
 Their are several ways to configure Solr endpoints to be used for interesting terms.
 
@@ -138,7 +141,7 @@ The above configuration requires a Solr Server. To allow the use of embedded Sol
 
 ===== Token Filter: Stopword
 
-This analysis components allows to reference stopword lists for extracted tokens.
+The <<Stopword Token Filter>> allows to remove Keywords from a Conversation that are present in a configured stop-word list.
 
 **Module:** `token-processor`
 
@@ -169,7 +172,7 @@ This section includes configuration properties used to define the default config
 
 A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module.
 
-_NOTE:_ The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are just used as *defaults* for user that create a new configuration via the <<index.adoc#_client_configuration, Client Configuration>> service.
+NOTE: The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are only used as *defaults* for actual <<Solr Search Query Builder>> configurations.
 
 **Prefix**: `query.solr`
 

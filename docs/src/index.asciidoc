@@ -42,8 +42,10 @@ Check out a detailed <<index.adoc#_smarti_installation_guide, Smarti Installatio
 === <<index.adoc#_smarti_configuration_guide,How to configure>>
 <<index.adoc#_smarti_configuration_guide, Configuration>> is done on two levels:
 
-. Global <<index.adoc#_application_configuration,Application Configuration>>
+. Global <<index.adoc#_application_configuration,Application Configuration>>: 
 . Client specific configurations using the <<index.adoc#_client_configuration_api, the client API>> or the <<index.adoc#_client_configuration_ui,configuration UI>>, which can be found on the `{HOST}/index.html` page of the the running application.
+
+
 
 
 === <<index.adoc#_smarti_integration_guide,How to integrate>>
