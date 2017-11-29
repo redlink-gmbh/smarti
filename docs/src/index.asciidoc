@@ -75,6 +75,7 @@ Read the <<index.adoc#_smarti_developer_guide,Developers Guide>> to become a Sma
 Smarti is an Open Source project so everyone is encouraged to improve it. Don't hesitate to report bugs, provide fixes or
 share new ideas with us. Use the issue tracker or send a pull request. To learn more about contributing and how to become a Smarti commiter, read the <<index.adoc#_smarti_contribution_guide,Smarti Contribution Guide>>.
 
+=== <<faq.asciidoc#,Frequently asked questions (FAQ)>>
 
 include::installation-guide.adoc[Installation Guide]
 
