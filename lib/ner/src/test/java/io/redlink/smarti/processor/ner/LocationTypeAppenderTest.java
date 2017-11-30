@@ -116,7 +116,7 @@ public class LocationTypeAppenderTest {
     public void testSingle() throws ProcessingException{
         int idx = Math.round((float)Math.random()*(CONTENTS.size()-1));
         Conversation conversation = initConversation(idx);
-        AnalysisData processingData = AnalysisData.create(conversation);
+        AnalysisData processingData = AnalysisData.create(conversation, new Client());
         processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         processConversation(processingData);
         assertNerProcessingResults(processingData, CONTENTS.get(idx).getRight());
@@ -219,7 +219,7 @@ public class LocationTypeAppenderTest {
 
         ConversationProcessor(int idx, String lang){
             this.idx = idx;
-            this.processingData = AnalysisData.create((initConversation(idx)));
+            this.processingData = AnalysisData.create(initConversation(idx), new Client());
             this.processingData.getConfiguration().put(Configuration.LANGUAGE, lang);
         }
         

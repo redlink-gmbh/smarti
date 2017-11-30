@@ -133,7 +133,7 @@ public class ConversationSolrIT {
 
         ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, null);
 
-        hassoMlt.doBuildQuery(null, null, conversation3, new Analysis(conversation3.getId(), conversation3.getLastModified()));
+        hassoMlt.doBuildQuery(null, null, conversation3, new Analysis(null, conversation3.getId(), conversation3.getLastModified()));
 
     }
 

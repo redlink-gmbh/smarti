@@ -104,7 +104,7 @@ public class LegacyConversationWebservice {
         if(client == null){
             throw new IllegalStateException("Owner for conversation " + conversation.getId() + " not found!");
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(conversationService.update(client, conversation, true, null));
+        return ResponseEntity.status(HttpStatus.CREATED).body(conversationService.update(client, conversation));
     }
 
     @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
@@ -137,7 +137,7 @@ public class LegacyConversationWebservice {
         //TODO: check that the 
         // * authenticated user has rights to update messages of this client
         // * the user is from the client the stored conversation as as owner
-        return ResponseEntity.ok(conversationService.update(client, conversation,true, null));
+        return ResponseEntity.ok(conversationService.update(client, conversation));
     }
 
     @ApiOperation(value = "append a message to the conversation", response = Conversation.class)

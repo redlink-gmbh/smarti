@@ -23,6 +23,7 @@ import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.AnalyzedText.AnalyzedTextBuilder;
 import io.redlink.nlp.model.Section;
 import io.redlink.smarti.model.Analysis;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
@@ -40,11 +41,13 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
         super(new StringContent(at.getText()), null);
         addAnnotation(AnalyzedText.ANNOTATION, at);
         addAnnotation(CONVERSATION_ANNOTATION, conversation);
-        addAnnotation(ANALYSIS_ANNOTATION, analysis);
+        if(analysis != null){
+            addAnnotation(ANALYSIS_ANNOTATION, analysis);
+        }
     }
     
-    public static AnalysisData create(Conversation conversation){
-        return create(conversation, null);
+    public static AnalysisData create(Conversation conversation, Client client){
+        return create(conversation, new Analysis(client.getId(), conversation.getId(),conversation.getLastModified()));
     }
     
     public static AnalysisData create(Conversation conversation, Analysis analysis){
