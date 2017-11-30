@@ -38,7 +38,7 @@ angular.module('smartiApp')
     this.importConversations = importConversations;
 
     function getForClient(clientId, page, pageSize) {
-      return $http.get(ENV.serviceBaseUrl + 'admin/conversation', {
+      return $http.get(ENV.serviceBaseUrl + '/admin/conversation', {
         params: {
           owner: clientId,
           page: page,
@@ -50,42 +50,42 @@ angular.module('smartiApp')
     }
 
     function getConversation(conversationId) {
-      return $http.get(ENV.serviceBaseUrl + 'admin/conversation/' + conversationId)
+      return $http.get(ENV.serviceBaseUrl + '/admin/conversation/' + conversationId)
         .then(function (response) {
           return response.data;
         });
     }
 
     function saveMessage(conversationId, message) {
-      return $http.put(ENV.serviceBaseUrl + 'admin/conversation/' + conversationId + '/message/' + message.id, message)
+      return $http.put(ENV.serviceBaseUrl + '/admin/conversation/' + conversationId + '/message/' + message.id, message)
         .then(function (response) {
           return response.data;
         });
     }
 
     function deleteMessage(conversationId, messageId) {
-      return $http.delete(ENV.serviceBaseUrl + 'admin/conversation/' + conversationId + '/message/' + messageId)
+      return $http.delete(ENV.serviceBaseUrl + '/admin/conversation/' + conversationId + '/message/' + messageId)
         .then(function (response) {
           return response.data;
         });
     }
 
     function setConversationStatus(conversationId, newStatus) {
-      return $http.put(ENV.serviceBaseUrl + 'admin/conversation/' + conversationId + '/status/' + newStatus, undefined)
+      return $http.put(ENV.serviceBaseUrl + '/admin/conversation/' + conversationId + '/status/' + newStatus, undefined)
         .then(function (response) {
           return response.data;
         });
     }
 
     function buildExportLink(owner) {
-      return ENV.serviceBaseUrl+'admin/conversation/export?owner='+owner;
+      return ENV.serviceBaseUrl+'/admin/conversation/export?owner='+owner;
     }
 
     function importConversations(owner, file, replaceExisting) {
       var data = new FormData();
       data.append("file", file);
 
-      return $http.post(ENV.serviceBaseUrl + 'admin/conversation/import', data, {
+      return $http.post(ENV.serviceBaseUrl + '/admin/conversation/import', data, {
         params: {
           owner: owner,
           replace: replaceExisting || false
@@ -106,7 +106,7 @@ angular.module('smartiApp')
       reader.onloadend = function (e) {
         var data = e.target.result;
 
-        defer.resolve($http.post(ENV.serviceBaseUrl + 'admin/conversation/import', data, {
+        defer.resolve($http.post(ENV.serviceBaseUrl + '/admin/conversation/import', data, {
           params: {
             owner: owner,
             replace: replaceExisting || false

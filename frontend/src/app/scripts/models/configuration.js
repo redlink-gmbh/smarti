@@ -29,7 +29,7 @@ angular.module('smartiApp')
       }
 
       this.save = function(client) {
-        return $http.post(ENV.serviceBaseUrl + 'client/' + client.data.id + '/config', getJsonData());
+        return $http.post(ENV.serviceBaseUrl + '/client/' + client.data.id + '/config', getJsonData());
       };
 
       this.removeComponent = function(type,item) {

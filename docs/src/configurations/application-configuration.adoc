@@ -46,6 +46,16 @@ No core component of Smarti does send mails. However in cases where modules want
 * `spring.mail.username=`
 * `spring.mail.password=`
 
+==== Security Configuration
+
+* `security.config.enabled = true` - turn security (auth) off/on globally, e.g. for testing
+* `security.config.implementation = mongo` - authentication backend, currently only `mongo` is supported
+* `security.config.logout-redirect =` - redirect-target after successful logout.
+* `security.config.mongo.password-hasher = SHA-256` - password encryption algorithm
+* `security.config.mongo.enable-signup = false` - enable/disable public account-creation
+* `security.config.mongo.enable-password-recovery = false` - enable/disable password recovery workflow
+* `security.config.mongo.admin-password =` - set the _default_ admin password: on startup, if there is no user with role `ADMIN`, a new user is created using this password. If left blank, a random password will be generated and printed to the log.
+
 ==== SolrLib Configuration
 
 https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to use Solr in Spring. It supports embedded, standalone and cloud versions of Solr by adding the according modules.

@@ -255,6 +255,14 @@ function Smarti(options) {
                 { "resume": localStorage.getItem('Meteor.loginToken') }
             ]);
 
+            $.ajaxSetup({
+              headers: {
+                'content-type': 'application/json',
+                'x-auth-token': localStorage.getItem('Meteor.loginToken'),
+                'x-user-id': localStorage.getItem('Meteor.userId')
+              }
+            });
+
         } else {
             failure({code:'login.no-auth-token'});
         }
@@ -302,7 +310,7 @@ function Smarti(options) {
         console.debug('fetch results for %s with token %s', params.conversationId, params.token);
 
         $.ajax({
-            url: options.smarti.endpoint + 'conversation/' + params.conversationId,
+            url: options.rocket.smartiApiProxy + 'conversation/' + params.conversationId,
             success: function(data){
 
                 console.debug('received conversation results for %s:\n%s', params.conversationId, JSON.stringify(data,null,2));
@@ -319,7 +327,7 @@ function Smarti(options) {
 
     function query(params,success,failure) {
 
-        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
+        $.getJSON(options.rocket.smartiApiProxy + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
             function(data){
                 success(data);
             }, function(err) {
@@ -916,7 +924,20 @@ function SmartiWidget(element,_options) {
 
     //Smarti
 
-    var smarti = new Smarti({DDP:{endpoint:options.socketEndpoint},tracker:tracker,smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
+    var smarti = new Smarti({
+      DDP: {
+        endpoint: options.socketEndpoint
+      },
+      tracker: tracker,
+      smarti: {
+        endpoint: options.smartiEndpoint
+      },
+      channel: options.channel,
+      rocket: {
+        endpoint: options.rocketBaseurl,
+        smartiApiProxy: options.smartiApiProxy
+      }
+    });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
         refreshWidgets(data);

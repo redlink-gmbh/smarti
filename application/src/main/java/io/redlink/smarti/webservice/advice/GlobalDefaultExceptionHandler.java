@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,6 +52,11 @@ public class GlobalDefaultExceptionHandler {
     public ResponseEntity<Map<String,Object>> defaultErrorHandler(Exception e) throws Exception {
         if (e instanceof ServletException) {
             // ServletException will be handled by Spring
+            throw e;
+        }
+
+        if (e instanceof AccessDeniedException) {
+            // will be handled by Spring
             throw e;
         }
 

@@ -5,7 +5,7 @@
         <th>Name</th>
         <th>Description</th>
         <th>Last Update</th>
-        <th>Is Default</th>
+        <th ng-if="user.isAdmin">Is Default</th>
         <th>Actions</th>
     </tr>
     <tr ng-repeat="client in clients">
@@ -13,16 +13,33 @@
         <td ng-bind="client.data.name">
         <td ng-bind="client.data.description">
         <td ng-bind="client.data.lastUpdate | date : 'MMM d, y h:mm:ss a' ">
-        <td>
-          <input ng-change="saveClient(client)" type="checkbox" ng-model="client.data.defaultClient">
+        <td ng-if="user.isAdmin">
+          <input type="checkbox"
+                 ng-change="saveClient(client)"
+                 ng-model="client.data.defaultClient">
         </td>
         <td>
-          <button class="btn btn-default" ng-click="manageConversations(client.data.id)">conversations</button>
-          <button class="btn btn-primary" ng-click="edit(client.data.id)">edit</button>
-          <button class="btn btn-default" ng-click="clone(client.data.id)">clone</button>
-          <button class="btn btn-danger" ng-click="delete(client)">delete</button>
+          <button class="btn btn-default"
+                  title="Manage Conversations"
+                  ng-click="manageConversations(client.data.id)"><i class="glyphicon glyphicon-list"></i></button>
+          <button class="btn btn-default"
+                  title="Manage Security"
+                  ng-click="manageSecurity(client.data.id)"><i class="glyphicon glyphicon-lock"></i></button>
+          <button class="btn btn-primary"
+                  title="Edit Client Configuration"
+                  ng-click="edit(client.data.id)"><i class="glyphicon glyphicon-edit"></i></button>
+          <button class="btn btn-default"
+                  ng-if="user.isAdmin"
+                  title="Clone Client"
+                  ng-click="clone(client.data.id)"><i class="glyphicon glyphicon-duplicate"></i></button>
+          <button class="btn btn-danger"
+                  title="Delete Client"
+                  ng-if="user.isAdmin"
+                  ng-click="delete(client)"><i class="glyphicon glyphicon-trash"></i></button>
         </td>
     </td>
     </tr>
 </table>
-<button class="btn btn-primary" ng-click="createClient()">Create Client</button>
+<button class="btn btn-primary"
+        ng-if="user.isAdmin"
+        ng-click="createClient()">Create Client</button>

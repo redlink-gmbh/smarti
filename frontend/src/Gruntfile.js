@@ -12,12 +12,14 @@ module.exports = function (grunt) {
   // Time how long tasks take. Can help when optimizing build times
   require('time-grunt')(grunt);
 
+  grunt.loadNpmTasks('grunt-connect-proxy');
+
   // Automatically load required Grunt tasks
   require('jit-grunt')(grunt, {
     useminPrepare: 'grunt-usemin',
     ngtemplates: 'grunt-angular-templates',
     cdnify: 'grunt-google-cdn',
-    ngconstant: 'grunt-ng-constant'
+    proxy: 'grunt-connect-proxy'
   });
 
   // Configurable paths for the application
@@ -31,37 +33,6 @@ module.exports = function (grunt) {
 
     // Project settings
     yeoman: appConfig,
-
-    //constants
-    ngconstant: {
-      // Options for all targets
-      options: {
-        space: '  ',
-        wrap: '"use strict";\n\n {%= __ngModule %}',
-        name: 'config'
-      },
-      // Environment targets
-      development: {
-        options: {
-          dest: '<%= yeoman.app %>/scripts/config.js'
-        },
-        constants: {
-          ENV: {
-            serviceBaseUrl: 'http://localhost:8080/'
-          }
-        }
-      },
-      production: {
-        options: {
-          dest: '<%= yeoman.dist %>/scripts/config.js'
-        },
-        constants: {
-          ENV: {
-            serviceBaseUrl: './'
-          }
-        }
-      }
-    },
 
     // Watches files for changes and runs tasks based on the changed files
     watch: {
@@ -107,9 +78,17 @@ module.exports = function (grunt) {
         hostname: 'localhost',
         livereload: 35729
       },
+      proxies: [{
+        context: '/',
+        host: 'localhost',
+        port: 8080,
+        // errorHandler: function (req, res, next, err) {
+        //   if (err.code === )
+        // }
+      }],
       livereload: {
         options: {
-          open: true,
+          open: false,
           middleware: function (connect) {
             return [
               connect.static('.tmp'),
@@ -121,7 +100,8 @@ module.exports = function (grunt) {
                 '/app/styles',
                 connect.static('./app/styles')
               ),
-              connect.static(appConfig.app)
+              connect.static(appConfig.app),
+              require('grunt-connect-proxy/lib/utils').proxyRequest,
             ];
           }
         }
@@ -502,10 +482,10 @@ module.exports = function (grunt) {
 
     grunt.task.run([
       'clean:server',
-      'ngconstant:development',
       'wiredep',
       'concurrent:server',
       'postcss:server',
+      'configureProxies',
       'connect:livereload',
       'watch'
     ]);
@@ -527,7 +507,6 @@ module.exports = function (grunt) {
 
   grunt.registerTask('build', [
     'clean:dist',
-    'ngconstant:production',
     'wiredep',
     'useminPrepare',
     'concurrent:dist',
