@@ -23,7 +23,7 @@ It consists of two analysis components:
 
 Tokens created by this component have the type `Keyword` and the Hint `interestingTerm`
 
-For more information on the configuration of Interesting Term Extractors see the according <<smartiConf.adoc#interesting-term,section>> in the Smarti Configuration
+For more information on the configuration of Interesting Term Extractors see the according <<index.asciidoc#_interesting_term,section>> in the Smarti Configuration
 
 === Token Filter
 
@@ -33,7 +33,7 @@ Analysis Component that applies all registered Token Filters. If a single filter
 
 This Analysis component allows to filter extracted Tokens based on their value. Filtering is done based on stopword lists. One list is used for all languages where additional language specific lists can also be configured.
 
-See the <<smartiConf.adoc#token-filter-stopword, Stoword Token Filter configuration>> section of the Smarti Configuration for more information.
+See the <<index.asciidoc#_token_filter_stopword, Stoword Token Filter configuration>> section of the Smarti Configuration for more information.
 
 === Token Processor
 

@@ -192,7 +192,7 @@ Smarti processes ongoing Conversations. Those processing results are available v
 This call returns processing results for a Conversation. This results includes the token and tempalte arrays as described above.
 
 * `tokens`: Information extracted form the conversation. Important as `template.slots` refer to token indexes
-* `templates`: Templates represent a structured view onto the extracted information. The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte. The <<abalysis-components#_latch_template,LATCH template>> is an example of such a template intended to be used for information retrieval.
+* `templates`: Templates represent a structured view onto the extracted information. The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte. The <<analysis-components#_latch_template,LATCH template>> is an example of such a template intended to be used for information retrieval.
 * `queries`: Queries are built based on templates and are typically used to retrieve information related to the conversation from services. A single template can have multiple queries from different creators (e.g. the LATCH template can have multiple queries for different configured search indexes).
 
 NOTE: Queries are NOT executed during processing of the conversation. The client is responsible for execution (typically based on a user interaction).

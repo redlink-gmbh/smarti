@@ -53,7 +53,7 @@ https://github.com/redlink-gmbh/solrlib/[SolrLib] is a library that allows to us
 * `solrlib.home = /absolute/path/to/solr/home`: The `${SOLR_HOME}` directory, Used by embedded and standalone. **NOTE:** In case an embedded Solr Server is used it is highly recommended to set `solrlib.home` to the absolute path where the embedded Solr server will be located. Otherwise a new Solr core will be created in a temp folder on every startup.
 * `solrlib.base-url = http://localhost:8983/solr`: base-url for all solr requests. This will trigger using solrlib-standalone if available on the classpath -
 * `solrlib.zk-connection = zookeeper1:8121,zookeeper2:8121`: ZooKeeper connection string. This will trigger using solrlib-cloud if available on the classpath
-* `solrlib.collection-prefix =`: prefix for the remote collection names, to avoid name-clashes on shared servers. Only used by standalone and cloud
+* `solrlib.collection-prefix =` prefix for the remote collection names, to avoid name-clashes on shared servers. Only used by standalone and cloud
 * `solrlib.max-shards-per-node = 1`: Only relevant in cloud-mode
 * `solrlib.deploy-cores = true`: option to disable automatic configuration update/deployment to remote servers. You might not have the karma to do so. Only used by standalone and cloud
 * `solrlib.delete-on-shutdown = false`: option to delete the solrlib-home upon shutdown. Only used by embedded
@@ -116,7 +116,7 @@ NOTE: Client specific analysis configurations are planed for a future release. T
 
 The analysis workflow used to process conversations can be configured by the following properties
 
-* `smarti.analysis.required =`: comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
+* `smarti.analysis.required = ` comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
 * `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
@@ -134,8 +134,8 @@ Their are several ways to configure Solr endpoints to be used for interesting te
 
 The above configuration requires a Solr Server. To allow the use of embedded Solr Servers specific modules are required. Currenty two of those exist.
 
-* `solrcore.wikipedia.de.resource =`: Absolute path to the archive with the German Wikipedia Corpus.
-* `solrcore.crawl.systel.resource =`: Absolute path to the archive with the crawl of Systel related Webpages
+* `solrcore.wikipedia.de.resource =` Absolute path to the archive with the German Wikipedia Corpus.
+* `solrcore.crawl.systel.resource =` Absolute path to the archive with the crawl of Systel related Webpages
 
 **NOTE:** The archives with the Solr cores are separate downloads. The cores are initialized on the embedded Solr server managed by https://github.com/redlink-gmbh/solrlib/[SolrLib]
 
@@ -158,8 +158,8 @@ where:
 
 Hasso was a spefic use case of the predecessor of Smarti. The module `hasso-vocabulary-extractor` provides two vocabulary based keyword extraction components.
 
-* `smarti.extractor.synonyms.db =`: `CSV` file with `;` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `db-entity`.
-* `smarti.extractor.synonyms.sap =`: `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
+* `smarti.extractor.synonyms.db =` `CSV` file with `;` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `db-entity`.
+* `smarti.extractor.synonyms.sap =` `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
 
 
 ==== Query Builder Defalt Configuration
