@@ -21,8 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
-import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.query.conversation.MessageSearchService;
+import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -263,21 +263,23 @@ public class RocketChatEndpoint {
     /**
      * Allow conversation-independent search.
      * @param clientName the client id
-     * @param httpServletRequest the request to get the query params
+     * @param request the request to get the query params
      */
     @ApiOperation(value = "search for messages", response = SearchResult.class,
             notes = "like solr.")
     @RequestMapping(value = "{clientId}/search-message", method = RequestMethod.GET)
     public ResponseEntity<?> searchMessage(
-            @PathVariable(value = "clientId") String clientName, HttpServletRequest request) {
-
-        Map<String, String[]> requestParameterMap = request.getParameterMap();
+            AuthContext authContext,
+            @PathVariable(value = "clientId") String clientName,
+            HttpServletRequest request
+    ) {
 
         final Client client = clientService.getByName(clientName);
-        if (client == null) {
+        if (client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
             return ResponseEntity.notFound().build();
         }
 
+        final Map<String, String[]> requestParameterMap = request.getParameterMap();
         if (conversationSearchService != null) {
             try {
                 return ResponseEntity.ok(messageSearchService.search(client, requestParameterMap));
