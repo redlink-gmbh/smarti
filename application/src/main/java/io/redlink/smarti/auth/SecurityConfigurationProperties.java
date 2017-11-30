@@ -30,6 +30,11 @@ public class SecurityConfigurationProperties {
     }
 
     /**
+     * turn security (auth) off/on globally, e.g. for testing
+     */
+    private boolean enabled = true;
+
+    /**
      * auth provider
      */
     private SecurityImpl implementation = SecurityImpl.mongo;
@@ -40,6 +45,15 @@ public class SecurityConfigurationProperties {
     private URI logoutRedirect = null;
 
     private MongoProperties mongo = new MongoProperties();
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public SecurityConfigurationProperties setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        return this;
+    }
 
     public SecurityImpl getImplementation() {
         return implementation;

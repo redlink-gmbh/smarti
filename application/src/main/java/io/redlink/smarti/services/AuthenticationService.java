@@ -16,6 +16,7 @@
  */
 package io.redlink.smarti.services;
 
+import io.redlink.smarti.auth.SecurityConfigurationProperties;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
@@ -42,6 +43,8 @@ public class AuthenticationService {
     public static final String ADMIN = "ADMIN";
     public static final String ANONYMOUS = "ANONYMOUS";
 
+    private final SecurityConfigurationProperties securityConfigurationProperties;
+
     private final UserService userService;
 
     private final ClientService clientService;
@@ -51,27 +54,36 @@ public class AuthenticationService {
     private final AuthTokenService authTokenService;
 
     @Autowired
-    public AuthenticationService(UserService userService, ClientService clientService, ConversationService conversationService, AuthTokenService authTokenService) {
+    public AuthenticationService(SecurityConfigurationProperties securityConfigurationProperties, UserService userService, ClientService clientService, ConversationService conversationService, AuthTokenService authTokenService) {
+        this.securityConfigurationProperties = securityConfigurationProperties;
         this.userService = userService;
         this.clientService = clientService;
         this.conversationService = conversationService;
         this.authTokenService = authTokenService;
     }
 
+    public boolean isAuthenticationEnabled() {
+        return securityConfigurationProperties.isEnabled();
+    }
+
+    public boolean isAuthenticationDisabled() {
+        return !isAuthenticationEnabled();
+    }
+
     public boolean isAuthenticated(AuthContext authentication) {
-        return Objects.nonNull(authentication) && !hasRole(authentication, ANONYMOUS);
+        return isAuthenticationDisabled() || (Objects.nonNull(authentication) && !hasRole(authentication, ANONYMOUS));
     }
 
     public boolean hasLogin(Authentication authentication, String login) {
-        return Objects.nonNull(authentication) && Objects.equals(authentication.getName(), login);
+        return isAuthenticationDisabled() || (Objects.nonNull(authentication) && Objects.equals(authentication.getName(), login));
     }
 
     public boolean hasLogin(AuthContext authContext, String login) {
-        return Objects.nonNull(authContext) && hasLogin(authContext.getAuthentication(), login);
+        return isAuthenticationDisabled() || (Objects.nonNull(authContext) && hasLogin(authContext.getAuthentication(), login));
     }
 
     public boolean hasLogin(UserDetails authentication, String login) {
-        return Objects.nonNull(authentication) && Objects.equals(authentication.getUsername(), login);
+        return isAuthenticationDisabled() || (Objects.nonNull(authentication) && Objects.equals(authentication.getUsername(), login));
     }
 
     public boolean hasRole(AuthContext authContext, String role) {
@@ -98,26 +110,27 @@ public class AuthenticationService {
     }
 
     public boolean hasAnyRole(AuthContext authContext, Collection<String> roles) {
-        return Objects.nonNull(authContext) && hasAnyRole(authContext.getAuthentication(), roles);
+        return isAuthenticationDisabled() || (Objects.nonNull(authContext) && hasAnyRole(authContext.getAuthentication(), roles));
     }
 
     public boolean hasAnyRole(Authentication authentication, Collection<String> roles) {
-        return Objects.nonNull(authentication) &&
+        return isAuthenticationDisabled() || (Objects.nonNull(authentication) &&
                 authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .map(r -> StringUtils.removeStart(r, "ROLE_"))
-                        .anyMatch(roles::contains);
+                        .anyMatch(roles::contains));
     }
 
     public boolean hasAnyRole(UserDetails authentication, Collection<String> roles) {
-        return Objects.nonNull(authentication) &&
+        return isAuthenticationDisabled() || (Objects.nonNull(authentication) &&
                 authentication.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .map(r -> StringUtils.removeStart(r, "ROLE_"))
-                        .anyMatch(roles::contains);
+                        .anyMatch(roles::contains));
     }
 
     public Set<ObjectId> getClients(Authentication authentication) {
+        if (authentication == null) return Collections.emptySet();
         return userService.getClientsForUser(authentication.getName());
     }
 
