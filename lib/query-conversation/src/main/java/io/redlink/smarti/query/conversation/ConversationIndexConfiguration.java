@@ -31,6 +31,8 @@ public class ConversationIndexConfiguration {
     
     public static final String FIELD_ID = "id";
     public static final String FIELD_TYPE = "type";
+    public static final String TYPE_MESSAGE = "message";
+    public static final String TYPE_CONVERSATION = "conversation";
     public static final String FIELD_OWNER = "owner";
     public static final String FIELD_USER_ID = "user_id";
     public static final String FIELD_USER_NAME = "user_name";
@@ -43,7 +45,14 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_CONVERSATION_ID = "conversation_id";
     public static final String FIELD_MESSAGE_ID = "message_id";
     public static final String FIELD_MESSAGE_IDX = "message_idx";
+    /**
+     * The conent of a message (single valued)
+     */
     public static final String FIELD_MESSAGE = "message";
+    /**
+     * The contents of all messages of a conversation (multi valued)
+     */
+    public static final String FIELD_MESSAGES = "messages";
     public static final String FIELD_TIME = "time";
     public static final String FIELD_VOTE = "vote";
     /**

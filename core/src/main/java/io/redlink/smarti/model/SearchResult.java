@@ -16,10 +16,15 @@
  */
 package io.redlink.smarti.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SearchResult<T> {
 
@@ -30,6 +35,9 @@ public class SearchResult<T> {
 
     private List<T> docs;
 
+    @JsonIgnore
+    private final Map<String, Object> params = new HashMap<>();
+    
     public SearchResult() {
         this(Collections.emptyList());
     }
@@ -97,4 +105,16 @@ public class SearchResult<T> {
         this.docs = docs;
         return this;
     }
+    
+    @JsonAnyGetter
+    public Map<String, Object> getParams() {
+        return params;
+    }
+    
+    @JsonAnySetter
+    protected void setParam(String name, Object value) {
+        params.put(name, value);
+    }
+    
+    
 }

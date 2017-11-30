@@ -54,7 +54,10 @@
     <field name="conversation_id"       type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="message_id"            type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="message_idx"           type="long"           indexed="true"  stored="true"  multiValued="false"/>
+    <!-- used by messages to store the content -->
     <field name="message"               type="text_de"        indexed="true"  stored="true"  multiValued="false"/>
+    <!-- used by the conversation to store all messages (e.g. for highlighting) -->
+    <field name="messages"              type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
     <field name="time"                  type="date"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="vote"                  type="long"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="link"                  type="string"         indexed="true"  stored="true"  multiValued="true"/>
@@ -66,9 +69,11 @@
     <copyField source="meta_*" dest="meta_txt_*"/>
 
     <copyField source="message" dest="text"/>
+    <copyField source="messages" dest="text"/>
     <copyField source="keyword*" dest="text"/>
 
     <copyField source="message" dest="iterms"/>
+    <copyField source="messages" dest="iterms"/>
 
     <uniqueKey>id</uniqueKey>
     <defaultSearchField>text</defaultSearchField>

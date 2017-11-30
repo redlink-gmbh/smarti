@@ -118,7 +118,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         final SolrQuery solrQuery = new SolrQuery();
         solrQuery.addField("*").addField("score");
-        solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
+        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDX));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
 

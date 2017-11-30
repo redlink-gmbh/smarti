@@ -117,7 +117,7 @@
                             <sourceHighlighter>coderay</sourceHighlighter>
                             <backend>html</backend>
                             <attributes>
-                                <toc />
+                                <toc/>
                                 <linkcss>false</linkcss>
                             </attributes>
                             <outputDirectory>${project.build.directory}/html</outputDirectory>
