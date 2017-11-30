@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.services.AuthenticationService;
+import io.redlink.smarti.query.conversation.MessageSearchService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -49,7 +50,9 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Webhook-Endpoint for rocket.chat
@@ -81,6 +84,9 @@ public class RocketChatEndpoint {
 
     @Autowired(required = false)
     private ConversationSearchService conversationSearchService;
+
+    @Autowired(required = false)
+    MessageSearchService messageSearchService;
 
     protected final HttpClientBuilder httpClientBuilder;
 
@@ -246,6 +252,35 @@ public class RocketChatEndpoint {
         if (conversationSearchService != null) {
             try {
                 return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+            } catch (IOException e) {
+                return ResponseEntities.internalServerError(e);
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+    }
+
+    /**
+     * Allow conversation-independent search.
+     * @param clientName the client id
+     * @param httpServletRequest the request to get the query params
+     */
+    @ApiOperation(value = "search for messages", response = SearchResult.class,
+            notes = "like solr.")
+    @RequestMapping(value = "{clientId}/search-message", method = RequestMethod.GET)
+    public ResponseEntity<?> searchMessage(
+            @PathVariable(value = "clientId") String clientName, HttpServletRequest request) {
+
+        Map<String, String[]> requestParameterMap = request.getParameterMap();
+
+        final Client client = clientService.getByName(clientName);
+        if (client == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (conversationSearchService != null) {
+            try {
+                return ResponseEntity.ok(messageSearchService.search(client, requestParameterMap));
             } catch (IOException e) {
                 return ResponseEntities.internalServerError(e);
             }
