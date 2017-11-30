@@ -9,6 +9,6 @@ Stanford-NLP is GPL v3 licensed which makes it a bit more complicated to ship pa
 are not part of the installation package.
 To make use of of Stanford-NLP analysis, add the following two libraries into this folder, and restart the application:
 
-* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar
-* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0.jar
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0-models-german.jar
 
