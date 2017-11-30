@@ -36,6 +36,10 @@ This release introduces a brand new search API that allows:
 
 === Upgrading
 
+https://repo.redlink.io/mvn/content/repositories/snapshots/io/redlink/nlp/nlp-stanfordnlp-de/2.0.0-SNAPSHOT/[redlink-nlp]
+has been upgraded to use https://stanfordnlp.github.io/CoreNLP/[StanfordNLP v3.8]. Please upgrade your locally installed
+libraries of `stanford core-nlp`.
+
 ==== Configuration
 
 Starting with `0.6.0` recommended conversations (`conversationmlt` and `conversationsearch`) can be
