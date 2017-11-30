@@ -530,7 +530,6 @@ public class ConversationWebservice {
         // TODO: check Authentication / clientId
         final Client client = null;
 
-        // TODO(westei): Check if conversation needs to be re-analyzed/processed
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -582,9 +581,6 @@ public class ConversationWebservice {
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
-
-        // TODO(westei): Check if conversation needs to be re-analyzed/processed
-
 
         final List<Template> templates = getAnalysis(client, conversation).getTemplates();
         final Template template;

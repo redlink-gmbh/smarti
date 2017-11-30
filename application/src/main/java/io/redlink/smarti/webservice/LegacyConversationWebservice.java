@@ -28,6 +28,8 @@ import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.QueryUpdate;
 import io.redlink.smarti.webservice.pojo.TemplateResponse;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -41,6 +43,8 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -269,6 +273,44 @@ public class LegacyConversationWebservice {
             //TODO: only the owner of the conversation can publish it!
             conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
             return ResponseEntity.ok(conversationService.completeConversation(conversation));
+        }
+    }
+    
+    /**
+     */
+    @ApiModel
+    public static class TemplateResponse {
+
+        @ApiModelProperty(value = "Tokens extracted")
+        private List<Token> tokens = new ArrayList<>();
+
+        @ApiModelProperty(value = "Templates for possible queries")
+        private List<Template> templates = new ArrayList<>();
+
+        public List<Token> getTokens() {
+            return tokens;
+        }
+
+        public void setTokens(List<Token> tokens) {
+            this.tokens = tokens;
+        }
+
+        public List<Template> getTemplates() {
+            return templates;
+        }
+
+        public void setTemplates(List<Template> templates) {
+            this.templates = templates;
+        }
+
+        public static TemplateResponse from(Conversation conversation) {
+            final TemplateResponse response = new TemplateResponse();
+
+            response.tokens = conversation.getTokens();
+            response.templates = conversation.getTemplates();
+
+
+            return response;
         }
     }
 }
