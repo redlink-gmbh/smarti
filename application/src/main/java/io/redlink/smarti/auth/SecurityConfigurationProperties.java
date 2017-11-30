@@ -29,8 +29,14 @@ public class SecurityConfigurationProperties {
         mongo,
     }
 
+    /**
+     * auth provider
+     */
     private SecurityImpl implementation = SecurityImpl.mongo;
 
+    /**
+     * target url after logout
+     */
     private URI logoutRedirect = null;
 
     private MongoProperties mongo = new MongoProperties();
@@ -61,12 +67,25 @@ public class SecurityConfigurationProperties {
 
     public static class MongoProperties {
 
+        /**
+         * enable self-signup. Allows anyone to create a new account.
+         */
         private boolean enableSignup = false;
 
+        /**
+         * enable password recovery. Allow resetting the user-password via mail-verification token.
+         */
         private boolean enablePasswordRecovery = false;
 
+        /**
+         * hash-algorithm to store passwords
+         */
         private String passwordHasher = "SHA-256";
 
+        /**
+         * default password for the admin-account created during boot.
+         * If {@code null}, a random password will be generated and printed to the log.
+         */
         private String adminPassword = null;
 
         public String getPasswordHasher() {

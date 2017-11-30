@@ -24,8 +24,14 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "smarti.required-providers")
 public class RequiredProvidersHealthCheckProperties {
 
+    /**
+     * let healthcheck fail (DOWN) if a required provider is missing
+     */
     private boolean failOnMissing = true;
 
+    /**
+     * let healthcheck fail (DONW) if a specific provider is missing
+     */
     private Map<String, Boolean> failIfMissing = new HashMap<>();
 
     public boolean isFailOnMissing() {

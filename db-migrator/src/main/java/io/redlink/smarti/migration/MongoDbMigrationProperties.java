@@ -24,7 +24,13 @@ import java.util.regex.Pattern;
 @ConfigurationProperties(prefix = "smarti.migration.mongo")
 public class MongoDbMigrationProperties {
 
+    /**
+     * Directory to load the database-migration scripts from
+     */
     private Path scriptHome = null;
+    /**
+     * Pattern of migration-scripts to apply
+     */
     private Pattern pattern = Pattern.compile("^migrate-\\d+");
 
     public Path getScriptHome() {
