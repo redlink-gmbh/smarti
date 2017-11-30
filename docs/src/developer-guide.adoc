@@ -142,9 +142,10 @@ To launch *Smarti* in debug mode create a shell script appending preferred optio
 .start-smarti.sh
 ```bash
 #!/bin/bash
-java -Xmx4g -jar -Xdebug application/target/smarti-${smarti-version}-exec.jar\
-    -Xrunjdwp:transport=dt_socket,address=${smarti-debug-port},server=y,suspend=n\
+java -Xmx4g -jar \
+    -Xdebug -Xrunjdwp:transport=dt_socket,address=${smarti-debug-port},server=y,suspend=n\
     -Dspring.profiles.active=local\
+    application/target/smarti-${smarti-version}-exec.jar\
     --solrlib.home=${solr-home}
 ```
 
