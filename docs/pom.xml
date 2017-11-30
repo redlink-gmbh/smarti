@@ -26,7 +26,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.0-RC7</version>
+        <version>0.6.0</version>
     </parent>
 
     <artifactId>smarti-documentation</artifactId>
@@ -156,7 +156,7 @@
                         <sourceDocumentExtension>asciidoc</sourceDocumentExtension>
                     </sourceDocumentExtensions>
                     <headerFooter>true</headerFooter>
-                    <imagesDir>_images</imagesDir>
+                    <imagesDir>images</imagesDir>
                     <attributes />
                     <resources>
                         <resource>
