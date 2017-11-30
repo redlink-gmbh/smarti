@@ -140,7 +140,6 @@ public abstract class InterestingTermExtractor extends Processor {
         }
         List<Entry<String,Float>> interestingTerms = new LinkedList<>();
         float maxBoost = 0; //search for the highest boost for normalization [0..1]
-        log.debug("Solr MLT interesting Terms:");
         for(Iterator<Entry<String,Object>> terms = interestingTermList.iterator(); terms.hasNext();){
             Entry<String,Object> e = terms.next();
             String term = e.getKey();
@@ -148,9 +147,9 @@ public abstract class InterestingTermExtractor extends Processor {
             if(boost > maxBoost){
                 maxBoost = boost;
             }
-            log.debug("  {}:{}", boost,term);
             interestingTerms.add(new ImmutablePair<String,Float>(term, boost));
         }
+        log.debug("Solr MLT interesting Terms: {}", interestingTerms);
         for(Entry<String,Float> term : interestingTerms){
             String termKey = term.getKey();
             int fieldSepIdx = termKey.indexOf(':');
@@ -160,7 +159,7 @@ public abstract class InterestingTermExtractor extends Processor {
                 for(Token token : termTokens){
                     Value<InterestingTerm> value = Value.value(new InterestingTerm(getKey(), termName), term.getValue()/maxBoost);
                     token.addValue(INTERESTING_TERM, value);
-                    log.debug("mark {} as interesting Term {}", token, value);
+                    log.trace("mark {} as interesting Term {}", token, value);
                 }
             }
         }

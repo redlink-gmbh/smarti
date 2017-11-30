@@ -2,7 +2,31 @@
 
 Smarti uses Redlink NLP for the analysis of Conversations. In addition it provides several specific analysis components that are implemented as extensions to Redlink NLP.
 
-This documentation focus is on those extensions
+This Section first provides an overview of typical properties used to configure Redlink NLP. Second it provides detailed information about the extenstions to Redlink NLP provided by Smarti
+
+
+===== Redlink NLP Configuration
+
+**Stanford NLP**
+
+Stanford NLP `3.8.0` can be used for NLP processing of German language texts. With no configuration in place it will use the default configuration as provided by the German model files of the Stanford distribution.
+
+The following configuration properties allow to change the configuration:
+
+```
+nlp.stanfordnlp.de.posModel=edu/stanford/nlp/models/pos-tagger/german/german-hgc.tagger
+nlp.stanfordnlp.de.nerModel=edu/stanford/nlp/models/ner/german.conll.hgc_175m_600.crf.ser.gz
+nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/lexparser/germanPCFG.ser.g
+nlp.stanfordnlp.de.parseMaxlen=30
+```
+
+For the `parseModel` Stanford includes three models
+
+* PCFG Parser (`edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`): This is the default parser configured for Smarti. It runs fine with `4g` of heap and `parseMaxlen <= 30` (`parseMaxlen <= 40` is borderline ok)
+* Factored Parser (`edu/stanford/nlp/models/lexparser/germanFactored.ser.gz`): This is the default of Stanford NLP. It is the slowest and needs a lot of memory (especially with `parseMaxlen > 30`). Do NOT use this parser with setups providing `<8g` java heap (`-Xmx8g`)
+* Shift Reduce Parser (`edu/stanford/nlp/models/srparser/germanSR.ser.gz`): This is the fastest parser option available and recommended in situations where problems with the PCFG Parser occure. For more information see its https://nlp.stanford.edu/software/srparser.shtml[documentation] on Stanford NLP.
+
+The maximal parse length (`nlp.stanfordnlp.de.parseMaxlen`) defines the maximum number of tokens a sentence can have to be processed by the parser. As the memory requirement of the parser is roughly the square of the sentence length. https://nlp.stanford.edu/software/parser-faq.shtml#k[More information] are available in the parser FAQ.
 
 ===== Interesting Terms
 

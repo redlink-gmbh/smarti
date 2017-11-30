@@ -73,6 +73,14 @@
                 <targetPath>main</targetPath>
             </resource>
             <resource>
+                <directory>../scripts</directory>
+                <filtering>false</filtering>
+                <targetPath>db-migration</targetPath>
+                <includes>
+                    <include>migrate-*.js</include>
+                </includes>
+            </resource>
+            <resource>
                 <directory>src/deb/resources</directory>
                 <filtering>true</filtering>
                 <targetPath>deb</targetPath>
@@ -253,9 +261,8 @@
                                             </mapper>
                                         </data>
                                         <data>
-                                            <src>${project.basedir}/../scripts</src>
+                                            <src>${project.build.outputDirectory}/db-migration</src>
                                             <type>directory</type>
-                                            <includes>migrate-*.js</includes>
                                             <mapper>
                                                 <type>perm</type>
                                                 <prefix>./usr/share/${packageName}/scripts</prefix>
@@ -311,7 +318,16 @@
                                             </mapper>
                                         </data>
                                         <data>
-                                            <src>${project.build.outputDirectory}/main/plugin-info.txt</src>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.json</src>
+                                            <dst>plugin-info.json</dst>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./var/lib/${packageName}/ext</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.readme</src>
                                             <dst>README.txt</dst>
                                             <type>file</type>
                                             <mapper>
@@ -444,10 +460,7 @@
                                 <mapping>
                                     <sources>
                                         <source>
-                                            <location>${project.basedir}/../scripts</location>
-                                            <includes>
-                                                <include>migrate-*.js</include>
-                                            </includes>
+                                            <location>${project.build.outputDirectory}/db-migration</location>
                                         </source>
                                     </sources>
                                     <directory>/usr/share/${packageName}/scripts</directory>
@@ -533,7 +546,16 @@
                                 <mapping>
                                     <sources>
                                         <source>
-                                            <location>${project.build.outputDirectory}/main/plugin-info.txt</location>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.json</location>
+                                            <destination>plugin-info.json</destination>
+                                        </source>
+                                    </sources>
+                                    <directory>/var/lib/${packageName}/ext</directory>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.readme</location>
                                             <destination>README.txt</destination>
                                         </source>
                                     </sources>

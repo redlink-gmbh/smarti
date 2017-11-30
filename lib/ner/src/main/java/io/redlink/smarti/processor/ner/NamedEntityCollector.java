@@ -127,7 +127,7 @@ public class NamedEntityCollector extends Processor {
 
     private List<Token> createNamedEntityTokens(Section section, int msgIdx, Message message) {
         Iterator<Span> spans = section.getEnclosed(EnumSet.of(SpanTypeEnum.Token,SpanTypeEnum.Chunk));
-        log.debug("Message {} - {}: {}", msgIdx, message.getOrigin(), message.getContent());
+        log.trace("Message {} - {}: {}", msgIdx, message.getOrigin(), message.getContent());
         //we might encounter multiple overlapping Named Entities of the same Type.
         //so we use this map to lookup them and build a token covering them all
         Map<Token.Type, Token> activeTokens = new EnumMap<>(Token.Type.class);
