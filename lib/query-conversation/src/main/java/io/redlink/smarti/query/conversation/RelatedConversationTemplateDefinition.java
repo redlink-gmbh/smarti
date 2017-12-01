@@ -52,7 +52,7 @@ public class RelatedConversationTemplateDefinition extends TemplateDefinition {
 
     @Override
     protected boolean validate(Collection<Slot> slots, List<Token> tokens) {
-        return slots.stream().filter(s -> s.getTokenIndex() >= 0).findAny().isPresent();
+        return true;
     }
 
 }
