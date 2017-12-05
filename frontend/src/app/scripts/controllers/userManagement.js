@@ -58,9 +58,7 @@ angular.module('smartiApp')
         resolve: {
           user: angular.copy(user)
         },
-        controller: function ($scope, user) {
-          $scope.user = user;
-        }
+        controller: function () {}
       }).result
         .then(
           function (updatedUser) {
@@ -96,7 +94,8 @@ angular.module('smartiApp')
         templateUrl: 'views/modal/update-password.html',
         resolve: {
           user: angular.copy(user)
-        }
+        },
+        controller: function () {}
       }).result.then(
         function (newPassword) {
           return UserService.setPassword(user, newPassword)

@@ -15,24 +15,24 @@
   ~
   -->
 
-<form name="$form" class="" autocomplete="off" ng-submit="$close(user)">
+<form name="$form" class="" autocomplete="off" ng-submit="$close($resolve.user)">
   <div class="modal-header">
-    <h3 class="modal-title">Edit {{user.profile.name || user.login}}</h3>
+    <h3 class="modal-title">Edit {{$resolve.user.profile.name || $resolve.user.login}} <small>{{$resolve.user.login}}</small></h3>
   </div>
   <div class="modal-body">
     <div class="form-group">
       <label class="control-label">Login:</label>
-      <p class="form-control-static" ng-bind="user.login"></p>
+      <p class="form-control-static" ng-bind="$resolve.user.login"></p>
     </div>
     <div class="form-group">
       <label for="displayName">Name:</label>
       <input id="displayName" name="displayName"
-             class="form-control" ng-model="user.profile.name" type="text" />
+             class="form-control" ng-model="$resolve.user.profile.name" type="text" />
     </div>
     <div class="form-group has-feedback" ng-class="{'has-error': $form.email.$invalid && $form.email.$dirty}">
       <label for="email" class="control-label">Email:</label>
       <input id="email" name="email"
-             class="form-control" ng-model="user.profile.email" type="email" required />
+             class="form-control" ng-model="$resolve.user.profile.email" type="email" required />
       <span class="glyphicon form-control-feedback"
             ng-class="{'glyphicon-ok text-success': $form.email.$valid, 'glyphicon-remove': $form.email.$invalid && $form.email.$dirty}"
             aria-hidden="true"></span>
@@ -44,7 +44,7 @@
     <div class="form-group">
         <h4>Roles</h4>
         <label class="checkbox-inline">
-          <input type="checkbox" class="checkbox" ng-model="user.isAdmin"> Admin
+          <input type="checkbox" class="checkbox" ng-model="$resolve.user.isAdmin"> Admin
         </label>
     </div>
   </div>

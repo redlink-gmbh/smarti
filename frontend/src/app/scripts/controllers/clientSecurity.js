@@ -152,7 +152,8 @@ angular.module('smartiApp')
         templateUrl: 'views/modal/update-password.html',
         resolve: {
           user: user
-        }
+        },
+        controller: function () {}
       }).result.then(
         function (newPassword) {
           return UserService.setPassword(user, newPassword)
