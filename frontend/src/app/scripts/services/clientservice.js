@@ -89,7 +89,7 @@ angular.module('smartiApp')
 
     this.removeUser = function (user, client) {
       return $http
-        .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/user/' + user.username)
+        .delete(ENV.serviceBaseUrl + '/client/' + client.data.id + '/user/' + user.login)
         .then(function (response) {
           return response.data;
         });

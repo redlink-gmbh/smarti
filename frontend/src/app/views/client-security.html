@@ -69,8 +69,8 @@
       <div ng-repeat="user in users"
            class="list-group-item"
            ng-class="{'list-group-item-info': user.login === $root.user.login}">
-        <strong>{{user.name}}</strong> ({{user.login}})
-        <a ng-href="mailto:{{user.email}}">{{user.email}}</a>
+        <strong>{{user.profile.name}}</strong> ({{user.login}})
+        <a ng-href="mailto:{{user.profile.email}}">{{user.profile.email}}</a>
         <button class="btn btn-default btn-sm"
                 title="set password"
                 ng-click="$ctrl.setPassword(user)">
