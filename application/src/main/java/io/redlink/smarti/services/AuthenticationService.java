@@ -23,6 +23,8 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.webservice.pojo.AuthContext;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -39,6 +41,8 @@ import java.util.stream.Collectors;
 @SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 @Service
 public class AuthenticationService {
+
+    private final Logger log = LoggerFactory.getLogger(AuthenticationService.class);
 
     public static final String ADMIN = "ADMIN";
     public static final String ANONYMOUS = "ANONYMOUS";
@@ -148,12 +152,18 @@ public class AuthenticationService {
     }
 
     public AuthContext assertRole(AuthContext authContext, String role) {
-        if (!hasRole(authContext, role)) throw new AccessDeniedException("Access Denied");
+        if (!hasRole(authContext, role)) {
+            log.debug("NOT_IN role '{}': {}", role, authContext);
+            throw new AccessDeniedException("Access Denied");
+        }
         return authContext;
     }
 
     public AuthContext assertAnyRole(AuthContext authContext, String... role) {
-        if (!hasAnyRole(authContext, role)) throw new AccessDeniedException("Access Denied");
+        if (!hasAnyRole(authContext, role)) {
+            log.debug("NOT_IN_ANY role {}: {}", role, authContext);
+            throw new AccessDeniedException("Access Denied");
+        }
         return authContext;
     }
 
@@ -169,12 +179,14 @@ public class AuthenticationService {
     public Client assertClient(AuthContext authContext, ObjectId clientId) {
         if (!hasRole(authContext, ADMIN)) {
             if (!getClients(authContext).contains(clientId)) {
+                log.debug("DENY access to client {} for {}", clientId, authContext);
                 throw new NotFoundException(Client.class, clientId);
             }
         }
 
         final Client client = clientService.get(clientId);
         if (client == null) {
+            log.debug("NOT_FOUND client {}", clientId);
             throw new NotFoundException(Client.class, clientId);
         }
         return client;
@@ -192,11 +204,13 @@ public class AuthenticationService {
     public Conversation assertConversation(AuthContext authContext, ObjectId conversationId) {
         final Conversation conversation = conversationService.getConversation(conversationId);
         if (conversation == null) {
+            log.debug("NOT_FOUND conversation {}", conversationId);
             throw new NotFoundException(Conversation.class, conversationId);
         }
 
         if (!hasRole(authContext, ADMIN)) {
             if (!getClients(authContext).contains(conversation.getOwner())) {
+                log.debug("DENY access to conversation {} for {}", conversationId, authContext);
                 throw new NotFoundException(Conversation.class, conversationId);
             }
         }
@@ -211,7 +225,10 @@ public class AuthenticationService {
      * @throws AccessDeniedException if un-authorized or anonymous
      */
     public AuthContext assertAuthenticated(AuthContext authContext) {
-        if (!isAuthenticated(authContext)) throw new AccessDeniedException("Accecss Denied");
+        if (!isAuthenticated(authContext)) {
+            log.debug("UNAUTHENTICATED: {}", authContext);
+            throw new AccessDeniedException("Accecss Denied");
+        }
         return authContext;
     }
 
@@ -233,6 +250,7 @@ public class AuthenticationService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         if (clients.isEmpty()) {
+            log.debug("NO_CLIENT for {}", authContext);
             throw new AccessDeniedException("Access Denied");
         }
         return clients;
@@ -241,6 +259,7 @@ public class AuthenticationService {
     public Set<ObjectId> assertClientIds(AuthContext authContext) {
         final Set<ObjectId> clientIds = getClients(authContext);
         if (clientIds.isEmpty()) {
+            log.debug("NO_CLIENT for {}", authContext);
             throw new AccessDeniedException("Access Denied");
         }
         return clientIds;
