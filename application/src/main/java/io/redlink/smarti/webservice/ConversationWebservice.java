@@ -190,7 +190,10 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(toConversationData(client, conversation, analysis));
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .body(toConversationData(client, conversation, analysis));
         }
     }
 
@@ -238,7 +241,10 @@ public class ConversationWebservice {
                     callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
                 });
             }
-            return ResponseEntity.ok(ConversationData.fromModel(updated));
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .body(ConversationData.fromModel(updated));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -260,6 +266,7 @@ public class ConversationWebservice {
         } else {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                     .body(conversation.getMessages());
         }
     }
@@ -322,6 +329,7 @@ public class ConversationWebservice {
                 //               Was this meant by the Docu or should the LocationHeader point to the Conversation?
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, created.getId())))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                 .body(created);
     }
 
@@ -343,6 +351,7 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, messageId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                     .body(message);
         }
 
@@ -389,6 +398,7 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
             .body(updated);
         }
 
@@ -424,6 +434,7 @@ public class ConversationWebservice {
             }
             return ResponseEntity.noContent()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                     .build();
         } else {
             return ResponseEntity.notFound().build();
@@ -467,6 +478,7 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                     .body(updated);
         }
     }
@@ -489,6 +501,7 @@ public class ConversationWebservice {
             final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation);
             if(callback == null){
                 return ResponseEntity.ok()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildAnalysisURI(uriBuilder, conversationId)))
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                         .body(analysis.get());
             } else {
@@ -497,6 +510,7 @@ public class ConversationWebservice {
                 });
                 return ResponseEntity.accepted()
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                         .build();
             }
         }
@@ -541,8 +555,9 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/token", method = RequestMethod.GET)
     public ResponseEntity<List<Token>> getTokens(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("conversationId") ObjectId conversationId
-    ) {
+            @PathVariable("conversationId") ObjectId conversationId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+   ) {
         // TODO: check Authentication / clientId
         Client client = null;
         // TODO(westei): Check if conversation needs to be re-analyzed/processed
@@ -550,9 +565,20 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .body(getAnalysis(client, conversation).getTokens());
+            if(callback != null){
+                analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a.getTokens()) : CallbackPayload.error(e));
+                });
+                return ResponseEntity.accepted()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                        .build();
+            } else {
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                        .body(getAnalysis(client, conversation).getTokens());
+            }
         }
 
     }
@@ -561,7 +587,8 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/template", method = RequestMethod.GET)
     public ResponseEntity<List<Template>> getTemplates(
             UriComponentsBuilder uriBuilder,
-            @PathVariable("conversationId") ObjectId conversationId
+            @PathVariable("conversationId") ObjectId conversationId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: check Authentication / clientId
         final Client client = null;
@@ -571,19 +598,30 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .body(getAnalysis(client, conversation).getTemplates());
+            if(callback != null){ //async execution with sync ACCEPTED response
+                analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a.getTemplates()) : CallbackPayload.error(e));
+                });
+                return ResponseEntity.accepted()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                        .build();
+            } else {
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .body(getAnalysis(client, conversation).getTemplates());
+            }
         }
 
     }
 
     @ApiOperation(value = "get a query template", response = Template.class)
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}", method = RequestMethod.GET)
-    public ResponseEntity<Template> getTemplate(
+    public ResponseEntity<?> getTemplate(
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @PathVariable("templateIdx") int templateIdx
+            @PathVariable("templateIdx") int templateIdx,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: check Authentication / clientId
         final Client client = null;
@@ -592,16 +630,36 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            final List<Template> templates = getAnalysis(client, conversation).getTemplates();
-            if (templateIdx < 0) {
-                return ResponseEntity.badRequest().build();
-            } else if (templateIdx < templates.size()) {
-                return ResponseEntity.ok()
+            if(callback != null){ //async execution with sync ACCEPTED response
+                analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+                    if(a != null){
+                        if(a.getTemplates().size() > templateIdx){
+                            callbackExecutor.execute(callback, CallbackPayload.success(a.getTemplates().get(templateIdx)));
+                        } else {
+                            callbackExecutor.execute(callback, CallbackPayload.error(new NotFoundException(Template.class, templateIdx)));
+                        }
+                    } else {
+                        callbackExecutor.execute(callback, CallbackPayload.error(e));
+                    }
+                });
+                return ResponseEntity.accepted()
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                        .body(templates.get(templateIdx));
-            } else {
-                return ResponseEntity.notFound().build();
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                        .build();
+            } else { //sync execution
+                final List<Template> templates = getAnalysis(client, conversation).getTemplates();
+                if (templateIdx < 0) {
+                    return ResponseEntities.badRequest("No template with index "+templateIdx+" present");
+                } else if (templateIdx < templates.size()) {
+                    return ResponseEntity.ok()
+                            .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
+                            .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                            .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                            .body(templates.get(templateIdx));
+                } else {
+                    return ResponseEntity.notFound().build();
+                }
             }
         }
 
@@ -609,7 +667,7 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "get inline-results for the selected template from the creator", response = InlineSearchResult.class)
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
-    public ResponseEntity<? extends SearchResult<? extends Result>> getResults(
+    public ResponseEntity<?> getResults(
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
@@ -663,18 +721,26 @@ public class ConversationWebservice {
                 .body(execcuteQuery(client, conversation, getAnalysis(client, conversation), templateIdx, creator));
     }
     
-    private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis,
-        int templateIdx, String creator) throws IOException {
-            if (templateIdx < analysis.getTemplates().size()) {
-                return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator);
-            } else {
-                throw new NotFoundException(Template.class, templateIdx);
-            }
-}
+    private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis, int templateIdx, String creator) throws IOException {
+        if (templateIdx < analysis.getTemplates().size()) {
+            return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator);
+        } else {
+            throw new NotFoundException(Template.class, templateIdx);
+        }
+    }
 
     private URI buildConversationURI(UriComponentsBuilder builder, ObjectId conversationId) {
         return builder
                 .pathSegment("conversation", "{conversationId}")
+                .buildAndExpand(ImmutableMap.of(
+                        "conversationId", conversationId
+                ))
+                .toUri();
+    }
+    
+    private URI buildAnalysisURI(UriComponentsBuilder builder, ObjectId conversationId) {
+        return builder
+                .pathSegment("conversation", "{conversationId}", "analysis")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId
                 ))
