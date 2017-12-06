@@ -57,7 +57,7 @@ public class AnalysisService {
     private final ClientService clientService;
 
     
-    private final Map<AnalysisKey, Future<Analysis>> processing = new HashMap<>();
+    private final Map<AnalysisKey, CompletableFuture<Analysis>> processing = new HashMap<>();
     
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     
@@ -93,7 +93,7 @@ public class AnalysisService {
      * @param con the conversation to be analyzed by using the configuration of its owner
      * @return the future on the results
      */
-    public Future<Analysis> analyze(Conversation con){
+    public CompletableFuture<Analysis> analyze(Conversation con){
         return analyze(null, con);
     }
     
@@ -106,7 +106,7 @@ public class AnalysisService {
      * @param con the conversation to be analyzed by using the configuration of its owner
      * @return the future on the results
      */
-    public Future<Analysis> analyze(Client client, Conversation con){
+    public CompletableFuture<Analysis> analyze(Client client, Conversation con){
         if(con == null || con.getId() == null || con.getOwner() == null){
             throw new BadArgumentException("conversation", "The conversation MUST NOT ne NULL and MUST HAVE an 'id' and an 'owner'");
         }
@@ -204,8 +204,8 @@ public class AnalysisService {
         return analysisRepo.findByClientAndConversationAndDate(key.getClient(), key.getConversation(), key.getDate());
     }
 
-    private Future<Analysis> process(final AnalysisKey key, Client client, Conversation conversation) {
-        Future<Analysis> future;
+    private CompletableFuture<Analysis> process(final AnalysisKey key, Client client, Conversation conversation) {
+        CompletableFuture<Analysis> future;
         lock.readLock().lock();
         try { //look for an existing in an read lock
             future = processing.get(key);

@@ -18,6 +18,8 @@ package io.redlink.smarti.webservice;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
+
+import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
@@ -25,10 +27,13 @@ import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.CallbackPayload;
 import io.redlink.smarti.webservice.pojo.ConversationData;
 import io.redlink.smarti.webservice.pojo.PagedConversationList;
 import io.redlink.smarti.webservice.pojo.Projection;
 import io.swagger.annotations.*;
+import javassist.bytecode.stackmap.BasicBlock.Catch;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -49,6 +54,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
@@ -71,17 +77,19 @@ public class ConversationWebservice {
 
     private static final String ANALYSIS_STATE = "If enabled the message will be analysed and the analysis results are included in the results";
     
-    private final AsyncExecutionService asyncExecutionService;
+    //private final AsyncExecutionService asyncExecutionService;
+    private final CallbackService callbackExecutor;
     private final ConversationService conversationService;
     private final AnalysisService analysisService;
     private final ClientService clientService;
     private final ConversationSearchService conversationSearchService;
 
     @Autowired
-    public ConversationWebservice(AsyncExecutionService asyncExecutionService, ConversationService conversationService,
+    public ConversationWebservice(CallbackService callbackExecutor, ConversationService conversationService,
                                   AnalysisService analysisService, ClientService clientService,
                                   @Autowired(required = false) ConversationSearchService conversationSearchService) {
-        this.asyncExecutionService = asyncExecutionService;
+        //this.asyncExecutionService = asyncExecutionService;
+        this.callbackExecutor = callbackExecutor;
         this.conversationService = conversationService;
         this.analysisService = analysisService;
         this.clientService = clientService;
@@ -131,12 +139,12 @@ public class ConversationWebservice {
         if(client == null){
             throw new IllegalStateException("Owner for new conversation not provided!");
         }
-
-        final Conversation stored = conversationService.update(client, conversation);
-
-        return asyncExecutionService.execute(
-                () -> toConversationData(client, stored, analysis),
-                HttpStatus.CREATED, callback, stored.getId(), buildConversationURI(uriBuilder, stored.getId()));
+        if(analysis){
+            analysisService.analyze(client, conversation).whenComplete((a , e) -> {
+                callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+            });
+        }
+        return ResponseEntity.ok(ConversationData.fromModel(conversation));
 
     }
 
@@ -224,13 +232,13 @@ public class ConversationWebservice {
         final Client client = null;
 
         if (conversationService.exists(conversationId)) {
-            return asyncExecutionService.execute(
-                    //NOTE: for now we deactivate processing for field updates to prevent muliple processing runs on
-                    //      multiple field updates
-                    () -> toConversationData(client, conversationService.updateConversationField(conversationId, field, data), analysis),
-                    HttpStatus.OK,
-                    callback,
-                    conversationId, buildConversationURI(uriBuilder, conversationId));
+            Conversation updated = conversationService.updateConversationField(conversationId, field, data);
+            if(analysis){
+                analysisService.analyze(client, updated).whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+                });
+            }
+            return ResponseEntity.ok(ConversationData.fromModel(updated));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -240,6 +248,7 @@ public class ConversationWebservice {
             notes = "retrieves all messages in the accessed conversation")
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.GET)
     public ResponseEntity<List<Message>> listMessages(
+            UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
@@ -249,7 +258,9 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(conversation.getMessages());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .body(conversation.getMessages());
         }
     }
 
@@ -271,6 +282,7 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Message message,
             @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis, 
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         // TODO: Check authentication
@@ -301,19 +313,22 @@ public class ConversationWebservice {
                         "Created Message[id: "+message.getId()+"] not present in " + c));
         
         if(analysis){
-            analysisService.analyze(client, c); //trigger the analysis but do not wait for the results 
+            analysisService.analyze(client, c).whenComplete((a , e) -> {
+                callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+            });
         }
-        //TODO(@jfrank): this will return the Message URI as Location header and a Link header rel="root" to the conversation
-        //               Was this meant by the Docu or should the LocationHeader point to the Conversation?
-        return ResponseEntity.created(buildMessageURI(uriBuilder, conversationId, message.getId()))
+        return ResponseEntity.ok()
+                //TODO(@jfrank): this will return the Message URI as Location header and a Link header rel="root" to the conversation
+                //               Was this meant by the Docu or should the LocationHeader point to the Conversation?
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, created.getId())))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                .body(created); //the 
+                .body(created);
     }
 
     @ApiOperation(value = "retrieve a message", response = Message.class)
     @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.GET)
     public ResponseEntity<Message> getMessage(
+            UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestParam(value = "projection", required = false) Projection projection
@@ -325,7 +340,10 @@ public class ConversationWebservice {
         if (message == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(message);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, messageId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .body(message);
         }
 
     }
@@ -345,6 +363,7 @@ public class ConversationWebservice {
             @PathVariable("msgId") String messageId,
             @RequestBody Message message,
             @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis, 
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         // TODO: Check authentication / clientId
@@ -358,13 +377,15 @@ public class ConversationWebservice {
         if(c == null){
             return ResponseEntity.notFound().build();
         } else {
-            if(analysis){
-                analysisService.analyze(client, c);
-            }
             final Message updated = c.getMessages().stream()
                     .filter(m -> Objects.equal(messageId, m.getId()))
                     .findAny().orElseThrow(() -> new IllegalStateException(
                             "Updated Message[id: "+messageId+"] not present in " + c));
+            if(analysis){
+                analysisService.analyze(client, c).whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+                });
+            }
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
@@ -386,7 +407,8 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis 
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis, 
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: Check Authentication / clientId
 
@@ -394,6 +416,12 @@ public class ConversationWebservice {
         final Client client = null;
 
         if(conversationService.deleteMessage(conversationId, messageId)){
+            if(analysis){
+                Conversation c = conversationService.getConversation(conversationId);
+                analysisService.analyze(client, c).whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+                });
+            }
             return ResponseEntity.noContent()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .build();
@@ -415,7 +443,8 @@ public class ConversationWebservice {
             @PathVariable("msgId") String messageId,
             @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_MESSAGE_FIELDS) @PathVariable("field") String field,
             @ApiParam(value = "the new value", required = true) @RequestBody Object data,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
         // TODO: check Authentication / clientId
@@ -426,13 +455,15 @@ public class ConversationWebservice {
         if(c == null){
             return ResponseEntity.notFound().build();
         } else {
-            if(analysis){
-                analysisService.analyze(client, c);
-            }
             final Message updated = c.getMessages().stream()
                     .filter(m -> Objects.equal(messageId, m.getId()))
                     .findAny().orElseThrow(() -> new IllegalStateException(
                             "Updated Message[id: "+messageId+"] not present in " + c));
+            if(analysis){
+                analysisService.analyze(client, c).whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+                });
+            }
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
@@ -447,7 +478,7 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
-    ) {
+    ) throws InterruptedException, ExecutionException {
         // TODO: check Authentication / clientId
         final Client client = null;
         
@@ -455,13 +486,19 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return asyncExecutionService.execute(
-                    //NOTE: for now we deactivate processing for field updates to prevent muliple processing runs on
-                    //      multiple field updates
-                    () -> getAnalysis(client, conversation),
-                    HttpStatus.OK,
-                    callback,
-                    conversationId, buildConversationURI(uriBuilder, conversationId));
+            final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation);
+            if(callback == null){
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .body(analysis.get());
+            } else {
+                analysis.whenComplete((a , e) -> {
+                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e));
+                });
+                return ResponseEntity.accepted()
+                        .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                        .build();
+            }
         }
     }
 
@@ -475,9 +512,27 @@ public class ConversationWebservice {
             @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
     ) {
         // TODO: check Authentication / clientId
-
-        // TODO: load coversation, replace analysis with retrieved analysis and re-calculate templates
-
+        
+        /* TODO: Not sure how to implement this:
+            
+             But Analysis is not the correct place to store such Feedback
+            for several reasons.
+            1. This is about User Feedback! The feedback was provided in a specific state of the 
+               conversation. Later messages might invalidate the feedback. We have no way to 
+               represent this kind of feedback at the Moment
+            2. As this sends the Analysis only we do not know if the conversation has changed
+               in the meantime. When we use the parsed Analysis to update Templates and Queries
+               we might get inconsistent results as Templates and Queries do have access to both
+               the conversation AND the analysis. Therefore they might calculate results with an
+               Analysis that does not correspond to the state of the conversation
+            3. IMO we need to switch to a context like representation as used by Cerbot. Analysis
+               can still be kept, but facts should be moved over to the context. 
+               TODO I need to talk with @thomaskurz about this!!
+        */
+        
+        //NOTE: a simple implementation (that ignores above issues) might just take the parsed analysis
+        //      and the current state of the Conversation to update Templates and queries.
+        
         return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
@@ -485,6 +540,7 @@ public class ConversationWebservice {
     @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List")
     @RequestMapping(value = "{conversationId}/analysis/token", method = RequestMethod.GET)
     public ResponseEntity<List<Token>> getTokens(
+            UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId
     ) {
         // TODO: check Authentication / clientId
@@ -494,7 +550,9 @@ public class ConversationWebservice {
         if (conversation == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(getAnalysis(client, conversation).getTokens());
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .body(getAnalysis(client, conversation).getTokens());
         }
 
     }
@@ -564,7 +622,7 @@ public class ConversationWebservice {
     @ApiOperation(value = "get inline-results for the selected template from the creator", response = InlineSearchResult.class,
             notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
-    public ResponseEntity<? extends SearchResult<? extends Result>> getResults(
+    public ResponseEntity<?> getResults(
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
@@ -574,6 +632,11 @@ public class ConversationWebservice {
     ) throws IOException {
         final Client client = null;
         
+        if(updatedAnalysis != null){
+            //TODO: See information at #rerunAnalysis(..)
+            return ResponseEntities.status(HttpStatus.NOT_IMPLEMENTED,"parsing an updated analysis not yet supported!");
+        }
+        
         final Conversation conversation = conversationService.getConversation(client, conversationId);
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -581,21 +644,33 @@ public class ConversationWebservice {
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
-
-        final List<Template> templates = getAnalysis(client, conversation).getTemplates();
-        final Template template;
-        
-        if (templateIdx < templates.size()) {
-            template = templates.get(templateIdx);
-        } else {
-            return ResponseEntity.notFound().build();
+        if(callback != null){
+            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+                if(a != null){
+                    try {
+                        callbackExecutor.execute(callback, CallbackPayload.success(execcuteQuery(client, conversation, a, templateIdx, creator)));
+                    } catch(RuntimeException | IOException e1){
+                        callbackExecutor.execute(callback, CallbackPayload.error(e1));
+                    }
+                } else {
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                }
+            });
         }
-
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildResultURI(uriBuilder, conversationId, templateIdx, creator)))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                .body(analysisService.getInlineResults(client, conversation, updatedAnalysis, template, creator));
+                .body(execcuteQuery(client, conversation, getAnalysis(client, conversation), templateIdx, creator));
     }
+    
+    private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis,
+        int templateIdx, String creator) throws IOException {
+            if (templateIdx < analysis.getTemplates().size()) {
+                return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator);
+            } else {
+                throw new NotFoundException(Template.class, templateIdx);
+            }
+}
 
     private URI buildConversationURI(UriComponentsBuilder builder, ObjectId conversationId) {
         return builder

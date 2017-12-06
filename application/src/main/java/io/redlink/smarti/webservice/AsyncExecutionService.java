@@ -24,6 +24,7 @@ import io.redlink.smarti.webservice.pojo.CallbackPayload;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.ConnectionBackoffStrategy;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -53,49 +54,20 @@ import java.util.function.Supplier;
 @EnableConfigurationProperties({MavenCoordinatesProperties.class, HttpCallbackProperties.class})
 public class AsyncExecutionService {
 
+    private final CallbackService callbackExecutor;
     private final ExecutorService processingExecutor;
-    private final ObjectMapper objectMapper;
-    private final HttpClientBuilder httpClientBuilder;
 
     private final Logger log = LoggerFactory.getLogger(AsyncExecutionService.class);
 
-    public AsyncExecutionService(
+    public AsyncExecutionService(CallbackService callbackExecutor,
             ObjectMapper objectMapper,
             Optional<ExecutorService> processingExecutor,
             MavenCoordinatesProperties mavenCoordinatesProperties,
             HttpCallbackProperties httpCallbackProperties
     ) {
+        this.callbackExecutor = callbackExecutor;
         this.processingExecutor = processingExecutor
                 .orElseGet(() -> Executors.newFixedThreadPool(2));
-        this.objectMapper = objectMapper;
-
-
-        this.httpClientBuilder = HttpClientBuilder.create()
-                .setRetryHandler((exception, executionCount, context) -> executionCount < httpCallbackProperties.getRetryCount())
-                .setConnectionBackoffStrategy(new ConnectionBackoffStrategy() {
-                    @Override
-                    public boolean shouldBackoff(Throwable t) {
-                        return t instanceof IOException;
-                    }
-
-                    @Override
-                    public boolean shouldBackoff(HttpResponse resp) {
-                        return false;
-                    }
-                })
-                .setUserAgent(String.format("Smarti/%s AsyncExecutionService", StringUtils.defaultString(mavenCoordinatesProperties.getVersion(), "0.0")));
-
-        log.info("Starting up AsyncExecutionService/{}", mavenCoordinatesProperties.getVersion());
-
-        if(StringUtils.isNotBlank(httpCallbackProperties.getProxy().getHost())) {
-            httpClientBuilder.setProxy(new HttpHost(
-                    httpCallbackProperties.getProxy().getHost(),
-                    httpCallbackProperties.getProxy().getPort(),
-                    httpCallbackProperties.getProxy().getScheme()
-            ));
-        }
-
-
     }
 
     public <T> ResponseEntity<T> execute(Supplier<T> task,
@@ -126,29 +98,13 @@ public class AsyncExecutionService {
 
     public <T> ResponseEntity<T> execute(Supplier<T> task,
                                          URI callbackUri,
-                                         Function<T, ResponseEntity<T>> syncResponseBuilder,
+                                         //Function<T, ResponseEntity<T>> syncResponseBuilder,
                                          Supplier<ResponseEntity<T>> acceptResponseBuilder) {
         if (Objects.isNull(callbackUri) && syncResponseBuilder != null) {
             return syncResponseBuilder.apply(task.get());
         } else {
             this.processingExecutor.submit(() -> {
-                final CallbackPayload<?> payload = executeTask(task);
-                if(callbackUri != null){
-                    try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
-                        final HttpPost post = new HttpPost(callbackUri);
-                        final String data = objectMapper.writeValueAsString(payload);
-                        post.setEntity(new StringEntity(data, ContentType.APPLICATION_JSON));
-    
-                        log.debug("Sending callback: {} '{}' -d '{}'", post.getMethod(), post.getURI(), data);
-                        httpClient.execute(post, response -> null);
-                    } catch (IOException e) {
-                        if (log.isDebugEnabled()) {
-                            log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUri, e.getMessage(), e);
-                        } else {
-                            log.error("Callback to Rocket.Chat <{}> failed: {}", callbackUri, e.getMessage());
-                        }
-                    }
-                } //no callback configured
+                callbackExecutor.execute(callbackUri, executeTask(task));
             });
             return acceptResponseBuilder.get();
         }
