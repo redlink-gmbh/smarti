@@ -6,6 +6,60 @@
 This document shows the changes that are introduced into Smarti with the releases.
 
 
+== Smarti 0.6.1 Release Notes
+06 December, 2017
+
+Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
+
+In addition this release includes a *Docker image* for Smarti.
+This is the first Smarti release, that is also shipped with a Docker image.
+
+=== New in Smarti 0.6.1
+From the feature perspective Smarti 0.6.1 introduces a simple user management including `FORM` based user authentication as well as `TOKEN` based system authentication.
+Users having the role `ADMIN` are allowed to manage clients, configurations, conversations, users and tokens.
+Regular Smarti users are only permitted to manage configurations and conversations of specific clients.
+Tokens are designed to access the Smarti API by technical systems/users.
+
+The Smarti Admin UI allows you to:
+
+* manage (create, change and delete) users,
+* permit users access to specific clients,
+* generate tokens to allow technical access,
+
+=== Improved in Smarti 0.6.1
+* https://github.com/redlink-gmbh/smarti/issues/60[#60 - Added a user authentication model]
+* https://github.com/redlink-gmbh/smarti/issues/118[#118 - Added a Smarti Docker image]
+* https://github.com/redlink-gmbh/smarti/issues/142[#142 - Added Docker image to the release deployment]
+* https://github.com/redlink-gmbh/smarti/issues/121[#121 - Added highlighting for Conversation Search]
+* https://github.com/redlink-gmbh/smarti/issues/152[#152 - Improved Docker image memory consumption by using the JVM option MaxRAMFraction]
+* https://github.com/redlink-gmbh/smarti/issues/124[#124 - Improved Docker image for running database migration scripts on startup]
+* https://github.com/redlink-gmbh/smarti/issues/145[#145 - Improved cpu consumption for a configuration that allows to set the executor service pool size]
+* https://github.com/redlink-gmbh/smarti/issues/147[#147 - Improved memory consumption to run Smarti with -Xmx4g]
+* https://github.com/redlink-gmbh/smarti/issues/101[#101 - Improved plugin information file to be consumed by ruby scripts]
+* https://github.com/redlink-gmbh/smarti/issues/136[#136 - Improved widget by using x-auth-token HTTP headers for $.ajax calls]
+* https://github.com/redlink-gmbh/smarti/issues/116[#116 - Improved widget by adding a button to clear all keywords]
+* https://github.com/redlink-gmbh/smarti/issues/128[#128 - Improved widget presentation by trimming labels of long keywords]
+* https://github.com/redlink-gmbh/smarti/issues/155[#155 - Fixed issue where no related conversations have been displayed if no tokens have been extracted]
+
+=== Upgrading
+
+==== Configuration
+
+.application.properties
+[source,bash]
+----
++ nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/srparser/germanSR.ser.gz
++ nlp.stanfordnlp.de.parseMaxlen=40
+----
+
+.logback.xml
+[source,xml]
+----
+- <logger name="io.redlink.nlp" level="DEBUG"/>
++ <logger name="edu.stanford" level="INFO"/>
++ <logger name="io.redlink.nlp" level="INFO"/>
+----
+
 == Smarti 0.6.0 Release Notes
 06 October, 2017
 
