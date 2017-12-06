@@ -128,7 +128,11 @@ public class RocketChatEndpoint {
             @PathVariable("clientId") String clientName,
             @RequestBody RocketEvent payload
     ) {
-        log.debug("{}: {}", clientName, payload);
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: {}", clientName, authContext, payload);
+        } else {
+            log.debug("{}: {}", clientName, payload);
+        }
 
         final Client client = clientService.getByName(clientName);
         if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
@@ -216,6 +220,12 @@ public class RocketChatEndpoint {
             AuthContext authContext,
             @PathVariable(value="clientId") String clientName,
             @PathVariable(value="channelId") String channelId) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: lookup conversation-id of {}", clientName, authContext, channelId);
+        } else {
+            log.debug("{}: lookup conversation-id of {}", clientName, channelId);
+        }
+
         Client client = clientService.getByName(clientName);
         if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())){
             return ResponseEntity.notFound().build();
@@ -243,6 +253,11 @@ public class RocketChatEndpoint {
             @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
             @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
     ) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: search for '{}'", clientName, authContext, text);
+        } else {
+            log.debug("{}: search for '{}'", clientName, text);
+        }
 
         final Client client = clientService.getByName(clientName);
         if (client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
@@ -273,6 +288,11 @@ public class RocketChatEndpoint {
             @PathVariable(value = "clientId") String clientName,
             HttpServletRequest request
     ) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: message-search for '{}'", clientName, authContext, request.getParameter("q"));
+        } else {
+            log.debug("{}: message-search for '{}'", clientName, request.getParameter("q"));
+        }
 
         final Client client = clientService.getByName(clientName);
         if (client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
