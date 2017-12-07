@@ -53,6 +53,9 @@ The following changes in the configuration files are recommended:
 ----
 + nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/srparser/germanSR.ser.gz
 + nlp.stanfordnlp.de.parseMaxlen=40
+
+- security.password=
++ security.config.mongo.admin-password=
 ----
 
 .logback.xml
