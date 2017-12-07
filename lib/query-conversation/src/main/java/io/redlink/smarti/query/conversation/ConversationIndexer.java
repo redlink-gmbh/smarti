@@ -137,6 +137,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private final ExecutorService indexerPool;
 
+    @Value("${smarti.indexing.rebuildOnStartup:true}")
+    private boolean rebuildOnStartup = true;
+
     @Autowired
     public ConversationIndexer(SolrCoreContainer solrServer, StoreService storeService){
         this.solrServer = solrServer;
@@ -161,21 +164,23 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         if(indexTask != null){
             log.info("initialize ConversationIndex after startup ...");
             Date syncDate = null;
-            try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-                //read (1) FIELD_SYNC_DATE from index 
-                SolrQuery query = new SolrQuery("*:*");
-                query.addSort(FIELD_SYNC_DATE, ORDER.desc);
-                query.setFields(FIELD_SYNC_DATE);
-                query.setRows(1);
-                query.setStart(0);
-                QueryResponse result = solr.query(query);
-                if(result.getResults() != null && result.getResults().getNumFound() > 0){
-                    syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
-                    log.debug("set lastSync date to {}", syncDate);
+            if(!rebuildOnStartup){
+                try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
+                    //read (1) FIELD_SYNC_DATE from index 
+                    SolrQuery query = new SolrQuery("*:*");
+                    query.addSort(FIELD_SYNC_DATE, ORDER.desc);
+                    query.setFields(FIELD_SYNC_DATE);
+                    query.setRows(1);
+                    query.setStart(0);
+                    QueryResponse result = solr.query(query);
+                    if(result.getResults() != null && result.getResults().getNumFound() > 0){
+                        syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
+                        log.debug("set lastSync date to {}", syncDate);
+                    }
+                } catch (IOException | SolrServerException e) {
+                    log.warn("Updating Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
+                    log.debug("STACKTRACE:",e);
                 }
-            } catch (IOException | SolrServerException e) {
-                log.warn("Updating Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
-                log.debug("STACKTRACE:",e);
             }
             indexTask.setLastSync(syncDate);
             indexerPool.execute(indexTask);
