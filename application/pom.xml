@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.1-SNAPSHOT</version>
+        <version>0.6.1-RC1</version>
     </parent>
 
     <artifactId>smarti-application</artifactId>
@@ -499,7 +499,7 @@
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
                         <configuration>
-                            <excludes combine.self="override"></excludes>
+                            <excludes combine.self="override" />
                         </configuration>
                     </plugin>
                 </plugins>
