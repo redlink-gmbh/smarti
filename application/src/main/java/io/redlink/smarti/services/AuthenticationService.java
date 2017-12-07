@@ -156,6 +156,10 @@ public class AuthenticationService {
             log.debug("NOT_IN role '{}': {}", role, authContext);
             throw new AccessDeniedException("Access Denied");
         }
+
+        if (log.isTraceEnabled()) {
+            log.trace("ASSERT role {} for {}", role, authContext);
+        }
         return authContext;
     }
 
@@ -163,6 +167,10 @@ public class AuthenticationService {
         if (!hasAnyRole(authContext, role)) {
             log.debug("NOT_IN_ANY role {}: {}", role, authContext);
             throw new AccessDeniedException("Access Denied");
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("ASSERT one role of {} for {}", role, authContext);
         }
         return authContext;
     }
@@ -188,6 +196,10 @@ public class AuthenticationService {
         if (client == null) {
             log.debug("NOT_FOUND client {}", clientId);
             throw new NotFoundException(Client.class, clientId);
+        }
+
+        if (log.isTraceEnabled()) {
+            log.trace("GRANT access to client {} for {}", clientId, authContext);
         }
         return client;
     }
@@ -215,6 +227,9 @@ public class AuthenticationService {
             }
         }
 
+        if (log.isTraceEnabled()) {
+            log.trace("GRANT access to conversation {} for {}", conversationId, authContext);
+        }
         return conversation;
     }
 
@@ -228,6 +243,9 @@ public class AuthenticationService {
         if (!isAuthenticated(authContext)) {
             log.debug("UNAUTHENTICATED: {}", authContext);
             throw new AccessDeniedException("Accecss Denied");
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("AUTHENTICATED {}", authContext);
         }
         return authContext;
     }
@@ -253,6 +271,10 @@ public class AuthenticationService {
             log.debug("NO_CLIENT for {}", authContext);
             throw new AccessDeniedException("Access Denied");
         }
+        if (log.isTraceEnabled()) {
+            log.trace("GRANT access to clients {} for {}",
+                    clients.stream().map(Client::getId).collect(Collectors.toSet()), authContext);
+        }
         return clients;
     }
 
@@ -261,6 +283,9 @@ public class AuthenticationService {
         if (clientIds.isEmpty()) {
             log.debug("NO_CLIENT for {}", authContext);
             throw new AccessDeniedException("Access Denied");
+        }
+        if (log.isTraceEnabled()) {
+            log.trace("GRANT access to clients {} for {}", clientIds, authContext);
         }
         return clientIds;
     }
