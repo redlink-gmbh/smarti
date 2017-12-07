@@ -7,7 +7,7 @@ This document shows the changes that are introduced into Smarti with the release
 
 
 == Smarti 0.6.1 Release Notes
-06 December, 2017
+December 7^th^, 2017
 
 Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
 
@@ -61,7 +61,7 @@ The Smarti Admin UI allows you to:
 ----
 
 == Smarti 0.6.0 Release Notes
-06 October, 2017
+November 30^th^, 2017
 
 Smarti 0.6.0 is a search feature release.
 Conversations stored in Smarti can now be searched explicit, there is no need to create conversations in order to search within the knowledge base anymore.
@@ -124,7 +124,7 @@ include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=112..-1]
 -----------------------------------------------
 
 == Smarti 0.5.0 Release Notes
-07 August, 2017
+September 18^th^, 2017
 
 Smarti 0.5.0 is a technical architecture release. For now basic decisions about the fundamental software design are not complete.
 In short this version of Smarti solves some security aspects, ensures backward compatibility to version 0.3.0 and fixes some bugs.
