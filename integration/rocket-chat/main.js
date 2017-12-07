@@ -594,22 +594,32 @@ function SmartiWidget(element,_options) {
         var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page) {
-            var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
+            var tks = termPills.children(':visible')
+                .map(function(){return $(this).data().token.value})
+                .get()
+                .join(" ");
 
+            var queryParams = {
+                'wt': 'json',
+                'fl': '*,score',
+                'rows': numOfRows,
+                'q':  tks
+            };
             //TODO still a hack !!!
-            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
+            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?';
             if (wgt_conf.suffix) {
                 params.query.url += wgt_conf.suffix;
             }
 
             //append params
             for(var property in params.query.defaults) {
-                params.query.url += '&' + property + "=" + params.query.defaults[property];
+                if (params.query.defaults.hasOwnProperty(property))
+                    queryParams[property] = params.query.defaults[property];
             }
 
             if(page > 0) {
                 //append paging
-                params.query.url += '&start=' + (page*numOfRows);
+                queryParams.start = (page*numOfRows);
             } else {
                 page = 0;
             }
@@ -619,9 +629,11 @@ function SmartiWidget(element,_options) {
             resultPaging.empty();
             loader.show();
 
-            console.log(`executeSearch ${ params.query.url }`);
+            console.log(`executeSearch ${ params.query.url }, with ${queryParams}`);
             $.ajax({
                 url: params.query.url,
+                data: queryParams,
+                traditional: true,
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
                 failure: function(err) {
