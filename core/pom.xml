@@ -107,7 +107,7 @@
                         </goals>
                         <configuration>
                             <includes>
-                                <include>io/redlink/db/smarti/test/**</include>
+                                <include>io/redlink/smarti/test/**</include>
                             </includes>
                         </configuration>
                     </execution>

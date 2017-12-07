@@ -36,7 +36,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @ApiModel
 @Document
 @CompoundIndexes(value={
-        @CompoundIndex(def= "{'conversation': 1, 'date': 1")
+        @CompoundIndex(def= "{'conversation': 1, 'date': 1}")
 })
 public class Analysis {
 

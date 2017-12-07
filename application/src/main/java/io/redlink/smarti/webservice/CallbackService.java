@@ -19,6 +19,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +29,7 @@ import io.redlink.smarti.properties.MavenCoordinatesProperties;
 import io.redlink.smarti.webservice.pojo.CallbackPayload;
 
 @Service
+@EnableConfigurationProperties(value={MavenCoordinatesProperties.class,HttpCallbackProperties.class})
 public class CallbackService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
