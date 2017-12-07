@@ -45,6 +45,8 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_CONVERSATION_ID = "conversation_id";
     public static final String FIELD_MESSAGE_ID = "message_id";
     public static final String FIELD_MESSAGE_IDX = "message_idx";
+    
+    public static final String FIELD_SYNC_DATE = "sync_date";
     /**
      * The conent of a message (single valued)
      */

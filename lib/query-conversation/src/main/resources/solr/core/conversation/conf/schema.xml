@@ -40,6 +40,9 @@
     <field name="environment"           type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="domain"                type="string"         indexed="true"  stored="true"  multiValued="false"/>
 
+    <!-- sync_date is used for cloud sync -->
+    <field name="sync_date"             type="date"           indexed="true"  stored="true"  multiValued="false"/>
+
     <!-- conversation -->
     <field name="start_time"            type="date"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="end_time"              type="date"           indexed="true"  stored="true"  multiValued="false"/>

@@ -21,21 +21,27 @@ import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
+
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.GroupOperation;
+import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
@@ -53,6 +59,8 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
  */
 public class ConversationRepositoryImpl implements ConversationRepositoryCustom {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     private final MongoTemplate mongoTemplate;
 
     public ConversationRepositoryImpl(MongoTemplate mongoTemplate) {
@@ -250,6 +258,46 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                 .stream()
                 .map(i -> new ImmutablePair<>((String) i.get("tags"), (long) i.get("count")))
                 .collect(Collectors.toList());
+    }
+    
+    private static final ProjectionOperation ID_MODIFIED_PROJECTION = Aggregation.project("id","lastModified");
+    private static final GroupOperation GROUP_MODIFIED = Aggregation.group()
+            .addToSet("id").as("ids")
+            .max("lastModified").as("lastModified");
+    
+    @Override
+    public UpdatedConversationIds updatedSince(Date date) {
+        //IMPLEMENTATION NOTES (Rupert Westenthaler, 2017-07-19):
+        // * we need to use $gte as we might get additional updates in the same ms ...
+        // * Instead of $max: modified we would like to use the current Server time of the
+        //   aggregation, but this is not possible ATM (see https://jira.mongodb.org/browse/SERVER-23656)
+        // * The use of $gte together with lastModified menas that we will repeat reporting the
+        //   Entities updated at lastModified on every call. To avoid this a Workaround is used
+        //   that increases the reported lastModified time by 1ms in cases no update was done
+        //   since the last call (meaning the parsed date equals the lastModified)
+        Aggregation agg = date != null ? //if a date is parsed search for updated after this date
+                Aggregation.newAggregation(Aggregation.match(Criteria.where("lastModified").gte(date)),
+                        ID_MODIFIED_PROJECTION, GROUP_MODIFIED) :
+                    //else return all updates
+                    Aggregation.newAggregation(ID_MODIFIED_PROJECTION, GROUP_MODIFIED);
+        log.trace("UpdatedSince Aggregation: {}", agg);
+        AggregationResults<UpdatedConversationIds> aggResult = mongoTemplate.aggregate(agg,Conversation.class, 
+                UpdatedConversationIds.class);
+        if(log.isTraceEnabled()){
+            log.trace("updated Conversations : {}", aggResult.getMappedResults());
+        }
+        if(aggResult.getUniqueMappedResult() == null){
+            return new UpdatedConversationIds(date, Collections.emptyList());
+        } else {
+            UpdatedConversationIds updates = aggResult.getUniqueMappedResult();
+            //NOTE: workaround for SERVER-23656 (see above impl. notes)
+            if(date != null && date.equals(updates.getLastModified())) { //no update since the last request
+                //increase the time by 1 ms to avoid re-indexing the last update
+                return new UpdatedConversationIds(new Date(date.getTime()+1), updates.ids());
+            } else {
+                return updates;
+            }    
+        }
     }
 
 }
