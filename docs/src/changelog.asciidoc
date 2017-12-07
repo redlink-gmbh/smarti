@@ -45,15 +45,17 @@ The Smarti Admin UI allows you to:
 
 ==== Configuration
 
+The following changes in the configuration files are recommended:
+
 .application.properties
-[source,bash]
+[source,diff]
 ----
 + nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/srparser/germanSR.ser.gz
 + nlp.stanfordnlp.de.parseMaxlen=40
 ----
 
 .logback.xml
-[source,xml]
+[source,diff]
 ----
 - <logger name="io.redlink.nlp" level="DEBUG"/>
 + <logger name="edu.stanford" level="INFO"/>
