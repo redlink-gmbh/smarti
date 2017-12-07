@@ -10,9 +10,10 @@ This document shows the changes that are introduced into Smarti with the release
 December 7^th^, 2017
 
 Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
+This is the first Smarti release, that has a *Docker image* as part of its distribution.
 
-In addition this release includes a *Docker image* for Smarti.
-This is the first Smarti release, that is also shipped with a Docker image.
+Smarti 0.6.1 is 100% compatible to https://github.com/redlink-gmbh/chatpal-search[chatpal.search] - A https://github.com/RocketChat/Rocket.Chat/[Rocket.Chat] package for search with chatpal backend.
+So Smarti can be used as cross-channel search engine for https://github.com/RocketChat/Rocket.Chat/[Rocket.Chat].
 
 === New in Smarti 0.6.1
 From the feature perspective Smarti 0.6.1 introduces a simple user management including `FORM` based user authentication as well as `TOKEN` based system authentication.
