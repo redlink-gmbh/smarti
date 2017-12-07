@@ -110,6 +110,7 @@ The Speak Service managed resource bundles for bot generated replay messages in 
 
 Conversation are indexed in Solr managed by SolrLib
 
+* `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup 
 * `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
 *  `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 

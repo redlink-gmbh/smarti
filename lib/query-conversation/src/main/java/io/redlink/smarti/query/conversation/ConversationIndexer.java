@@ -137,7 +137,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private final ExecutorService indexerPool;
 
-    @Value("${smarti.indexing.rebuildOnStartup:true}")
+    @Value("${smarti.index.rebuildOnStartup:true}")
     private boolean rebuildOnStartup = true;
 
     @Autowired
