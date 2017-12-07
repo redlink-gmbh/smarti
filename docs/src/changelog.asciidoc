@@ -51,19 +51,8 @@ The following changes in the configuration files are recommended:
 .application.properties
 [source,diff]
 ----
-+ nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/srparser/germanSR.ser.gz
-+ nlp.stanfordnlp.de.parseMaxlen=40
-
 - security.password=
 + security.config.mongo.admin-password=
-----
-
-.logback.xml
-[source,diff]
-----
-- <logger name="io.redlink.nlp" level="DEBUG"/>
-+ <logger name="edu.stanford" level="INFO"/>
-+ <logger name="io.redlink.nlp" level="INFO"/>
 ----
 
 == Smarti 0.6.0 Release Notes
