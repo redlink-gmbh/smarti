@@ -5,11 +5,11 @@ To enable these additional modules, you need to put the missing libraries into t
 
 When installed with the provided `deb` or `rpm` package, this folder is located at `/var/lib/smarti/ext` by default and contains a simple readme.
 
-.plugin-info.txt
+.plugin-info.json
 :sourcedir: ../../../dist/src/main/resources
 [source,txt]
 ----
-include::{sourcedir}/plugin-info.txt[]
+include::{sourcedir}/plugin-info.json[]
 ----
 
 IMPORTANT: *For developers:* When running Smarti by directly executing the jar file, you need to create the `ext` directory relative to the location where the `java` command is executed `${smarti-work-dir}/ext`.
