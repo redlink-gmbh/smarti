@@ -10,7 +10,7 @@ Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/cur
 
 Configurations also support Placeholders (e.g. `app.name=Smarti` and later `app.description=${app.name} is a Spring Boot application`).
 
-As alternative to Java properties file Spring Boot alows to use http://www.yaml.org/start.html[YAML]
+As alternative to Java properties file Spring Boot allows to use http://www.yaml.org/start.html[YAML]
 
 ==== Configuration Properties
 

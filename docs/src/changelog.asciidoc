@@ -71,6 +71,16 @@ The following changes in the configuration files are recommended:
 + <logger name="io.redlink.nlp" level="INFO"/>
 ----
 
+Previous client-configurations for `solrsearch`-query-builders might require an update of their `default` settings:
+While in previous versions those parameters needed to be url-encoded, this is now happening within the component.
+
+A migration-script is available and applied automatically on starup:
+
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-04_fix-param-encoding.js[lines=112..-1]
+-----------------------------------------------
+
 == Smarti 0.6.0 Release Notes
 November 30^th^, 2017
 
