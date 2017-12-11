@@ -1,21 +1,17 @@
 package io.redlink.smarti.cloudsync;
 
-import java.util.Date;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.repositories.ConversationRepository;
+import io.redlink.smarti.repositories.ConversationRepositoryCustom.UpdatedConversationIds;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.repositories.ConversationRepository;
-import io.redlink.smarti.repositories.ConversationRepositoryCustom.UpdatedConversationIds;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Component that allows to rebuild an index of a {@link VocabularyIndexer} based
- * on the terms in the {@link TermRepository}
+ * Component that allows to rebuild an index of a {@link ConversationRepository}.
  * @author Rupert Westenthaler
  *
  */
@@ -77,9 +73,8 @@ public class ConversationCloudSync {
 
         @Override
         public String toString() {
-            return "SyncData [syncDate=" + syncDate == null ? null : syncDate.toInstant() + ", count=" + count + ", duration=" + duration + "ms]";
+            return "SyncData [syncDate=" + (syncDate == null ? null : syncDate.toInstant()) + ", count=" + count + ", duration=" + duration + "ms]";
         }
-        
         
     }
 
