@@ -142,23 +142,18 @@ const Utils = {
 
 /**
  * Manages the interaction between Plugin and RocketChat/Smarti
- * @param {object} options: {
+ * @param {Object} options: {
  *      DDP: {
  *          endpoint: STRING
  *      },
- *      smarti: {
- *          endpoint: STRING
- *      },
- *      clientName: STRING,
  *      channel: STRING,
  *      rocket: {
  *          socketEndpoint: STRING
- *          webhookUrl: STRING
  *      },
  *      lang: STRING
  *      tracker: Tracker
  * }
- * @returns {object} {
+ * @returns {Object} {
  *      login: function(success,failure,username,password),
  *      init: function(success, failure),
  *      subscribe: function(id,handler),
@@ -275,10 +270,10 @@ function Smarti(options) {
 
         // fetch last Smarti results when the wiget gets initialized (channel entered)
         console.debug('Smarti widget init -> try get last Smarti result for channel %s', options.channel);
-        const lastConfCallId = ddp.method("getConversationId", [options.clientName, options.channel]);
+        const lastConfCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", function(message) {
             if (message.error) {
-                return failure({code:"get.conversation.params",args:[message.error.reason]});
+                return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === lastConfCallId) {
                 if(message.result) {
                     // message found for channel -> fetch conversation results
@@ -402,11 +397,8 @@ function Tracker(category, roomId, onEvent) {
  *
  * @param {element} element a dom element
  *
- * @param {object} _options: {
+ * @param {Object} _options: {
  *       socketEndpoint: 'ws://localhost:3000/websocket/',
- *       smartiEndpoint: 'http://localhost:8080/',
- *       rocketWebhookUrl: 'http://localhost:3000/smarti.result/:_token',
- *       clientName: 'team'
  *       channel: 'GENERAL',
  *       postings: {
  *          type: 'WIDGET_POSTING_TYPE',
@@ -415,20 +407,17 @@ function Tracker(category, roomId, onEvent) {
  *       lang:'de'
  *   }
  *
- * @returns {object}
+ * @returns {Object}
  *
  * @constructor
  */
-function SmartiWidget(element,_options) {
+function SmartiWidget(element, _options) {
 
     let options;
     let initialized = false;
 
     options = {
         socketEndpoint: 'ws://localhost:3000/websocket/',
-        smartiEndpoint: 'http://localhost:8080/',
-        rocketWebhookUrl: 'http://localhost:3000/smarti.result/TOKEN',
-        clientName: 'team',
         channel: 'GENERAL',
         postings: {
             type: 'suggestText', // possible values: suggestText, postText, postRichText
@@ -486,9 +475,11 @@ function SmartiWidget(element,_options) {
     }
 
     /**
-     * @param {object} params
+     * @param {Object} params
+     * @param {Object} params.query
+     * @param {Object} params.query.resultConfig
      * @param wgt_conf
-     * @returns {object} {
+     * @returns {Object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -545,18 +536,15 @@ function SmartiWidget(element,_options) {
         }
 
         /**
-         *
-         * @param {object} slots: [
-         *   {
-         *     tokenIndex: NUM
-         *   }
-         * ]
+         * @param {Object[]} slots
+         * @param {Number} slots.tokenIndex
          * @param tokens
+         *
          * @returns {Array}
          */
-        function perparePillTokens(slots,tokens) {
+        function perparePillTokens(slots, tokens) {
             let pillTokens = [];
-            $.each(slots,function(i,slot){
+            $.each(slots, function(i, slot){
                 if(slot.tokenIndex !== undefined && slot.tokenIndex > -1) {
                     pillTokens.push(tokens[slot.tokenIndex]);
                 } else if(!slot.tokenIndex) {
@@ -665,6 +653,13 @@ function SmartiWidget(element,_options) {
                 failure: function(err) {
                     console.error({code:'widget.latch.query.failed',args:[params.query.displayTitle,err.responseText]});
                 },
+                /**
+                 *
+                 * @param {Object} data
+                 * @param {Object} data.response
+                 * @param {Number} data.response.numFound
+                 *
+                 */
                 success: function(data){
                     loader.hide();
 
@@ -759,7 +754,7 @@ function SmartiWidget(element,_options) {
 
     /**
      * @param params
-     * @returns {object} {
+     * @returns {Object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -803,6 +798,15 @@ function SmartiWidget(element,_options) {
                     return;
                 }
 
+                /**
+                 * @param {Object} doc
+                 * @param {Object} doc.answers
+                 * @param {String} doc.userName
+                 * @param {String} doc.content
+                 * @param {String} doc.timestamp
+                 *
+                 * @returns {{author_name: string, author_icon: *, text, attachments: Array, bot: string, ts}}
+                 */
                 function buildAttachments(doc) {
                     let attachment = {
                         author_name: "\t",
@@ -962,14 +966,7 @@ function SmartiWidget(element,_options) {
         endpoint: options.socketEndpoint
       },
       tracker: tracker,
-      smarti: {
-        endpoint: options.smartiEndpoint
-      },
-      clientName : options.clientName,
-      channel: options.channel,
-      rocket: {
-          webhookUrl: options.rocketWebhookUrl
-      }
+      channel: options.channel
     });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
