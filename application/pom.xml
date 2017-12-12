@@ -118,6 +118,11 @@
             <version>${solrlib.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>${solr.version}</version>
+        </dependency>
 
         <dependency> <!-- This only defines abstract processors for actual vocabularies -->
             <groupId>io.redlink.nlp</groupId>
@@ -317,14 +322,6 @@
             <artifactId>spring-boot-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.redlink.smarti</groupId>
-            <artifactId>smarti-core</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>
