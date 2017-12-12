@@ -136,7 +136,16 @@ public class RocketChatEndpoint {
 
         final Client client = clientService.getByName(clientName);
         if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
+            if (log.isDebugEnabled()) {
+                if (client != null) {
+                    log.debug("Access denied to client {} for {}", client, authContext);
+                } else {
+                    log.debug("Client not found: {}", clientName);
+                }
+            }
             return ResponseEntity.notFound().build();
+        } else {
+            log.trace("Access granted to client {} for {}", client, authContext);
         }
 
         final String channelId = createChannelId(client, payload.getChannelId());
