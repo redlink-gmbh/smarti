@@ -317,7 +317,7 @@ function Smarti(options) {
             } else if(message.id === msgid) {
                 if(message.result) {
                     // why don't call query() from here instead using a subscrition?
-                    pubsub('smarti.data').publish(message.result.body);
+                    pubsub('smarti.data').publish(message.result);
                 } else {
                     if(failure) failure({code:'smarti.result.no-result-yet'});
                 }
@@ -335,7 +335,7 @@ function Smarti(options) {
 
           if(message.id === msgid) {
               if(message.result) {
-                  success(message.result.body);
+                  success(message.result);
               } else {
                   if(failure) failure({code:'smarti.result.no-result-yet'});
               }
