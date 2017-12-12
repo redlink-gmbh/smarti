@@ -155,7 +155,7 @@ public class PosCollector extends Processor {
     private List<Token> createNamedEntityTokens(Section section, int msgIdx, Message message) {
         //We look also at negated Chunks and mark attributes extracted form those as negated
         Iterator<io.redlink.nlp.model.Token> words = section.getTokens();
-        log.debug("Message {} - {}: {}", msgIdx, message.getOrigin(), message.getContent());
+        log.trace("Message {} - {}: {}", msgIdx, message.getOrigin(), message.getContent());
         List<Token> tokens = new ArrayList<>();
         while(words.hasNext()){
             io.redlink.nlp.model.Token word = words.next();

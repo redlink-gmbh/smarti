@@ -5,6 +5,10 @@ import static java.nio.file.Files.createTempDirectory;
 import java.io.IOException;
 import java.util.Date;
 
+import io.redlink.smarti.model.*;
+import io.redlink.smarti.repositories.AuthTokenRepository;
+import io.redlink.smarti.services.AuthTokenService;
+import io.swagger.annotations.ApiParam;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -31,14 +35,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import io.redlink.smarti.Application;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Context;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.ConversationMeta.Status;
-import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Message.Origin;
-import io.redlink.smarti.model.User;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.query.conversation.ConversationIndexConfiguration;
 import io.redlink.smarti.repositories.ClientRepository;
@@ -71,6 +69,9 @@ public class ConversationWebserviceIT {
     
     @Autowired
     private ClientRepository clientRepository;
+
+    @Autowired
+    private AuthTokenRepository authTokenRepository;
     
     @Autowired
     private ConfigurationRepo configurationRepo;
@@ -80,6 +81,9 @@ public class ConversationWebserviceIT {
     
     @Autowired
     private ClientService clientService;
+
+    @Autowired
+    private AuthTokenService authTokenService;
     
     @Autowired
     private ConfigurationService configService;
@@ -89,7 +93,8 @@ public class ConversationWebserviceIT {
     private Client client;
     
     private Configuration clientConfig;
-    
+    private AuthToken authToken;
+
     @Before
     public void init(){
         mvc = MockMvcBuilders.webAppContextSetup(context)
@@ -102,12 +107,14 @@ public class ConversationWebserviceIT {
         client.setDefaultClient(true);
         client = clientService.save(client);
         clientConfig = configService.createConfiguration(client);
+        authToken = authTokenService.createAuthToken(client.getId(), "test");
     }
     
     @Test
     public void testSetup() throws Exception{
         Conversation conversation = new Conversation();
         conversation.setChannelId("test-channel-1");
+        conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
         conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "test-channel-1");
@@ -129,6 +136,7 @@ public class ConversationWebserviceIT {
         conversation = conversationService.update(client, conversation);
         
         this.mvc.perform(MockMvcRequestBuilders.get("/conversation/" + conversation.getId())
+                .header("X-Auth-Token", authToken.getToken())
 //              .with(SecurityMockMvcRequestPostProcessors.anonymous())
               .accept(MediaType.APPLICATION_JSON_VALUE))
               .andDo(MockMvcResultHandlers.print())
@@ -140,6 +148,7 @@ public class ConversationWebserviceIT {
         conversationRepository.deleteAll();
         clientRepository.deleteAll();
         configurationRepo.deleteAll();
+        authTokenRepository.deleteAll();
     }
     
     @org.springframework.context.annotation.Configuration

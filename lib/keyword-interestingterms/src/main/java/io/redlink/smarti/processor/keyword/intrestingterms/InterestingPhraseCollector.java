@@ -160,7 +160,7 @@ public final class InterestingPhraseCollector extends Processor {
                         sectionEnds.add(span.getEnd());
                     }
                     if(!Collections.disjoint(NOUN_PHRASE_CATEGORIES, phraseAnno.getCategories())){
-                        log.debug(" - add sectionEnd {} for {} [phraseAnno: {}]", phrase.getEnd(), phrase.getSpan(), phraseAnno);
+                        log.trace(" - add sectionEnd {} for {} [phraseAnno: {}]", phrase.getEnd(), phrase.getSpan(), phraseAnno);
                         sectionEnds.add(span.getEnd());
                     }
                 }
@@ -194,10 +194,10 @@ public final class InterestingPhraseCollector extends Processor {
                 boolean completePhrase = false;
                 if(activePhrase != null){
                     if(word.isInteresting() || word.isConnecting()){
-                        log.debug(" - add {}  to phrase", word);
+                        log.trace(" - add {}  to phrase", word);
                         activePhrase.addWord(word);
                     } else {
-                        log.debug(" - close phrase because of word {}",word);
+                        log.trace(" - close phrase because of word {}",word);
                         completePhrase = true;
                     }
                 } else if(word.isInteresting()){
@@ -205,7 +205,7 @@ public final class InterestingPhraseCollector extends Processor {
                     activePhrase = new InterestingTermPhrase(word);
                 }
                 if(sectionEnds.remove(word.getEnd())){
-                    log.debug(" - close phrase because of Section end");
+                    log.trace(" - close phrase because of Section end");
                     completePhrase = true;
                 }
                 if(completePhrase && activePhrase != null){

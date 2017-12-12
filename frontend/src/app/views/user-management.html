@@ -1,0 +1,66 @@
+<!--
+  ~ Copyright 2017 Redlink GmbH
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+<h2>
+  Users
+  <button class="btn btn-default btn-sm"
+          ng-click="$ctrl.createUser()">
+    <i class="glyphicon glyphicon-plus"></i>
+  </button>
+</h2>
+<table class="table table-striped">
+  <thead>
+  <tr>
+    <th>Login</th>
+    <th>Name</th>
+    <th>Email</th>
+    <th class="text-center">Admin</th>
+    <th class="text-right">Clients</th>
+    <th class="text-right"><i class="glyphicon glyphicon-cog"></i></th>
+  </tr>
+  </thead>
+  <tbody>
+    <tr ng-repeat="user in users track by user.login" ng-class="{info: user.login == $user.login}">
+      <td><span ng-bind="user.login"></span></td>
+      <td><span ng-bind="user.profile.name"></span></td>
+      <td><span ng-bind="user.profile.email"></span></td>
+      <td class="text-center">
+        <i class="glyphicon" ng-class="[user.isAdmin?'glyphicon-check':'glyphicon-unchecked']"></i>
+      </td>
+      <td class="text-right"><span ng-bind="user.clients.length | number"></span></td>
+      <td class="text-right">
+        <button class="btn btn-default btn-xs"
+                ng-click="$ctrl.editUser(user)">
+          <i class="glyphicon glyphicon-edit"></i>
+        </button>
+        <button class="btn btn-default btn-xs"
+                ng-click="$ctrl.setPassword(user)">
+          <i class="glyphicon glyphicon-lock"></i>
+        </button>
+        <button class="btn btn-danger btn-xs"
+                ng-disabled="user.login == $user.login"
+                ng-click="$ctrl.deleteUser(user)">
+          <i class="glyphicon glyphicon-trash"></i>
+        </button>
+      </td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="6"></td>
+    </tr>
+  </tfoot>
+</table>

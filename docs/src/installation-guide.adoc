@@ -1,0 +1,208 @@
+== Smarti Installation Guide
+
+:commonsdir: commons/
+
+The Smarti installation guide is written for developers, operators and administrators who like to run Smarti on a server, as professional service or in production.
+
+include::{commonsdir}system-requirements.adoc[]
+
+=== General recommendations
+
+==== Run Smarti as a service in production
+
+Installation packages are provided for https://www.debian.org/[Debian]- and https://www.redhat.com/[RedHat]-based systems.
+As Smarti is a https://projects.spring.io/spring-boot/[Spring Boot] application it can be started by directly launching the executable jar:
+
+```bash
+$ java -jar smarti-${smarti-version}-exec.jar
+```
+
+IMPORTANT: To run Smarti in production it is recommended to deploy the `deb` or `rpm` package on your target environment instead executing the jar directly.
+If you like to setup your development client or a non-productive server read section <<developer-guide.adoc#,Build and Run>> explains how to do start Smarti by executing the executable jar.
+
+==== Run MongoDB as a dedicated service
+
+IMPORTANT: In a production scenario it is absolutely recommended to run MongoDB on a dedicated system.
+If you like to run MongoDB on the same machine as the Smarti application `4 GB` RAM are insufficient.
+A developer client should have at least `8 GB` RAM.
+
+
+=== Deploy / Install
+
+==== Deploy with Docker
+
+```bash
+$ docker run -d --name mongodb mongo
+$ docker run -d --name smarti --link mongodb:mongo -p 8080:8080 redlinkgmbh/smarti
+```
+
+The provided docker-image does not contain some required (GPL-licensed) dependencies. To build a
+contained image, use the following snippet:
+```bash
+$ docker build -t smarti-with-stanfordnlp -<EOF
+FROM redlinkgmbh/smarti
+
+USER root
+ADD [\
+    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar", \
+    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar", \
+    "/opt/ext/"]
+RUN chmod -R a+r /opt/ext/
+USER smarti
+EOF
+```
+
+==== Deploy on Debian
+
+```bash
+$ sudo dpkg -i ${smarti-source}/dist/target/smarti_${smarti-build-version}.deb
+```
+
+==== Deploy on Red Hat
+
+```bash
+$ sudo rpm -i ${smarti-source}/dist/target/smarti_${smarti-build-version}.rpm
+```
+
+==== Changing the User
+
+When installed using one of the provided packages (`deb`, `rpm`), smarti runs as it's own system user `smarti`. This user is created during the installation
+process if it does not already exists.
+
+To run smarti as a different user (`assistify` in this example), do the following steps:
+
+. Create the new working-directory
++
+```bash
+$ mkdir -p /data/smarti
+$ chown -R assistify: /data/smarti
+```
+
+. Populate the new working-directory with the required configuration files, e.g. by copying the default settings
++
+```bash
+$ cp /etc/smarti/* /data/smarti
+```
+
+. Update the systemd configuration for smarti
++
+```bash
+$ systemctl edit smarti
+```
++
+and add the following content
++
+```bash
+[Service]
+User = assistify
+WorkingDirectory = /data/smarti
+```
+
+. Restart the smarti
++
+```bash
+$ systemctl try-restart smarti
+```
+
+
+=== System Maintenance
+
+==== Daemon / Service
+
+===== Configuration
+
+* `/etc/default/smarti`
+* JVM and JVM Options (e.g. `-Xmx4g`)
+* Program Arguments (overwriting settings from the `application.properties`)
+
+===== Start / Stop / Restart
+
+```bash
+$ sudo service smarti [ start | stop | restart  ]
+```
+
+===== Status
+
+To check the service status use the daemon
+
+```bash
+$ service smarti status
+```
+
+This should result in something like
+
+```bash
+● smarti.service - smarti
+   Loaded: loaded (/lib/systemd/system/smarti.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2017-08-26 12:12:28 UTC; 6s ago
+ Main PID: 4606 (bash)
+    Tasks: 22
+   Memory: 647.8M
+      CPU: 12.518s
+   CGroup: /system.slice/smarti.service
+```
+
+==== Logging
+
+* Working-Directory at `/var/lib/smarti/`
+* Log-Files available under `/var/lib/smarti/logs/`, a symlink to `/var/log/smarti/`
+* http://logback.qos.ch/manual/configuration.html[Log-Configuration] under `/var/lib/smarti/logback.xml`, a symlink to `/etc/smarti/logback.xml`
+
+NOTE: Please keep in mind, that if smarti runs as a different user it probably also has a custom working directory. In such case, logs are stored in the new working directory (or whatever is configured in the logging-configuration).
+
+To Check if Smarti is started search in `/var/log/smarti/main.log` for something like
+
+```bash
+[main] INFO  io.redlink.smarti.Application - smarti started: http://${smarti-host}:${smarti-port}/
+```
+
+==== Monitoring
+
+===== System Health
+
+A system-wide health check is available at `http://${smarti-host}:${smarti-port}/system/health`.
+In case of any problems you can call this URL in your browser or send a `curl` in order to check if Smarti is up and running.
+
+```bash
+$ curl -X GET http://${smarti-host}:${smarti-port}/system/health
+```
+
+On success, if everything is running it returns: `{"status":"UP"}` else `{"status":"DOWN"}`.
+
+NOTE: `{"status":"DOWN"}` is also reported, if Stanford NLP libraries are not present in the classpath.
+
+
+==== System Info
+
+You can get a detailed information about the build version that is running by calling
+```bash
+$ curl -X GET http://${smarti-host}:${smarti-port}/system/info
+```
+
+
+include::{commonsdir}additional-components.adoc[]
+
+=== Third-Party Dependencies and Licenses
+
+When installing via one of the provided packages (`rpm`, `deb`) a list of used third-party libraries and their licenses are available under
+
+* `/usr/share/doc/smarti/THIRD-PARTY.txt` (backend), and
+* `/usr/share/doc/smarti/UI-THIRD-PARTY.json` (frontend, UI)
+
+From the running system, similar files are served.
+
+*Backend*
+
+```bash
+$ curl http://${smarti-host}:${smarti-port}/THIRD-PARTY.txt
+```
+
+*Frontend UI*
+
+```bash
+$ curl http://${smarti-host}:${smarti-port}/3rdPartyLicenses.json
+```
+
+=== Configuration
+
+Once Smarti is up and running, go ahead and read the next section <<index.adoc#_application_configuration, Application Configuration>> about Smarti's powerful configuration options.

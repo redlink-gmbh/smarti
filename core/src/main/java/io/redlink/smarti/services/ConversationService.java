@@ -17,9 +17,17 @@
 
 package io.redlink.smarti.services;
 
-import java.util.List;
-import java.util.function.Supplier;
-
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import io.redlink.smarti.api.StoreService;
+import io.redlink.smarti.api.event.StoreServiceEvent;
+import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.repositories.AnalysisRepository;
+import io.redlink.smarti.repositories.ConversationRepository;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -30,17 +38,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-
-import io.redlink.smarti.api.StoreService;
-import io.redlink.smarti.api.event.StoreServiceEvent;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.ConversationMeta;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.repositories.AnalysisRepository;
-import io.redlink.smarti.repositories.ConversationRepository;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Conversation-related services
@@ -56,11 +57,10 @@ public class ConversationService {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
-    
 
     @Autowired
     private ConversationRepository conversationRepository;
-    
+
     @Autowired
     private AnalysisRepository analysisRepository;
 
@@ -85,20 +85,14 @@ public class ConversationService {
     
     /**
      * Appends a message to the end of the conversation
-     * @param client the client
-     * @param conversation the conversation (MUST BE owned by the parsed client)
      * @param onCompleteCallback called after the operation completes (including the optional asynchronous processing)
+     * @param conversation the conversation (MUST BE owned by the parsed client)
      * @return the updated conversation as stored after the update and likely before processing has completed. Use the
      * <code>onCompleteCallback</code> to get the updated conversation including processing results
      */
-    public Conversation appendMessage(Client client, Conversation conversation, Message message) {
+    public Conversation appendMessage(Conversation conversation, Message message) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
-        Preconditions.checkNotNull(client);
-        if(!Objects.equal(client.getId(),conversation.getOwner())){
-            throw new IllegalStateException("The parsed Client MUST BE the owner of the conversation!");
-        }
-
         return storeService.appendMessage(conversation, message);
     }
 
@@ -114,7 +108,7 @@ public class ConversationService {
     public Conversation getConversation(Client client, ObjectId convId){
         return storeService.get(convId);
     }
-    
+
     public Conversation getCurrentConversationByChannelId(Client client, String channelId) {
         return getCurrentConversationByChannelId(client, channelId, Conversation::new);
     }
@@ -145,12 +139,20 @@ public class ConversationService {
         }
     }
 
-    public Page<Conversation> listConversations(ObjectId clientId, int page, int pageSize) {
+    public Page<Conversation> listConversations(Set<ObjectId> clientIDs, int page, int pageSize) {
         final PageRequest paging = new PageRequest(page, pageSize);
-        if (java.util.Objects.nonNull(clientId)) {
-            return conversationRepository.findByOwner(clientId, paging);
+        if (CollectionUtils.isNotEmpty(clientIDs)) {
+            return conversationRepository.findByOwnerIn(clientIDs, paging);
         } else {
             return conversationRepository.findAll(paging);
+        }
+    }
+
+    public Page<Conversation> listConversations(ObjectId clientId, int page, int pageSize) {
+        if (clientId == null) {
+            return listConversations(Collections.emptySet(), page, pageSize);
+        } else {
+            return listConversations(Collections.singleton(clientId), page, pageSize);
         }
     }
 

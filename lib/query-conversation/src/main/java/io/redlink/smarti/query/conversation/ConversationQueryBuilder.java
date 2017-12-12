@@ -37,8 +37,7 @@ import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.util.*;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getEnvironmentField;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
@@ -64,7 +63,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
                     .anyMatch(s -> s.getTokenIndex() >= 0);
-        log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
+        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
         return state;
     }
 
@@ -176,14 +175,14 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      */
     protected void addPropertyFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
         if (fieldValues == null || fieldValues.isEmpty()) {
-            solrQuery.addFilterQuery("-" + getEnvironmentField(fieldName) + ":*");
+            solrQuery.addFilterQuery("-" + getMetaField(fieldName) + ":*");
         } else {
             final String filterVal = fieldValues.stream()
                     .map(ClientUtils::escapeQueryChars)
                     .reduce((a, b) -> a + " OR " + b)
                     .orElse("");
             solrQuery.addFilterQuery(
-                    getEnvironmentField(fieldName) + ":(" + filterVal + ")");
+                    getMetaField(fieldName) + ":(" + filterVal + ")");
         }
     }
 }

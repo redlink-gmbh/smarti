@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>smarti-dist</artifactId>
@@ -32,6 +32,8 @@
         <binaryName>${finalName}</binaryName>
         <packageName>${finalName}</packageName>
         <daemonUser>smarti</daemonUser>
+
+        <stanford-nlp.version>3.6.0</stanford-nlp.version>
     </properties>
 
     <dependencies>
@@ -48,6 +50,19 @@
             <classifier>exec</classifier>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>smarti-db-migrator</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>smarti-db-migrator</artifactId>
+            <version>${project.version}</version>
+            <classifier>exec</classifier>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -58,6 +73,14 @@
                 <targetPath>main</targetPath>
             </resource>
             <resource>
+                <directory>../scripts</directory>
+                <filtering>false</filtering>
+                <targetPath>db-migration</targetPath>
+                <includes>
+                    <include>migrate-*.js</include>
+                </includes>
+            </resource>
+            <resource>
                 <directory>src/deb/resources</directory>
                 <filtering>true</filtering>
                 <targetPath>deb</targetPath>
@@ -66,6 +89,11 @@
                 <directory>src/rpm/resources</directory>
                 <filtering>true</filtering>
                 <targetPath>rpm</targetPath>
+            </resource>
+            <resource>
+                <directory>src/docker</directory>
+                <filtering>false</filtering>
+                <targetPath>docker</targetPath>
             </resource>
         </resources>
         <plugins>
@@ -156,6 +184,13 @@
                                     <classifier>exec</classifier>
                                     <destFileName>${binaryName}.jar</destFileName>
                                 </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>smarti-db-migrator</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>exec</classifier>
+                                    <destFileName>db-migrator.jar</destFileName>
+                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>
@@ -218,6 +253,22 @@
                                             </mapper>
                                         </data>
                                         <data>
+                                            <src>${project.build.directory}/dependency/db-migrator.jar</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./usr/share/${packageName}</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.outputDirectory}/db-migration</src>
+                                            <type>directory</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./usr/share/${packageName}/scripts</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
                                             <src>${project.build.outputDirectory}/main/start.sh</src>
                                             <dst>${packageName}</dst>
                                             <type>file</type>
@@ -267,7 +318,16 @@
                                             </mapper>
                                         </data>
                                         <data>
-                                            <src>${project.build.outputDirectory}/main/plugin-info.txt</src>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.json</src>
+                                            <dst>plugin-info.json</dst>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>./var/lib/${packageName}/ext</prefix>
+                                            </mapper>
+                                        </data>
+                                        <data>
+                                            <src>${project.build.outputDirectory}/main/plugin-info.readme</src>
                                             <dst>README.txt</dst>
                                             <type>file</type>
                                             <mapper>
@@ -391,8 +451,19 @@
                                         <source>
                                             <location>${project.build.directory}/dependency/${binaryName}.jar</location>
                                         </source>
+                                        <source>
+                                            <location>${project.build.directory}/dependency/db-migrator.jar</location>
+                                        </source>
                                     </sources>
                                     <directory>/usr/share/${packageName}</directory>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.build.outputDirectory}/db-migration</location>
+                                        </source>
+                                    </sources>
+                                    <directory>/usr/share/${packageName}/scripts</directory>
                                 </mapping>
                                 <mapping>
                                     <sources>
@@ -475,7 +546,16 @@
                                 <mapping>
                                     <sources>
                                         <source>
-                                            <location>${project.build.outputDirectory}/main/plugin-info.txt</location>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.json</location>
+                                            <destination>plugin-info.json</destination>
+                                        </source>
+                                    </sources>
+                                    <directory>/var/lib/${packageName}/ext</directory>
+                                </mapping>
+                                <mapping>
+                                    <sources>
+                                        <source>
+                                            <location>${project.build.outputDirectory}/main/plugin-info.readme</location>
                                             <destination>README.txt</destination>
                                         </source>
                                     </sources>
@@ -526,6 +606,45 @@
                                 <fileEncoding>utf-8</fileEncoding>
                             </postremoveScriptlet>
 
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>docker</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.spotify</groupId>
+                        <artifactId>dockerfile-maven-plugin</artifactId>
+                        <version>1.3.6</version>
+                        <executions>
+                            <execution>
+                                <id>build</id>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <tag>latest</tag>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>tag</id>
+                                <goals>
+                                    <goal>tag</goal>
+                                </goals>
+                                <phase>install</phase>
+                                <configuration>
+                                    <tag>${project.version}</tag>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <skipPush>true</skipPush>
+                            <repository>redlinkgmbh/smarti</repository>
+                            <googleContainerRegistryEnabled>false</googleContainerRegistryEnabled>
                         </configuration>
                     </plugin>
                 </plugins>

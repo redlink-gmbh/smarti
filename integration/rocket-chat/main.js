@@ -55,7 +55,7 @@ const localize = new Localize({
         "en": "Widget $[1] has problems while quering: $[2]"
     },
     "widget.latch.query.no-results":{
-        "de":"Keine Ergbenisse",
+        "de":"Keine Ergebnisse",
         "en":"No results"
     },
     "widget.latch.query.header":{
@@ -65,6 +65,10 @@ const localize = new Localize({
     "widget.latch.query.header.paged":{
         "en": "Page $[1] of $[2] results",
         "de": "Seite $[1] von $[2] Ergebnissens"
+    },
+    "widget.latch.query.remove.all": {
+        "en": "Clear all",
+        "de": "Alle löschen"
     },
     "widget.latch.query.paging.next":{
         "en": "Next",
@@ -120,12 +124,25 @@ const Utils = {
             case 'application/xhtml+xml': return 'html';
         }
         return doctype.substring(doctype.indexOf('/')+1).slice(0,4);
+    },
+    cropLabel: function(label,max_length,replace,mode) {
+        max_length = max_length-replace.length;
+
+        if(label.length <= max_length) return label;
+
+        switch(mode) {
+            case 'start': return label.substring(0,max_length) + replace;
+            case 'end': return replace + label.substring(label.length-max_length);
+            default:
+                var partLength = Math.floor(max_length/2);
+                return label.substring(0,partLength) + replace + label.substring(label.length-partLength);
+        }
     }
 };
 
 /**
  * Manages the interaction between Plugin and RocketChat/Smarti
- * @param options: {
+ * @param {object} options: {
  *      DDP: {
  *          endpoint: STRING
  *      },
@@ -138,7 +155,7 @@ const Utils = {
  *      },
  *      tracker: Tracker
  * }
- * @returns {
+ * @returns {object} {
  *      login: function(success,failure,username,password),
  *      init: function(success, failure),
  *      subscribe: function(id,handler),
@@ -238,13 +255,21 @@ function Smarti(options) {
                 { "resume": localStorage.getItem('Meteor.loginToken') }
             ]);
 
+            $.ajaxSetup({
+              headers: {
+                'content-type': 'application/json',
+                'x-auth-token': localStorage.getItem('Meteor.loginToken'),
+                'x-user-id': localStorage.getItem('Meteor.userId')
+              }
+            });
+
         } else {
             failure({code:'login.no-auth-token'});
         }
     }
 
     /**
-     *
+     * @param success
      * @param failure
      */
     function init(success, failure) {
@@ -285,7 +310,7 @@ function Smarti(options) {
         console.debug('fetch results for %s with token %s', params.conversationId, params.token);
 
         $.ajax({
-            url: options.smarti.endpoint + 'conversation/' + params.conversationId,
+            url: options.rocket.smartiApiProxy + 'conversation/' + params.conversationId,
             success: function(data){
 
                 console.debug('received conversation results for %s:\n%s', params.conversationId, JSON.stringify(data,null,2));
@@ -302,7 +327,7 @@ function Smarti(options) {
 
     function query(params,success,failure) {
 
-        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
+        $.getJSON(options.rocket.smartiApiProxy + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
             function(data){
                 success(data);
             }, function(err) {
@@ -343,6 +368,7 @@ function Smarti(options) {
 /**
  * A tracker wrapper
  * @param category
+ * @param roomId
  * @param onEvent the real tracker methode which is called
  * @constructor
  */
@@ -356,8 +382,8 @@ function Tracker(category, roomId, onEvent) {
 
 /**
  * Generates a smarti widget and appends it to element
- * @param element a dom element
- * @param config: {
+ * @param {element} element a dom element
+ * @param {object} _options: {
  *       socketEndpoint: "ws://localhost:3000/websocket/",
  *       smartiEndpoint: 'http://localhost:8080/',
  *       channel: 'GENERAL',
@@ -366,7 +392,7 @@ function Tracker(category, roomId, onEvent) {
  *       lang:'de',
  *       inputFieldSelector: '.selector'
  *   }
- * @returns {
+ * @returns {object
  *
  * }
  * @constructor
@@ -388,6 +414,13 @@ function SmartiWidget(element,_options) {
         tracker: {
             onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
             category: "knowledgebase"
+        },
+        ui: {
+          tokenpill: {
+              textlength: 30,
+              textreplace: '...',
+              textreplacemode: 'middle'
+          }
         },
         lang: 'de'
     };
@@ -430,7 +463,7 @@ function SmartiWidget(element,_options) {
     /**
      * @param params
      * @param wgt_conf
-     * @returns {
+     * @returns {object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -445,7 +478,10 @@ function SmartiWidget(element,_options) {
         function createTermPill(token) {
 
             return $('<div class="smarti-token-pill">')
-                .append($('<span>').text(token.value))
+                .append($('<span>')
+                    .text(
+                        Utils.cropLabel(token.value, options.ui.tokenpill.textlength, options.ui.tokenpill.textreplace, options.ui.tokenpill.textreplacemode))
+                    ).attr('title', token.value)
                 .append('<i class="icon-cancel"></i>')
                 .data('token',token)
                 .click(function(){
@@ -467,6 +503,21 @@ function SmartiWidget(element,_options) {
         }
 
         var termPills = $('<div class="smarti-token-pills">').appendTo(content);
+        var termPillCancel = $('<div class="smarti-token-pills-remove">').append(
+            $('<button>').text(
+                Utils.localize({code:'widget.latch.query.remove.all'})
+            ).click(function(){
+                clearAllTokens();
+            })
+        ).appendTo(content);
+
+        function clearAllTokens() {
+            termPills.children().each(function(){
+                $(this).hide();
+            });
+            getResults(0);
+            tracker.trackEvent(params.query.creator + ".tag.remove-all");
+        }
 
         function perparePillTokens(slots,tokens) {
             var pillTokens = [];
@@ -534,6 +585,8 @@ function SmartiWidget(element,_options) {
             }
         });
 
+
+
         params.elem.append(inputForm);
         var resultCount = $('<h3></h3>').appendTo(params.elem);
         var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
@@ -541,22 +594,32 @@ function SmartiWidget(element,_options) {
         var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page) {
-            var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
+            var tks = termPills.children(':visible')
+                .map(function(){return $(this).data().token.value})
+                .get()
+                .join(" ");
 
+            var queryParams = {
+                'wt': 'json',
+                'fl': '*,score',
+                'rows': numOfRows,
+                'q':  tks
+            };
             //TODO still a hack !!!
-            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
+            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?';
             if (wgt_conf.suffix) {
                 params.query.url += wgt_conf.suffix;
             }
 
             //append params
             for(var property in params.query.defaults) {
-                params.query.url += '&' + property + "=" + params.query.defaults[property];
+                if (params.query.defaults.hasOwnProperty(property))
+                    queryParams[property] = params.query.defaults[property];
             }
 
             if(page > 0) {
                 //append paging
-                params.query.url += '&start=' + (page*numOfRows);
+                queryParams.start = (page*numOfRows);
             } else {
                 page = 0;
             }
@@ -566,9 +629,11 @@ function SmartiWidget(element,_options) {
             resultPaging.empty();
             loader.show();
 
-            console.log(`executeSearch ${ params.query.url }`);
+            console.log(`executeSearch ${ params.query.url }, with ${queryParams}`);
             $.ajax({
                 url: params.query.url,
+                data: queryParams,
+                traditional: true,
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
                 failure: function(err) {
@@ -670,7 +735,7 @@ function SmartiWidget(element,_options) {
     /**
      * @param params
      * @param wgt_conf
-     * @returns {
+     * @returns {object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -680,7 +745,7 @@ function SmartiWidget(element,_options) {
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
         function refresh(data) {
-            getResults();
+            getResults(0);
         }
 
         var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
@@ -689,7 +754,7 @@ function SmartiWidget(element,_options) {
 
         var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
-        function getResults(page,pageSize) {
+        function getResults(page, pageSize) {
 
             //TODO get remote
             results.empty();
@@ -698,14 +763,20 @@ function SmartiWidget(element,_options) {
 
             var start = pageSize ? page*pageSize : 0;
 
-            smarti.query({conversationId:params.id,template:params.tempid,creator:params.query.creator,start:start},function(data){
+            smarti.query({
+                conversationId: params.id,
+                template: params.tempid,
+                creator: params.query.creator,
+                start: start
+            }, function(data){
 
                 loader.hide();
 
-                if(data.length == 0) {
-                    msg.text(Utils.localize({code:'widget.conversation.no-results'}));
-                } else {
+                if (data.numFound > 0) {
                     msg.empty();
+                } else {
+                    msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
+                    return;
                 }
 
                 function buildLink(msgid) {
@@ -865,7 +936,20 @@ function SmartiWidget(element,_options) {
 
     //Smarti
 
-    var smarti = new Smarti({DDP:{endpoint:options.socketEndpoint},tracker:tracker,smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
+    var smarti = new Smarti({
+      DDP: {
+        endpoint: options.socketEndpoint
+      },
+      tracker: tracker,
+      smarti: {
+        endpoint: options.smartiEndpoint
+      },
+      channel: options.channel,
+      rocket: {
+        endpoint: options.rocketBaseurl,
+        smartiApiProxy: options.smartiApiProxy
+      }
+    });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
         refreshWidgets(data);

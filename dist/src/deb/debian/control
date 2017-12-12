@@ -7,4 +7,4 @@ Distribution: unstable
 Depends: openjdk-8-jre-headless | java8-runtime-headless, init-system-helpers (>= 1.18~), adduser
 Maintainer: Jakob Frank <jakob.frank@redlink.co>
 Uploader: ${git.build.user.name} <${git.build.user.email}>
-Description: Billitii
+Description: Smarti

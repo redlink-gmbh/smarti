@@ -48,7 +48,7 @@ public class Message {
     private Origin origin = Origin.User;
     @ApiModelProperty(value = "message content", required = true)
     private String content;
-    @ApiModelProperty("the user who sent the message")
+    @ApiModelProperty
     private User user = null;
     @ApiModelProperty(name = "private", value = "marks a private message (not searchable)")
     @JsonProperty("private") @Field("private")

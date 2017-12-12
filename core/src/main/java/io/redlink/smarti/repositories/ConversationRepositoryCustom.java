@@ -22,6 +22,7 @@ import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Transient;
 
 import java.util.Date;
 import java.util.List;
@@ -67,4 +68,41 @@ public interface ConversationRepositoryCustom {
     Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data);
 
     boolean exists(ObjectId conversationId, String messageId);
+
+    /**
+     * Provides the ids of entities that where updated
+     * since the parsed date. In addition it provides the
+     * date of the latest update (to be used by further calls)
+     * @param date the date since updates should be returned
+     * @return the updated entities and the date of the last update
+     */
+    @Transient
+    UpdatedConversationIds updatedSince(Date date);
+
+
+    public static class UpdatedConversationIds {
+
+        private final Date lastModified;
+        final private List<ObjectId> ids;
+
+        public UpdatedConversationIds(Date lastModified, List<ObjectId> ids){
+            this.ids = ids;
+            this.lastModified = lastModified;
+        }
+
+        public Date getLastModified() {
+            return lastModified;
+        }
+
+        public List<ObjectId> ids(){
+            return ids;
+        }
+
+        @Override
+        public String toString() {
+            return "UpdatedConversationIds [lastModified=" + lastModified + ", ids=" + ids + "]";
+        }
+
+
+    }
 }

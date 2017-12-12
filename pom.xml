@@ -21,7 +21,7 @@
 
     <groupId>io.redlink.smarti</groupId>
     <artifactId>smarti</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.7.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>smarti</name>
@@ -34,6 +34,7 @@
 
         <module>frontend</module>
         <module>application</module>
+        <module>db-migrator</module>
 
         <module>integration/rocket-chat</module>
 
@@ -105,13 +106,15 @@
         <!-- frontend versions -->
         <node.version>v6.9.1</node.version>
         <npm.version>3.10.8</npm.version>
+
+        <redlink.logback.extension>1.0-SNAPSHOT</redlink.logback.extension>
     </properties>
 
     <scm>
         <connection>scm:git:https://github.com/redlink-gmbh/smarti.git</connection>
         <developerConnection>scm:git:git@github.com:redlink-gmbh/smarti.git</developerConnection>
         <url>https://github.com/redlink-gmbh/smarti/src</url>
-        <tag>HEAD</tag>
+        <tag>smarti-0.6.1-RC1</tag>
     </scm>
     <issueManagement>
         <system>github</system>
@@ -207,6 +210,12 @@
 			</dependency>
 
             <dependency>
+                <groupId>io.redlink.utils</groupId>
+                <artifactId>utils</artifactId>
+                <version>1.0.2-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.4</version>
@@ -217,6 +226,12 @@
 			    <artifactId>commons-collections4</artifactId>
 			    <version>4.1</version>
 			</dependency>
+
+            <dependency>
+                <groupId>commons-validator</groupId>
+                <artifactId>commons-validator</artifactId>
+                <version>1.6</version>
+            </dependency>
 
             <dependency>
                 <groupId>commons-io</groupId>
@@ -239,7 +254,7 @@
 	        <dependency>
 	            <groupId>com.google.guava</groupId>
 	            <artifactId>guava</artifactId>
-	            <version>21.0</version>
+	            <version>20.0</version><!-- solr is incompatible with 21+ -->
 	        </dependency>
 
             <dependency>
@@ -267,6 +282,17 @@
                 <groupId>org.opensextant</groupId>
                 <artifactId>solr-text-tagger</artifactId>
                 <version>${solr.text.tagger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.redlink.ext.logback</groupId>
+                <artifactId>logback-ext-cloudwatch-appender</artifactId>
+                <version>${redlink.logback.extension}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.redlink.ext.logback</groupId>
+                <artifactId>logback-ext-jackson</artifactId>
+                <version>${redlink.logback.extension}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

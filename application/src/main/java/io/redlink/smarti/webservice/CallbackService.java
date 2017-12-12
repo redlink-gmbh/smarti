@@ -71,9 +71,9 @@ public class CallbackService {
         }
     }
     
-    public void execute(URI callbackUri, CallbackPayload<?> payload){
+    public Void execute(URI callbackUri, CallbackPayload<?> payload){
         if(callbackUri == null || payload == null){
-            return;
+            return null;
         }
         HttpPost request = new HttpPost(callbackUri);
         try (CloseableHttpClient httpClient = httpClientBuilder.build()) {
@@ -90,7 +90,7 @@ public class CallbackService {
                 log.error("Callback to <{}> failed: {}", request, e.getMessage());
             }
         }
-
+        return null;
     }
     
 }

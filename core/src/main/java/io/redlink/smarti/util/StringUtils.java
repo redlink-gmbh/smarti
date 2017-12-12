@@ -17,6 +17,8 @@
 
 package io.redlink.smarti.util;
 
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.Arrays;
@@ -52,4 +54,18 @@ public class StringUtils {
         return Arrays.stream(haystack)
                 .anyMatch(h -> org.apache.commons.lang3.StringUtils.equalsIgnoreCase(needle, h));
     }
+    
+    public static boolean hasLetterOrDigit(final CharSequence cs) {
+        if (isEmpty(cs)) {
+            return false;
+        }
+        final int sz = cs.length();
+        for (int i = 0; i < sz; i++) {
+            if (Character.isLetterOrDigit(cs.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

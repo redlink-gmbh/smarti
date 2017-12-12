@@ -40,7 +40,7 @@ import org.springframework.util.MultiValueMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 /**
  */
@@ -67,7 +67,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         final SolrQuery solrQuery = new SolrQuery(searchQuery.getKeyword().stream().reduce((s, s2) -> s + " OR " + s2).orElse("*:*"));
         solrQuery.addField("*").addField("score");
         solrQuery.set(CommonParams.DF, "text");
-        solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
+        solrQuery.addFilterQuery(String.format("%s:%s",FIELD_TYPE, TYPE_MESSAGE));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort("vote", SolrQuery.ORDER.desc);
 
         // #39 - paging

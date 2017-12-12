@@ -27,6 +27,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import static io.redlink.smarti.model.ConversationMeta.PROP_TAGS;
@@ -40,14 +41,14 @@ import java.util.stream.Collectors;
  * An in-memory store for conversations.
  */
 @Component("inMemoryStoreService")
-@ConditionalOnMissingBean(StoreService.class)
+@Profile("embedded")
 public class InMemoryStoreService extends StoreService {
 
     private final Map<ObjectId, Conversation> storage = new ConcurrentHashMap<>();
 
     @Override
     protected Conversation doStore(Conversation conversation) {
-        Preconditions.checkNotNull(conversation.getId());
+        if(conversation.getId() == null) conversation.setId(new ObjectId());
         storage.put(conversation.getId(), conversation);
         return conversation;
     }

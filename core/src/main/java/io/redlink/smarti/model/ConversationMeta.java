@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
@@ -33,7 +32,7 @@ import java.util.Map;
 /**
  * Useful metadata about a conversation
  */
-@ApiModel
+@ApiModel(description = "conversation metadata")
 public class ConversationMeta {
 
     /**
