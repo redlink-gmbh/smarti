@@ -121,7 +121,13 @@ function runDatabaseMigration() {
                 var convertedDefaults = {};
                 for (var k in builder.defaults) {
                     if (builder.defaults.hasOwnProperty(k)){
-                        convertedDefaults[k] = decodeURIComponent(builder.defaults[k]);
+                        try {
+                            convertedDefaults[k] = decodeURIComponent(builder.defaults[k]);
+                        } catch (e) {
+                            print('Could not uri-decode "' + k + "' of config '" + builder.name + "' for client '" + configuration.client + "'." +
+                                " Keeping unmodified parameter '" + builder.defaults[k] + "'");
+                            convertedDefaults[k] = builder.defaults[k];
+                        }
                     }
                 }
                 builder.defaults = convertedDefaults;
