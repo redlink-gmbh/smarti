@@ -219,7 +219,7 @@ public class UserWebservice {
     }
 
     @ApiOperation(value = "check login", notes = "check if the provided login is already taken")
-    @RequestMapping("/auth/check")
+    @RequestMapping(value = "/auth/check", method = {RequestMethod.GET, RequestMethod.POST})
     public boolean checkLoginExists(@RequestParam("login") String login) {
         // Public access
         return accountService.hasAccount(login);
