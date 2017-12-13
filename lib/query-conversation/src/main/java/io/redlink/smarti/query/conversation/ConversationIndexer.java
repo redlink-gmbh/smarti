@@ -84,7 +84,6 @@ import org.springframework.stereotype.Component;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
 import io.redlink.smarti.cloudsync.ConversationCloudSync;
@@ -95,6 +94,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
@@ -133,14 +133,14 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private final SolrCoreContainer solrServer;
     
-    private final StoreService storeService;
+    private final ConversationService conversationService;
 
     private final ExecutorService indexerPool;
 
     @Autowired
-    public ConversationIndexer(SolrCoreContainer solrServer, StoreService storeService){
+    public ConversationIndexer(SolrCoreContainer solrServer, ConversationService storeService){
         this.solrServer = solrServer;
-        this.storeService = storeService;
+        this.conversationService = storeService;
         this.indexerPool = Executors.newSingleThreadExecutor(
                 new BasicThreadFactory.Builder().namingPattern("conversation-indexing-thread-%d").daemon(true).build());
     }
@@ -180,10 +180,10 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             indexTask.setLastSync(syncDate);
             indexerPool.execute(indexTask);
         } else { //manual initialization
-            Iterators.partition(storeService.listConversationIDs().iterator(), 100).forEachRemaining(
+            Iterators.partition(conversationService.listConversationIDs().iterator(), 100).forEachRemaining(
                     ids -> {
                         ids.stream()
-                                .map(storeService::get)
+                                .map(conversationService::getConversation)
                                 .forEach(c -> indexConversation(c, false));
                     });
         }
@@ -204,7 +204,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         if(storeEvent.getOperation() == Operation.SAVE){
             if(storeEvent.getConversationStatus() == Status.Complete){
                 log.debug("  - SAVE operation of a COMPLETED conversation");
-                indexConversation(storeService.get(storeEvent.getConversationId()), true);
+                indexConversation(conversationService.getConversation(storeEvent.getConversationId()), true);
             } //else we do not index uncompleted conversations
         } else if(storeEvent.getOperation() == Operation.DELETE){
             log.debug("  - DELETE operation");
@@ -412,10 +412,10 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             }
         } else { //no cloud sync active. So re-index via the store service
             log.info("starting scheduled full rebuild of the conversation index");
-            Iterators.partition(storeService.listConversationIDs().iterator(), 100).forEachRemaining(
+            Iterators.partition(conversationService.listConversationIDs().iterator(), 100).forEachRemaining(
                     ids -> {
                         ids.stream()
-                                .map(storeService::get)
+                                .map(conversationService::getConversation)
                                 .forEach(c -> indexConversation(c, false));
                     });
         }

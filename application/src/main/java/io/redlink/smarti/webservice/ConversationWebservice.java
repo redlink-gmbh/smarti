@@ -138,15 +138,18 @@ public class ConversationWebservice {
             conversation.setOwner(client.getId());
         }
 
-        //FIXME(westei): store the new conversation!
+        //store the new conversation!
+        Conversation created = conversationService.update(client, conversation);
 
         if(analysis){
-            analysisService.analyze(client, conversation)
+            analysisService.analyze(client, created)
                     .whenComplete((a , e) ->
                             callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
         }
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ConversationData.fromModel(conversation));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, created.getId())))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, created.getId())))
+                .body(ConversationData.fromModel(created));
 
     }
 

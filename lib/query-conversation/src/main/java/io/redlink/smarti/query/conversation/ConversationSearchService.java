@@ -16,11 +16,11 @@
  */
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.SearchResult;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.util.SearchUtils;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
@@ -62,13 +62,13 @@ public class ConversationSearchService {
     private final SolrCoreContainer solrServer;
     private final SolrCoreDescriptor conversationCore;
 
-    private final StoreService storeService;
+    private final ConversationService conversationService;
 
     @Autowired
-    public ConversationSearchService(SolrCoreContainer solrServer, @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, StoreService storeService) {
+    public ConversationSearchService(SolrCoreContainer solrServer, @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, ConversationService storeService) {
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
-        this.storeService = storeService;
+        this.conversationService = storeService;
     }
 
     public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
@@ -120,7 +120,7 @@ public class ConversationSearchService {
     }
 
     private Conversation readConversation(Group group) {
-        Conversation conversation = storeService.get(new ObjectId(String.valueOf(group.getGroupValue())));
+        Conversation conversation = conversationService.getConversation(new ObjectId(String.valueOf(group.getGroupValue())));
         //clean all messages that does not fit
         conversation.getMessages().removeIf(
                 m -> group.getResult().stream()

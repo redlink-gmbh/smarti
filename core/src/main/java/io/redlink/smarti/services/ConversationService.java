@@ -17,10 +17,10 @@
 
 package io.redlink.smarti.services;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.api.event.StoreServiceEvent;
+import io.redlink.smarti.exception.ConflictException;
+import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
@@ -38,8 +38,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -50,10 +53,6 @@ import java.util.function.Supplier;
 public class ConversationService {
 
     private final Logger log = LoggerFactory.getLogger(ConversationService.class);
-
-    @Autowired
-    private StoreService storeService;
-
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -77,10 +76,12 @@ public class ConversationService {
     public Conversation update(Client client, Conversation conversation) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(client);
-        if(!Objects.equal(client.getId(),conversation.getOwner())){
+        if(conversation.getOwner() == null){
+            conversation.setOwner(client.getId());
+        } else if(!Objects.equals(client.getId(),conversation.getOwner())){
             throw new IllegalStateException("The parsed Client MUST BE the owner of the conversation!");
         }
-        return storeService.store(conversation);
+        return store(conversation);
     }
     
     /**
@@ -93,20 +94,47 @@ public class ConversationService {
     public Conversation appendMessage(Conversation conversation, Message message) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
-        return storeService.appendMessage(conversation, message);
+        final Conversation stored = conversationRepository.appendMessage(conversation, message);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
+        }
+        return stored;
     }
 
     public Conversation completeConversation(Conversation conversation) {
-        return storeService.completeConversation(conversation.getId());
+        Preconditions.checkNotNull(conversation);
+        Preconditions.checkNotNull(conversation.getId());
+        final Conversation stored = conversationRepository.completeConversation(conversation.getId());
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
+        }
+        return stored;
     }
 
     public Conversation rateMessage(Conversation conversation, String messageId, int delta) {
-        return storeService.adjustMessageVotes(conversation.getId(), messageId, delta);
+        Preconditions.checkNotNull(conversation);
+        Preconditions.checkNotNull(conversation.getId());
+        Preconditions.checkNotNull(messageId);
+        if(delta == 0){
+            return conversation;
+        }
+        final Conversation stored = conversationRepository.adjustMessageVotes(conversation.getId(), messageId, delta);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
+        }
+        return conversation;
     }
 
+    public Conversation getConversation(ObjectId convId){
+        return getConversation(null,convId);
+    }
 
     public Conversation getConversation(Client client, ObjectId convId){
-        return storeService.get(convId);
+        if(client != null){
+            return conversationRepository.findByOwnerAndId(client.getId(), convId);
+        } else {
+            return conversationRepository.findOne(convId);
+        }
     }
 
     public Conversation getCurrentConversationByChannelId(Client client, String channelId) {
@@ -116,10 +144,12 @@ public class ConversationService {
     public Conversation getCurrentConversationByChannelId(Client client, String channelId, Supplier<Conversation> supplier) {
         Preconditions.checkNotNull(client);
         Preconditions.checkArgument(StringUtils.isNoneBlank(channelId));
-        final ObjectId conversationId = storeService.mapChannelToCurrentConversationId(channelId);
+        final ObjectId conversationId = conversationRepository.findCurrentConversationIDByChannelID(channelId);
         if (conversationId != null) {
-            Conversation conversation = storeService.get(conversationId);
-            if(Objects.equal(conversation.getOwner(), client.getId())){
+            Conversation conversation = getConversation(conversationId);
+            //FIXME (Jakob) Should the AuthenticationService care about access. If so this
+            //      shoulc just return the conversation regardless of the owner
+            if(Objects.equals(conversation.getOwner(), client.getId())){
                 return getConversation(client, conversationId);
             } else {
                 //this should never happen unless we have two clients with the same channelId
@@ -132,7 +162,7 @@ public class ConversationService {
                 c.setId(null);
                 c.setOwner(client.getId());
                 c.setChannelId(channelId);
-                return storeService.store(c);
+                return store(c);
             } else {
                 return null;
             }
@@ -154,10 +184,6 @@ public class ConversationService {
         } else {
             return listConversations(Collections.singleton(clientId), page, pageSize);
         }
-    }
-
-    public Conversation getConversation(ObjectId conversationId) {
-        return storeService.get(conversationId);
     }
 
     public List<Conversation> getConversations(ObjectId owner) {
@@ -239,5 +265,44 @@ public class ConversationService {
             publishSaveEvent(con);
         }
         return con;
+    }
+    
+    protected final Conversation store(Conversation conversation) {
+        conversation.setLastModified(new Date());
+        if(conversation.getId() != null){ //if we update an existing we need to validate the clientId value
+            Conversation persisted = getConversation(conversation.getId());
+            if(persisted == null){
+                throw new NotFoundException(Conversation.class, conversation.getId());
+            } else {
+                if(conversation.getOwner() == null){
+                    conversation.setOwner(persisted.getOwner());
+                } else if(!Objects.equals(conversation.getOwner(), persisted.getOwner())){
+                    throw new ConflictException(Conversation.class, "clientId", "The clientId MUST NOT be changed for an existing conversation!");
+                }
+            }
+        } else { //create a new conversation
+            //TODO: Maybe we should check if the Owner exists
+            if(conversation.getOwner() == null){
+                throw new ConflictException(Conversation.class, "owner", "The owner MUST NOT be NULL nor empty for a new conversation!");
+            }
+            
+        }
+        final Conversation stored = conversationRepository.save(conversation);
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
+        }
+        return stored;
+    }
+
+    public final Collection<ObjectId> listConversationIDsByUser(String userId) {
+        return conversationRepository.findConversationIDsByUser(userId);
+    }
+    
+    public Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta) {
+        return conversationRepository.adjustMessageVotes(conversationId, messageId, delta);
+    }
+
+    public Iterable<ObjectId> listConversationIDs(){
+        return conversationRepository.findConversationIDs();
     }
 }

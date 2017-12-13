@@ -8,8 +8,9 @@ import java.util.Date;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.repositories.AuthTokenRepository;
 import io.redlink.smarti.services.AuthTokenService;
-import io.swagger.annotations.ApiParam;
+
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -34,6 +35,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.redlink.smarti.Application;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message.Origin;
@@ -57,6 +60,8 @@ import io.redlink.solrlib.spring.boot.autoconfigure.SolrLibProperties;
 public class ConversationWebserviceIT {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+    
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     
     @ClassRule
     public static TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -111,7 +116,7 @@ public class ConversationWebserviceIT {
     }
     
     @Test
-    public void testSetup() throws Exception{
+    public void testGetConversation() throws Exception{
         Conversation conversation = new Conversation();
         conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
@@ -137,10 +142,48 @@ public class ConversationWebserviceIT {
         
         this.mvc.perform(MockMvcRequestBuilders.get("/conversation/" + conversation.getId())
                 .header("X-Auth-Token", authToken.getToken())
-//              .with(SecurityMockMvcRequestPostProcessors.anonymous())
               .accept(MediaType.APPLICATION_JSON_VALUE))
               .andDo(MockMvcResultHandlers.print())
               .andExpect(MockMvcResultMatchers.status().is(200));
+        
+    }
+    
+    @Test
+    public void testCreateConversation() throws Exception{
+        Conversation conversation = new Conversation();
+        conversation.setChannelId("test-channel-1");
+        conversation.setOwner(client.getId());
+        conversation.setMeta(new ConversationMeta());
+        conversation.getMeta().setStatus(Status.New);
+        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "test-channel-1");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, "testing");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
+        conversation.setContext(new Context());
+        conversation.getContext().setDomain("test-domain");
+        conversation.getContext().setContextType("text-context");
+        conversation.getContext().setEnvironment("environment-test", "true");
+        conversation.setUser(new User("alois.tester"));
+        conversation.getUser().setDisplayName("Alois Tester");
+        conversation.getUser().setEmail("alois.tester@test.org");
+        Message msg = new Message("test-channel-1-msg-1");
+        msg.setContent("Wie kann ich das Smarti Conversation Service am besten Testen?");
+        msg.setUser(conversation.getUser());
+        msg.setOrigin(Origin.User);
+        msg.setTime(new Date());
+        conversation.getMessages().add(msg);
+        String conversationJson = objectMapper.writerFor(Conversation.class).writeValueAsString(conversation);
+        
+        Conversation created = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.post("/conversation")
+                .header("X-Auth-Token", authToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(conversationJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andReturn().getResponse().getContentAsString(),Conversation.class);
+        
+        Assert.assertNotNull(created);
+        Assert.assertNotNull(created.getId());
     }
     
     @After

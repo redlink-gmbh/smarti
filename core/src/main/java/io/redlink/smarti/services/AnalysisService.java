@@ -108,7 +108,7 @@ public class AnalysisService {
      */
     public CompletableFuture<Analysis> analyze(Client client, Conversation con){
         if(con == null || con.getId() == null || con.getOwner() == null){
-            throw new BadArgumentException("conversation", "The conversation MUST NOT ne NULL and MUST HAVE an 'id' and an 'owner'");
+            throw new BadArgumentException("conversation", "The conversation MUST NOT be NULL and MUST HAVE an 'id' and an 'owner'");
         }
         if(client == null){
             client = clientService.get(con.getOwner());
