@@ -19,11 +19,11 @@ package io.redlink.smarti.webservice;
 import io.redlink.smarti.auth.AttributedUserDetails;
 import io.redlink.smarti.auth.SecurityConfigurationProperties;
 import io.redlink.smarti.auth.mongo.MongoUserDetailsService;
-import io.redlink.smarti.model.SmartiUser;
 import io.redlink.smarti.services.AccountService;
 import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.UserService;
 import io.redlink.smarti.webservice.pojo.AuthContext;
+import io.redlink.smarti.webservice.pojo.SmartiUserData;
 import io.redlink.smarti.webservice.pojo.UserDetailsResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
@@ -124,45 +125,47 @@ public class UserWebservice {
     }
 
     @RequestMapping(value = "/user", method = RequestMethod.GET)
-    public List<SmartiUser> listUsers(AuthContext authContext, @RequestParam(name = "filter", required = false) String filter) {
+    public List<SmartiUserData> listUsers(AuthContext authContext, @RequestParam(name = "filter", required = false) String filter) {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
 
-        return userService.listUsers(filter);
+        return userService.listUsers(filter).stream()
+                .map(SmartiUserData::fromModel)
+                .collect(Collectors.toList());
     }
 
     @RequestMapping(value = "/user", method = RequestMethod.POST, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<SmartiUser> createUser(AuthContext authContext,
-                                 @RequestBody SmartiUser user) {
+    public ResponseEntity<SmartiUserData> createUser(AuthContext authContext,
+                                 @RequestBody SmartiUserData user) {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
 
         if (StringUtils.isBlank(user.getLogin())) {
             return ResponseEntity.unprocessableEntity().build();
         }
 
-        return ResponseEntity.ok(userService.createUser(user));
+        return ResponseEntity.ok(SmartiUserData.fromModel(userService.createUser(user.toModel())));
     }
 
     @RequestMapping(value = "/user/{login}", method = RequestMethod.GET)
-    public SmartiUser getUser(AuthContext authentication,
+    public SmartiUserData getUser(AuthContext authentication,
                               @PathVariable("login") String login) {
         // Access only for ADMIN or @me
         if (authenticationService.hasLogin(authentication, login)
                 || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
-            return userService.getUser(login);
+            return SmartiUserData.fromModel(userService.getUser(login));
         } else {
             throw new AccessDeniedException("No access for " + authentication);
         }
     }
 
     @RequestMapping(value = "/user/{login}", method = RequestMethod.PUT, consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public SmartiUser updateUser(AuthContext authentication,
+    public SmartiUserData updateUser(AuthContext authentication,
                                  @PathVariable("login") String login,
-                                 @RequestBody SmartiUser user) {
+                                 @RequestBody SmartiUserData user) {
         // Access only for ADMIN or @me
         if (authenticationService.hasLogin(authentication, login)
                 || authenticationService.hasRole(authentication, AuthenticationService.ADMIN)) {
 
-            return userService.updateProfile(login, user);
+            return SmartiUserData.fromModel(userService.updateProfile(login, user.getProfile()));
         } else {
             throw new AccessDeniedException("No access for " + authentication);
         }
@@ -219,7 +222,7 @@ public class UserWebservice {
     }
 
     @ApiOperation(value = "check login", notes = "check if the provided login is already taken")
-    @RequestMapping(value = "/auth/check", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/auth/check", method = RequestMethod.GET)
     public boolean checkLoginExists(@RequestParam("login") String login) {
         // Public access
         return accountService.hasAccount(login);

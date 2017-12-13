@@ -9,6 +9,7 @@ import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.services.*;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.AuthContext;
+import io.redlink.smarti.webservice.pojo.SmartiUserData;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -19,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -114,14 +117,14 @@ public class ClientWebservice {
 
     @ApiOperation(value = "retireve auth-tokens for a client", response = AuthToken.class, responseContainer = "Set")
     @RequestMapping(value = "{id}/token", method = RequestMethod.GET)
-    public ResponseEntity<?> listAuthTokens(AuthContext authContext, @PathVariable("id") ObjectId id) {
+    public ResponseEntity<List<AuthToken>> listAuthTokens(AuthContext authContext, @PathVariable("id") ObjectId id) {
         final Client client = authenticationService.assertClient(authContext, id);
         return ResponseEntity.ok(authTokenService.getAuthTokens(client.getId()));
     }
 
     @ApiOperation(value = "create an auth-token", response = AuthToken.class)
     @RequestMapping(value = "{id}/token", method = RequestMethod.POST)
-    public ResponseEntity<?> createAuthToken(AuthContext authContext,
+    public ResponseEntity<AuthToken> createAuthToken(AuthContext authContext,
                                              @PathVariable("id") ObjectId id,
                                              @RequestBody(required = false) AuthToken token) {
         final Client client = authenticationService.assertClient(authContext, id);
@@ -135,7 +138,7 @@ public class ClientWebservice {
 
     @ApiOperation(value = "update an auth-token", response = AuthToken.class)
     @RequestMapping(value = "{id}/token/{token}", method = RequestMethod.PUT)
-    public ResponseEntity<?> updateAuthToken(AuthContext authContext,
+    public ResponseEntity<AuthToken> updateAuthToken(AuthContext authContext,
                                              @PathVariable("id") ObjectId id,
                                              @PathVariable("token") String tokenId,
                                              @RequestBody AuthToken token) {
@@ -165,18 +168,20 @@ public class ClientWebservice {
 
     @ApiOperation(value = "list users", notes = "retrieve users assigned to the given client")
     @RequestMapping("{id}/user")
-    public ResponseEntity<?> listClientUsers(AuthContext authContext,
-                                             @PathVariable("id") ObjectId id) {
+    public ResponseEntity<List<SmartiUserData>> listClientUsers(AuthContext authContext,
+                                                                @PathVariable("id") ObjectId id) {
         final Client client = authenticationService.assertClient(authContext, id);
 
-        return ResponseEntity.ok(userService.getUsersForClient(client));
+        return ResponseEntity.ok(userService.getUsersForClient(client).stream()
+                .map(SmartiUserData::fromModel)
+                .collect(Collectors.toList()));
     }
 
-    @ApiOperation(value = "create user", notes = "create a new user and assign it to the client", response = SmartiUser.class)
+    @ApiOperation(value = "create user", notes = "create a new user and assign it to the client")
     @RequestMapping(value = "{id}/user", method = RequestMethod.POST)
-    public ResponseEntity<?> createClientUser(AuthContext authContext,
-                                              @PathVariable("id") ObjectId id,
-                                              @RequestBody SmartiUser user) {
+    public ResponseEntity<SmartiUserData> createClientUser(AuthContext authContext,
+                                                           @PathVariable("id") ObjectId id,
+                                                           @RequestBody SmartiUserData user) {
         final Client client = authenticationService.assertClient(authContext, id);
 
         if (StringUtils.isBlank(user.getLogin())) {
@@ -184,12 +189,12 @@ public class ClientWebservice {
         }
         user.getClients().clear();
 
-        return ResponseEntity.ok(userService.createUserForClient(user, client));
+        return ResponseEntity.ok(SmartiUserData.fromModel(userService.createUserForClient(user.toModel(), client)));
     }
 
-    @ApiOperation(value = "assign user", notes = "assign an existing user with the client", response = SmartiUser.class)
+    @ApiOperation(value = "assign user", notes = "assign an existing user with the client")
     @RequestMapping(value = "{id}/user/{user}", method = RequestMethod.PUT)
-    public ResponseEntity<?> addClientUser(AuthContext authContext,
+    public ResponseEntity<SmartiUserData> addClientUser(AuthContext authContext,
                                               @PathVariable("id") ObjectId id,
                                               @PathVariable("user") String username) {
         final Client client = authenticationService.assertClient(authContext, id);
@@ -198,7 +203,7 @@ public class ClientWebservice {
         if (addedUser == null) {
             return ResponseEntity.notFound().build();
         } else {
-            return ResponseEntity.ok(addedUser);
+            return ResponseEntity.ok(SmartiUserData.fromModel(addedUser));
         }
     }
 
