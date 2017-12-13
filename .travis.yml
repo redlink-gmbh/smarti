@@ -29,32 +29,34 @@ jobs:
     - stage: test
     - stage: documentation
       if: branch IN (master, documentation) AND type IN (push, api)
-      script: cd docs/target/html
-                  && git init
-                  && git config user.name $GH_USER_NAME
-                  && git config user.email $GH_USER_EMAIL
-                  && git add . && git commit -m "Update gh-pages after commit $TRAVIS_COMMIT to $TRAVIS_BRANCH"
-                  && git push --force --quiet "https://$GH_TOKEN@$GH_REF" master:gh-pages > /dev/null 2>&1
+      script: true
+      deploy:
+        provider: pages
+        skip_cleanup: true
+        local_dir: docs/target/html/
+        github_token: ${GH_TOKEN}
     - stage: release
       if: tag =~ ^smarti- AND type = push
       before_script:
         - sudo apt-get -qq update
-        - sudo apt-get install -y rpm
-      script: mvn -B -f dist/ package -Pdeb,rpm
+        - sudo apt-get install -y rpm pbzip2
+      script: mvn -B -f dist/ install -Pdeb,rpm,docker
+      before_deploy:
+        - SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
+        - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
       deploy:
         provider: releases
-        api_key:
-          secure: qurrBs9JgJIze9tLkQ/0AXNbCqALhAmwAuAQ1n2RZAd3+rxrH+ktCWcXgh+sZtERmp49sMfvgZpfwgNM6o+UKugDMiK9FiSQhQrlMOk4Kg3kgzOB+af1th8t42Z83tnpNCPbyl5IfwFAeb+ruUmoDrdAMZZTlNuP9jCdrH+I4ZsyD1xWRcRR3yfYpyLfzwm41zY1qpOLdSLO3R20OnaiKoNDtvpGmRmiMZu1dvhVZv78Gy4Noy9gtPr7g3i/eXKc4wXUAdMsF+CaVfkLpEs4MrVfS+rAMxPdvj09s3bBUxwnkhIGgZV7pf1s9MOA8nUYz072uuzjbsEqee+zHC2EiID8lik5GZVZ/x6Frdhy382jGEcKUNy/mpKXy5ajx6Z154tOjYRbmM12WYesoXNEkMM6RFAx3FqF02k8a89uQhj+T5XXxFTNUQ1V5MkZBfGyOsqwCvGCQxBtvNdfKI1DZI6q725/8PBNKlqKhBveVtoek8UJGAWceNWRaf2K+w6Td1q6+9cvAH1nD/A+lcAjUP/DNzWo3fJCxzNLhHxZ04v+xCMM7aY9i3YlR9lyyp/pwO+cSHU6zvI5YT/SV9lFQOkyt/9MJ0HdCkAbX+l1ZG6G0YIOknEtcZ3snZwm4m8zBqS7pSHD272ub/oO7vBbTnzp3ng6fDarFcP2hOE61Ws=
+        api_key: ${GH_TOKEN}
         file_glob: true
         file:
           - application/target/*-exec.jar
           - dist/target/*.deb
           - dist/target/rpm/smarti/RPMS/noarch/*.rpm
+          - dist/target/*.docker.tbz2
         skip_cleanup: true
         name: ${TRAVIS_TAG}
         tag_name: ${TRAVIS_TAG}
         target_commitish: ${TRAVIS_COMMIT}
         draft: true
         on:
-          repo: redlink-gmbh/smarti
           tags: true

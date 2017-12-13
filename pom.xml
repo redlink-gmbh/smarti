@@ -21,7 +21,7 @@
 
     <groupId>io.redlink.smarti</groupId>
     <artifactId>smarti</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1-RC2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>smarti</name>
@@ -115,7 +115,7 @@
         <connection>scm:git:https://github.com/redlink-gmbh/smarti.git</connection>
         <developerConnection>scm:git:git@github.com:redlink-gmbh/smarti.git</developerConnection>
         <url>https://github.com/redlink-gmbh/smarti/src</url>
-        <tag>smarti-0.6.0</tag>
+        <tag>HEAD</tag>
     </scm>
     <issueManagement>
         <system>github</system>
@@ -211,6 +211,12 @@
 			</dependency>
 
             <dependency>
+                <groupId>io.redlink.utils</groupId>
+                <artifactId>utils</artifactId>
+                <version>1.0.2-SNAPSHOT</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>3.4</version>
@@ -221,6 +227,12 @@
 			    <artifactId>commons-collections4</artifactId>
 			    <version>4.1</version>
 			</dependency>
+
+            <dependency>
+                <groupId>commons-validator</groupId>
+                <artifactId>commons-validator</artifactId>
+                <version>1.6</version>
+            </dependency>
 
             <dependency>
                 <groupId>commons-io</groupId>
@@ -243,7 +255,7 @@
 	        <dependency>
 	            <groupId>com.google.guava</groupId>
 	            <artifactId>guava</artifactId>
-	            <version>21.0</version>
+	            <version>20.0</version><!-- solr is incompatible with 21+ -->
 	        </dependency>
 
             <dependency>

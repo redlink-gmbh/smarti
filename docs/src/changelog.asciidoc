@@ -6,8 +6,83 @@
 This document shows the changes that are introduced into Smarti with the releases.
 
 
+== Smarti 0.6.1 Release Notes
+December 7^th^, 2017
+
+Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
+This is the first Smarti release, that has a *Docker image* as part of its distribution.
+
+Smarti 0.6.1 is 100% compatible to https://github.com/redlink-gmbh/chatpal-search[chatpal.search] - A https://github.com/RocketChat/Rocket.Chat/[Rocket.Chat] package for search with chatpal backend.
+So Smarti can be used as cross-channel search engine for https://github.com/RocketChat/Rocket.Chat/[Rocket.Chat].
+
+=== New in Smarti 0.6.1
+From the feature perspective Smarti 0.6.1 introduces a simple user management including `FORM` based user authentication as well as `TOKEN` based system authentication.
+Users having the role `ADMIN` are allowed to manage clients, configurations, conversations, users and tokens.
+Regular Smarti users are only permitted to manage configurations and conversations of specific clients.
+Tokens are designed to access the Smarti API by technical systems/users.
+
+The Smarti Admin UI allows you to:
+
+* manage (create, change and delete) users,
+* permit users access to specific clients,
+* generate tokens to allow technical access,
+
+=== Improved in Smarti 0.6.1
+* https://github.com/redlink-gmbh/smarti/issues/60[#60 - Added a user authentication model]
+* https://github.com/redlink-gmbh/smarti/issues/118[#118 - Added a Smarti Docker image]
+* https://github.com/redlink-gmbh/smarti/issues/142[#142 - Added Docker image to the release deployment]
+* https://github.com/redlink-gmbh/smarti/issues/121[#121 - Added highlighting for Conversation Search]
+* https://github.com/redlink-gmbh/smarti/issues/164[#164 - Added a configuration option to trigger a full reindex on system startup]
+* https://github.com/redlink-gmbh/smarti/issues/152[#152 - Improved Docker image memory consumption by using the JVM option MaxRAMFraction]
+* https://github.com/redlink-gmbh/smarti/issues/124[#124 - Improved Docker image for running database migration scripts on startup]
+* https://github.com/redlink-gmbh/smarti/issues/145[#145 - Improved cpu consumption for a configuration that allows to set the executor service pool size]
+* https://github.com/redlink-gmbh/smarti/issues/147[#147 - Improved memory consumption to run Smarti with -Xmx4g]
+* https://github.com/redlink-gmbh/smarti/issues/101[#101 - Improved plugin information file to be consumed by ruby scripts]
+* https://github.com/redlink-gmbh/smarti/issues/136[#136 - Improved widget by using x-auth-token HTTP headers for $.ajax calls]
+* https://github.com/redlink-gmbh/smarti/issues/116[#116 - Improved widget by adding a button to clear all keywords]
+* https://github.com/redlink-gmbh/smarti/issues/128[#128 - Improved widget presentation by trimming labels of long keywords]
+* https://github.com/redlink-gmbh/smarti/issues/155[#155 - Fixed issue where no related conversations have been displayed if no tokens have been extracted]
+* https://github.com/redlink-gmbh/smarti/issues/162[#162 - Fixed issue where the conversation index runs out of synch when running Smarti on two or more instances]
+* https://github.com/redlink-gmbh/smarti/issues/157[#157 - Fixed issue where no search results have been displayed if keywords containing a # (hash) were extracted]
+* https://github.com/redlink-gmbh/smarti/issues/128[#128 - Fixed missing line breaks when very long keywords have been extracted e.g. URLs]
+* https://github.com/redlink-gmbh/smarti/issues/165[#165 - Fixed some out dated references within the documentation]
+
+=== Upgrading
+
+==== Configuration
+
+The following changes in the configuration files are recommended:
+
+.application.properties
+[source,diff]
+----
++ nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/srparser/germanSR.ser.gz
++ nlp.stanfordnlp.de.parseMaxlen=40
+
+- security.password=
++ security.config.mongo.admin-password=
+----
+
+.logback.xml
+[source,diff]
+----
+- <logger name="io.redlink.nlp" level="DEBUG"/>
++ <logger name="edu.stanford" level="INFO"/>
++ <logger name="io.redlink.nlp" level="INFO"/>
+----
+
+Previous client-configurations for `solrsearch`-query-builders might require an update of their `default` settings:
+While in previous versions those parameters needed to be url-encoded, this is now happening within the component.
+
+A migration-script is available and applied automatically on starup:
+
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-04_fix-param-encoding.js[lines=112..-1]
+-----------------------------------------------
+
 == Smarti 0.6.0 Release Notes
-06 October, 2017
+November 30^th^, 2017
 
 Smarti 0.6.0 is a search feature release.
 Conversations stored in Smarti can now be searched explicit, there is no need to create conversations in order to search within the knowledge base anymore.
@@ -70,7 +145,7 @@ include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=112..-1]
 -----------------------------------------------
 
 == Smarti 0.5.0 Release Notes
-07 August, 2017
+September 18^th^, 2017
 
 Smarti 0.5.0 is a technical architecture release. For now basic decisions about the fundamental software design are not complete.
 In short this version of Smarti solves some security aspects, ensures backward compatibility to version 0.3.0 and fixes some bugs.

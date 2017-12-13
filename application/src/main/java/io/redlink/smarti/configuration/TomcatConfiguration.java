@@ -34,14 +34,32 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "tomcat.ajp")
 public class TomcatConfiguration {
 
+    /**
+     * enable ajp-connector
+     */
     private boolean enabled = false;
 
+    /**
+     * set ajp-secure flag
+     */
     private boolean secure = false;
+    /**
+     * set allow-trace flag
+     */
     private boolean allowTrace = false;
 
+    /**
+     * port for the ajp-connector
+     */
     private int port = 9090;
 
+    /**
+     * ajp-protocol version
+     */
     private String protocol = "AJP/1.3";
+    /**
+     * scheme to use for ajp-links
+     */
     private String scheme = "http";
 
     @Bean

@@ -154,3 +154,46 @@ curl -X POST -H "content-type: application/json" "http://localhost:8080/config/c
   "status": 422
 }
 ```
+
+===== Security
+
+====== Create Access-Token
+
+Access-Tokens can be used to authenticate to smarti.
+
+```
+$ curl -XPOST 'http://localhost:9000/client/<clientId>/token' \
+    -H 'Content-Type: application/json' \
+    --data-binary '{"label":"rocket.chat"}'
+{
+  "id":"5a02d2539fcc0c7b2bf12e55",
+  "token":"3fbbc2575a309caaaf1b050c68461a1b5eec9c60/1p7NZ6IA",
+  "label":"rocket.chat",
+  "created":1510134355816
+}
+```
+
+Provide the header `X-Auth-Token: 3fbbc2575a309caaaf1b050c68461a1b5eec9c60/1p7NZ6IA` with every request for that client.
+
+====== Create User
+
+Users are assigned to one or more clients. A user has full access to
+functionality of it's clients (change modifications, create/delete users and tokens, manage conversations, etc...)
+
+```
+curl -XPOST 'http://localhost:9000/client/<clientId>/user' \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    --data-binary '{"login":"foo","profile":{"name":"Foo Bar","email":"foo@example.com"}}'
+
+{
+  "login":"foo",
+  "clients":["<clientId>"],
+  "profile": {
+    "name":"Foo Bar",
+    "email":"foo@example.com"
+  }
+}
+curl -XPUT 'http://localhost:9000/auth/foo/password' \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    --data-binary '{"password":"foo"}'
+```

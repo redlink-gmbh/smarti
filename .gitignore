@@ -29,3 +29,4 @@ ext/
 # mac related files
 .DS_Store
 solrlib
+config.js

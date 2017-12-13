@@ -15,7 +15,7 @@
 *System components*
 
 * [*] https://java.com/[JavaVM], version 1.8 (application default port: `8080`)
-* [*] https://www.mongodb.com/[MongoDB], version >= 2.6 (database default port: `27017`)
+* [*] https://www.mongodb.com/[MongoDB], version >= 2.6, < 3.6 (database default port: `27017`)
 
 CAUTION: Ensure your platform / environment running Smarti on fulfills these system requirements.
 

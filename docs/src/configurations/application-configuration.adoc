@@ -10,7 +10,7 @@ Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/cur
 
 Configurations also support Placeholders (e.g. `app.name=Smarti` and later `app.description=${app.name} is a Spring Boot application`).
 
-As alternative to Java properties file Spring Boot alows to use http://www.yaml.org/start.html[YAML]
+As alternative to Java properties file Spring Boot allows to use http://www.yaml.org/start.html[YAML]
 
 ==== Configuration Properties
 
@@ -45,6 +45,16 @@ No core component of Smarti does send mails. However in cases where modules want
 * `spring.mail.protocol=smtp`
 * `spring.mail.username=`
 * `spring.mail.password=`
+
+==== Security Configuration
+
+* `security.config.enabled = true` - turn security (auth) off/on globally, e.g. for testing
+* `security.config.implementation = mongo` - authentication backend, currently only `mongo` is supported
+* `security.config.logout-redirect =` - redirect-target after successful logout.
+* `security.config.mongo.password-hasher = SHA-256` - password encryption algorithm
+* `security.config.mongo.enable-signup = false` - enable/disable public account-creation
+* `security.config.mongo.enable-password-recovery = false` - enable/disable password recovery workflow
+* `security.config.mongo.admin-password =` - set the _default_ admin password: on startup, if there is no user with role `ADMIN`, a new user is created using this password. If left blank, a random password will be generated and printed to the log.
 
 ==== SolrLib Configuration
 
@@ -100,6 +110,7 @@ The Speak Service managed resource bundles for bot generated replay messages in 
 
 Conversation are indexed in Solr managed by SolrLib
 
+* `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup 
 * `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
 *  `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 
@@ -120,6 +131,29 @@ The analysis workflow used to process conversations can be configured by the fol
 * `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
+
+===== Analysis Threads
+
+* `smarti.processing.numThreads =`: The number of analysis threads can be configured by  the default value is `2`. For every thread one should preserve `~500MByte` additional Java Heap space. For the best usage of CPU power the number of threads should be the same as the number of cores.
+
+===== Stanford NLP
+
+Stanford NLP `3.8.0` can be used for NLP processing of German language texts. With no configuration in place it will use the default configuration as provided by the German model files of the Stanford distribution.
+
+The following configuration properties allow to change the configuration:
+
+* `nlp.stanfordnlp.de.posModel=` (default: `edu/stanford/nlp/models/pos-tagger/german/german-hgc.tagger`)
+* `nlp.stanfordnlp.de.nerModel=` (default: `edu/stanford/nlp/models/ner/german.conll.hgc_175m_600.crf.ser.gz`): Allows to include custom built NER models. Multiple models are separated by `,`.
+* `nlp.stanfordnlp.de.parseModel=` (default: `edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`): The default is a good tradeof on quality, memory and speed. Consider `edu/stanford/nlp/models/srparser/germanSR.ser.gz` for lower memory footprint and higher speed.
+* `nlp.stanfordnlp.de.parseMaxlen=` (default: `30`): Memory consumption increases with the square of this number. `30` is ok for `4g` heap.
+
+For the `parseModel` Stanford includes three models
+
+* PCFG Parser (`edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`): This is the default parser configured for Smarti. It runs fine with `4g` of heap and `parseMaxlen <= 30` (`parseMaxlen <= 40` is borderline ok)
+* Factored Parser (`edu/stanford/nlp/models/lexparser/germanFactored.ser.gz`): This is the default of Stanford NLP. It is the slowest and needs a lot of memory (especially with `parseMaxlen > 30`). Do NOT use this parser with setups providing `<8g` java heap (`-Xmx8g`)
+* Shift Reduce Parser (`edu/stanford/nlp/models/srparser/germanSR.ser.gz`): This is the fastest parser option available and recommended in situations where problems with the PCFG Parser occure. For more information see its https://nlp.stanford.edu/software/srparser.shtml[documentation] on Stanford NLP.
+
+The maximal parse length (`nlp.stanfordnlp.de.parseMaxlen`) defines the maximum number of tokens a sentence can have to be processed by the parser. As the memory requirement of the parser is roughly the square of the sentence length. https://nlp.stanford.edu/software/parser-faq.shtml#k[More information] are available in the parser FAQ.
 
 ===== Interesting Term Configuration
 

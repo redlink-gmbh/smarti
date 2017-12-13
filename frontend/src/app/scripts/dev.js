@@ -19,20 +19,17 @@
 angular
   .module('smartiApp')
   .config(function ($httpProvider) {
-    $httpProvider.interceptors.push('devAuthInterceptor');
-  })
-  .factory('devAuthInterceptor', function($location, $log) {
-    var user = $location.search().user || 'admin',
-      passwd = $location.search().passwd || user;
+    var user = 'admin',
+      passwd = user;
 
-    $log.error('!!Warning!! Using hard-coded credentials for user "' + user + '"');
-    return {
-      'request': function(config) {
-        if (user && passwd) {
-          config.withCredentials = true;
-          config.headers['Authorization'] = 'Basic ' + btoa(user+':'+passwd);
-        }
-        return config;
-      }
-    };
-  });
+    $httpProvider.defaults.useXDomain = true;
+    $httpProvider.defaults.withCredentials = true;
+
+  })
+  .run(function ($rootScope, UserService) {
+    var user = 'admin',
+      passwd = 'admin';
+    return UserService.login(user, passwd);
+
+  })
+;

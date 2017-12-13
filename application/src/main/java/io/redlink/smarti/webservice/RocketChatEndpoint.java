@@ -21,9 +21,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
+import io.redlink.smarti.query.conversation.MessageSearchService;
+import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.AuthContext;
 import io.redlink.smarti.webservice.pojo.RocketEvent;
 import io.redlink.smarti.webservice.pojo.SmartiUpdatePing;
 import io.swagger.annotations.*;
@@ -47,7 +50,9 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Webhook-Endpoint for rocket.chat
@@ -74,8 +79,14 @@ public class RocketChatEndpoint {
     @Autowired
     private ConversationService conversationService;
 
+    @Autowired
+    private AuthenticationService authenticationService;
+
     @Autowired(required = false)
     private ConversationSearchService conversationSearchService;
+
+    @Autowired(required = false)
+    MessageSearchService messageSearchService;
 
     protected final HttpClientBuilder httpClientBuilder;
 
@@ -112,15 +123,29 @@ public class RocketChatEndpoint {
     })
     @RequestMapping(value = "{clientId:.*}", method = RequestMethod.POST,
             consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> onRocketEvent(@PathVariable("clientId") String clientName,
-                                           @RequestBody RocketEvent payload) {
-        log.debug("{}: {}", clientName, payload);
+    public ResponseEntity<?> onRocketEvent(
+            AuthContext authContext,
+            @PathVariable("clientId") String clientName,
+            @RequestBody RocketEvent payload
+    ) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: {}", clientName, authContext, payload);
+        } else {
+            log.debug("{}: {}", clientName, payload);
+        }
 
-        Client client = clientService.getByName(clientName);
-        if(client == null) { //TODO: make client generation configurable
-            client = new Client();
-            client.setName(clientName);
-            client = clientService.save(client);
+        final Client client = clientService.getByName(clientName);
+        if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
+            if (log.isDebugEnabled()) {
+                if (client != null) {
+                    log.debug("Access denied to client {} for {}", client, authContext);
+                } else {
+                    log.debug("Client not found: {}", clientName);
+                }
+            }
+            return ResponseEntity.notFound().build();
+        } else {
+            log.trace("Access granted to client {} for {}", client, authContext);
         }
 
         final String channelId = createChannelId(client, payload.getChannelId());
@@ -157,7 +182,8 @@ public class RocketChatEndpoint {
             message.getMetadata().put("bot_id", payload.getBot().getIdentifier());
         }
 
-        conversation = conversationService.appendMessage(client, conversation, message, (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
+        conversation = conversationService.appendMessage(client, conversation, message, 
+                StringUtils.isBlank(payload.getCallbackUrl()) ? null : (c) -> notifyRocketChat(payload.getCallbackUrl(), c, payload.getToken()));
 
         return ResponseEntity.ok().build();
     }
@@ -200,10 +226,17 @@ public class RocketChatEndpoint {
     @RequestMapping(value = "{clientId}/{channelId}/conversationid", method = RequestMethod.GET,
         produces=MimeTypeUtils.TEXT_PLAIN_VALUE, consumes=MimeTypeUtils.ALL_VALUE)
     public ResponseEntity<?> getConversation(
+            AuthContext authContext,
             @PathVariable(value="clientId") String clientName,
             @PathVariable(value="channelId") String channelId) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: lookup conversation-id of {}", clientName, authContext, channelId);
+        } else {
+            log.debug("{}: lookup conversation-id of {}", clientName, channelId);
+        }
+
         Client client = clientService.getByName(clientName);
-        if(client == null){
+        if(client == null || !authenticationService.hasAccessToClient(authContext, client.getId())){
             return ResponseEntity.notFound().build();
         }
         Conversation conversation = conversationService.getCurrentConversationByChannelId(
@@ -224,18 +257,61 @@ public class RocketChatEndpoint {
             notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
     @RequestMapping(value = "{clientId}/search", method = RequestMethod.GET)
     public ResponseEntity<?> search(
+            AuthContext authContext,
             @PathVariable(value = "clientId") String clientName,
             @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
-            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams) {
+            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
+    ) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: search for '{}'", clientName, authContext, text);
+        } else {
+            log.debug("{}: search for '{}'", clientName, text);
+        }
 
         final Client client = clientService.getByName(clientName);
-        if (client == null) {
+        if (client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
             return ResponseEntity.notFound().build();
         }
 
         if (conversationSearchService != null) {
             try {
                 return ResponseEntity.ok(conversationSearchService.search(client, queryParams));
+            } catch (IOException e) {
+                return ResponseEntities.internalServerError(e);
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+    }
+
+    /**
+     * Allow conversation-independent search.
+     * @param clientName the client id
+     * @param request the request to get the query params
+     */
+    @ApiOperation(value = "search for messages", response = SearchResult.class,
+            notes = "like solr.")
+    @RequestMapping(value = "{clientId}/search-message", method = RequestMethod.GET)
+    public ResponseEntity<?> searchMessage(
+            AuthContext authContext,
+            @PathVariable(value = "clientId") String clientName,
+            HttpServletRequest request
+    ) {
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: message-search for '{}'", clientName, authContext, request.getParameter("q"));
+        } else {
+            log.debug("{}: message-search for '{}'", clientName, request.getParameter("q"));
+        }
+
+        final Client client = clientService.getByName(clientName);
+        if (client == null || !authenticationService.hasAccessToClient(authContext, client.getId())) {
+            return ResponseEntity.notFound().build();
+        }
+
+        final Map<String, String[]> requestParameterMap = request.getParameterMap();
+        if (conversationSearchService != null) {
+            try {
+                return ResponseEntity.ok(messageSearchService.search(client, requestParameterMap));
             } catch (IOException e) {
                 return ResponseEntities.internalServerError(e);
             }

@@ -63,7 +63,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
                 template.getSlots().stream() //at least a single filled slot
                     .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
                     .anyMatch(s -> s.getTokenIndex() >= 0);
-        log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
+        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
         return state;
     }
 

@@ -42,6 +42,10 @@ angular.module('smartiApp')
       $location.path('client/' + clientId + '/conversations');
     };
 
+    $scope.manageSecurity = function (clientId) {
+      $location.path('client/' + clientId + '/security');
+    };
+
     listClients();
 
   });

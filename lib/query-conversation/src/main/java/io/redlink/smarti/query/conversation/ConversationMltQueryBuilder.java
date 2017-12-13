@@ -38,6 +38,9 @@ import org.springframework.util.MultiValueMap;
 import java.util.Date;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.RELATED_CONVERSATION_TYPE;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_KEYWORD;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_TERM;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -53,6 +56,13 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, 
             TemplateRegistry registry) {
         super(CREATOR_NAME, solrServer, conversationCore, registry);
+    }
+
+    @Override
+    public boolean acceptTemplate(Template template) {
+        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType());
+        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
+        return state;
     }
 
     @Override
@@ -96,7 +106,11 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
                     if (s == null) return e;
                     return s + "\n\n" + e;
                 });
-
+        
+        if(StringUtils.isBlank(content)){
+            return null; //no content in the conversation to search for releated!
+        }
+        
         String displayTitle = "Ähnliche Conversationen/Threads";
         if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
             displayTitle += " (" + conversation.getContext().getDomain() + ")";
@@ -118,7 +132,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         final SolrQuery solrQuery = new SolrQuery();
         solrQuery.addField("*").addField("score");
-        solrQuery.addFilterQuery(String.format("%s:message",FIELD_TYPE));
+        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDX));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
 

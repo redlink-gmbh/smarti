@@ -26,7 +26,7 @@ angular.module('smartiApp')
       if(!client.data.id) {
         deferred.resolve(new Configuration());
       } else {
-        $http.get(ENV.serviceBaseUrl + 'client/' + client.data.id + '/config').then(function(data){
+        $http.get(ENV.serviceBaseUrl + '/client/' + client.data.id + '/config').then(function(data){
           deferred.resolve(new Configuration(data.data));
         });
       }

@@ -103,8 +103,8 @@ where:
 ** `mappings`: Defines how Solr document fields in the results are mapped to fields known by the UI presenting results
 *** `title`: the title as shown in the UI
 *** `description`: the description as shown in the UI
-*** `type`: the type of the result
-*** `doctype`: the document type of the result (e.g. `text/html`)
+*** `type`: the mime-type of the document (e.g. `text/html`)
+*** `doctype`: the type of the document (e.g. "blogpost", "webpage", "document" …)
 *** `thumb`: the thumbnail used in the UI
 *** `link`: the link to the result
 *** `date`: the date for the result (e.g. the modification date)

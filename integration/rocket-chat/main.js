@@ -66,6 +66,10 @@ const localize = new Localize({
         "en": "Page $[1] of $[2] results",
         "de": "Seite $[1] von $[2] Ergebnissens"
     },
+    "widget.latch.query.remove.all": {
+        "en": "Clear all",
+        "de": "Alle löschen"
+    },
     "widget.latch.query.paging.next":{
         "en": "Next",
         "de": "Nächste"
@@ -109,7 +113,7 @@ const Utils = {
     },
     localize: function(obj) {
         if(obj.args && obj.args.length > 0) {
-            var args_clone = ld_lang.cloneDeep(obj.args);
+            const args_clone = ld_lang.cloneDeep(obj.args);
             args_clone.unshift(obj.code);
             return localize.translate.apply(null,args_clone);
         }
@@ -120,25 +124,36 @@ const Utils = {
             case 'application/xhtml+xml': return 'html';
         }
         return doctype.substring(doctype.indexOf('/')+1).slice(0,4);
+    },
+    cropLabel: function(label,max_length,replace,mode) {
+        max_length = max_length-replace.length;
+
+        if(label.length <= max_length) return label;
+
+        switch(mode) {
+            case 'start': return label.substring(0,max_length) + replace;
+            case 'end': return replace + label.substring(label.length-max_length);
+            default:
+                const partLength = Math.floor(max_length/2);
+                return label.substring(0,partLength) + replace + label.substring(label.length-partLength);
+        }
     }
 };
 
 /**
  * Manages the interaction between Plugin and RocketChat/Smarti
- * @param {object} options: {
+ * @param {Object} options: {
  *      DDP: {
- *          endpoint: STRING
- *      },
- *      smarti: {
  *          endpoint: STRING
  *      },
  *      channel: STRING,
  *      rocket: {
- *          endpoint: STRING
+ *          socketEndpoint: STRING
  *      },
+ *      lang: STRING
  *      tracker: Tracker
  * }
- * @returns {object} {
+ * @returns {Object} {
  *      login: function(success,failure,username,password),
  *      init: function(success, failure),
  *      subscribe: function(id,handler),
@@ -158,9 +173,9 @@ function Smarti(options) {
     },options);
 
     //init socket connection
-    var ddp  = new DDP(options.DDP);
+    let ddp  = new DDP(options.DDP);
 
-    var pubsubs = {};
+    let pubsubs = {};
     /**
      * Enabled publication-subscription mechanism
      * @param id
@@ -168,7 +183,7 @@ function Smarti(options) {
      */
     //taken from http://api.jquery.com/jQuery.Callbacks/
     function pubsub( id ) {
-        var callbacks, pubsub = id && pubsubs[ id ];
+        let callbacks, pubsub = id && pubsubs[ id ];
 
         if ( !pubsub ) {
             callbacks = $.Callbacks();
@@ -191,6 +206,8 @@ function Smarti(options) {
      * @param failure method that is called on failure
      * @param username the username
      * @param password the password
+     *
+
      */
     function login(success,failure,username,password) {
 
@@ -200,15 +217,13 @@ function Smarti(options) {
          */
         function loginRequest(params) {
             const loginId = ddp.method("login", params);
-            ddp.on("result", function (message) {
-                if (message.id == loginId) {
+            ddp.on('result', function (message) {
 
+                if (message.id === loginId) {
                     if (message.error) return failure({code:"login.failed",args:[message.error.reason]});
-
                     localStorage.setItem('Meteor.loginToken',message.result.token);
                     localStorage.setItem('Meteor.loginTokenExpires',new Date(message.result.tokenExpires.$date));
                     localStorage.setItem('Meteor.userId',message.result.id);
-
                     success();
                 }
             });
@@ -244,82 +259,104 @@ function Smarti(options) {
     }
 
     /**
-     * @param success
-     * @param failure
+     * Initializes the Smarti widget, by
+     *
+     * - get the conversation Id for the clinet's channel
+     * - subscribing the given/entered channel for changes
+     *
+     * @param failure - a function called on any errors to display a message
      */
-    function init(success, failure) {
+    function init(failure) {
 
-        //subscribe
-        const subId = ddp.sub("stream-notify-room",[options.channel+"/newConversationResult",false]);
-
-        ddp.on("nosub", function(message) {
-            failure({code:'sub.new-conversation-result.nosub'});
-        });
-
-        ddp.on("changed", function(message) {
-            if(message.id = subId) {
-                fetch(message.fields.args[0]);
+        // fetch last Smarti results when the wiget gets initialized (channel entered)
+        console.debug('Smarti widget init -> try get last Smarti result for channel %s', options.channel);
+        const lastConfCallId = ddp.method("getConversationId", [options.channel]);
+        ddp.on("result", function(message) {
+            if (message.error) {
+                return failure({code:"get.conversation.params", args:[message.error.reason]});
+            } else if(message.id === lastConfCallId) {
+                if(message.result) {
+                    // message found for channel -> fetch conversation results
+                    console.debug('Smarti widget init -> get last conversation result for message: %s', message.result);
+                    getConversation(message.result, failure);
+                } else {
+                    return failure({code:'smarti.result.no-result-yet'});
+                }
             }
         });
 
-        //get last conversation result
-        const lastConfCallId = ddp.method("getLastSmartiResult",[options.channel]);
+        // subscribe changes on the channel that is passed by SmartiWidget constructor (message send)
+        console.debug('Smarti widget init -> subscribe channel %s', options.channel);
+        const subId = ddp.sub("stream-notify-room", [options.channel+"/newConversationResult", false]);
+        ddp.on("nosub", function() {
+            failure({code:'sub.new-conversation-result.nosub'});
+        });
+        ddp.on("changed", function(message) {
+            if(message.id = subId) {
+                // subscriotion has changed (message send) -> fetch conversation results
+                console.debug('Smarti widget subscription changed -> get conversation result for message: %s', message.fields.args[0]);
+                getConversation(message.fields.args[0].conversationId, failure);
+            }
+        });
+    }
+
+    /**
+     * Fetches the analyzed conversation by Id
+     *
+     * @param conversationId - the conversation Id to get the Smarti results for
+     * @param failure - a function called on any errors to display a message
+     */
+    function getConversation(conversationId, failure) {
+
+        console.debug('fetch results for conversation with Id: %s', conversationId);
+        const msgid = ddp.method("getConversation",[conversationId]);
         ddp.on("result", function(message) {
 
-            if (message.error) return failure({code:"get.conversation.params",args:[message.error.reason]});
-
-            if(message.id == lastConfCallId) {
+            if (message.error) {
+                return failure({code:"get.conversation.params",args:[message.error.reason]});
+            } else if(message.id === msgid) {
                 if(message.result) {
-                    fetch(message.result);
-                    if(success) success();
+                    // why don't call query() from here instead using a subscrition?
+                    pubsub('smarti.data').publish(message.result);
                 } else {
                     if(failure) failure({code:'smarti.result.no-result-yet'});
                 }
             }
         });
-
     }
 
-    function fetch(params) {
+    function query(params, success, failure) {
 
-        console.debug('fetch results for %s with token %s', params.conversationId, params.token);
+      console.debug('get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
+      const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
+      ddp.on("result", function(message) {
 
-        $.ajax({
-            url: options.smarti.endpoint + 'conversation/' + params.conversationId,
-            success: function(data){
+          if (message.error) return failure({code:"get.query.params",args:[message.error.reason]});
 
-                console.debug('received conversation results for %s:\n%s', params.conversationId, JSON.stringify(data,null,2));
-
-                pubsub('smarti.data').publish(data);
-            },
-            failure: function(err) {
-                console.error('conversation does not exist on smarti:',JSON.stringify(err,null,2));
-            },
-            dataType: "json"
-        });
-
+          if(message.id === msgid) {
+              if(message.result) {
+                  success(message.result);
+              } else {
+                  if(failure) failure({code:'smarti.result.no-result-yet'});
+              }
+          }
+      });
     }
 
-    function query(params,success,failure) {
-
-        $.getJSON(options.smarti.endpoint + 'conversation/' + params.conversationId + '/template/' + params.template + '/' + params.creator + '?&start=' + params.start,
-            function(data){
-                success(data);
-            }, function(err) {
-
-                console.error('cannot get query results for params:\n%s\n,');
-
-                failure({msg:err});
-            }
-        )
-    }
-
+    /**
+     * Posts a Smarti result to the message input field of Rocket.Chat
+     *
+     * @param msg
+     * @param attachments
+     * @param success
+     * @param failure
+     */
     function post(msg,attachments,success,failure) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
 
         ddp.on("result", function(message) {
-            if(message.id == methodId) {
-                if(message.error && error) {
+            if(message.id === methodId) {
+                if(message.error && failure) {
 
                     console.debug('cannot post message:\n%s', JSON.stringify(message.error,null,2));
 
@@ -357,38 +394,47 @@ function Tracker(category, roomId, onEvent) {
 
 /**
  * Generates a smarti widget and appends it to element
- * @param {element} element a dom element
- * @param {object} _options: {
- *       socketEndpoint: "ws://localhost:3000/websocket/",
- *       smartiEndpoint: 'http://localhost:8080/',
- *       channel: 'GENERAL',
- *       widget:{
- *       },
- *       lang:'de',
- *       inputFieldSelector: '.selector'
- *   }
- * @returns {object
  *
- * }
+ * @param {element} element a dom element
+ *
+ * @param {Object} _options: {
+ *       socketEndpoint: 'ws://localhost:3000/websocket/',
+ *       channel: 'GENERAL',
+ *       postings: {
+ *          type: 'WIDGET_POSTING_TYPE',
+ *          cssInputSelector: '.rc-message-box .js-input-message'
+ *       }
+ *       lang:'de'
+ *   }
+ *
+ * @returns {Object}
+ *
  * @constructor
  */
-function SmartiWidget(element,_options) {
+function SmartiWidget(element, _options) {
 
-    var initialized = false;
+    let options;
+    let initialized = false;
 
-    var options = {
-        socketEndpoint: "ws://localhost:3000/websocket/",
-        smartiEndpoint: 'http://localhost:8080/',
+    options = {
+        socketEndpoint: 'ws://localhost:3000/websocket/',
         channel: 'GENERAL',
         postings: {
             type: 'suggestText', // possible values: suggestText, postText, postRichText
             cssInputSelector: '.message-form-text.input-message'
         },
-        widget: {
-        },
+        widget: {},
         tracker: {
-            onEvent: (typeof Piwik != 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function(){},
+            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function () {
+            },
             category: "knowledgebase"
+        },
+        ui: {
+            tokenpill: {
+                textlength: 30,
+                textreplace: '...',
+                textreplacemode: 'middle'
+            }
         },
         lang: 'de'
     };
@@ -399,11 +445,11 @@ function SmartiWidget(element,_options) {
 
     localize.setLocale(options.lang);
 
-    var tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
+    let tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
 
-    var widgets = [];
+    let widgets = [];
 
-    var messageInputField = undefined;
+    let messageInputField = undefined;
 
     function InputField(elem) {
         this.post = function(msg) {
@@ -413,9 +459,9 @@ function SmartiWidget(element,_options) {
         }
     }
 
-    if(options.postings && options.postings.type == 'suggestText') {
+    if(options.postings && options.postings.type === 'suggestText') {
         if(options.postings.cssInputSelector) {
-            var inputFieldELement = $(options.postings.cssInputSelector);
+            let inputFieldELement = $(options.postings.cssInputSelector);
             if(inputFieldELement.length) {
                 messageInputField = new InputField(inputFieldELement);
             } else {
@@ -429,9 +475,11 @@ function SmartiWidget(element,_options) {
     }
 
     /**
-     * @param params
+     * @param {Object} params
+     * @param {Object} params.query
+     * @param {Object} params.query.resultConfig
      * @param wgt_conf
-     * @returns {object} {
+     * @returns {Object} {
      *      refresh: FUNCTION
      * }
      * @constructor
@@ -439,14 +487,16 @@ function SmartiWidget(element,_options) {
     function IrLatchWidget(params,wgt_conf) {
 
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
-
         params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
-        var content = $('<div>').appendTo(params.elem);
+        let content = $('<div>').appendTo(params.elem);
 
         function createTermPill(token) {
 
             return $('<div class="smarti-token-pill">')
-                .append($('<span>').text(token.value))
+                .append($('<span>')
+                    .text(
+                        Utils.cropLabel(token.value, options.ui.tokenpill.textlength, options.ui.tokenpill.textreplace, options.ui.tokenpill.textreplacemode))
+                    ).attr('title', token.value)
                 .append('<i class="icon-cancel"></i>')
                 .data('token',token)
                 .click(function(){
@@ -458,21 +508,44 @@ function SmartiWidget(element,_options) {
 
         //TODO should be done server side
         function removeDuplicatesBy(keyFn, array) {
-            var mySet = new Set();
+            let mySet = new Set();
 
             return array.filter(function(x) {
-                var key = keyFn(x), isNew = !mySet.has(key);
+                let key = keyFn(x), isNew = !mySet.has(key);
                 if (isNew) mySet.add(key);
                 return isNew;
             });
         }
 
-        var termPills = $('<div class="smarti-token-pills">').appendTo(content);
+        let termPills = $('<div class="smarti-token-pills">').appendTo(content);
+        let termPillCancel = $('<div class="smarti-token-pills-remove">').append(
+            $('<button>').text(
+                Utils.localize({code:'widget.latch.query.remove.all'})
+            ).click(function(){
+                clearAllTokens();
+            })
+        );
+        termPillCancel.appendTo(content);
 
-        function perparePillTokens(slots,tokens) {
-            var pillTokens = [];
-            $.each(slots,function(i,slot){
-                if(slot.tokenIndex != undefined && slot.tokenIndex > -1) {
+        function clearAllTokens() {
+            termPills.children().each(function(){
+                $(this).hide();
+            });
+            getResults(0);
+            tracker.trackEvent(params.query.creator + ".tag.remove-all");
+        }
+
+        /**
+         * @param {Object[]} slots
+         * @param {Number} slots.tokenIndex
+         * @param tokens
+         *
+         * @returns {Array}
+         */
+        function perparePillTokens(slots, tokens) {
+            let pillTokens = [];
+            $.each(slots, function(i, slot){
+                if(slot.tokenIndex !== undefined && slot.tokenIndex > -1) {
                     pillTokens.push(tokens[slot.tokenIndex]);
                 } else if(!slot.tokenIndex) {
                     pillTokens.push(slot.token);
@@ -482,7 +555,7 @@ function SmartiWidget(element,_options) {
         }
 
 
-        var pillTokens = perparePillTokens(params.slots,params.tokens);
+        let pillTokens = perparePillTokens(params.slots,params.tokens);
 
         $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
             termPills.append(createTermPill(t));
@@ -492,16 +565,16 @@ function SmartiWidget(element,_options) {
 
             console.debug('refresh ir-latch search widget:\n%s', JSON.stringify(data,null,2));
 
-            var tokens = data.tokens;
-            var slots = data.templates[params.tempid].slots;
-            var pillTokens = perparePillTokens(slots,tokens);
+            let tokens = data.tokens;
+            let slots = data.templates[params.tempid].slots;
+            let pillTokens = perparePillTokens(slots,tokens);
 
-            var reload = false;
+            let reload = false;
 
             $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
-                var contained = false;
+                let contained = false;
                 $.each(termPills.children(), function(j,tp){
-                    if($(tp).data('token').value == t.value) {
+                    if($(tp).data('token').value === t.value) {
                         contained = true;
                     }
                 });
@@ -516,77 +589,89 @@ function SmartiWidget(element,_options) {
             }
         }
 
-        var inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
-        var inputField = inputForm.find('input');
+        let inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
+        let inputField = inputForm.find('input');
 
         inputField.keypress(function(e){
-            if(e.which == 13) {
-                var val = $(this).val();
-                if(val!= undefined && val != "") {
+            if(e.which === 13) {
+                let val = $(this).val();
+                if(val!== undefined && val !== '') {
                     termPills.append(createTermPill({
                         origin:'User',
                         value:val,
                         type:'Keyword'
                     }));
-                    $(this).val("");
-                    tracker.trackEvent(params.query.creator + ".tag.add");
+                    $(this).val('');
+                    tracker.trackEvent(params.query.creator + '.tag.add');
                 }
                 getResults(0);
             }
         });
 
         params.elem.append(inputForm);
-        var resultCount = $('<h3></h3>').appendTo(params.elem);
-        var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
-        var results = $('<ul class="search-results">').appendTo(params.elem);
-        var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+        let resultCount = $('<h3></h3>').appendTo(params.elem);
+        let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div> </div>').hide().appendTo(params.elem);
+        let results = $('<ul class="search-results">').appendTo(params.elem);
+        let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page) {
-            var tks = termPills.children(':visible').map(function(){return $(this).data().token.value}).get().join(" ");
+            let tks = termPills.children(':visible')
+                .map(function(){return $(this).data().token.value})
+                .get()
+                .join(" ");
+
+            let queryParams = {
+                'wt': 'json',
+                'fl': '*,score',
+                'rows': numOfRows,
+                'q':  tks
+            };
 
             //TODO still a hack !!!
-            params.query.url = params.query.url.substring(0,params.query.url.indexOf('?')) + '?wt=json&fl=*,score&rows=' + numOfRows + '&q=' + tks;
-            if (wgt_conf.suffix) {
-                params.query.url += wgt_conf.suffix;
-            }
+            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
 
             //append params
-            for(var property in params.query.defaults) {
-                params.query.url += '&' + property + "=" + params.query.defaults[property];
+            for(let property in params.query.defaults) {
+                if (params.query.defaults.hasOwnProperty(property))
+                    queryParams[property] = params.query.defaults[property];
             }
-
-            if(page > 0) {
-                //append paging
-                params.query.url += '&start=' + (page*numOfRows);
-            } else {
-                page = 0;
-            }
+            queryParams.start = page > 0 ? (page*numOfRows) : 0;
 
             results.empty();
             resultCount.empty();
             resultPaging.empty();
             loader.show();
 
-            console.log(`executeSearch ${ params.query.url }`);
+            // external Solr search
+            console.log(`executeSearch ${ params.query.url }, with ${queryParams}`);
             $.ajax({
                 url: params.query.url,
+                data: queryParams,
+                traditional: true,
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
                 failure: function(err) {
                     console.error({code:'widget.latch.query.failed',args:[params.query.displayTitle,err.responseText]});
                 },
+                /**
+                 *
+                 * @param {Object} data
+                 * @param {Object} data.response
+                 * @param {Number} data.response.numFound
+                 *
+                 */
                 success: function(data){
                     loader.hide();
 
                     tracker.trackEvent(params.query.creator + "",data.response.numFound);
 
-                    if(data.response.numFound == 0) {
+                    if(data.response.numFound === 0) {
                         resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
                         return;
                     }
 
                     //map to search results
-                    var docs = $.map(data.response.docs, function(doc) {
+                    let docs = $.map(data.response.docs, function(doc) {
                         return {
                             source: params.query.resultConfig.mappings.source ? doc[params.query.resultConfig.mappings.source] : undefined,
                             title: params.query.resultConfig.mappings.title ? doc[params.query.resultConfig.mappings.title] : undefined,
@@ -601,24 +686,24 @@ function SmartiWidget(element,_options) {
                     resultCount.text(Utils.localize({code:'widget.latch.query.header',args:[data.response.numFound]}));
 
                     $.each(docs,function(i,doc){
-                        var docli = $('<li>' +
+                        let docli = $('<li>' +
                             (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
                             '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+(doc.date ? doc.date.toLocaleDateString() : '')+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
                             '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
-                            (i+1 != docs.length ? '<li class="result-separator"><div></div></li>':'') +
+                            (i+1 !== docs.length ? '<li class="result-separator"><div></div></li>':'') +
                             '</li>');
 
                         docli.find('.postAnswer').click(function(){
-                            var text = Utils.localize({code:"widget.latch.answer.title",args:[params.query.displayTitle]});
-                            var attachments = [{
+                            let text = Utils.localize({code:"widget.latch.answer.title",args:[params.query.displayTitle]});
+                            let attachments = [{
                                 title: doc.title,
                                 title_link: doc.link,
                                 thumb_url: doc.thumb ? doc.thumb : undefined,
                                 text:doc.description
                             }];
-                            if(options.postings && options.postings.type == 'suggestText') {
+                            if(options.postings && options.postings.type === 'suggestText') {
                                 messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
-                            } else if(options.postings && options.postings.type == 'postText') {
+                            } else if(options.postings && options.postings.type === 'postText') {
                                 smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
                             } else {
                                 smarti.post(text,attachments);
@@ -630,8 +715,8 @@ function SmartiWidget(element,_options) {
                         results.append(docli);
                     });
 
-                    var prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
-                    var next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');;
+                    let prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
+                    let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
 
                     if(page > 0) {
                         prev.click(function(){
@@ -656,7 +741,6 @@ function SmartiWidget(element,_options) {
                         .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.response.numFound/numOfRows)))
                         .append($('<td class="pageLink pageLinkRight">').append(next))
                         .appendTo(resultPaging);
-
                 }
             });
         }
@@ -670,25 +754,24 @@ function SmartiWidget(element,_options) {
 
     /**
      * @param params
-     * @param wgt_conf
-     * @returns {object} {
+     * @returns {Object} {
      *      refresh: FUNCTION
      * }
      * @constructor
      */
-    function ConversationWidget(params,wgt_conf = {}) {
+    function ConversationWidget(params) {
 
         params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
-        function refresh(data) {
+        function refresh() {
             getResults(0);
         }
 
-        var loader = $('<div class="loading-animation"> <div class="bounce1"></div> <div class="bounce2"></div> <div class="bounce3"></div> </div>').hide().appendTo(params.elem);
-        var msg = $('<div class="no-result">').appendTo(params.elem);
-        var results = $('<ul class="search-results">').appendTo(params.elem);
+        let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>').hide().appendTo(params.elem);
+        let msg = $('<div class="no-result">').appendTo(params.elem);
+        let results = $('<ul class="search-results">').appendTo(params.elem);
 
-        var resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+        let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page, pageSize) {
 
@@ -697,14 +780,14 @@ function SmartiWidget(element,_options) {
             loader.show();
             resultPaging.empty();
 
-            var start = pageSize ? page*pageSize : 0;
+            let start = pageSize ? page * pageSize : 0;
 
             smarti.query({
                 conversationId: params.id,
                 template: params.tempid,
                 creator: params.query.creator,
                 start: start
-            }, function(data){
+            }, function(data) {
 
                 loader.hide();
 
@@ -715,18 +798,23 @@ function SmartiWidget(element,_options) {
                     return;
                 }
 
-                function buildLink(msgid) {
-                    return "http://permalink.org?msg="+msgid; //TODO permalinks
-                }
-
+                /**
+                 * @param {Object} doc
+                 * @param {Object} doc.answers
+                 * @param {String} doc.userName
+                 * @param {String} doc.content
+                 * @param {String} doc.timestamp
+                 *
+                 * @returns {{author_name: string, author_icon: *, text, attachments: Array, bot: string, ts}}
+                 */
                 function buildAttachments(doc) {
-                    var attachment = {
+                    let attachment = {
                         author_name: "\t",
                         author_icon: Utils.getAvatarUrl(doc.userName),
                         text: doc.content,
                         attachments: [],
                         bot: 'assistify',
-                        ts:doc.timestamp
+                        ts: doc.timestamp
                     };
 
                     $.each(doc.answers, function(i,answer) {
@@ -739,11 +827,11 @@ function SmartiWidget(element,_options) {
                 $.each(data.docs, function (i, doc) {
 
                     function getSubcontent(docs,mainUser) {
-                        var result = $('<ul>');
+                        let result = $('<ul>');
 
                         $.each(docs, function(j,subdoc){
 
-                            var liClass = mainUser == subdoc.userName ? 'question' : 'answer';
+                            let liClass = mainUser === subdoc.userName ? 'question' : 'answer';
 
                             result.append($('<li>')
                                 .addClass(liClass)
@@ -753,12 +841,12 @@ function SmartiWidget(element,_options) {
                                     .append($('<div>').addClass('result-actions').append(
                                         $('<button>').addClass('postMessage').click(function(){
 
-                                            var text = Utils.localize({code:"widget.conversation.answer.title_msg"});
-                                            var attachments = [buildAttachments(subdoc)];
+                                            let text = Utils.localize({code:"widget.conversation.answer.title_msg"});
+                                            let attachments = [buildAttachments(subdoc)];
 
-                                            if(options.postings && options.postings.type == 'suggestText') {
+                                            if(options.postings && options.postings.type === 'suggestText') {
                                                 messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
-                                            } else if(options.postings && options.postings.type == 'postText') {
+                                            } else if(options.postings && options.postings.type === 'postText') {
                                                 smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
                                             } else {
                                                 smarti.post(text,attachments);
@@ -773,7 +861,7 @@ function SmartiWidget(element,_options) {
                         return result;
                     }
 
-                    var docli = $('<li>')
+                    let docli = $('<li>')
                         .append('<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+Utils.getAvatarUrl(doc.userName)+'\')"></div></div>')
                         .append($('<div>').addClass('result-content')
                             .append($('<div>').addClass('result-content-title')
@@ -794,8 +882,8 @@ function SmartiWidget(element,_options) {
                             .append(getSubcontent(doc.answers,doc.userName)).hide())
                         .append($('<div>').addClass('result-actions').append(
                             $('<button>').addClass('postAnswer').addClass('button').text(Utils.localize({code:'widget.conversation.post-all',args:[doc.answers.length+1]})).click(function(){
-                                var text = Utils.localize({code:'widget.conversation.answer.title'});
-                                var attachments = [buildAttachments(doc)];
+                                let text = Utils.localize({code:'widget.conversation.answer.title'});
+                                let attachments = [buildAttachments(doc)];
 
                                 function createTextMessage() {
                                     text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
@@ -805,9 +893,9 @@ function SmartiWidget(element,_options) {
                                     return text;
                                 }
 
-                                if(options.postings && options.postings.type == 'suggestText') {
+                                if(options.postings && options.postings.type === 'suggestText') {
                                     messageInputField.post(createTextMessage());
-                                } else if(options.postings && options.postings.type == 'postText') {
+                                } else if(options.postings && options.postings.type === 'postText') {
                                     smarti.post(createTextMessage(),[]);
                                 } else {
                                     smarti.post(text,attachments);
@@ -816,15 +904,15 @@ function SmartiWidget(element,_options) {
                                 tracker.trackEvent("conversation.post", i);
                             }).append('<i class="icon-paper-plane"></i>')));
 
-                        if(i + 1 != data.length) {
+                        if(i + 1 !== data.length) {
                             docli.append('<li class="result-separator"><div></div></li>');
                         }
 
                     results.append(docli);
                 });
 
-                var prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
-                var next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
+                let prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
+                let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
 
                 if(page > 0) {
                     prev.click(function(){
@@ -850,7 +938,8 @@ function SmartiWidget(element,_options) {
                     .append($('<td class="pageLink pageLinkRight">').append(next))
                     .appendTo(resultPaging);
 
-            });
+            }, showError
+          );
         }
 
         getResults(0);
@@ -865,14 +954,20 @@ function SmartiWidget(element,_options) {
 
     element.empty();
 
-    var mainDiv = $('<div>').addClass('widget').appendTo(element);
+    let mainDiv = $('<div>').addClass('widget').appendTo(element);
 
-    var contentDiv = $('<div>').appendTo(mainDiv);
-    var messagesDiv = $('<div>').appendTo(mainDiv);
+    let contentDiv = $('<div>').appendTo(mainDiv);
+    let messagesDiv = $('<div>').appendTo(mainDiv);
 
     //Smarti
 
-    var smarti = new Smarti({DDP:{endpoint:options.socketEndpoint},tracker:tracker,smarti:{endpoint:options.smartiEndpoint},channel:options.channel,rocket:{endpoint:options.rocketBaseurl}});//TODO wait for connect?
+    let smarti = new Smarti({
+      DDP: {
+        endpoint: options.socketEndpoint
+      },
+      tracker: tracker,
+      channel: options.channel
+    });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', function(data){
         refreshWidgets(data);
@@ -886,12 +981,12 @@ function SmartiWidget(element,_options) {
 
         contentDiv.empty();
 
-        var form = $('<form><span>Username</span><input type="text"><br><span>Password</span><input type="password"><br><button>Submit</button></form>');
+        let form = $('<form><span>Username</span><input type="text"><br><span>Password</span><input type="password"><br><button>Submit</button></form>');
 
         form.find('button').click(function(){
 
-            var username = form.find('input[type="text"]').val();
-            var password = form.find('input[type="password"]').val();
+            let username = form.find('input[type="text"]').val();
+            let password = form.find('input[type="password"]').val();
 
             smarti.login(
                 initialize,
@@ -915,7 +1010,7 @@ function SmartiWidget(element,_options) {
             $.each(data.templates, function(i, template){
                 $.each(template.queries, function(j, query) {
 
-                    var constructor = undefined;
+                    let constructor = undefined;
 
                     switch(template.type) {
                         case 'ir_latch':
@@ -925,9 +1020,9 @@ function SmartiWidget(element,_options) {
                     }
 
                     if(constructor && (options.widget[query.creator] ? !options.widget[query.creator].disabled : true)) {
-                        var elem = $('<div class="smarti-widget">').appendTo(contentDiv);
+                        let elem = $('<div class="smarti-widget">').appendTo(contentDiv);
 
-                        var params = {
+                        let params = {
                             elem:elem,
                             id:data.id,
                             slots:template.slots,
@@ -936,7 +1031,7 @@ function SmartiWidget(element,_options) {
                             query:query
                         };
 
-                        var config = options.widget[query.creator] || {};
+                        let config = options.widget[query.creator] || {};
 
                         widgets.push(new constructor(params,config))
                     }
@@ -957,7 +1052,7 @@ function SmartiWidget(element,_options) {
     }
 
     function initialize() {
-        smarti.init(null,showError);
+        smarti.init(showError);
     }
 
     smarti.login(
@@ -966,7 +1061,7 @@ function SmartiWidget(element,_options) {
     );
 
     //append lightbulb close (only one handler!)
-    var tabOpenButton = $('.flex-tab-container .flex-tab-bar .icon-lightbulb').parent();
+    let tabOpenButton = $('.flex-tab-container .flex-tab-bar .icon-lightbulb').parent();
 
     tabOpenButton.unbind('click.closeTracker');
 
