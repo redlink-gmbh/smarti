@@ -1,0 +1,336 @@
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+<body>
+<script>
+    $(document).ready(function () {
+        var selectionCount = 0;
+
+        $('#widgetBody').scroll(function (event) {
+            if ($('#widgetBody').scrollTop() > 1) {
+                $('h4').slideUp(250);
+                $('#innerTabSearch').slideUp(100);
+                $('nav#tabs').addClass('shadow');
+            }
+            else {
+                $('h4').slideDown(200);
+                $('#innerTabSearch').slideDown(100);
+                $('nav#tabs').removeClass('shadow');
+            }
+        });
+
+        $('nav#tabs').on('click', '.more', function () {
+            if ($('.moreSources').hasClass('open')) {
+                $('.moreSources').slideUp(100).removeClass('open');
+                $(this).html("Kanäle");
+            } else {
+                $('.moreSources').slideDown(200).addClass('open');
+                $(this).html(" <svg width=\"8px\" height=\"8px\" class=\"close\" viewBox=\"0 0 8 8\" version=\"1.1\"\n" +
+                    "                     xmlns=\"http://www.w3.org/2000/svg\"\n" +
+                    "                     xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n" +
+                    "                    <!-- Generator: Sketch 48.1 (47250) - http://www.bohemiancoding.com/sketch -->\n" +
+                    "                    <desc>Created with Sketch.</desc>\n" +
+                    "                    <defs></defs>\n" +
+                    "                    <g id=\"Page-1\" stroke=\"none\" stroke-width=\"1\" fill=\"none\" fill-rule=\"evenodd\">\n" +
+                    "                        <g id=\"Desktop-HD\" transform=\"translate(-1343.000000, -194.000000)\">\n" +
+                    "                            <image id=\"np_multiply_1156273_000000\" x=\"1341\" y=\"192\" width=\"12\" height=\"12\"\n" +
+                    "                                   xlink:href=\"data:image/png;base64,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\"></image>\n" +
+                    "                        </g>\n" +
+                    "                    </g>\n" +
+                    "                </svg>");
+            }
+        });
+
+        $('nav#tabs .moreSources').on('click', 'li', function () {
+            var newSelection = $(this).html();
+            var currentSelection = $('nav#tabs .current').html();
+            $(this).html(currentSelection);
+            $('nav#tabs .current').html(newSelection);
+            $('.moreSources').slideUp(100).removeClass('open');
+            $('nav#tabs .more').html("Kanäle");
+            $('#innerTabSearch input').attr('placeholder', 'Suchen in "'+newSelection.split(' (')[0]+'\"');
+        });
+
+        $('#searchWidgetContainer').on('click', '.message .selectMessage', function () {
+
+            if ($(this).parent().parent().hasClass('parent')) {
+                $(this).parent().parent().next('.responseContainer').slideDown(200);
+            }
+
+            if ($(this).parent().parent().hasClass('selected')) {
+                $(this).parent().parent().removeClass('selected');
+                selectionCount--;
+            } else {
+                $(this).parent().parent().addClass('selected');
+                selectionCount++;
+            }
+
+            if (selectionCount == 1) {
+                $('#postSelected').css('transform', 'translateY(0)').html("Selektierte Nachricht posten");
+            }
+            else if (selectionCount > 1) {
+                $('#postSelected').css('transform', 'translateY(0)').html("Selektierte Nachrichten posten");
+            }
+            else {
+                $('#postSelected').css('transform', 'translateY(200%)');
+            }
+
+        });
+
+        $('#searchWidgetContainer').on('click', '.message.parent .answers', function () {
+            $(this).parent().parent().parent().next('.responseContainer').toggle(200);
+        });
+
+        $('#tags').on('click', 'li:not(".add, .remove")', function () {
+            $(this).remove();
+        });
+
+        $('li.remove').on('click', function () {
+            $('#tags li').not('.add, .remove').remove();
+        });
+
+        $('li.add').on('click', function () {
+            $(this).addClass('active').html('<input type="text" id="newTagInput" placeholder="New tag">');
+            $('#newTagInput').focus();
+        });
+
+        $(document).keydown(function (e) {
+            if ((e.which == 13) && ($('li.add').hasClass('active'))) {
+                var newTag = $('#newTagInput').val();
+                if (newTag == "") {
+                    alert("Leeres Tag kann nicht angelegt werden.");
+                } else {
+                    $('#tags ul').children('li.add').after('<li>' + newTag + '</li>');
+                    $('li.add').html('+').removeClass('active');
+                }
+            }
+
+            if ((e.which == 27) && ($('li.add').hasClass('active'))) {
+                $('li.add').html('+').removeClass('active');
+            }
+        });
+    });
+</script>
+<aside id="searchWidgetContainer">
+    <div id="widgetWrapper">
+        <div id="widgetHeader">
+            <div class="wrapper">
+                <svg width="8px" height="8px" class="close" viewBox="0 0 8 8" version="1.1"
+                     xmlns="http://www.w3.org/2000/svg"
+                     xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <!-- Generator: Sketch 48.1 (47250) - http://www.bohemiancoding.com/sketch -->
+                    <desc>Created with Sketch.</desc>
+                    <defs></defs>
+                    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                        <g id="Desktop-HD" transform="translate(-1343.000000, -194.000000)">
+                            <image id="np_multiply_1156273_000000" x="1341" y="192" width="12" height="12"
+                                   xlink:href="data:image/png;base64,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"></image>
+                        </g>
+                    </g>
+                </svg>
+
+                <h4>
+                    <img src="bulb.png" alt="Bulb-icon">
+                    Wissensbasis
+                </h4>
+
+                <div id="tags">
+                    <span>Ergebnisse zu:</span>
+                    <ul>
+                        <li class="add">+</li>
+                        <li>Bild</li>
+                        <li>hochladen</li>
+                        <li class="remove">Alle löschen</li>
+                    </ul>
+                </div>
+            </div>
+
+            <nav id="tabs">
+                <div id="tabContainer">
+                    <span class="nav-item current">Expertengespräche (7)</span>
+                    <span class="nav-item more">Kanäle</span>
+                </div>
+                <ul class="moreSources">
+                    <li>Wiki (21)</li>
+                    <li>DB Search (3)</li>
+                    <li>Noch ein Kanal (100)</li>
+                    <li>Noch ein Kanal (100)</li>
+                </ul>
+            </nav>
+
+            <div id="innerTabSearch">
+                <input type="search" placeholder='Suchen in "Expertengespräche"'>
+                <a href="#" id="innerTabSearchSubmit">
+                    <img src="search.png" alt="delete">
+                </a>
+            </div>
+        </div>
+        <div id="widgetBody">
+            <div class="content">
+                <div class="message parent">
+                    <div class="middle">
+                        <div class="datetime">
+                            27.11.2017, 16:49:22
+                            <span class="topRated">Top</span>
+                            <span class="answers">3 Antwort</span>
+                        </div>
+                        <div class="title">Was ist Solr?</div>
+                        <div class="text"></div>
+                        <div class="postAction">Konversation posten</div>
+                        <div class="selectMessage"></div>
+                    </div>
+                </div>
+                <div class="responseContainer">
+                    <div class="message">
+                        <div class="middle">
+                            <div class="datetime">
+                                27.11.2017, 16:49:22
+                            </div>
+                            <div class="title">Was ist Solr?</div>
+                            <div class="text"></div>
+                            <div class="postAction">Nachricht posten</div>
+                            <div class="selectMessage"></div>
+                        </div>
+                    </div>
+                    <div class="message">
+                        <div class="middle">
+                            <div class="datetime">
+                                27.11.2017, 16:49:22
+                            </div>
+                            <div class="title">Was ist Solr?</div>
+                            <div class="text"></div>
+                            <div class="postAction">Nachricht posten</div>
+                            <div class="selectMessage"></div>
+                        </div>
+                    </div>
+                    <div class="message">
+                        <div class="middle">
+                            <div class="datetime">
+                                27.11.2017, 16:49:22
+                            </div>
+                            <div class="title">Was ist Solr?</div>
+                            <div class="text"></div>
+                            <div class="postAction">Nachricht posten</div>
+                            <div class="selectMessage"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="message">
+                    <div class="middle">
+                        <div class="datetime">
+                            27.11.2017, 16:49:22
+                            <span class="topRated">Top</span>
+                            <span class="answers"></span>
+                        </div>
+                        <div class="title">Was ist Solr?</div>
+                        <div class="text">habitant morbi tristique senectus et netus et malesuada fames ac turpis
+                            egestas sed tempus
+                            urna et pharetra pharetra massa massa ultricies mi quis hendrerit dolor magna eget est lorem
+                            ipsum dolor sit amet consectetur adipiscing elit pellentesque habitant morbi tristique
+                            senectus et netus et malesuada fames ac turpis
+                        </div>
+                        <div class="postAction">Konversation posten</div>
+                        <div class="selectMessage"></div>
+                    </div>
+                </div>
+                <div class="message">
+                    <div class="middle">
+                        <div class="datetime">
+                            27.11.2017, 16:49:22
+                            <span class="answers"></span>
+                        </div>
+                        <div class="title">Was ist Solr?</div>
+                        <div class="text">
+                            habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas sed tempus
+                            urna et pharetra pharetra massa massa ultricies mi quis hendrerit dolor magna eget est lorem
+                            ipsum dolor sit amet consectetur adipiscing elit pellentesque habitant morbi tristique
+                            senectus et netus et malesuada fames ac turpis egestas integer eget aliquet nibh praesent
+                            tristique magna sit amet purus gravida quis blandit turpis cursus in hac habitasse platea
+                            dictumst quisque sagittis purus sit amet volutpat consequat mauris nunc congue nisi vitae
+                            suscipit tellus mauris a diam maecenas sed enim ut sem viverra aliquet eget sit amet tellus
+                            cras adipiscing enim eu turpis egestas pretium aenean pharetra magna ac placerat vestibulum
+                            lectus mauris ultrices eros in cursus turpis massa tincidunt dui ut ornare lectus sit amet
+                            est placerat in egestas erat imperdiet sed euismod nisi porta lorem mollis aliquam ut
+                            porttitor leo a diam sollicitudin tempor id eu nisl nunc mi ipsum faucibus vitae aliquet nec
+                            ullamcorper sit amet risus nullam eget felis eget nunc lobortis mattis aliquam faucibus
+                            purus in massa tempor nec feugiat nisl pretium fusce id velit ut tortor pretium viverra
+                            suspendisse potenti nullam ac tortor vitae purus faucibus ornare suspendisse sed nisi lacus
+                            sed viverra tellus in hac habitasse platea dictumst vestibulum rhoncus est pellentesque elit
+                            ullamcorper dignissim cras tincidunt lobortis feugiat vivamus at augue eget arcu dictum
+                            varius duis at consectetur lorem donec massa sapien faucibus et molestie ac feugiat sed
+                            lectus vestibulum mattis ullamcorper velit sed ullamcorper morbi tincidunt ornare massa eget
+                            egestas purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae auctor eu augue ut
+                            lectus arcu bibendum at varius vel pharetra vel turpis nunc eget lorem dolor sed viverra
+                            ipsum nunc aliquet bibendum enim facilisis gravida neque convallis a cras semper auctor
+                            neque vitae tempus quam pellentesque nec nam aliquam sem et tortor consequat id porta nibh
+                            venenatis cras sed felis eget velit aliquet sagittis id consectetur purus ut faucibus
+                            pulvinar elementum integer enim neque volutpat ac tincidunt vitae semper quis lectus nulla
+                            at volutpat diam ut venenatis tellus in metus vulputate eu scelerisque felis imperdiet proin
+                            fermentum leo vel orci porta non pulvinar neque laoreet suspendisse interdum consectetur
+                            libero id faucibus nisl tincidunt eget nullam non nisi est sit amet facilisis magna etiam
+                            tempor orci eu lobortis elementum nibh tellus molestie nunc non blandit massa enim nec dui
+                            nunc mattis enim ut tellus elementum sagittis vitae et leo duis ut diam quam nulla porttitor
+                            massa id neque aliquam vestibulum morbi blandit cursus risus at ultrices mi tempus imperdiet
+                            nulla malesuada pellentesque elit eget gravida cum sociis natoque penatibus et magnis dis
+                            parturient montes nascetur ridiculus mus mauris vitae ultricies leo integer malesuada nunc
+                            vel risus commodo viverra maecenas accumsan lacus vel facilisis volutpat est velit egestas
+                            dui id ornare arcu odio ut sem nulla pharetra diam sit amet nisl suscipit adipiscing
+                            bibendum est ultricies integer quis auctor elit sed vulputate mi sit amet mauris commodo
+                            quis imperdiet massa tincidunt nunc pulvinar sapien et ligula ullamcorper malesuada proin
+                            libero nunc consequat interdum
+                            habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas sed tempus
+                            urna et pharetra pharetra massa massa ultricies mi quis hendrerit dolor magna eget est lorem
+                            ipsum dolor sit amet consectetur adipiscing elit pellentesque habitant morbi tristique
+                            senectus et netus et malesuada fames ac turpis egestas integer eget aliquet nibh praesent
+                            tristique magna sit amet purus gravida quis blandit turpis cursus in hac habitasse platea
+                            dictumst quisque sagittis purus sit amet volutpat consequat mauris nunc congue nisi vitae
+                            suscipit tellus mauris a diam maecenas sed enim ut sem viverra aliquet eget sit amet tellus
+                            cras adipiscing enim eu turpis egestas pretium aenean pharetra magna ac placerat vestibulum
+                            lectus mauris ultrices eros in cursus turpis massa tincidunt dui ut ornare lectus sit amet
+                            est placerat in egestas erat imperdiet sed euismod nisi porta lorem mollis aliquam ut
+                            porttitor leo a diam sollicitudin tempor id eu nisl nunc mi ipsum faucibus vitae aliquet nec
+                            ullamcorper sit amet risus nullam eget felis eget nunc lobortis mattis aliquam faucibus
+                            purus in massa tempor nec feugiat nisl pretium fusce id velit ut tortor pretium viverra
+                            suspendisse potenti nullam ac tortor vitae purus faucibus ornare suspendisse sed nisi lacus
+                            sed viverra tellus in hac habitasse platea dictumst vestibulum rhoncus est pellentesque elit
+                            ullamcorper dignissim cras tincidunt lobortis feugiat vivamus at augue eget arcu dictum
+                            varius duis at consectetur lorem donec massa sapien faucibus et molestie ac feugiat sed
+                            lectus vestibulum mattis ullamcorper velit sed ullamcorper morbi tincidunt ornare massa eget
+                            egestas purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae auctor eu augue ut
+                            lectus arcu bibendum at varius vel pharetra vel turpis nunc eget lorem dolor sed viverra
+                            ipsum nunc aliquet bibendum enim facilisis gravida neque convallis a cras semper auctor
+                            neque vitae tempus quam pellentesque nec nam aliquam sem et tortor consequat id porta nibh
+                            venenatis cras sed felis eget velit aliquet sagittis id consectetur purus ut faucibus
+                            pulvinar elementum integer enim neque volutpat ac tincidunt vitae semper quis lectus nulla
+                            at volutpat diam ut venenatis tellus in metus vulputate eu scelerisque felis imperdiet proin
+                            fermentum leo vel orci porta non pulvinar neque laoreet suspendisse interdum consectetur
+                            libero id faucibus nisl tincidunt eget nullam non nisi est sit amet facilisis magna etiam
+                            tempor orci eu lobortis elementum nibh tellus molestie nunc non blandit massa enim nec dui
+                            nunc mattis enim ut tellus elementum sagittis vitae et leo duis ut diam quam nulla porttitor
+                            massa id neque aliquam vestibulum morbi blandit cursus risus at ultrices mi tempus imperdiet
+                            nulla malesuada pellentesque elit eget gravida cum sociis natoque penatibus et magnis dis
+                            parturient montes nascetur ridiculus mus mauris vitae ultricies leo integer malesuada nunc
+                            vel risus commodo viverra maecenas accumsan lacus vel facilisis volutpat est velit egestas
+                            dui id ornare arcu odio ut sem nulla pharetra diam sit amet nisl suscipit adipiscing
+                            bibendum est ultricies integer quis auctor elit sed vulputate mi sit amet mauris commodo
+                            quis imperdiet massa tincidunt nunc pulvinar sapien et ligula ullamcorper malesuada proin
+                            libero nunc consequat interdum
+                        </div>
+                        <div class="postAction">Konversation posten</div>
+                        <div class="selectMessage"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="widgetFooter">
+            <a href="" id="postSelected">Selektierte Nachrichten posten</a>
+            <a href="#">Chat beenden</a>
+        </div>
+    </div>
+</aside>
+</body>
+</html>
