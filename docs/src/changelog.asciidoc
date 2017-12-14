@@ -67,6 +67,8 @@ The following changes in the configuration files are recommended:
 
 - security.password=
 + security.config.mongo.admin-password=
+
++ smarti.migration.mongo.script-home=/usr/share/smarti/scripts
 ----
 
 .logback.xml
