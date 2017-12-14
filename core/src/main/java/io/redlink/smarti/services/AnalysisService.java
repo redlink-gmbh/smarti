@@ -238,33 +238,28 @@ public class AnalysisService {
                     }
                     return analysis;
                 }, processingExecutor)
-                    .whenComplete((analysis , exception) -> {
-                        //(1) save in the database (if successful)
+                    .thenApply(analysis -> { //on success we want to persist some analysis and also notify with application evnets
+                        if(client != null && Objects.equals(conversation.getOwner(), analysis.getClient())){
+                            analysis = analysisRepo.updateAnalysis(analysis);
+                        } //else we do not cache analysis results for clients different as the owner of the conversation
+                        publishEvent(new AnalysisCompleteEventImpl(client,conversation, key.getDate(), analysis));
+                        return analysis;
+                    })
+                    .whenComplete((analysis , exception) -> { //finally update the caches 
+                        lock.writeLock().lock();
                         try {
-                            if(analysis != null){ 
-                                //Now check if we store this analysis in the repository
-                                //NOTE: for now we only persist analysis for the owner of the conversation
-                                if(client != null && Objects.equals(conversation.getOwner(), analysis.getClient())){
-                                    analysis = analysisRepo.updateAnalysis(analysis);
-                                } //else we do not cache analysis results for clients different as the owner of the conversation
-                                publishEvent(new AnalysisCompleteEventImpl(client,conversation, key.getDate(), analysis));
+                            //(2) remove from futureMap (regardless of the result)
+                            processing.remove(key);
+                            //(3) update the in-memory cache (if successful)
+                            if(analysis != null){
+                                //do not override cached value with an older analysis
+                                Analysis cachedAnalysis = analysisCache.getIfPresent(key.getEntry());
+                                analysisCache.put(key.getEntry(), //always put as expireAfterWrite << expireAfterAccess
+                                        cachedAnalysis == null || cachedAnalysis.getDate().before(analysis.getDate()) ?
+                                        analysis : cachedAnalysis);
                             }
-                        } finally { //the other steps need to be done even on exceptions during persistence
-                            lock.writeLock().lock();
-                            try {
-                                //(2) remove from futureMap (regardless of the result)
-                                processing.remove(key);
-                                //(3) update the in-memory cache (if successful)
-                                if(analysis != null){
-                                    //do not override cached value with an older analysis
-                                    Analysis cachedAnalysis = analysisCache.getIfPresent(key.getEntry());
-                                    analysisCache.put(key.getEntry(), //always put as expireAfterWrite << expireAfterAccess
-                                            cachedAnalysis == null || cachedAnalysis.getDate().before(analysis.getDate()) ?
-                                            analysis : cachedAnalysis);
-                                }
-                            } finally {
-                                lock.writeLock().unlock();
-                            }
+                        } finally {
+                            lock.writeLock().unlock();
                         }
                     });                
                 processing.put(key, future);

@@ -31,7 +31,9 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @ApiModel
 @Document
@@ -53,10 +55,8 @@ public class Analysis {
     private final ObjectId client;
     
     @Indexed
-    @JsonIgnore
     private final ObjectId conversation;
     
-    @JsonIgnore
     private final Date date;
     
     //TODO: maybe add additional data for user modified analysis
@@ -68,14 +68,20 @@ public class Analysis {
     private List<Template> templates = new ArrayList<>();
 
     
-    @PersistenceConstructor
-    public Analysis(ObjectId clientId, ObjectId conversationId, Date date) {
-        this(null, clientId, conversationId, date);
+    public Analysis(ObjectId client, ObjectId conversation, Date date) {
+        this(null, client, conversation, date);
     }
-    public Analysis(ObjectId id, ObjectId clientId, ObjectId conversationId, Date date) {
+    @JsonCreator
+    public Analysis(@JsonProperty("conversation")ObjectId conversation, @JsonProperty("date")Date date){
+        this(null,null,conversation,date);
+    }
+    @PersistenceConstructor
+    public Analysis(ObjectId id, ObjectId client, ObjectId conversation, Date date) {
         this.id = id;
-        this.conversation = conversationId;
-        this.client = clientId;
+        this.client = client;
+        assert conversation != null;
+        this.conversation = conversation;
+        assert date != null;
         this.date = date;
     }
 

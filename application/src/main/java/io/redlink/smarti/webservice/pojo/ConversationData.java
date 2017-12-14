@@ -39,7 +39,7 @@ public class ConversationData {
 
     @JsonProperty(required = true)
     @ApiModelProperty(required = true)
-    private User user = new User(); // TODO: needs discussion for REISEBUDDY-28
+    private User user = new User();
 
     @ApiModelProperty(required = true, value = "List of Messages")
     private final List<Message> messages = new LinkedList<>();
@@ -59,6 +59,8 @@ public class ConversationData {
         cd.setLastModified(c.getLastModified());
         cd.setMeta(c.getMeta());
         cd.setUser(c.getUser());
+        cd.getMessages().addAll(c.getMessages());
+        //cd.setOwner(c.getOwner()) - owner is not sent to the client
         return cd;
     }
     
@@ -69,6 +71,7 @@ public class ConversationData {
         c.setLastModified(cd.getLastModified());
         c.setMeta(cd.getMeta());
         c.setUser(cd.getUser());
+        c.getMessages().addAll(cd.getMessages());
         return c;
     }
     

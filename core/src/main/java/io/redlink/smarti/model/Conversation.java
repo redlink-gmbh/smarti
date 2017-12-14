@@ -61,7 +61,7 @@ public class Conversation {
 
     @JsonProperty(required = true)
     @ApiModelProperty(required = true)
-    private User user = new User(); // TODO: needs discussion for REISEBUDDY-28
+    private User user = new User();
 
     @ApiModelProperty(required = true, value = "List of Messages")
     private final List<Message> messages = new LinkedList<>();

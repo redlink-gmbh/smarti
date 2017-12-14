@@ -28,10 +28,16 @@ import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.*;
 import io.swagger.annotations.*;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +65,8 @@ import java.util.stream.Collectors;
 @Api("conversation")
 public class ConversationWebservice {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     private static final String API_PARAM_CALLBACK = "URI where to POST the result (triggers async processing)";
     private static final String API_ASYNC_NOTE = " If a 'callback' is provided, the request will be processed async.";
     private static final String EDITABLE_CONVERSATION_FIELDS = "meta.status, meta.tags, meta.feedback, context.contextType, context.environmentType, context.domain, context.environment.*";
@@ -87,15 +95,18 @@ public class ConversationWebservice {
     @RequestMapping(method = RequestMethod.GET)
     public Page<ConversationData> listConversations(
             AuthContext authContext,
-            @RequestParam(value = "clientId", required = false) ObjectId owner,
+            @RequestParam(value = "clientId", required = false) List<ObjectId> owners,
             @RequestParam(value = "page", required = false, defaultValue = "0") int page,
             @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize,
             @RequestParam(value = "projection", required = false) Projection projection
     ) {
-        final Set<ObjectId> clientIds = getClientIds(authContext, owner);
-
-        return conversationService.listConversations(clientIds, page, pageSize)
-                .map(ConversationData::fromModel);
+        final Set<ObjectId> clientIds = getClientIds(authContext, owners);
+        if(CollectionUtils.isNotEmpty(clientIds)){
+            return conversationService.listConversations(clientIds, page, pageSize)
+                    .map(ConversationData::fromModel);
+        } else {
+            return new PageImpl<>(Collections.emptyList(), new PageRequest(page, pageSize), 0);
+        }
 
     }
 
@@ -143,8 +154,16 @@ public class ConversationWebservice {
 
         if(analysis){
             analysisService.analyze(client, created)
-                    .whenComplete((a , e) ->
-                            callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+                    .whenComplete((a , e) -> {
+                        if(a != null){
+                            log.debug("callback {} with {}", callback, a);
+                            callbackExecutor.execute(callback, CallbackPayload.success(a));
+                        } else {
+                            log.warn("Analysis of {} failed sending error callback to {} ({} - {})", created.getId(), callback, e, e.getMessage());
+                            log.debug("STACKTRACE: ",e);
+                            callbackExecutor.execute(callback, CallbackPayload.error(e));
+                        }
+                    });
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, created.getId())))
@@ -158,7 +177,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "search", method = RequestMethod.GET)
     public ResponseEntity<?> searchConversations(
             AuthContext authContext,
-            @ApiParam() @RequestParam(value = "client", required = false) ObjectId[] clients,
+            @ApiParam() @RequestParam(value = "client", required = false) List<ObjectId> clients,
             @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
             @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
             @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
@@ -243,8 +262,16 @@ public class ConversationWebservice {
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.updateConversationField(conversationId, field, data);
             if(analysis){
-                analysisService.analyze(client, updated).whenComplete((a , e) ->
-                        callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+                analysisService.analyze(client, updated).whenComplete((a , e) -> {
+                    if(a != null){
+                        log.debug("callback {} with {}", callback, a);
+                        callbackExecutor.execute(callback, CallbackPayload.success(a));
+                    } else {
+                        log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
+                        log.debug("STACKTRACE: ",e);
+                        callbackExecutor.execute(callback, CallbackPayload.error(e));
+                    }                    
+                });
             }
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
@@ -316,8 +343,16 @@ public class ConversationWebservice {
                         "Created Message[id: "+message.getId()+"] not present in " + c));
 
         if(analysis){
-            analysisService.analyze(client, c).whenComplete((a , e) ->
-                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+            analysisService.analyze(client, c).whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                }  
+            });
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, created.getId())))
@@ -385,8 +420,16 @@ public class ConversationWebservice {
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
         if(analysis){
-            analysisService.analyze(client, c).whenComplete((a , e) ->
-                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+            analysisService.analyze(client, c).whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                } 
+            });
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
@@ -421,8 +464,16 @@ public class ConversationWebservice {
         if(conversationService.deleteMessage(conversationId, messageId)){
             if(analysis){
                 Conversation c = conversationService.getConversation(conversationId);
-                analysisService.analyze(client, c).whenComplete((a , e) ->
-                        callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+                analysisService.analyze(client, c).whenComplete((a , e) -> {
+                    if(a != null){
+                        log.debug("callback {} with {}", callback, a);
+                        callbackExecutor.execute(callback, CallbackPayload.success(a));
+                    } else {
+                        log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
+                        log.debug("STACKTRACE: ",e);
+                        callbackExecutor.execute(callback, CallbackPayload.error(e));
+                    } 
+                });
             }
             return ResponseEntity.noContent()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
@@ -463,8 +514,16 @@ public class ConversationWebservice {
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
         if(analysis){
-            analysisService.analyze(client, c).whenComplete((a , e) ->
-                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+            analysisService.analyze(client, c).whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                }                
+            });
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
@@ -494,8 +553,16 @@ public class ConversationWebservice {
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .body(analysis.get());
         } else {
-            analysis.whenComplete((a , e) ->
-                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a) : CallbackPayload.error(e)));
+            analysis.whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                } 
+            });
             return ResponseEntity.accepted()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
@@ -555,8 +622,16 @@ public class ConversationWebservice {
         final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
 
         if(callback != null){
-            analysisService.analyze(client,conversation).whenComplete((a , e) ->
-                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a.getTokens()) : CallbackPayload.error(e)));
+            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                } 
+            });
             return ResponseEntity.accepted()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
@@ -582,8 +657,16 @@ public class ConversationWebservice {
         final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
 
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysisService.analyze(client,conversation).whenComplete((a , e) ->
-                    callbackExecutor.execute(callback, a != null ? CallbackPayload.success(a.getTemplates()) : CallbackPayload.error(e)));
+            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                }
+            });
             return ResponseEntity.accepted()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
@@ -613,11 +696,16 @@ public class ConversationWebservice {
             analysisService.analyze(client,conversation).whenComplete((a , e) -> {
                 if(a != null){
                     if(a.getTemplates().size() > templateIdx){
+                        log.debug("callback {} with {}", callback, a);
                         callbackExecutor.execute(callback, CallbackPayload.success(a.getTemplates().get(templateIdx)));
                     } else {
+                        log.warn("Template[idx:{}] not present in Analysis of {} containing {} templates. Sending '404 not found' callback to {} ", 
+                                templateIdx, conversation.getId(), a.getTemplates().size(), callback);
                         callbackExecutor.execute(callback, CallbackPayload.error(new NotFoundException(Template.class, templateIdx)));
                     }
                 } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
                 }
             });
@@ -685,11 +773,18 @@ public class ConversationWebservice {
             analysisService.analyze(client,conversation).whenComplete((a , e) -> {
                 if(a != null){
                     try {
-                        callbackExecutor.execute(callback, CallbackPayload.success(execcuteQuery(client, conversation, a, templateIdx, creator)));
+                        SearchResult<? extends Result> result = execcuteQuery(client, conversation, a, templateIdx, creator);
+                        log.debug("callback {} with {}", callback, result);
+                        callbackExecutor.execute(callback, CallbackPayload.success(result));
                     } catch(RuntimeException | IOException e1){
+                        log.warn("Execution of Query[client: {}, conversation: {}, template: {}, creator: {}] failed sending error callback to {} ({} - {})", 
+                                client.getId(), conversation.getId(), templateIdx, creator, callback, e, e.getMessage());
+                        log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e1));
                     }
                 } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
                 }
             });
@@ -700,9 +795,9 @@ public class ConversationWebservice {
                 .body(execcuteQuery(client, conversation, getAnalysis(client, conversation), templateIdx, creator));
     }
 
-    private Set<ObjectId> getClientIds(AuthContext authContext, ObjectId... owner) {
-        if (owner != null && owner.length > 0) {
-            return Arrays.stream(owner)
+    private Set<ObjectId> getClientIds(AuthContext authContext, Collection<ObjectId> owners) {
+        if (CollectionUtils.isNotEmpty(owners)) {
+            return owners.stream()
                     .filter(c -> authenticationService.hasAccessToClient(authContext, c))
                     .collect(Collectors.toSet());
         } else {
@@ -719,7 +814,7 @@ public class ConversationWebservice {
     }
 
     private URI buildConversationURI(UriComponentsBuilder builder, ObjectId conversationId) {
-        return builder
+        return builder.cloneBuilder()
                 .pathSegment("conversation", "{conversationId}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId
@@ -728,7 +823,7 @@ public class ConversationWebservice {
     }
 
     private URI buildAnalysisURI(UriComponentsBuilder builder, ObjectId conversationId) {
-        return builder
+        return builder.cloneBuilder()
                 .pathSegment("conversation", "{conversationId}", "analysis")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId
@@ -737,7 +832,7 @@ public class ConversationWebservice {
     }
 
     private URI buildMessageURI(UriComponentsBuilder builder, ObjectId conversationId, String messageId) {
-        return builder
+        return builder.cloneBuilder()
                 .pathSegment("conversation", "{conversationId}", "message", "{messageId}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,
@@ -747,7 +842,7 @@ public class ConversationWebservice {
     }
 
     private URI buildTokenURI(UriComponentsBuilder builder, ObjectId conversationId, int tokenIdx) {
-        return builder
+        return builder.cloneBuilder()
                 .pathSegment("conversation", "{conversationId}", "analysis", "token", "{tokenIdx}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,
@@ -757,7 +852,7 @@ public class ConversationWebservice {
     }
 
     private URI buildTemplateURI(UriComponentsBuilder builder, ObjectId conversationId, int templateIdx) {
-        return builder
+        return builder.cloneBuilder()
                 .pathSegment("conversation", "{conversationId}", "analysis", "template", "{templateIdx}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,
@@ -767,7 +862,7 @@ public class ConversationWebservice {
     }
 
     private URI buildResultURI(UriComponentsBuilder builder, ObjectId conversationId, int templateIdx, String creator) {
-        return builder
+        return builder.cloneBuilder()
                 .pathSegment("conversation", "{conversationId}", "analysis", "template", "{templateIdx}", "result", "{creator}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,

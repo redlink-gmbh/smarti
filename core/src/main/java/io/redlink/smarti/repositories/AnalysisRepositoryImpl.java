@@ -57,10 +57,12 @@ public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
         
         BasicDBObject data = new BasicDBObject();
         mongoTemplate.getConverter().write(analysis, data);
-        final Update update = new Update();
         if(data.remove("_id") != null){ //do not change the id
             log.warn("updateAnalysis call with Analysis having an ID. ID is expected to be NULL and will be ignored!");
         }
+        final Update update = new Update();
+        data.entrySet().stream().forEach(e -> update.set(e.getKey(), e.getValue()));
+
         final WriteResult writeResult = mongoTemplate.upsert(query, update, Analysis.class);
         if(writeResult.isUpdateOfExisting()){
             return mongoTemplate.findOne(query, Analysis.class);

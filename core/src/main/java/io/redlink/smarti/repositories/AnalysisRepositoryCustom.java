@@ -21,8 +21,6 @@ import io.redlink.smarti.model.Analysis;
 
 /**
  * Custom repository for Conversations
- *
- * @author Sergio Fernandez
  */
 public interface AnalysisRepositoryCustom {
 
