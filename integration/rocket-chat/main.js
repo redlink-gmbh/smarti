@@ -487,6 +487,7 @@ function SmartiWidget(element, _options) {
     function IrLatchWidget(params,wgt_conf) {
 
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
+        params.elem.hide();
         params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
         let content = $('<div>').appendTo(params.elem);
 
@@ -669,6 +670,8 @@ function SmartiWidget(element, _options) {
                         resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
                         return;
                     }
+
+                    params.elem.show();
 
                     //map to search results
                     let docs = $.map(data.response.docs, function(doc) {
