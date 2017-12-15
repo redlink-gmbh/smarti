@@ -384,6 +384,50 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+        
+        //Test callbacks and analysis setting
+
+        String callbackURI = "http://www.example.org/smarti/callback/test";
+
+        
+        ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
+        ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
+        
+        //per default analysis is false ... so no callback will happen
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .param("callback", callbackURI)
+                .content("\"some value\"")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
+        //wait 5sec to be sure that no analysis was performed and no callback happend
+        BDDMockito.verify(callbackService,BDDMockito.after(5*1000).never()).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        //now parse analysis=true to re-analyse the conversation after the field update
+        Conversation c = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .param("analysis", "true")
+                .param("callback", callbackURI)
+                .content("\"some value\"")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andReturn().getResponse().getContentAsString(),Conversation.class);
+        
+        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
+        CallbackPayload<?> payload = callbackPayloadCapture.getValue();
+        Assert.assertEquals(HttpStatus.OK, payload.getHttpStatus());
+        Assert.assertTrue(payload.getData() instanceof Analysis);
+        Analysis analysis = (Analysis) payload.getData();
+        Assert.assertEquals(c.getId(), analysis.getConversation());
+        Assert.assertEquals(c.getLastModified(), analysis.getDate());
+        Assert.assertNotNull(analysis.getTokens());
+        Assert.assertNotNull(analysis.getTemplates());
 
     }
     
