@@ -88,8 +88,20 @@ public class GlobalDefaultExceptionHandler {
         } else {
             log.trace("trace omitted (webservice.errorhandler.writetrace=false)");
         }
-        log.warn("ErrorResponse (status: {}, {}: {})", status, e.getClass().getSimpleName(), e.getMessage());
-        log.debug("STACKTRACE:", e);
+        //NOTE: '500 Internal Server Error' responses indicate some internal error that we want to log on WARN level!
+        if (status == HttpStatus.INTERNAL_SERVER_ERROR || status == HttpStatus.SERVICE_UNAVAILABLE) {
+            if (log.isDebugEnabled()) {
+                log.warn("Sending ErrorResponse (status: {}, {}: {}) [Stacktrace FYI]", status, e.getClass().getSimpleName(), e.getMessage(), e);
+            } else {
+                log.warn("Sending ErrorResponse (status: {}, {}: {})", status, e.getClass().getSimpleName(), e.getMessage());
+            }
+        } else { //Error indicating that something was wrong with the request so we do not want to log in INFO or higher
+            if (log.isTraceEnabled()) {
+                log.debug("Sending ErrorResponse (status: {}, {}: {}) [Stacktrace FYI]", status, e.getClass().getSimpleName(), e.getMessage(), e);
+            } else {
+                log.debug("Sending ErrorResponse (status: {}, {}: {})", status, e.getClass().getSimpleName(), e.getMessage());
+            }
+        }
         return reb.build();
     }
 

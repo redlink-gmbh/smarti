@@ -43,6 +43,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -54,6 +55,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -173,7 +175,218 @@ public class ConversationWebserviceIT {
               .andDo(MockMvcResultHandlers.print())
               .andExpect(MockMvcResultMatchers.status().is(200));
         
+        //Now create a 2nd client
+        Client client2 = new Client();
+        client2.setName("test-client-2");
+        client2.setDescription("An other Client created for testing");
+        client2.setDefaultClient(false);
+        client2 = clientService.save(client2);
+        Configuration client2Config = configService.createConfiguration(client2);
+        AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
+        
+        //and test that it can NOT access the conversation of the other one
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/" + conversation.getId())
+                .header("X-Auth-Token", authToken2.getToken()) //Not the owner
+              .accept(MediaType.APPLICATION_JSON_VALUE))
+              .andDo(MockMvcResultHandlers.print())
+              .andExpect(MockMvcResultMatchers.status().is4xxClientError()); //404, 403
+        
     }
+    
+    @Test
+    public void testDeleteConversation() throws Exception{
+        Conversation conversation = new Conversation();
+        conversation.setChannelId("test-channel-1");
+        conversation.setOwner(client.getId());
+        conversation.setMeta(new ConversationMeta());
+        conversation.getMeta().setStatus(Status.New);
+        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "test-channel-1");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, "testing");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
+        conversation.setContext(new Context());
+        conversation.getContext().setDomain("test-domain");
+        conversation.getContext().setContextType("text-context");
+        conversation.getContext().setEnvironment("environment-test", "true");
+        conversation.setUser(new User("alois.tester"));
+        conversation.getUser().setDisplayName("Alois Tester");
+        conversation.getUser().setEmail("alois.tester@test.org");
+        Message msg = new Message("test-channel-1-msg-1");
+        msg.setContent("Wie kann ich das Smarti Conversation Service am besten Testen?");
+        msg.setUser(conversation.getUser());
+        msg.setOrigin(Origin.User);
+        msg.setTime(new Date());
+        conversation.getMessages().add(msg);
+        conversation = conversationService.update(client, conversation);
+        
+        //Now create a 2nd client
+        Client client2 = new Client();
+        client2.setName("test-client-2");
+        client2.setDescription("An other Client created for testing");
+        client2.setDefaultClient(false);
+        client2 = clientService.save(client2);
+        Configuration client2Config = configService.createConfiguration(client2);
+        AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
+        
+        //and test that it can NOT delete the conversation of the other one
+        this.mvc.perform(MockMvcRequestBuilders.delete("/conversation/" + conversation.getId())
+                .header("X-Auth-Token", authToken2.getToken()) //Not the owner
+              .accept(MediaType.APPLICATION_JSON_VALUE))
+              .andDo(MockMvcResultHandlers.print())
+              .andExpect(MockMvcResultMatchers.status().is4xxClientError()); //404, 403
+
+        //now delete the conversation
+        this.mvc.perform(MockMvcRequestBuilders.delete("/conversation/" + conversation.getId())
+                .header("X-Auth-Token", authToken.getToken())
+              .accept(MediaType.APPLICATION_JSON_VALUE))
+              .andDo(MockMvcResultHandlers.print())
+              .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
+        
+        //Assert that the conversation was deleted
+        Assert.assertNull(conversationService.getConversation(conversation.getId()));
+        
+    }
+    
+    @Test
+    public void testModifyConversationField() throws Exception{
+        Conversation conversation = new Conversation();
+        conversation.setChannelId("test-channel-1");
+        conversation.setOwner(client.getId());
+        conversation.setMeta(new ConversationMeta());
+        conversation.getMeta().setStatus(Status.New);
+        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "test-channel-1");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, "testing");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
+        conversation.setContext(new Context());
+        conversation.getContext().setDomain("test-domain");
+        conversation.getContext().setContextType("text-context");
+        conversation.getContext().setEnvironment("environment-test", "true");
+        conversation.setUser(new User("alois.tester"));
+        conversation.getUser().setDisplayName("Alois Tester");
+        conversation.getUser().setEmail("alois.tester@test.org");
+        Message msg = new Message("test-channel-1-msg-1");
+        msg.setContent("Wie kann ich das Smarti Conversation Service am besten Testen?");
+        msg.setUser(conversation.getUser());
+        msg.setOrigin(Origin.User);
+        msg.setTime(new Date());
+        conversation.getMessages().add(msg);
+        conversation = conversationService.update(client, conversation);
+       
+        //update a meta field
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.myTest")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("\"initial value\"")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.myTest").value("initial value"));
+        //reset the value and also test without the optional meta prefix
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/myTest")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("\"changed value\"")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.myTest").value("changed value"));
+        //test if the value is persited by retrieval of the conversation
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/" + conversation.getId())
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.myTest").value("changed value"));
+
+        //test update fails with wrong user
+        //Now create a 2nd client
+        Client client2 = new Client();
+        client2.setName("test-client-2");
+        client2.setDescription("An other Client created for testing");
+        client2.setDefaultClient(false);
+        client2 = clientService.save(client2);
+        Configuration client2Config = configService.createConfiguration(client2);
+        AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
+        
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.myTest")
+                .header("X-Auth-Token", authToken2.getToken())
+                .content("\"unexpected value\"")
+              .accept(MediaType.APPLICATION_JSON_VALUE))
+              .andDo(MockMvcResultHandlers.print())
+              .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+        //assert that the value was not set and the value is still "changed value"
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/" + conversation.getId())
+                .header("X-Auth-Token", authToken.getToken())
+              .accept(MediaType.APPLICATION_JSON_VALUE))
+              .andDo(MockMvcResultHandlers.print())
+              .andExpect(MockMvcResultMatchers.status().is(200))
+              .andExpect(jsonPath("meta.myTest").value("changed value"));
+        //set multiple values to the field
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/myTest")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("[\"first value\",\"second value\"]")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.myTest",Matchers.contains("first value","second value")));
+
+        //Delete a field
+        this.mvc.perform(MockMvcRequestBuilders.delete("/conversation/" + conversation.getId()+"/myTest")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.myTest").doesNotExist());
+
+        //special case status
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.status")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("\""+Status.Ongoing+"\"")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.status").value(Status.Ongoing.name()));
+        //set status to an invalid value
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.status")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("\"Unknown\"") //unknown is invalid
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+        //try multiple values
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.status")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("[\"" + Status.New + "\",\"" + Status.Complete + "\"]") //unknown is invalid
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+        //complete the conversation
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/status")
+                .header("X-Auth-Token", authToken.getToken())
+                .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
+                .content("\""+Status.Complete+"\"")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("meta.status").value(Status.Complete.name()));
+        //try to delete the status (Not allowed)
+        this.mvc.perform(MockMvcRequestBuilders.delete("/conversation/" + conversation.getId()+"/status")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+        this.mvc.perform(MockMvcRequestBuilders.delete("/conversation/" + conversation.getId()+"/meta.status")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is4xxClientError());
+
+    }
+    
     @Test
     public void testListConversations() throws Exception{
         Client client2 = new Client();

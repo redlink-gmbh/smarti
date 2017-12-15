@@ -53,8 +53,6 @@ public interface ConversationRepositoryCustom {
 
     Conversation saveIfNotLastModifiedAfter(Conversation finalConversation, Date lastModified);
 
-    Conversation completeConversation(ObjectId conversationId);
-
     Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta);
 
     Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status);
@@ -62,6 +60,8 @@ public interface ConversationRepositoryCustom {
     boolean deleteMessage(ObjectId conversationId, String messageId);
 
     Conversation updateConversationField(ObjectId conversationId, String field, Object data);
+
+    Conversation deleteConversationField(ObjectId conversationId, String field);
 
     Message findMessage(ObjectId conversationId, String messageId);
 

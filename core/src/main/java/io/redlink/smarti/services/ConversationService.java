@@ -19,11 +19,14 @@ package io.redlink.smarti.services;
 
 import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.event.StoreServiceEvent;
+import io.redlink.smarti.exception.BadArgumentException;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.repositories.AnalysisRepository;
 import io.redlink.smarti.repositories.ConversationRepository;
@@ -43,6 +46,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -54,16 +58,14 @@ public class ConversationService {
 
     private final Logger log = LoggerFactory.getLogger(ConversationService.class);
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ConversationRepository conversationRepository;
+    private final AnalysisRepository analysisRepository;
 
-    @Autowired
-    private ConversationRepository conversationRepository;
-
-    @Autowired
-    private AnalysisRepository analysisRepository;
-
-    public ConversationService() {
+    public ConversationService(ConversationRepository conversationRepository, Optional<AnalysisRepository> analysisRepository, Optional<ApplicationEventPublisher> eventPublisher) {
+        this.conversationRepository = conversationRepository;
+        this.analysisRepository = analysisRepository.orElse(null);
+        this.eventPublisher = eventPublisher.orElse(null);
     }
     
     /**
@@ -94,21 +96,13 @@ public class ConversationService {
     public Conversation appendMessage(Conversation conversation, Message message) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(message);
-        final Conversation stored = conversationRepository.appendMessage(conversation, message);
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
-        }
-        return stored;
+        return publishSaveEvent(conversationRepository.appendMessage(conversation, message));
     }
 
     public Conversation completeConversation(Conversation conversation) {
         Preconditions.checkNotNull(conversation);
         Preconditions.checkNotNull(conversation.getId());
-        final Conversation stored = conversationRepository.completeConversation(conversation.getId());
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
-        }
-        return stored;
+        return updateStatus(conversation.getId(), Status.Complete);
     }
 
     public Conversation rateMessage(Conversation conversation, String messageId, int delta) {
@@ -118,11 +112,7 @@ public class ConversationService {
         if(delta == 0){
             return conversation;
         }
-        final Conversation stored = conversationRepository.adjustMessageVotes(conversation.getId(), messageId, delta);
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(StoreServiceEvent.save(stored.getId(), stored.getMeta().getStatus(), this));
-        }
-        return conversation;
+        return publishSaveEvent(conversationRepository.adjustMessageVotes(conversation.getId(), messageId, delta));
     }
 
     public Conversation getConversation(ObjectId convId){
@@ -222,8 +212,9 @@ public class ConversationService {
     }
 
     private Conversation publishSaveEvent(Conversation conversation) {
-        Preconditions.checkNotNull(conversation, "Can't publish <null> conversation");
-        eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
+        if(eventPublisher != null && conversation != null){
+            eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
+        } //no update / not saved
         return conversation;
     }
 
@@ -231,17 +222,125 @@ public class ConversationService {
         final Conversation one = conversationRepository.findOne(conversationId);
         if (one != null) {
             conversationRepository.delete(conversationId);
-            eventPublisher.publishEvent(StoreServiceEvent.delete(conversationId, this));
-            analysisRepository.deleteByConversation(one.getId());
+            if(eventPublisher != null){
+                eventPublisher.publishEvent(StoreServiceEvent.delete(conversationId, this));
+            }
+            if(analysisRepository != null){
+                try {
+                    analysisRepository.deleteByConversation(one.getId());
+                } catch (RuntimeException e) {
+                    log.debug("Unable to delete storead analysis for deleted conversation {}", one, e);
+                }
+            }
         }
         return one;
     }
+    /**
+     * Updates a field of the conversation<p>
+     * If the parsed field does not contain '<code>.</code>' the '<code>meta.</code>' prefix
+     * is assumed. <p>
+     * supported fields include (format: '{mongo-field} ({json-field-1}, {json-field-2} ...)'<ul>
+     * <li>'context.contextType' (context.contextType)
+     * <li>'context.domain' (context.domain)
+     * <li>'context.environment.*' (context.environment.*, environment.*)
+     * <li>'meta.status' (meta.status, status)
+     * <li>'meta.properties.*' (meta.*, *)
+     * </ul>
+     * @param conversationId the id of the conversation (MUST NOT be NULL)
+     * @param field the name of the field. See description for supported values (MUST NOT be NULL)
+     * @param data the value for the vield (MUST NOT be NULL)
+     * @return
+     */
+    public Conversation updateConversationField(ObjectId conversationId, final String field, Object data) {
+        if(conversationId == null){
+            throw new NullPointerException();
+        }
+        if(data == null){
+            throw new BadArgumentException("data", null, "the parsed field data MUST NOT be NULL!");
+        }
+        final String mongoField = toMongoField(field);
+        
+        //handle special cases
+        if("meta.status".equals(mongoField)){
+            //meta status is an enumeration so only some values are allowed
+            try {
+                return updateStatus(conversationId, Status.valueOf(data.toString()));
+            } catch (IllegalArgumentException | NullPointerException e) {
+                throw new BadArgumentException(field, data, "supported values are NULL or " + Status.values());
+            }
+        } else { //deal the default case
+            log.debug("set conversation field {}: {} (parsed field: {})", mongoField, data, field);
+            //we need to map fields to conversation paths
+            return publishSaveEvent(conversationRepository.updateConversationField(conversationId, mongoField, data));
+        }
+    }
+    public Conversation deleteConversationField(ObjectId conversationId, String field) {
+        if(conversationId == null){
+            throw new NullPointerException();
+        }
 
-    public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
-        // TODO(westei): check whitelist of allowed fields
-        Conversation con = publishSaveEvent(conversationRepository.updateConversationField(conversationId, field, data));
-        // re-process updated conversation
-        return con;
+        final String mongoField = toMongoField(field);
+        
+        //handle special cases
+        if("meta.status".equals(mongoField)){
+            //one can not delete the status!
+            throw new BadArgumentException(field, null, "this field can not be deleted!");
+        } else { //deal the default case
+            log.debug("delete conversation field {}: {} (parsed field: {})", mongoField,  field);
+            //we need to map fields to conversation paths
+            return publishSaveEvent(conversationRepository.deleteConversationField(conversationId, mongoField));
+        }
+    }
+
+    /**
+     * Internally used to map a parsed field name to the field path as used in Mongo. <p>
+     * If the field does not contain '<code>.</code>' the '<code>meta.</code>' prefix
+     * is assumed. <p>
+     * supported fields include (format: '{mongo-field} ({json-field-1}, {json-field-2} ...)'<ul>
+     * <li>'context.contextType' (context.contextType)
+     * <li>'context.domain' (context.domain)
+     * <li>'context.environment.*' (context.environment.*, environment.*)
+     * <li>'meta.status' (meta.status, status)
+     * <li>'meta.properties.*' (meta.*, *)
+     * </ul>
+     * @param field the parsed field
+     * @return
+     */
+    private String toMongoField(final String field) {
+        if(StringUtils.isBlank(field)){
+            throw new BadArgumentException("field", "The parsed field MUST NOT be blank");
+        }
+        final String jsonField;
+        final String mongoField;
+        if(field.indexOf('.') < 0){ //no prefix parsed ... use 'meta' as default
+            jsonField = "meta." + field;
+        } else {
+            jsonField = field;
+        }
+        int sepIdx = jsonField.indexOf('.') + 1; //we do want to cut the '.'
+        if(jsonField.startsWith("context.")){
+            String fieldName = jsonField.substring(sepIdx);
+            if(!("contextType".equals(fieldName) || 
+                    "domain".equals(fieldName) || 
+                    fieldName.startsWith("environment."))){
+                throw new BadArgumentException("field", "Unsupported context field '" + field 
+                        + "' (unknown context field: '" + fieldName + "' known: contextType, domain, environment.*)");
+            }
+            mongoField = "context." + fieldName;
+        } else if(jsonField.startsWith("meta.")){
+            String fieldName = jsonField.substring(sepIdx);
+            if("status".equals(fieldName)){
+                mongoField = "meta." + fieldName;
+            } else {
+                mongoField = "meta.properties." + fieldName;
+            }
+        } else if(jsonField.startsWith("environment.")){
+            mongoField = "context." + jsonField;
+        } else {
+            throw new BadArgumentException("field", "Unsupported field name '" + field 
+                    + "' (unknown prefix: '" + jsonField.substring(sepIdx) + "' known: context, meta)");
+        }
+        return mongoField;
     }
 
     public Message getMessage(ObjectId conversationId, String messageId) {
@@ -287,11 +386,7 @@ public class ConversationService {
             }
             
         }
-        final Conversation stored = conversationRepository.save(conversation);
-        if (eventPublisher != null) {
-            eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
-        }
-        return stored;
+        return publishSaveEvent(conversationRepository.save(conversation));
     }
 
     public final Collection<ObjectId> listConversationIDsByUser(String userId) {
@@ -305,4 +400,5 @@ public class ConversationService {
     public Iterable<ObjectId> listConversationIDs(){
         return conversationRepository.findConversationIDs();
     }
+
 }

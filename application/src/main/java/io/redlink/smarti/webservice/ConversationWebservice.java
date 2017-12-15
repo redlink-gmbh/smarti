@@ -112,12 +112,13 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "create a conversation",
             code = 201, response = Conversation.class,
+            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "Create a new Conversation." + API_ASYNC_NOTE)
     @ApiResponses({
             @ApiResponse(code = 201, message = "conversation created (sync)", response = Conversation.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(method = RequestMethod.POST)
+    @RequestMapping(method = RequestMethod.POST , consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<ConversationData> createConversation(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
@@ -237,12 +238,13 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "update/modify a specific field", response = Conversation.class,
-            notes = "Update a single property in the Conversation." + API_ASYNC_NOTE)
+            notes = "Update a single property in the Conversation." + API_ASYNC_NOTE,
+            consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     @ApiResponses({
             @ApiResponse(code = 200, message = "field updated (sync)", response = Conversation.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<ConversationData> modifyConversationField(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
@@ -281,7 +283,50 @@ public class ConversationWebservice {
             return ResponseEntity.notFound().build();
         }
     }
+    
+    @ApiOperation(value = "delete a specific field", response = Conversation.class,httpMethod = "DELETE",
+            notes = "Deleting a single property in the Conversation." + API_ASYNC_NOTE)
+    @ApiResponses({
+            @ApiResponse(code = 204, message = "field deleted (sync)", response = Conversation.class)
+    })
+    @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.DELETE)
+    public ResponseEntity<ConversationData> deleteConversationField(
+            AuthContext authContext,
+            UriComponentsBuilder uriBuilder,
+            @PathVariable("conversationId") ObjectId conversationId,
+            @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
+            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
+            @RequestParam(value = "projection", required = false) Projection projection
+    ) {
+        // Check access to the conversation
+        authenticationService.assertConversation(authContext, conversationId);
 
+        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+
+        if (conversationService.exists(conversationId)) {
+            Conversation updated = conversationService.deleteConversationField(conversationId, field);
+            if(analysis){
+                analysisService.analyze(client, updated).whenComplete((a , e) -> {
+                    if(a != null){
+                        log.debug("callback {} with {}", callback, a);
+                        callbackExecutor.execute(callback, CallbackPayload.success(a));
+                    } else {
+                        log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
+                        log.debug("STACKTRACE: ",e);
+                        callbackExecutor.execute(callback, CallbackPayload.error(e));
+                    }                    
+                });
+            }
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .body(ConversationData.fromModel(updated));
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
     @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List",
             notes = "retrieves all messages in the accessed conversation")
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.GET)
@@ -303,6 +348,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "create a new message", response=Message.class,
+            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "this appends the provided message to the conversation. It is the responsibility of the client to ensure" +
                     "that a messageId passed in is unique. It the client cannot guarantee that, it MUST leave the messageId " +
                     "empty/null." +
@@ -313,7 +359,7 @@ public class ConversationWebservice {
                     response = Conversation.class),
             @ApiResponse(code = 404, message = "conversation not found")
     })
-    @RequestMapping(value = "{conversationId}/message", method = RequestMethod.POST)
+    @RequestMapping(value = "{conversationId}/message", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> appendMessage(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
@@ -388,6 +434,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "update/replace a message", response = Message.class,
+            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "fully replace a message." +
                     API_ASYNC_NOTE)
     @ApiResponses({
@@ -395,7 +442,7 @@ public class ConversationWebservice {
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Conversation.class),
             @ApiResponse(code = 404, message = "conversation or message not found")
     })
-    @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Message> updateMessage(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
@@ -485,12 +532,13 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "update/modify a specific filed of the message", response = Message.class,
+            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "Update a single property in the Message." + API_ASYNC_NOTE)
     @ApiResponses({
             @ApiResponse(code = 200, message = "field updated (sync)", response = Message.class),
             @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
     })
-    @RequestMapping(value = "{conversationId}/message/{msgId}/{field}", method = RequestMethod.PUT)
+    @RequestMapping(value = "{conversationId}/message/{msgId}/{field}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Message> modifyMessageField(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
@@ -571,8 +619,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class,
+            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
-    @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST)
+    @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Analysis> rerunAnalysis(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
@@ -731,7 +780,8 @@ public class ConversationWebservice {
 
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", response = InlineSearchResult.class)
+    @ApiOperation(value = "get inline-results for the selected template from the creator", 
+            response = InlineSearchResult.class)
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(
             AuthContext authContext,
@@ -745,9 +795,11 @@ public class ConversationWebservice {
         return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null);
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", response = InlineSearchResult.class,
+    @ApiOperation(value = "get inline-results for the selected template from the creator", 
+            response = InlineSearchResult.class,
+            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
-    @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST)
+    @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getResults(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,

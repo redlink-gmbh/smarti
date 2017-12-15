@@ -175,16 +175,6 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public Conversation completeConversation(ObjectId conversationId) {
-        final Query query = new Query(Criteria.where("_id").is(conversationId));
-        final Update update = new Update().set("meta.status", ConversationMeta.Status.Complete);
-
-        mongoTemplate.updateFirst(query, update, Conversation.class);
-
-        return mongoTemplate.findOne(query, Conversation.class);
-    }
-
-    @Override
     public Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta) {
         final Query query = new Query(Criteria.where("_id").is(conversationId))
                 .addCriteria(Criteria.where("messages._id").is(messageId));
@@ -198,14 +188,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     @Override
     public Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status) {
-        final Query query = new Query(Criteria.where("_id").is(conversationId));
-        final Update update = new Update()
-                .set("meta.status", status)
-                .currentDate("lastModified");
-
-        mongoTemplate.updateFirst(query, update, Conversation.class);
-
-        return mongoTemplate.findById(conversationId, Conversation.class);
+        return updateConversationField(conversationId, "meta.status", status);
     }
 
     @Override
@@ -213,6 +196,19 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
                 .set(field, data)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+    
+    @Override
+    public Conversation deleteConversationField(ObjectId conversationId, String field) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update()
+                .unset(field)
                 .currentDate("lastModified");
 
         final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
