@@ -7,7 +7,7 @@ Through Smarti's conversational RESTful-API it can be seamlessly integrated into
 The generated Swagger JSON data are available at 
 
  - abstract: `http://${smarti-host}:${smarti-port}/v2/api-docs`
- - concrete: `http://localhost:8080/v2/api-doc`
+ - specific: `http://localhost:8080/v2/api-doc`
  - ./swagger.json[copy] part of this documentation
   
 The Swagger UI is available under 
