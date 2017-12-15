@@ -21,7 +21,7 @@
 
     <groupId>io.redlink.smarti</groupId>
     <artifactId>smarti</artifactId>
-    <version>0.6.1-RC2-SNAPSHOT</version>
+    <version>0.6.1-RC3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>smarti</name>

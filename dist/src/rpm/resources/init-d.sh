@@ -49,7 +49,7 @@ do_start() {
     if [ -f ${PID_FILE} ]; then
         echo "Already running (PID file found)"
     else
-        echo "Starting ${EXEC}..."
+        echo "Starting ${EXEC} in ${HOME}..."
         cd $HOME
         export HOME JVM JVM_ARGS ARGS
         daemon --user=${USER} \
