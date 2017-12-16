@@ -1,0 +1,112 @@
+= Smarti Guide
+Assistify <info@assistify.de>;Redlink <info@redlink.co>
+v1.0, 2017-08-26
+:toc: left
+
+:commons: commons/
+
+image::https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master[Build Status]
+
+
+[abstract]
+Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
+natural language components and makes this data actionable via turning it into queries for an extendable set of endpoints.
+In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.
+
+This document is written for developers, operators and administrators who like to
+
+* *debug, change and contribute* Smarti code,
+* *run* Smarti on a local machine,
+* *deploy* Smarti on a server and
+* *help Smarti* get a better application.
+
+All interested can convince themselves of the documentation quality.
+And if you caught fire, maybe you will become a Smarti developer very soon ;-)
+
+IMPORTANT: @all if you find typos, missing sections or if you have any other kind of helpful advice to improve this documentation or *Smarti* in general, please let us know.
+Share your thoughts and open an issue right https://github.com/redlink-gmbh/smarti/issues[here].
+The *Smarti* community will help you along, as fast as possible.
+
+
+== Smarti Guide Overview
+
+
+=== <<index.adoc#_smarti_installation_guide, How to install>>
+
+Installation packages are provided for **https://www.debian.org[Debian]**- and **https://www.redhat.com[RedHat]**-based systems, and as **https://www.docker.com[Docker Image]**. +
+All packages are available from the https://github.com/redlink-gmbh/smarti/releases/latest[download area].
+Older versions can be found in the https://github.com/redlink-gmbh/smarti/releases[release archive]. +
+Alternatively the application can be started by directly launching the executable jar:
+
+```bash
+$ java -jar smarti-${smarti-version}-exec.jar
+```
+
+Check out a detailed <<index.adoc#_smarti_installation_guide, Smarti Installation Guide>> including <<index.adoc#_system_requirements, system requirements>>.
+
+
+=== <<index.adoc#_smarti_configuration_guide, How to configure>>
+The <<index.adoc#_smarti_configuration_guide, Smarti Configuration>> is done on two levels:
+
+. Since *Smarti* is a https://java.com/[Java] application based on the https://spring.io/[Spring Framework], global application configurations are made using the `application.properties` file.
+  Read the <<index.adoc#_application_configuration, Application Configuration>> section to get an overview of Smarti's numerous configuration options.
+. Smarti is a multi-client capable system. Therefore each client has its own configuration.
+  Client configurations can be manage with Smarti's <<index.adoc#_admin_ui, Admin User Interface>>.
+  Alternatively, you can also use the <<index.adoc#_client_configuration_web_service, client configuration API>> to manage your client's configurations.
+
+
+=== <<index.adoc#_smarti_integration_guide, How to integrate>>
+Through Smarti's conversational RESTful-API it can be seamlessly integrated into any Chat-based communication platform.
+To learn how to integrate Smarti into chat applications, read the <<index.adoc#_conversational_web_service, Conversational API>> section.
+
+For the time being, Smarti works with https://rocket.chat[Rocket.Chat] conversations, where it can be seamlessly integrated via an https://github.com/assistify/Rocket.Chat[RC plugin].
+For more information, see the <<index.adoc#_chat_adapter_web_service, Rocket.Chat adapter API>> description.
+
+
+=== <<index.adoc#_smarti_troubleshooting_guide, How to troubleshoot>>
+In some cases, Smarti will not do what you expect it to do.
+You may have encountered a problem that is already known.
+In the <<index.adoc#_smarti_troubleshooting_guide, Smarti Troubleshooting Guide>> you will find solutions for known problems
+and learn how to get to the bottom of the cause in an unexpected error situation.
+
+
+=== <<index.adoc#_smarti_developer_guide, How to develop>>
+*Smarti* is a https://java.com/[Java]-Application based on the https://spring.io/[Spring Framework].
+The application uses https://www.mongodb.com/[MongoDB] as database and http://lucene.apache.org/solr/[Apache Solr] as search engine.
+After checking out the sources from https://github.com/redlink-gmbh/smarti/[GitHub] and installing the build components (`ruby`, `ruby-sass`, `ruby-compass`) a build can be executed as simple
+
+```bash
+$ mvn clean install [ -Pdeb | -Prpm ]
+```
+
+Read the <<index.adoc#_smarti_developer_guide, Developers Guide>> to become a Smarti developer.
+
+
+=== <<index.adoc#_smarti_contribution_guide, How to contribute>>
+Smarti is an Open Source project so everyone is encouraged to improve it. Don't hesitate to report bugs, provide fixes or
+share new ideas with us. Use the issue tracker or send a pull request. To learn more about contributing and how to become a Smarti commiter, read the <<index.adoc#_smarti_contribution_guide, Smarti Contribution Guide>>.
+
+include::installation-guide.adoc[Installation Guide]
+
+include::configuration-guide.adoc[Configuration Guide]
+
+include::integration-guide.adoc[Integration Guide]
+
+include::troubleshooting-guide.adoc[Troubleshooting Guide]
+
+include::developer-guide.adoc[Developer Guide]
+
+include::contribution-guide.adoc[Contribution Guide]
+
+== <<faq.adoc#, FAQs>>
+The <<faq.adoc#, FAQs>> are addressing common concerns, questions or objections that might come up to your mind, when get into touch with Smarti development.
+
+== <<changelog.adoc#, Changelog>>
+The <<changelog.adoc#, Changelog>> provides a complete list of changes in older releases.
+
+== License
+Free use of this software is granted under the terms of the Apache License Version 2.0.
+See the https://raw.githubusercontent.com/redlink-gmbh/smarti/master/LICENSE.txt[License] for more details.
+
+== Authors
+Smarti is lead by http://redlink.co[Redlink] and http://assistify.de[Assistify] and was initiated in 2017.

@@ -154,6 +154,7 @@
                     <sourceDirectory>${project.basedir}/src</sourceDirectory>
                     <sourceDocumentExtensions>
                         <sourceDocumentExtension>asciidoc</sourceDocumentExtension>
+                        <sourceDocumentExtension>adoc</sourceDocumentExtension>
                     </sourceDocumentExtensions>
                     <headerFooter>true</headerFooter>
                     <imagesDir>images</imagesDir>
