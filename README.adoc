@@ -39,5 +39,3 @@ Smarti is lead by http://redlink.co[Redlink] and http://assistify.de[Assistify] 
 
 == Changelog
 The link:docs/src/changelog.adoc[Changelog] provides a complete list of changes in older releases.
-
-

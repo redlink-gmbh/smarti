@@ -1,4 +1,5 @@
-:resourcesdir: ../../dist/src/main/resources/
+:basedir: ../../
+:resourcesdir: ../../dist/src/main/resources
 :configurationsdir: ./configurations
 :commonsdir: ./commons
 
@@ -18,57 +19,63 @@ Before launching Smarti on your local system it is recommended to create a speci
 The following steps explain how the directory structure is typically organized and how to create the corresponding files.
 By following this section your final working-directory should look like this:
 
-....
+.work-directory
+```bash
 working-directory/
-  smarti-${version}-exec.jar
+  smarti-${smarti-version}-exec.jar
   application.properties
   german-stopwords.txt
   logback.xml
   startup.sh
   ext/
-    stanford-corenlp-3.6.0-models-german.jar
-    stanford-corenlp-3.6.0.jar
+    stanford-corenlp-${stanford-nlp-version}-models-german.jar
+    stanford-corenlp-${stanford-nlp-version}.jar
   solrlib/
   solr-ressources/
     crawl-dbsystel.zip
     wikipedia-de.zip
-....
+```
 
 ===== 1. Create a Smarti working directory with the following subfolders:
 
-....
+.work-directory
+```bash
 working-directory/
   ext/
   solrlib/
   solr-ressources/
-....
+```
 
 ==== Build Smarti
 The first step is to build smarti to get the executable jar.
-When run `mvn clean install` a executable jar will be created in the directory: `smarti/application/target/smarti-${version}-exec.jar` +
-Copy the `smarti-${version}-exec.jar` in your working-directory (see final working-directory example)
+When run `mvn clean install` a executable jar will be created in the directory: `smarti/application/target/smarti-${smarti-version}-exec.jar` +
+Copy the `smarti-${smarti-version}-exec.jar` in your working-directory (see final working-directory example)
 The resulting working-directory should look like this: +
-....
+
+.work-directory
+```bash
 working-directory/
-  smarti-${version}-exec.jar
+  smarti-${smarti-version}-exec.jar
   ext/
   solrlib/
   solr-ressources/
-....
+```
 
 ==== Download Stanford NLP
-Download the stanford nlp like shown in <<{commonsdir}additional-components.adoc#Enable Stanford NLP,Enable Stanford NLP>> chapter. +
+Download the stanford nlp like shown in <<index.adoc#_enable_stanford_nlp, Enable Stanford NLP>> chapter. +
 Create a folder named `ext` in the working-directory and move the nlp libraries into the `ext` folder (see final working-directory example).
 The resulting working-directory should look like this: +
-....
+
+.work-directory
+```bash
 working-directory/
-  smarti-${version}-exec.jar
+  smarti-${smarti-version}-exec.jar
   ext/
-    stanford-corenlp-3.6.0-models-german.jar
-    stanford-corenlp-3.6.0.jar
+    stanford-corenlp-${stanford-nlp-version}-models-german.jar
+    stanford-corenlp-${stanford-nlp-version}.jar
   solrlib/
   solr-ressources/
-....
+```
 
 ==== Stopwords for Smarti
 Stopwords are used from the stanford nlp to filter out meaningless words for the analysis for a specific language. +
@@ -76,48 +83,56 @@ Download the following german-stopwords.txt or create your own:
 https://github.com/collective/collective.solr/blob/master/etc/german-stopwords.txt[german-stopwords.txt] +
 Move the german-stopwords.txt to your working-directory. +
 The resulting working-directory should look like this: +
-....
+
+.work-directory
+```bash
 working-directory/
-  smarti-${version}-exec.jar
+  smarti-${smarti-version}-exec.jar
   german-stopwords.txt
   ext/
-    stanford-corenlp-3.6.0-models-german.jar
-    stanford-corenlp-3.6.0.jar
+    stanford-corenlp-${stanford-nlp-version}-models-german.jar
+    stanford-corenlp-${stanford-nlp-version}.jar
   solrlib/
   solr-ressources/
-....
+```
 
 ==== Logback for Smarti
-To specify log information for smarti you can use a logback.xml. +
-It is recommended to use the following logback.xml: +
+To specify log information for smarti you can use a logback.xml.
+It is recommended to use the following logback.xml:
 
+.logback.xml
 [source,xml]
 ----
-include::{resourcesdir}/logback.xml[]
+include::{resourcesdir}/logback.xml[logging configuration]
 ----
 
 Move the logback.xml into your smarti working-directory.
-The resulting working-directory should look like this: +
-....
+The resulting working-directory should look like this:
+
+.work-directory
+```bash
 working-directory/
-  smarti-${version}-exec.jar
+  smarti-${smarti-version}-exec.jar
   german-stopwords.txt
   logback.xml
   ext/
-    stanford-corenlp-3.6.0-models-german.jar
-    stanford-corenlp-3.6.0.jar
+    stanford-corenlp-${stanford-nlp-version}-models-german.jar
+    stanford-corenlp-${stanford-nlp-version}.jar
   solrlib/
   solr-ressources/
-....
+```
 
 
 ==== Smarti example configuration
-Smarti can be configured using a `application.properties`. The `application.properties` must be placed in the same directory the `smarti-${version}-exec.jar` is executed. +
-All possible configurations are shown in <<{configurationsdir}application-configuration.adoc#Overview about Spring Boot Configuration, Overview about Spring Boot Configuration>> chapter. +
+Smarti can be configured using a `application.properties`. The `application.properties` must be placed in the same directory the `smarti-${smarti-version}-exec.jar` is executed. +
+All possible configurations are shown in <<index.adoc#_overview_about_spring_boot_configuration, Overview about Spring Boot Configuration>> chapter. +
 
 To get started the following `application.properties` is recommended:
+
+.application.properties
+[source,bash]
 ----
-include::{resourcesdir}/application.properties]
+include::{resourcesdir}/application.properties[application properties]
 ----
 
 
@@ -136,36 +151,41 @@ security.password
 ====
 
 Move the application.properties xinto your smarti working-directory.
-The resulting working-directory should look like this: +
-....
+The resulting working-directory should look like this:
+
+.work-directory
+```bash
 working-directory/
-  smarti-${version}-exec.jar
+  smarti-${smarti-version}-exec.jar
   german-stopwords.txt
   application.properties
   logback.xml
   ext/
-    stanford-corenlp-3.6.0-models-german.jar
-    stanford-corenlp-3.6.0.jar
+    stanford-corenlp-${stanford-nlp-version}-models-german.jar
+    stanford-corenlp-${stanford-nlp-version}.jar
   solrlib/
   solr-ressources/
     crawl-dbsystel.zip
     wikipedia-de.zip
-....
+```
 
 ==== Startup Script for Smarti
 To start Smarti it is recommended to use a `startup.sh` script. +
 It is recommended to use the following script:
-....
+
+.work-directory
+```bash
 #!/bin/bash
 java -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n\
-     -Dspring.profiles.active=local\
-     -Xmx4g -jar -Xdebug smarti-${version}-exec.jar\
-     --solrlib.home=solrlib
-....
+    -Dspring.profiles.active=local\
+    -Xmx4g -Xdebug\
+    -jar smarti-${smarti-version}-exec.jar\
+    --solrlib.home=solrlib
+```
 
 [NOTE]
 ====
-In order to use the script the exact version of the smarti-${version}-exec.jar has to be specified
+In order to use the script the exact version of the smarti-${smarti-version}-exec.jar has to be specified
 ====
 
 ==== Remote Debugging
@@ -173,7 +193,7 @@ It is possible to debug the Smarti application remotely by using a debugging por
 The port can be specified with `address=8787` (see Startup Script for Smarti) when executing the jar file. +
 In your IDE you can set up a remote debugger for Smarti and connect to the smarti host (localhost) with the specified port (8787).
 
-To avoid debugging problems make sure the smarti${version}-exec.jar has the same version as the remotely debugged project.
+To avoid debugging problems make sure the smarti${smarti-version}-exec.jar has the same version as the remotely debugged project.
 
 === Rocket.Chat setup
 

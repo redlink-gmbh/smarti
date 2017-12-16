@@ -135,7 +135,7 @@ An abstraction over single Tokens are Templates. Templates structure extracted i
 * `slots`: this are slots of the template.
 ** `role` Templates define different roles for Tokens. Some roles may be multi valued. In this case multiple slots will have the same role.
 ** `tokenType`: if present the referenced Token MUST BE of the specified `type`
-** `required`: if this slot is required for the Template to be valid. Required Solts are always included in the template. If a required Slot can not be filled with a Token the `tokenIndex` is set to `-1`
+** `required`: if this slot is required for the Template to be valid. Required slots are always included in the template. If a required Slot can not be filled with a Token the `tokenIndex` is set to `-1`
 ** `tokenIndex`: the index of the token within the `tokens` array (`-1` means unassigned).
 * `confidence`: the confidence for this template. The confidence is typically used in combination with Intend classification. e.g. given a classification for the intend and templates representing intends the `confidence` will be set to the confidence of the intend to be present.
 
@@ -166,7 +166,9 @@ Common fields supported by all queries include:
 * If `inlineResultSupport` is `true` the creator supports server-side execution of the query.
 * The `state` can be used for user feedback. Every query will start with `Suggested`. Users can `Confirmed` and `Rejected` queries.
 * The `url` representing this query. If server side execution is supported this might be not present.
-* The `confidence` specifies how well the service is suited to search for information of the template (e.g. Bahn.de is very suitable for a travel planing template so a query for Bahn.de would get a high confidence. One could also create a Google Query for travel planing, but results would be less precise so this query should get a lower confidence).
+* The `confidence` specifies how well the service is suited to search for information of the template
+  (e.g. bahn.de is very suitable for a travel planing template so a query for Bahn.de would get a high confidence.
+  One could also create a Google Query for travel planing, but results would be less precise so this query should get a lower confidence).
 
 In addition to those fields queries can provide additional information. Those are specific to the `creator` of the query.
 
@@ -180,8 +182,11 @@ Smarti processes ongoing Conversations. Those processing results are available v
 This call returns processing results for a Conversation. This results includes the token and tempalte arrays as described above.
 
 * `tokens`: Information extracted form the conversation. Important as `template.slots` refer to token indexes
-* `templates`: Templates represent a structured view onto the extracted information. The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte. The <<analysis-components#_latch_template,LATCH template>> is an example of such a template intended to be used for information retrieval.
-* `queries`: Queries are built based on templates and are typically used to retrieve information related to the conversation from services. A single template can have multiple queries from different creators (e.g. the LATCH template can have multiple queries for different configured search indexes).
+* `templates`: Templates represent a structured view onto the extracted information.
+  The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte.
+  The <<index.adoc#_latch_template, LATCH template>> is an example of such a template intended to be used for information retrieval.
+* `queries`: Queries are built based on templates and are typically used to retrieve information related to the conversation from services.
+  A single template can have multiple queries from different creators (e.g. the LATCH template can have multiple queries for different configured search indexes).
 
 NOTE: Queries are NOT executed during processing of the conversation. The client is responsible for execution (typically based on a user interaction).
 
@@ -197,4 +202,6 @@ where:
 
 The response format is not normalised and fully specific for the query type. Server side execution is e.g. used for the related conversation queries.
 
-For queries where `inlineResultSupport` is `false` the client needs to execute the query. Typically this can be done by using the `url` attribute. However specific queries might provide the information for query execution in additional fields.
+For queries where `inlineResultSupport` is `false` the client needs to execute the query.
+Typically this can be done by using the `url` attribute.
+However specific queries might provide the information for query execution in additional fields.

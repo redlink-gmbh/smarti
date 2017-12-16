@@ -23,5 +23,6 @@ CAUTION: Ensure your platform / environment running Smarti on fulfills these sys
 
 ====
 *Additional components & https://github.com/stanfordnlp/CoreNLP[Stanford CoreNLP]* +
-Except the Stanford NLP libraries (GPL licensed), all direct runtime-dependencies such as third-party libraries are packaged with the main executable. Where to get and place the Stanford NLP libraries is explained in section <<developer-guide.adoc#,Enable Stanford NLP>>.
+Except the Stanford NLP libraries (GPL licensed), all direct runtime-dependencies such as third-party libraries are packaged with the main executable.
+Where to get and place the Stanford NLP libraries is explained in section <<index.html#_additional_components, Additional components>>.
 ====

@@ -2,7 +2,7 @@
 
 == Frequently asked questions (FAQ)
 
-The <<index.adoc#, FAQs>> are addressing common concerns, questions or objections that might come up to your mind, when get into touch with Smarti development.
+THis FAQs are addressing common concerns, questions or objections that might come up to your mind, when get into touch with Smarti development.
 
 === Administration
 
@@ -53,7 +53,7 @@ NOTE: this describes the workflow until `v0.6.*`
 .. call `GET /conversation/{conversationId}/template/{template}/{creator}` to execute a the query provided by the `creator` based on the `template`
 .. or use the information provided by the `template.query` to directly execute the query
 
-For more Information see the <<index.askiidoc#_working_with_smarti_processing_results,Working with Smarti processing results>> section of the
+For more Information see the <<index.adoc#_working_with_smarti_processing_results, Working with Smarti processing results>> section of the
 Smarti Integration Guide
 
 ==== Why do sent messages do not appear as suggestions, even if I enter the same question?

@@ -1,4 +1,6 @@
-== Smarti Integration & API Guide
+:webservicesdir: ./webservices
+
+== Smarti Integration Guide
 
 The development of Smarti follows an API-driven approach (API-first).
 
@@ -64,12 +66,12 @@ image::chat-sequence-REST.png[RESTful-Integration Sequence]
 . Retrieve Query results
 . Publish a conversation
 
-include::webservices/conversation-api.adoc[]
+include::{webservicesdir}/conversation-api.adoc[]
 
-include::webservices/rocketchat-api.adoc[]
+include::{webservicesdir}/rocketchat-api.adoc[]
 
-include::webservices/client-api.adoc[]
+include::{webservicesdir}/client-api.adoc[]
 
-include::webservices/conversation-admin-api.adoc[]
+include::{webservicesdir}/conversation-admin-api.adoc[]
 
-include::webservices/user-api.adoc[]
+include::{webservicesdir}/user-api.adoc[]

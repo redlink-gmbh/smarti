@@ -205,16 +205,16 @@ curl -XPUT 'http://localhost:9000/auth/foo/password' \
 
 
 
-=== Query Builder Configurations
+==== Query Builder Configurations
 
 `QueryBulder` are one type of components that can be configured
 with the client configuration.
 
-==== Solr Search Query Builder
+===== Solr Search Query Builder
 
-The Solr Search Query Builder uses the <<analysis-components#_latch_template,LATCH Template>> to build a Solr Query based on the configured Solr Endpoint Configuration.
+The Solr Search Query Builder uses the <<index.adoc#_latch_template, LATCH Template>> to build a Solr Query based on the configured Solr Endpoint Configuration.
 
-Solr Endpoint Configurations are Client specific and are set by using the <<Client Configuration>> and or the <<Client Configuration UI>>.
+Solr Endpoint Configurations are Client specific and are set by using the <<index.adoc#_client_configuration_web_service, Client service>> and or the <<index.adoc#_admin_ui, Admin UI>>.
 
 The following listing shows the JSON if such an configuration
 
@@ -317,9 +317,9 @@ where:
 *** `date`: the date for the result (e.g. the modification date)
 *** `source`: the source of the result
 
-NOTE: The defaults can be set in via `application.properties`. See <<Query Builder Defalt Configuration>> for details.
+NOTE: The defaults can be set in via `application.properties`. See <<index.adoc#_query_builder_defalt_configuration, query builder default configuration>> for details.
 
-==== Conversation Search Query Builder
+===== Conversation Search Query Builder
 
 A `Conversation Search Query Builder` offers relevant conversations that took place earlier covering a similar or related
 topic.

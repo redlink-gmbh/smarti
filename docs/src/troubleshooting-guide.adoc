@@ -8,7 +8,7 @@ If so, this is the place to be for resolving the problem.
 
 ==== System requirements
 
-Only if the <<installation-guide.adoc#_system_requirements,System Requirements>> are fulfilled, Smarti will work correctly.
+Only if the <<index.adoc#_system_requirements, System Requirements>> are fulfilled, Smarti will work correctly.
 E.g. in case of too little memory the system will behave in an unexpected way.
 
 CAUTION: Ensure the machine running Smarti has at least 4GB of RAM!
@@ -21,7 +21,7 @@ CAUTION: Ensure your JVM has allocated enough memory for heap space by using the
 In case of any problems, it is important to know how to analyze your system.
 Also if you like to report a bug it is quite necessary for other people, willing to help you, that you provide information about your environment and the setup.
 
-TIP: Read section <<installation-guide.adoc#_system_maintenance,System maintenance>> to learn more about:
+TIP: Read section <<index.adoc#_system_maintenance, System maintenance>> to learn more about:
 Logging, Monitoring, System Health, System Info Start/Stop.
 
 IMPORTANT: Know your system: platform, operating system, runtime environment, software components and release versions.
@@ -83,7 +83,7 @@ $ sudo chmod a+x /var/lib/smarti /var/lib/smarti/ext /var/log/smarti
 
 . *Read more about additional components*
 +
-NOTE: Read also section <<commons/additional-components.adoc#,Additional components>>.
+NOTE: Read also section <<index.adoc#_additional_components, Additional components>>.
 
 === Running Smarti on a container
 bzip missing

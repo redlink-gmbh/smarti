@@ -1,4 +1,4 @@
-:resourcesdir: ../../../dist/src/main/resources/
+:resourcesdir: ../../../dist/src/main/resources
 
 === Additional components
 
@@ -11,13 +11,13 @@ When installed with the provided `deb` or `rpm` package, this folder is located 
 .plugin-info.json
 [source,json]
 ----
-include::{resourcesdir}plugin-info.json[]
+include::{resourcesdir}/plugin-info.json[Plugin information]
 ----
 
 IMPORTANT: *For developers:* When running Smarti by directly executing the jar file, you need to create the `ext` directory relative to the location where the `java` command is executed `${smarti-work-dir}/ext`.
 
 CAUTION: Make sure the user that is running the `java` process has the right permissions on the file system.
-In case you run into trouble, read the section <<troubleshooting-guide.adoc#, Troubleshooting>>.
+In case you run into trouble, read the section <<index.adoc#_smarti_troubleshooting_guide, Troubleshooting>>.
 
 
 ==== Enable Stanford NLP
