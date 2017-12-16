@@ -1,33 +1,26 @@
-=== Rocket.Chat Plugin
+:resourcesdir: ../../dist/src/main/resources/
+:configurationsdir: ./configurations
+:commonsdir: ./commons
 
-For now Smarti is working with https://rocket.chat[Rocket.Chat] conversations, where it can be smoothly integrated via a https://github.com/assistify/Rocket.Chat[RC plugin].
+== Quickstart Guide: Running Rocket.Chat with integrated Smarti
+This guide will enable you to get Smarti running together with Rocket.Chat.
+By following this step by step tutorial you will learn:
 
-  http://${smarti-host}:${smarti-port}/plugin/v1/rocket.chat.js
-
-[NOTE]
-
-====
-*TODO*
-
-The Rocket.Chat Plugin consists of three parts:
-
-1. The Rocket.Chat integration code
-2. The Smarti backend adapter
-3. The Smarti frontend plugin
-
-====
-
-==== Smarti-Rocketchat Step-By-Step Guide
-This is a small guide how to get Smarti and Rocket.Chat running.
+1. How to setup Smarti
+2. How to setup Rocket.Chat
+3. How to integrate them
 
 === Smarti setup
 
-== Peparation for Smarti
-To run Smarti it is recommended to create a specific structure for libraries and configuration files.
-The final working-directory should look like this:
+==== Preparation
+
+Before launching Smarti on your local system it is recommended to create a specific folder structure for libraries and configuration files on your filesystem.
+The following steps explain how the directory structure is typically organized and how to create the corresponding files.
+By following this section your final working-directory should look like this:
+
 ....
 working-directory/
-  smarti-<version>-exec.jar
+  smarti-${version}-exec.jar
   application.properties
   german-stopwords.txt
   logback.xml
@@ -41,8 +34,8 @@ working-directory/
     wikipedia-de.zip
 ....
 
-In the following steps we will fill the directory with the corresponding files.
-As a preparation set up the working-directory with the following filestructure:
+===== 1. Create a Smarti working directory with the following subfolders:
+
 ....
 working-directory/
   ext/
@@ -50,26 +43,26 @@ working-directory/
   solr-ressources/
 ....
 
-== Build Smarti 
+==== Build Smarti
 The first step is to build smarti to get the executable jar.
-When run `mvn clean install` a executable jar will be created in the directory: `smarti/application/target/smarti-<version>-exec.jar` +
-Copy the `smarti-<version>-exec.jar` in your working-directory (see final working-directory example)
+When run `mvn clean install` a executable jar will be created in the directory: `smarti/application/target/smarti-${version}-exec.jar` +
+Copy the `smarti-${version}-exec.jar` in your working-directory (see final working-directory example)
 The resulting working-directory should look like this: +
 ....
 working-directory/
-  smarti-<version>-exec.jar
+  smarti-${version}-exec.jar
   ext/
   solrlib/
   solr-ressources/
 ....
 
-== Download Stanford NLP
+==== Download Stanford NLP
 Download the stanford nlp like shown in <<{commonsdir}additional-components.adoc#Enable Stanford NLP,Enable Stanford NLP>> chapter. +
 Create a folder named `ext` in the working-directory and move the nlp libraries into the `ext` folder (see final working-directory example).
 The resulting working-directory should look like this: +
 ....
 working-directory/
-  smarti-<version>-exec.jar
+  smarti-${version}-exec.jar
   ext/
     stanford-corenlp-3.6.0-models-german.jar
     stanford-corenlp-3.6.0.jar
@@ -77,7 +70,7 @@ working-directory/
   solr-ressources/
 ....
 
-== Stopwords for Smarti
+==== Stopwords for Smarti
 Stopwords are used from the stanford nlp to filter out meaningless words for the analysis for a specific language. +
 Download the following german-stopwords.txt or create your own:
 https://github.com/collective/collective.solr/blob/master/etc/german-stopwords.txt[german-stopwords.txt] +
@@ -85,7 +78,7 @@ Move the german-stopwords.txt to your working-directory. +
 The resulting working-directory should look like this: +
 ....
 working-directory/
-  smarti-<version>-exec.jar
+  smarti-${version}-exec.jar
   german-stopwords.txt
   ext/
     stanford-corenlp-3.6.0-models-german.jar
@@ -94,44 +87,20 @@ working-directory/
   solr-ressources/
 ....
 
-== Logback for Smarti
+==== Logback for Smarti
 To specify log information for smarti you can use a logback.xml. +
 It is recommended to use the following logback.xml: +
-....
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ Copyright 2017 Redlink GmbH
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  ~
-  -->
 
-<configuration>
+[source,xml]
+----
+include::{resourcesdir}/logback.xml[]
+----
 
-    <include resource="org/springframework/boot/logging/logback/base.xml"/>
-
-    <logger name="org.springframework.web" level="INFO"/>
-    <logger name="org.apache.solr" level="WARN"/>
-    <logger name="io.redlink.nlp" level="DEBUG"/>
-    <logger name="io.redlink.smarti" level="DEBUG"/>
-
-</configuration>
-....
 Move the logback.xml into your smarti working-directory.
 The resulting working-directory should look like this: +
 ....
 working-directory/
-  smarti-<version>-exec.jar
+  smarti-${version}-exec.jar
   german-stopwords.txt
   logback.xml
   ext/
@@ -141,38 +110,16 @@ working-directory/
   solr-ressources/
 ....
 
-== Download Solr-ressources (optional)
 
-== Smarti example configuration
-Smarti can be configured using a `application.properties`. The `application.properties` must be placed in the same directory the `smarti-<version>-exec.jar` is executed. +
+==== Smarti example configuration
+Smarti can be configured using a `application.properties`. The `application.properties` must be placed in the same directory the `smarti-${version}-exec.jar` is executed. +
 All possible configurations are shown in <<{configurationsdir}application-configuration.adoc#Overview about Spring Boot Configuration, Overview about Spring Boot Configuration>> chapter. +
 
 To get started the following `application.properties` is recommended:
-....
-### General configuration
-logging.config = classpath:logback.xml
-server.port = 8080
-server.display-name=smarti
-#ecurity.password=password
-security.enabled=false
+----
+include::{resourcesdir}/application.properties]
+----
 
-### Monitoring
-management.context-path=/system
-endpoints.enabled=true
-endpoints.info.enabled=true
-management.info.git.mode=full
-endpoints.health.enabled=true
-endpoints.metrics.enabled=true
-
-solrcore.wikipedia.de.resource=working-directory/solr_ressources/wikipedia-de.zip
-solrcore.crawl.systel.resource=working-directory/solr_ressources/crawl-dbsystel.zip
-
-smarti.analysis.optional=*,!keyword.interestingterms.conversation
-
-### Mongo DB configuration
-spring.data.mongodb.database = smarti
-spring.session.store-type=mongo
-....
 
 [NOTE]
 ====
@@ -192,7 +139,7 @@ Move the application.properties xinto your smarti working-directory.
 The resulting working-directory should look like this: +
 ....
 working-directory/
-  smarti-<version>-exec.jar
+  smarti-${version}-exec.jar
   german-stopwords.txt
   application.properties
   logback.xml
@@ -205,41 +152,41 @@ working-directory/
     wikipedia-de.zip
 ....
 
-== Startup Script for Smarti
+==== Startup Script for Smarti
 To start Smarti it is recommended to use a `startup.sh` script. +
 It is recommended to use the following script:
 ....
 #!/bin/bash
 java -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=n\
      -Dspring.profiles.active=local\
-     -Xmx4g -jar -Xdebug smarti-<version>-exec.jar\
+     -Xmx4g -jar -Xdebug smarti-${version}-exec.jar\
      --solrlib.home=solrlib
 ....
 
 [NOTE]
 ====
-In order to use the script the exact version of the smarti-<version>-exec.jar has to be specified
+In order to use the script the exact version of the smarti-${version}-exec.jar has to be specified
 ====
 
-== Remote Debugging
+==== Remote Debugging
 It is possible to debug the Smarti application remotely by using a debugging port when starting Smarti. +
 The port can be specified with `address=8787` (see Startup Script for Smarti) when executing the jar file. +
 In your IDE you can set up a remote debugger for Smarti and connect to the smarti host (localhost) with the specified port (8787).
 
-To avoid debugging problems make sure the smarti<version>-exec.jar has the same version as the remotely debugged project.
+To avoid debugging problems make sure the smarti${version}-exec.jar has the same version as the remotely debugged project.
 
 === Rocket.Chat setup
 
-== Update packages
+==== Update packages
 Before building Rocket.Chat all dependent node packages need to be installed. +
 Run `meteor npm install` to install missing dependencies.
 
-== Build Rocket.Chat
+==== Build Rocket.Chat
 To run Rocket.Chat switch into the project directory and run `meteor`
 
-== Build Rocket.Chat for deployment
+==== Build Rocket.Chat for deployment
 To build Rocket.Chat for deployment use the following command: +
-`meteor build --server-only <target-directory>` +
+`meteor build --server-only ${target-directory}` +
 This will build Rocket.Chat and create an tar.gz file. +
 Switch to the `target-directory` and extract the Rocket.Chat.tar.gz file on the deployment platform. +
 Change directory to `bundle/programs/server` and run `meteor npm install` again. +
@@ -251,12 +198,12 @@ There might accur an error related to `google-vision`. +
 Switch to `npm/node_modules/meteor/rocketchat_google-vision` and run `meteor npm install grpc` in order to fix this error.
 ====
 
-== Setup environment configuration
+==== Setup environment configuration
 Rocket.Chat can be configured using environment variables. +
 Here are some useful variables to configure the startup of Rocket.Chat: +
 .Rocket.Chat Configuration
 |===
-|Environment Variable |Example Value | Context 
+|Environment Variable |Example Value | Context
 
 |MONGO_ URL
 |mongodb://localhost:27017/rocketchat
@@ -273,7 +220,7 @@ Here are some useful variables to configure the startup of Rocket.Chat: +
 
 In addition there are some configuration, that can be set by environment variables to configure the smarti connection.
 |===
-|Environment Variable |Example Value | Context 
+|Environment Variable |Example Value | Context
 
 |OVERWRITE_SETTING_DBS_AI_Redlink_Domain
 |clientname
@@ -297,17 +244,15 @@ In addition there are some configuration, that can be set by environment variabl
 
 |===
 
-== Start Rocket.Chat
+==== Start Rocket.Chat
 Rocket.Chat gets automatically executed when run `meteor` in the project directory.
 To run Rocket.Chat in a deployment area execute the following command: +
 `node bundle/main.js`
 
-== Run Rocket.Chat Tests
+==== Run Rocket.Chat Tests
 To run Rocket.Chat tests the `TEST_MODE=true` has to be set, otherwise tests will fail. +
 Rocket.Chat uses mocha.js for testing. To run all tests execute: `meteor npm run chimp-test`.
 
-== Internal Rocket.Chat configuration for Smarti
+==== Internal Rocket.Chat configuration for Smarti
 To integrate Smarti in Rocket.Chat it must be configured inside the Rocket.Chat application first.
 Enter the 'Administration' settings and go to 'Assistify' under 'Configuration'and fill out the form 'Knowledge Base' as below:
-
-image::../_images/smarti-integration.png[Smarti Integration]

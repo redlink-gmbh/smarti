@@ -53,7 +53,7 @@ The Smarti Admin UI allows you to:
 
 For improved memory efficiency, smarti now uses `Stanford-CoreNLP v3.8.0`. If you added the Stanford-NLP dependencies
 in previous versions, you must update those libraries.
-Please refer to the <<index.asciidoc#_deploy_install,Installation Guide>> for details.
+Please refer to the <<index.adoc#_deploy_install,Installation Guide>> for details.
 
 ==== Configuration
 

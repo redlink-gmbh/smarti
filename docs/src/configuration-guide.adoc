@@ -23,16 +23,6 @@ include::configurations/application-configuration.adoc[]
 
 The client configuration allows to define the configuration for specific clients.
 Configuration changes are applied immediately (no restart required).
-Configuration is done via a RESTful service or via the provided configuration UI.
+Configuration is done via a <<../webservices/client-api.adoc, RESTful web service>> or via the provided configuration UI.
 
-include::configurations/client-configuration-api.adoc[]
-
-include::configurations/client-configuration-ui.adoc[]
-
-include::configurations/query-builder-configuration.adoc[]
-
-=== Configuration Endpoints
-
-==== Admin UI
-==== REST API (Swagger)
-==== Rocket.Chat integration JS
+include::configurations/administration-ui.adoc[]

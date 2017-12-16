@@ -160,7 +160,7 @@ The maximal parse length (`nlp.stanfordnlp.de.parseMaxlen`) defines the maximum 
 
 ===== Interesting Term Configuration
 
-The <<analysis-components.asciidoc#_interesting_terms,Interesting Terms>> component performs a keyword extraction. It uses `tf–idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
+The <<analysis-components.adoc#_interesting_terms,Interesting Terms>> component performs a keyword extraction. It uses `tf–idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
 Their are several ways to configure Solr endpoints to be used for interesting terms.
 
