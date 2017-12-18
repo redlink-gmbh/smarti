@@ -58,7 +58,7 @@ public class ClientWebservice {
         if (authenticationService.hasRole(authContext.getAuthentication(), AuthenticationService.ADMIN)) {
             return clientService.list();
         } else {
-            return clientService.list(authenticationService.getClients(authContext));
+            return authenticationService.getClients(authContext);
         }
     }
 

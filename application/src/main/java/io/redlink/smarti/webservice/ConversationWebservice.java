@@ -16,14 +16,16 @@
  */
 package io.redlink.smarti.webservice;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
+
+import io.redlink.smarti.exception.DataException;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthenticationService;
+import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.*;
@@ -65,8 +67,19 @@ import java.util.stream.Collectors;
 @Api("conversation")
 public class ConversationWebservice {
 
+
+    private static final String PARAM_CALLBACK = "callback";
+
+    public static final String PARAM_ANALYSIS = "analysis";
+
     private final Logger log = LoggerFactory.getLogger(getClass());
     
+    public static final String PARAM_CLIENT_ID = "client";
+    public static final String PARAM_PAGE = "page";
+    public static final String PARAM_PAGE_SIZE = "size";
+    public static final String DEFAULT_PAGE_SIZE = "10";
+    public static final String PARAM_PROJECTION = "projection";
+
     private static final String API_PARAM_CALLBACK = "URI where to POST the result (triggers async processing)";
     private static final String API_ASYNC_NOTE = " If a 'callback' is provided, the request will be processed async.";
     private static final String EDITABLE_CONVERSATION_FIELDS = "meta.status, meta.tags, meta.feedback, context.contextType, context.environmentType, context.domain, context.environment.*";
@@ -79,14 +92,17 @@ public class ConversationWebservice {
     private final AnalysisService analysisService;
     private final ConversationSearchService conversationSearchService;
     private final AuthenticationService authenticationService;
+    private final ClientService clientService;
+
 
     @Autowired
-    public ConversationWebservice(AuthenticationService authenticationService, CallbackService callbackExecutor,
-                                  ConversationService conversationService, AnalysisService analysisService,
-                                  @Autowired(required = false) ConversationSearchService conversationSearchService) {
+    public ConversationWebservice(AuthenticationService authenticationService, 
+                                  ClientService clientService, ConversationService conversationService, AnalysisService analysisService,
+                                  CallbackService callbackExecutor, @Autowired(required = false) ConversationSearchService conversationSearchService) {
         this.callbackExecutor = callbackExecutor;
         this.conversationService = conversationService;
         this.analysisService = analysisService;
+        this.clientService = clientService;
         this.conversationSearchService = conversationSearchService;
         this.authenticationService = authenticationService;
     }
@@ -95,10 +111,10 @@ public class ConversationWebservice {
     @RequestMapping(method = RequestMethod.GET)
     public Page<ConversationData> listConversations(
             AuthContext authContext,
-            @RequestParam(value = "clientId", required = false) List<ObjectId> owners,
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") int pageSize,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
+            @RequestParam(value = PARAM_PAGE, required = false, defaultValue = "0") int page,
+            @RequestParam(value = PARAM_PAGE_SIZE, required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Set<ObjectId> clientIds = getClientIds(authContext, owners);
         if(CollectionUtils.isNotEmpty(clientIds)){
@@ -123,9 +139,9 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @RequestBody(required = false) ConversationData parsedCd,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = parsedCd == null ? new Conversation() : ConversationData.toModel(parsedCd);
         // Create a new Conversation -> id must be null
@@ -178,13 +194,13 @@ public class ConversationWebservice {
     @RequestMapping(value = "search", method = RequestMethod.GET)
     public ResponseEntity<?> searchConversations(
             AuthContext authContext,
-            @ApiParam() @RequestParam(value = "client", required = false) List<ObjectId> clients,
+            @ApiParam() @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
             @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
             @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
     ) {
 
-        final Set<ObjectId> clientIds = getClientIds(authContext, clients);
+        final Set<ObjectId> clientIds = getClientIds(authContext, owners);
 
         if (conversationSearchService != null) {
             try {
@@ -203,12 +219,13 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -250,16 +267,16 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(value = "the new value", required = true) @RequestBody Object data,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check access to the conversation
-        authenticationService.assertConversation(authContext, conversationId);
+        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.updateConversationField(conversationId, field, data);
@@ -295,15 +312,15 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check access to the conversation
-        authenticationService.assertConversation(authContext, conversationId);
+        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.deleteConversationField(conversationId, field);
@@ -334,7 +351,7 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         if (conversation == null) {
@@ -365,14 +382,14 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Message message,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         //NOTE: ID generation for sub-documents is not supported by Mongo
         if (StringUtils.isBlank(message.getId())) {
@@ -384,7 +401,7 @@ public class ConversationWebservice {
         }
         Conversation c = conversationService.appendMessage(conversation, message);
         final Message created = c.getMessages().stream()
-                .filter(m -> Objects.equal(message.getId(), m.getId()))
+                .filter(m -> Objects.equals(message.getId(), m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Created Message[id: "+message.getId()+"] not present in " + c));
 
@@ -414,7 +431,7 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
 
         // Check authentication
@@ -449,21 +466,21 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestBody Message message,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check authentication
-        authenticationService.assertConversation(authContext, conversationId);
+        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         //make sure the message-id is the addressed one
         message.setId(messageId);
         final Conversation c = conversationService.updateMessage(conversationId, message);
         final Message updated = c.getMessages().stream()
-                .filter(m -> Objects.equal(messageId, m.getId()))
+                .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
         if(analysis){
@@ -499,14 +516,14 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         // Check authentication
-        authenticationService.assertConversation(authContext, conversationId);
+        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if(conversationService.deleteMessage(conversationId, messageId)){
             if(analysis){
@@ -545,20 +562,20 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_MESSAGE_FIELDS) @PathVariable("field") String field,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(value = "the new value", required = true) @RequestBody Object data,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = "analysis", defaultValue = "false") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback,
-            @RequestParam(value = "projection", required = false) Projection projection
+            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check authentication
-        authenticationService.assertConversation(authContext, conversationId);
+        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         Conversation c = conversationService.updateMessageField(conversationId, messageId, field, data);
         final Message updated = c.getMessages().stream()
-                .filter(m -> Objects.equal(messageId, m.getId()))
+                .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
         if(analysis){
@@ -587,12 +604,12 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) throws InterruptedException, ExecutionException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation);
         if(callback == null){
@@ -627,12 +644,12 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Analysis updatedAnalysis,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
         
         /* TODO: Not sure how to implement this:
             
@@ -664,11 +681,11 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if(callback != null){
             analysisService.analyze(client,conversation).whenComplete((a , e) -> {
@@ -699,11 +716,11 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if(callback != null){ //async execution with sync ACCEPTED response
             analysisService.analyze(client,conversation).whenComplete((a , e) -> {
@@ -735,11 +752,11 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if(callback != null){ //async execution with sync ACCEPTED response
             analysisService.analyze(client,conversation).whenComplete((a , e) -> {
@@ -789,7 +806,7 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId
     ) throws IOException {
         //just forward to getResults with analysis == null
         return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null);
@@ -807,11 +824,11 @@ public class ConversationWebservice {
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
             @RequestBody Analysis updatedAnalysis,
-            @ApiParam @RequestParam(value = "client", required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = "callback", required = false) URI callback
+            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) throws IOException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = clientId == null ? null : authenticationService.assertClient(authContext, clientId);
+        final Client client = getResponseClient(authContext, clientId, conversation);
 
         if(updatedAnalysis != null){
             //TODO: See information at #rerunAnalysis(..)
@@ -857,6 +874,30 @@ public class ConversationWebservice {
         }
     }
 
+    /**
+     * This method determines the client based on the parsed autContext an explicitly parsed clientId and
+     * optional the conversation as context of the request
+     * @param authContext the authContext (required)
+     * @param clientId the explicitly parsed client id (optional)
+     * @param conversation the conversation as context of the request (optional)
+     * @return the client (NOT <code>null</code>)
+     */
+    private Client getResponseClient(AuthContext authContext, ObjectId clientId, final Conversation conversation) {
+        final Client client;
+        if(clientId == null){
+            Set<ObjectId> clientIds = authenticationService.assertClientIds(authContext);
+            if(clientIds.size() == 1){
+                clientId = clientIds.iterator().next();
+            } else if(conversation != null && clientIds.contains(conversation.getOwner())){
+                //try to use the owner of the conversation as preferred. Otherwise
+                clientId = conversation.getOwner();
+            } else { //multiple possible clients ... BadRequest as clientId is required in such cases
+                throw new MultipleClientException(clientIds);
+            }
+        }
+        return authenticationService.assertClient(authContext, clientId);
+    }
+    
     private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis, int templateIdx, String creator) throws IOException {
         if (templateIdx < analysis.getTemplates().size()) {
             return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator);
@@ -876,7 +917,7 @@ public class ConversationWebservice {
 
     private URI buildAnalysisURI(UriComponentsBuilder builder, ObjectId conversationId) {
         return builder.cloneBuilder()
-                .pathSegment("conversation", "{conversationId}", "analysis")
+                .pathSegment("conversation", "{conversationId}", PARAM_ANALYSIS)
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId
                 ))
@@ -895,7 +936,7 @@ public class ConversationWebservice {
 
     private URI buildTokenURI(UriComponentsBuilder builder, ObjectId conversationId, int tokenIdx) {
         return builder.cloneBuilder()
-                .pathSegment("conversation", "{conversationId}", "analysis", "token", "{tokenIdx}")
+                .pathSegment("conversation", "{conversationId}", PARAM_ANALYSIS, "token", "{tokenIdx}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,
                         "tokenIdx", tokenIdx
@@ -905,7 +946,7 @@ public class ConversationWebservice {
 
     private URI buildTemplateURI(UriComponentsBuilder builder, ObjectId conversationId, int templateIdx) {
         return builder.cloneBuilder()
-                .pathSegment("conversation", "{conversationId}", "analysis", "template", "{templateIdx}")
+                .pathSegment("conversation", "{conversationId}", PARAM_ANALYSIS, "template", "{templateIdx}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,
                         "templateIdx", templateIdx
@@ -915,7 +956,7 @@ public class ConversationWebservice {
 
     private URI buildResultURI(UriComponentsBuilder builder, ObjectId conversationId, int templateIdx, String creator) {
         return builder.cloneBuilder()
-                .pathSegment("conversation", "{conversationId}", "analysis", "template", "{templateIdx}", "result", "{creator}")
+                .pathSegment("conversation", "{conversationId}", PARAM_ANALYSIS, "template", "{templateIdx}", "result", "{creator}")
                 .buildAndExpand(ImmutableMap.of(
                         "conversationId", conversationId,
                         "templateIdx", templateIdx,
@@ -993,4 +1034,28 @@ public class ConversationWebservice {
     @ApiModel
     @SuppressWarnings("WeakerAccess")
     static class ConversationSearchResult extends SearchResult<Conversation> {}
+
+    /**
+     * Used in cases where no clientId was parsed but the authentication context is valid for multiple
+     * clients.
+     */
+    @ResponseStatus(code=HttpStatus.BAD_REQUEST)
+    static class MultipleClientException extends RuntimeException implements DataException<Map<String,Object>> {
+        
+        private static final long serialVersionUID = -6172514046687880538L;
+        private Set<ObjectId> clientIds;
+
+        MultipleClientException(Set<ObjectId> clientIds){
+            this.clientIds = clientIds;
+        }
+
+        @Override
+        public Map<String, Object> getData() {
+            Map<String,Object> data = new HashMap<>();
+            data.put("client", clientIds);
+            data.put("missing", Collections.singletonList("client"));
+            return data; 
+        }
+    }
+
 }

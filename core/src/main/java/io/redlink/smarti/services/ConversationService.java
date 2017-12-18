@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.exception.BadArgumentException;
 import io.redlink.smarti.exception.ConflictException;
+import io.redlink.smarti.exception.MultipleChoicesException;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Context;
@@ -400,5 +401,4 @@ public class ConversationService {
     public Iterable<ObjectId> listConversationIDs(){
         return conversationRepository.findConversationIDs();
     }
-
 }

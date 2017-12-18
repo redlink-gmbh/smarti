@@ -9,6 +9,7 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -134,7 +135,7 @@ public class ClientService {
         return client;
     }
 
-    public Iterable<Client> list(Set<ObjectId> clients) {
+    public Iterable<Client> list(Iterable<ObjectId> clients) {
         return clientRepository.findAll(clients);
     }
 }

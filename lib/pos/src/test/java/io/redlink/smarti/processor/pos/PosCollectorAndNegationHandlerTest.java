@@ -31,6 +31,7 @@ import io.redlink.smarti.model.Token.Hint;
 import io.redlink.smarti.processing.AnalysisData;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
+import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -84,7 +85,8 @@ public class PosCollectorAndNegationHandlerTest {
     }
     
     private static final Conversation initConversation(int index) {
-        Conversation c = new Conversation();
+        Conversation c = new Conversation(new ObjectId(), new ObjectId());
+        c.setLastModified(new Date());
         c.setMeta(new ConversationMeta());
         c.getMeta().setStatus(ConversationMeta.Status.New);
         log.trace("Conversation: ");

@@ -31,6 +31,7 @@ import io.redlink.smarti.processor.pos.NegatedTokenMarker;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
+import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -116,7 +117,8 @@ public class NamedEntityCollectorTest {
     }
     
     private static final Conversation initConversation(int index) {
-        Conversation c = new Conversation();
+        Conversation c = new Conversation(new ObjectId(), new ObjectId());
+        c.setLastModified(new Date());
         c.setMeta(new ConversationMeta());
         c.getMeta().setStatus(ConversationMeta.Status.New);
         List<Message> messages = new ArrayList<>();

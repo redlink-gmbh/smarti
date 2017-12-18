@@ -26,6 +26,8 @@ import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.processing.AnalysisData;
+
+import org.bson.types.ObjectId;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -50,7 +52,8 @@ public class SapKeywordsVocabTest {
 
     @Test
     public void testExtraction() throws ProcessingException {
-        Conversation c = new Conversation();
+        Conversation c = new Conversation(new ObjectId(), new ObjectId());
+        c.setLastModified(new Date());
         final Message m = new Message();
         m.setContent("Was ist der tCode für GIS?");
         c.getMessages().add(m);

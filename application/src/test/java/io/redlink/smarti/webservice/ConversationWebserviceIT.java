@@ -5,14 +5,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -522,7 +525,7 @@ public class ConversationWebserviceIT {
         //expected ??
         this.mvc.perform(MockMvcRequestBuilders.get("/conversation")
                 .header("X-Auth-Token", authToken.getToken())
-                .param("clientId", client2.getId().toHexString())
+                .param("client", client2.getId().toHexString())
                 .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is(200))
@@ -821,6 +824,67 @@ public class ConversationWebserviceIT {
             Assert.assertEquals(conversation.getOwner(), analysis.getClient()); //NOTE assert to conversaion.getOwner() and NOT created.getOwner() as the owner is @JsonIgnored!
         });
         Assert.assertEquals(1, analysisIds.size()); //both analysis MUST HAVE the same ID
+    }
+    
+    //@Test
+    public void testConversationSearch() throws Exception{
+        String supportArea1 = "unit test";
+        String supportArea2 = "integration test";
+        Map<String,List<String>> supportAreaMessages = new HashMap<>();
+        supportAreaMessages.put(supportArea1, Arrays.asList(
+                "Wie kann in eine Komponente mit Abhängigkeiten testen?",
+                "Wie definiere ich die jenigen Spring Komponenten welche ich für einen Test benötige",
+                "Funktioniert das automatische Binden von Komponenten bei Unit Tests?"));
+        
+        supportAreaMessages.put(supportArea2, Arrays.asList(
+                "Wird die Spring Umgebung mit allen Komponenten für jeden einzelnen Integration Test neu gestartet?",
+                "Wie kann ich verhindern, dass Integration Tests bei jedem Build ausgeführt werden?"));
+        
+        List<Conversation> conversations = new LinkedList<>();
+        int i = 0;
+        for(Entry<String,List<String>> sa : supportAreaMessages.entrySet()){
+            for(String content : sa.getValue()){
+                String channel = "test-channel-" + i++;
+                Conversation conversation = new Conversation();
+                conversation.setChannelId(channel);
+                conversation.setOwner(client.getId());
+                conversation.setMeta(new ConversationMeta());
+                conversation.getMeta().setStatus(Status.New);
+                conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, channel);
+                conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, sa.getKey());
+                conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "testing");
+                conversation.setContext(new Context());
+                conversation.getContext().setDomain("test-domain");
+                conversation.getContext().setContextType("text-context");
+                conversation.getContext().setEnvironment("environment-test", "true");
+                conversation.setUser(new User("alois.tester"));
+                conversation.getUser().setDisplayName("Alois Tester");
+                conversation.getUser().setEmail("alois.tester@test.org");
+                Message msg = new Message(channel + "msg-1");
+                msg.setContent(content);
+                msg.setUser(conversation.getUser());
+                msg.setOrigin(Origin.User);
+                msg.setTime(new Date());
+                conversation.getMessages().add(msg);
+                conversations.add(conversationService.update(client, conversation));
+            }
+        }
+        //now complete the conversations so that they get indexed
+        conversations.forEach(c -> conversationService.completeConversation(c));
+        
+        //TODO: maybe we do not need to wait for indexing
+        TimeUnit.SECONDS.sleep(5);
+        
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/search")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .param("client", client.getName())
+                .param("text", "Komponente"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("header").exists());
+
+        
     }
     
     
