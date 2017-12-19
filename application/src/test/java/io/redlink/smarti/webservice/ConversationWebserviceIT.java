@@ -826,7 +826,7 @@ public class ConversationWebserviceIT {
         Assert.assertEquals(1, analysisIds.size()); //both analysis MUST HAVE the same ID
     }
     
-    //@Test
+    @Test
     public void testConversationSearch() throws Exception{
         String supportArea1 = "unit test";
         String supportArea2 = "integration test";
@@ -875,15 +875,97 @@ public class ConversationWebserviceIT {
         //TODO: maybe we do not need to wait for indexing
         TimeUnit.SECONDS.sleep(5);
         
+        String[] expectedResults = new String[]{
+                conversations.get(0).getId().toHexString(),
+                conversations.get(1).getId().toHexString(),
+                conversations.get(2).getId().toHexString(),
+                conversations.get(3).getId().toHexString()};
+        
         this.mvc.perform(MockMvcRequestBuilders.get("/conversation/search")
                 .header("X-Auth-Token", authToken.getToken())
                 .accept(MediaType.APPLICATION_JSON_VALUE)
-                .param("client", client.getName())
+                //.param("client", client.getId().toHexString()) //added based on the parsed auth-token
                 .param("text", "Komponente"))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is(200))
-                .andExpect(jsonPath("header").exists());
+                .andExpect(jsonPath("header").exists())
+                .andExpect(jsonPath("header.params").exists())
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Komponente^4")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Komponente*^2")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("*Komponente*")))
+                .andExpect(jsonPath("header.params.fq",Matchers.hasItem("owner:(" + client.getId().toHexString() + ")")))
+                .andExpect(jsonPath("numFound").value(expectedResults.length))
+                .andExpect(jsonPath("docs").isArray())
+                .andExpect(jsonPath("docs[*].id",Matchers.containsInAnyOrder(expectedResults)));
+        
+        
+        //search for Spring to rule out correct response by luck
+        expectedResults = new String[]{
+                conversations.get(1).getId().toHexString(),
+                conversations.get(3).getId().toHexString()};
 
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/search")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                //.param("client", client.getId().toHexString()) //added based on the parsed auth-token
+                .param("text", "Spring"))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("header").exists())
+                .andExpect(jsonPath("header.params").exists())
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Spring^4")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Spring*^2")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("*Spring*")))
+                .andExpect(jsonPath("header.params.fq",Matchers.hasItem("owner:(" + client.getId().toHexString() + ")")))
+                .andExpect(jsonPath("numFound").value(expectedResults.length))
+                .andExpect(jsonPath("docs").isArray())
+                .andExpect(jsonPath("docs[*].id",Matchers.containsInAnyOrder(expectedResults)));
+
+        //now add a custom filter query for the support area
+
+        String[] expectedResultsSupportArea1 = new String[]{
+                conversations.get(0).getId().toHexString(),
+                conversations.get(1).getId().toHexString(),
+                conversations.get(2).getId().toHexString()};
+        
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/search")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                //.param("client", client.getId().toHexString()) //added based on the parsed auth-token
+                .param("text", "Komponente")
+                .param("fq", "meta_support_area:\""+supportArea1+"\""))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("header").exists())
+                .andExpect(jsonPath("header.params").exists())
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Komponente^4")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Komponente*^2")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("*Komponente*")))
+                .andExpect(jsonPath("header.params.fq",Matchers.hasItem("owner:(" + client.getId().toHexString() + ")")))
+                .andExpect(jsonPath("numFound").value(expectedResultsSupportArea1.length))
+                .andExpect(jsonPath("docs").isArray())
+                .andExpect(jsonPath("docs[*].id",Matchers.containsInAnyOrder(expectedResultsSupportArea1)));
+        
+        String[] expectedResultsSupportArea2 = new String[]{
+                conversations.get(3).getId().toHexString()};
+        
+        this.mvc.perform(MockMvcRequestBuilders.get("/conversation/search")
+                .header("X-Auth-Token", authToken.getToken())
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                //.param("client", client.getId().toHexString()) //added based on the parsed auth-token
+                .param("text", "Komponente")
+                .param("fq", "meta_support_area:\""+supportArea2+"\""))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("header").exists())
+                .andExpect(jsonPath("header.params").exists())
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Komponente^4")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("Komponente*^2")))
+                .andExpect(jsonPath("header.params.q",Matchers.containsString("*Komponente*")))
+                .andExpect(jsonPath("header.params.fq",Matchers.hasItem("owner:(" + client.getId().toHexString() + ")")))
+                .andExpect(jsonPath("numFound").value(expectedResultsSupportArea2.length))
+                .andExpect(jsonPath("docs").isArray())
+                .andExpect(jsonPath("docs[*].id",Matchers.containsInAnyOrder(expectedResultsSupportArea2)));
         
     }
     
