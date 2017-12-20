@@ -139,6 +139,7 @@ public class PrepareService {
                 log.trace("  <- completed {}", p.getClass().getSimpleName());
             } catch (ProcessingException e) {
                 log.warn("Unable to process {} with Processor {} (class: {}) ", conversation, p, p.getClass().getName());
+                log.debug("STACKTRACE", e);
                 //TODO: check if this was a required or an optional processor
             }
         });

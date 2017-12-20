@@ -14,7 +14,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -671,7 +673,7 @@ public class ConversationWebserviceIT {
         conversation.getUser().setDisplayName("Alois Tester");
         conversation.getUser().setEmail("alois.tester@test.org");
         Message msg = new Message("test-channel-1-msg-1");
-        msg.setContent("Wie kann ich das Smarti Conversation Service am besten Testen?");
+        msg.setContent("Ich fahre mit Peter Tester von München nach Berlin");
         msg.setUser(conversation.getUser());
         msg.setOrigin(Origin.User);
         msg.setTime(new Date());
@@ -718,6 +720,38 @@ public class ConversationWebserviceIT {
         Assert.assertEquals(created.getLastModified(), analysis.getDate());
         Assert.assertNotNull(analysis.getTokens());
         Assert.assertNotNull(analysis.getTemplates());
+        //TODO: test token and Template requests
+        
+        this.mvc.perform(MockMvcRequestBuilders.get(analyseLink + "/token")
+                .header("X-Auth-Token", authToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(conversationJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"analyse\""),Matchers.containsString("rel=\"up\""))))
+                .andExpect(jsonPath("[0].value").value("Peter Tester"))
+                .andExpect(jsonPath("[0].messageIdx").value(0))
+                .andExpect(jsonPath("[0].start").value(14))
+                .andExpect(jsonPath("[0].end").value(26))
+                .andExpect(jsonPath("[0].origin").value("System"))
+                .andExpect(jsonPath("[0].state").value("Suggested"))
+                .andExpect(jsonPath("[0].type").value("Person"))
+                .andExpect(jsonPath("[1].value").value("München"))
+                .andExpect(jsonPath("[1].messageIdx").value(0))
+                .andExpect(jsonPath("[1].start").value(31))
+                .andExpect(jsonPath("[1].end").value(38))
+                .andExpect(jsonPath("[1].origin").value("System"))
+                .andExpect(jsonPath("[1].state").value("Suggested"))
+                .andExpect(jsonPath("[1].type").value("Place"))
+                .andExpect(jsonPath("[2].value").value("Berlin"))
+                .andExpect(jsonPath("[2].messageIdx").value(0))
+                .andExpect(jsonPath("[2].start").value(44))
+                .andExpect(jsonPath("[2].end").value(50))
+                .andExpect(jsonPath("[2].origin").value("System"))
+                .andExpect(jsonPath("[2].state").value("Suggested"))
+                .andExpect(jsonPath("[2].type").value("Place"));
     }
     
     @Test
@@ -824,6 +858,244 @@ public class ConversationWebserviceIT {
             Assert.assertEquals(conversation.getOwner(), analysis.getClient()); //NOTE assert to conversaion.getOwner() and NOT created.getOwner() as the owner is @JsonIgnored!
         });
         Assert.assertEquals(1, analysisIds.size()); //both analysis MUST HAVE the same ID
+    }
+    
+    @Test
+    public void testMessageCrudOperations() throws Exception {
+        String callbackURI = "http://www.example.org/smarti/callback/test";
+
+        
+        //create a new conversation by calling POST without payload
+        Conversation created = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.post("/conversation")
+                .header("X-Auth-Token", authToken.getToken())
+                .param("callback", callbackURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+                //.content(/* no payload!! */))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
+                .andReturn().getResponse().getContentAsString(),Conversation.class);
+        
+        Assert.assertNotNull(created.getId()); //Assert that we have an ID for the created conversation
+        
+        //We also test callbacks herem, as we need to assert that this works for an empty conversation
+        ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
+        ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
+        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
+        CallbackPayload<?> payload = callbackPayloadCapture.getValue();
+        Assert.assertEquals(HttpStatus.OK, payload.getHttpStatus());
+        Assert.assertTrue(payload.getData() instanceof Analysis);
+        Analysis analysis = (Analysis) payload.getData();
+        Assert.assertEquals(created.getId(), analysis.getConversation());
+        Assert.assertEquals(created.getLastModified(), analysis.getDate());
+        //Assert that tokens are NOT NULL but empty
+        Assert.assertNotNull(analysis.getTokens());
+        Assert.assertTrue(analysis.getTokens().isEmpty());
+        //Templates need also te be NOT NULL. However even an empty conversation might have some templates
+        Assert.assertNotNull(analysis.getTemplates());
+        
+        //NOW lets add an message
+        Message msg = new Message(UUID.randomUUID().toString());
+        msg.setContent("Ich besuche moregen Andreas Müller in Berlin."); //make sure wie have some Tokens extracted
+        
+        User aloisTester = new User("alois.tester");
+        aloisTester.setDisplayName("Alois Tester");
+        aloisTester.setEmail("alois.tester@test.org");
+
+        msg.setUser(aloisTester);
+        msg.setOrigin(Origin.User);
+        msg.setTime(new Date());
+        
+        this.mvc.perform(MockMvcRequestBuilders.post("/conversation/" + created.getId().toHexString() + "/message")
+                .header("X-Auth-Token", authToken.getToken())
+                .param("callback", callbackURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(msg)))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("id").value(msg.getId()))
+                .andExpect(jsonPath("content").value(msg.getContent()))
+                .andExpect(jsonPath("time").value(msg.getTime()))
+                .andExpect(jsonPath("user.id").value(msg.getUser().getId()))
+                .andExpect(jsonPath("user.displayName").value(msg.getUser().getDisplayName()))
+                .andExpect(jsonPath("user.email").value(msg.getUser().getEmail()))
+                .andExpect(jsonPath("votes").value(0))
+                .andExpect(jsonPath("metadata").isMap())
+                .andExpect(jsonPath("private").value(false))
+                
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""),Matchers.containsString("rel=\"up\""))));
+        
+        //now consume the analysis results
+        callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
+        callbackUriCapture = ArgumentCaptor.forClass(URI.class);
+        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
+        payload = callbackPayloadCapture.getValue();
+        Assert.assertEquals(HttpStatus.OK, payload.getHttpStatus());
+        Assert.assertTrue(payload.getData() instanceof Analysis);
+        analysis = (Analysis) payload.getData();
+        Assert.assertEquals(created.getId(), analysis.getConversation());
+        Assert.assertTrue(analysis.getDate().after(created.getLastModified())); //the analysis of a newer version
+        //Assert that tokens are NOT NULL but empty
+        Assert.assertNotNull(analysis.getTokens());
+        Assert.assertTrue(analysis.getTokens().size() > 0);
+        //Assert that Berlin is extracted as Token
+        Assert.assertTrue(analysis.getTokens().stream().anyMatch(t -> Objects.equals("Berlin", t.getValue())));
+        //Templates need also t0 be NOT NULL and NOT empty!
+        Assert.assertNotNull(analysis.getTemplates());
+        Assert.assertTrue(analysis.getTemplates().size() > 0);
+
+        //now update the content of message
+        msg.setContent("Ich besuche moregen Andreas Müller in Bern.");
+        msg.getMetadata().put("lastModified", new Date()); //not the modified date as a metadata item
+        
+        this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + created.getId().toHexString() + "/message/" + msg.getId())
+                .header("X-Auth-Token", authToken.getToken())
+                .param("callback", callbackURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(msg)))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("id").value(msg.getId()))
+                .andExpect(jsonPath("content").value(msg.getContent())) //updated content
+                .andExpect(jsonPath("time").value(msg.getTime())) //updated time
+                .andExpect(jsonPath("user.id").value(msg.getUser().getId()))
+                .andExpect(jsonPath("user.displayName").value(msg.getUser().getDisplayName()))
+                .andExpect(jsonPath("user.email").value(msg.getUser().getEmail()))
+                .andExpect(jsonPath("votes").value(0))
+                .andExpect(jsonPath("metadata").isMap())
+                .andExpect(jsonPath("metadata.lastModified").value(msg.getMetadata().get("lastModified"))) //assert the last modified date
+                .andExpect(jsonPath("private").value(false))
+                
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""),Matchers.containsString("rel=\"up\""))));
+        
+        //now consume the analysis results and make sure Berlin is no longer a Token AND Bern is found!
+        callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
+        callbackUriCapture = ArgumentCaptor.forClass(URI.class);
+        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(3)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
+        payload = callbackPayloadCapture.getValue(); //gets the result of the last call
+        Assert.assertEquals(HttpStatus.OK, payload.getHttpStatus());
+        Assert.assertTrue(payload.getData() instanceof Analysis);
+        analysis = (Analysis) payload.getData();
+        Assert.assertEquals(created.getId(), analysis.getConversation());
+        Assert.assertTrue(analysis.getDate().after(created.getLastModified())); //the analysis of a newer version
+        //Assert that tokens are NOT NULL but empty
+        Assert.assertNotNull(analysis.getTokens());
+        Assert.assertTrue(analysis.getTokens().size() > 0);
+        //Assert that Berlin is no longer an extracted as Token
+        Assert.assertFalse(analysis.getTokens().stream().anyMatch(t -> Objects.equals("Berlin", t.getValue())));
+        //Assert that Bern is no extracted as Token
+        Assert.assertTrue(analysis.getTokens().stream().anyMatch(t -> Objects.equals("Bern", t.getValue())));
+        //Templates need also t0 be NOT NULL and NOT empty!
+        Assert.assertNotNull(analysis.getTemplates());
+        Assert.assertTrue(analysis.getTemplates().size() > 0);
+        
+        
+        //add a 2nd message form an other user
+        Message msg2 = new Message(UUID.randomUUID().toString());
+        msg.setContent("Ich bin morgen auch in Bern, dann können wir uns eventuell treffen.");
+        
+        User peterTester = new User("peter.tester");
+        aloisTester.setDisplayName("Peter Tester");
+        aloisTester.setEmail("peter.tester@test.org");
+
+        msg2.setUser(peterTester);
+        msg2.setOrigin(Origin.User);
+        msg2.setTime(new Date());
+        
+        this.mvc.perform(MockMvcRequestBuilders.post("/conversation/" + created.getId().toHexString() + "/message")
+                .header("X-Auth-Token", authToken.getToken())
+                .param("callback", callbackURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(msg2)))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("id").value(msg2.getId()))
+                .andExpect(jsonPath("content").value(msg2.getContent()))
+                .andExpect(jsonPath("time").value(msg2.getTime()))
+                .andExpect(jsonPath("user.id").value(msg2.getUser().getId()))
+                .andExpect(jsonPath("user.displayName").value(msg2.getUser().getDisplayName()))
+                .andExpect(jsonPath("user.email").value(msg2.getUser().getEmail()))
+                .andExpect(jsonPath("votes").value(0))
+                .andExpect(jsonPath("metadata").isMap())
+                .andExpect(jsonPath("private").value(false))
+                
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""),Matchers.containsString("rel=\"up\""))));
+        
+        callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
+        callbackUriCapture = ArgumentCaptor.forClass(URI.class);
+        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(4)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
+        payload = callbackPayloadCapture.getValue(); //gets the result of the last call
+        Assert.assertEquals(HttpStatus.OK, payload.getHttpStatus());
+        Assert.assertTrue(payload.getData() instanceof Analysis);
+        analysis = (Analysis) payload.getData();
+        Assert.assertEquals(created.getId(), analysis.getConversation());
+        Assert.assertTrue(analysis.getDate().after(created.getLastModified())); //the analysis of a newer version
+        //Assert that tokens are NOT NULL but empty
+        Assert.assertNotNull(analysis.getTokens());
+        Assert.assertTrue(analysis.getTokens().size() > 0);
+        //Assert that Bern is extracted 2 times
+        Assert.assertEquals(2, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
+        //Templates need also t0 be NOT NULL and NOT empty!
+        Assert.assertNotNull(analysis.getTemplates());
+        Assert.assertTrue(analysis.getTemplates().size() > 0);
+        
+        //now delete the last message
+        this.mvc.perform(MockMvcRequestBuilders.delete("/conversation/" + created.getId().toHexString() + "/message/" + msg2.getId())
+                .header("X-Auth-Token", authToken.getToken())
+                .param("callback", callbackURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(objectMapper.writeValueAsString(msg2)))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(204))
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"analyse\""),Matchers.containsString("rel=\"up\""))));
+        
+        Conversation retrieved = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.get("/conversation/" + created.getId())
+                .header("X-Auth-Token", authToken.getToken())
+              .accept(MediaType.APPLICATION_JSON_VALUE))
+              .andDo(MockMvcResultHandlers.print())
+              .andExpect(MockMvcResultMatchers.status().is(200))
+              .andReturn().getResponse().getContentAsString(), Conversation.class);
+        
+        Assert.assertEquals(1, retrieved.getMessages().size());
+        Assert.assertEquals(msg.getContent(), retrieved.getMessages().get(0).getContent());
+        
+        callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
+        callbackUriCapture = ArgumentCaptor.forClass(URI.class);
+        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(5)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        
+        Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
+        payload = callbackPayloadCapture.getValue(); //gets the result of the last call
+        Assert.assertEquals(HttpStatus.OK, payload.getHttpStatus());
+        Assert.assertTrue(payload.getData() instanceof Analysis);
+        analysis = (Analysis) payload.getData();
+        Assert.assertEquals(created.getId(), analysis.getConversation());
+        Assert.assertEquals(retrieved.getLastModified(), analysis.getDate()); //the analysis of a retrieved version
+        //Assert that tokens are NOT NULL but empty
+        Assert.assertNotNull(analysis.getTokens());
+        Assert.assertTrue(analysis.getTokens().size() > 0);
+        //Assert that Bern is extracted only once as the 2nd message was deleted
+        Assert.assertEquals(1, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
+        //Templates need also t0 be NOT NULL and NOT empty!
+        Assert.assertNotNull(analysis.getTemplates());
+        Assert.assertTrue(analysis.getTemplates().size() > 0);
     }
     
     @Test

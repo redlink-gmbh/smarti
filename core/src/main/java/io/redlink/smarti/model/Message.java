@@ -57,7 +57,7 @@ public class Message {
     private int votes = 0;
     @ApiModelProperty(value = "message metadata")
     @JsonInclude(content=Include.NON_EMPTY) //exclude if empty
-    private final Map<String, String> metadata = new HashMap<>();
+    private final Map<String, Object> metadata = new HashMap<>();
 
     public Message() {
         this(null);
@@ -123,7 +123,7 @@ public class Message {
         this.votes = votes;
     }
 
-    public Map<String, String> getMetadata() {
+    public Map<String, Object> getMetadata() {
         return metadata;
     }
 
