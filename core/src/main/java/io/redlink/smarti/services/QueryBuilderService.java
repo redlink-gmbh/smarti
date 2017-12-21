@@ -71,7 +71,7 @@ public class QueryBuilderService {
         
         if(!confService.isConfiguration(client)) return;
 
-        Configuration clientConfig = confService.getClientConfiguration(conversation.getOwner());
+        Configuration clientConfig = confService.getClientConfiguration(client.getId());
 
         buildQueries(clientConfig, conversation, analysis);
     }

@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import io.redlink.smarti.services.AuthTokenService;
 import io.redlink.smarti.services.AuthenticationService;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.bson.types.ObjectId;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -38,7 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.BDDMockito;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +72,9 @@ import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.query.conversation.ConversationIndexConfiguration;
+import io.redlink.smarti.query.conversation.ConversationMltQueryBuilder;
+
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.RELATED_CONVERSATION_TYPE;
 import io.redlink.smarti.repositories.ClientRepository;
 import io.redlink.smarti.repositories.ConfigurationRepo;
 import io.redlink.smarti.repositories.ConversationRepository;
@@ -145,7 +150,10 @@ public class ConversationWebserviceIT {
         client.setDescription("A Client created for testing");
         client.setDefaultClient(true);
         client = clientService.save(client);
-        clientConfig = configService.createConfiguration(client);
+ 
+        Configuration config = configService.getDefaultConfiguration();
+        config.getConfig().values().stream().flatMap(cl -> cl.stream()).forEach(cc -> cc.setEnabled(true));
+        clientConfig = configService.storeConfiguration(client, config.getConfig());
         authToken = authTokenService.createAuthToken(client.getId(), "test");
     }
     
@@ -186,7 +194,7 @@ public class ConversationWebserviceIT {
         client2.setDescription("An other Client created for testing");
         client2.setDefaultClient(false);
         client2 = clientService.save(client2);
-        Configuration client2Config = configService.createConfiguration(client2);
+        configService.storeConfiguration(client2, configService.getDefaultConfiguration().getConfig());
         AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
         
         //and test that it can NOT access the conversation of the other one
@@ -229,7 +237,7 @@ public class ConversationWebserviceIT {
         client2.setDescription("An other Client created for testing");
         client2.setDefaultClient(false);
         client2 = clientService.save(client2);
-        Configuration client2Config = configService.createConfiguration(client2);
+        configService.storeConfiguration(client2,configService.getDefaultConfiguration().getConfig());
         AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
         
         //and test that it can NOT delete the conversation of the other one
@@ -310,7 +318,7 @@ public class ConversationWebserviceIT {
         client2.setDescription("An other Client created for testing");
         client2.setDefaultClient(false);
         client2 = clientService.save(client2);
-        Configuration client2Config = configService.createConfiguration(client2);
+        configService.storeConfiguration(client2,configService.getDefaultConfiguration().getConfig());
         AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
         
         this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.myTest")
@@ -397,7 +405,7 @@ public class ConversationWebserviceIT {
         
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        
+
         //per default analysis is false ... so no callback will happen
         this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
                 .header("X-Auth-Token", authToken.getToken())
@@ -408,10 +416,10 @@ public class ConversationWebserviceIT {
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
         //wait 5sec to be sure that no analysis was performed and no callback happend
-        BDDMockito.verify(callbackService,BDDMockito.after(5*1000).never()).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(10*1000).never()).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         //now parse analysis=true to re-analyse the conversation after the field update
-        Conversation c = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
+         Conversation c = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
                 .header("X-Auth-Token", authToken.getToken())
                 .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
                 .param("analysis", "true")
@@ -422,7 +430,7 @@ public class ConversationWebserviceIT {
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
                 .andReturn().getResponse().getContentAsString(),Conversation.class);
         
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(5*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         CallbackPayload<?> payload = callbackPayloadCapture.getValue();
@@ -443,7 +451,7 @@ public class ConversationWebserviceIT {
         client2.setDescription("An other Client created for testing");
         client2.setDefaultClient(false);
         client2 = clientService.save(client2);
-        Configuration client2Config = configService.createConfiguration(client2);
+        configService.storeConfiguration(client2,configService.getDefaultConfiguration().getConfig());
         AuthToken authToken2 = authTokenService.createAuthToken(client2.getId(), "test");
 
         Map<String,Conversation> client1Conversations = new HashMap<>();
@@ -638,7 +646,7 @@ public class ConversationWebserviceIT {
         //now wait for the callback!
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(20*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         CallbackPayload<?> payload = callbackPayloadCapture.getValue();
@@ -835,7 +843,7 @@ public class ConversationWebserviceIT {
         //now wait for the 2 callbacks (first for the creation; second for the appended message)!
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(5*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         //Assert the analysis of the original request
         callbackUriCapture.getAllValues().forEach(cb -> Assert.assertEquals(callbackURI, cb.toString()));
         Set<ObjectId> analysisIds = new HashSet<>();
@@ -883,7 +891,7 @@ public class ConversationWebserviceIT {
         //We also test callbacks herem, as we need to assert that this works for an empty conversation
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(20*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         CallbackPayload<?> payload = callbackPayloadCapture.getValue();
@@ -934,7 +942,7 @@ public class ConversationWebserviceIT {
         //now consume the analysis results
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(5*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue();
@@ -981,7 +989,7 @@ public class ConversationWebserviceIT {
         //now consume the analysis results and make sure Berlin is no longer a Token AND Bern is found!
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(3)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(5*1000).times(3)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue(); //gets the result of the last call
@@ -1004,11 +1012,11 @@ public class ConversationWebserviceIT {
         
         //add a 2nd message form an other user
         Message msg2 = new Message(UUID.randomUUID().toString());
-        msg.setContent("Ich bin morgen auch in Bern, dann können wir uns eventuell treffen.");
+        msg2.setContent("Ich bin morgen auch in Bern, dann können wir uns eventuell treffen.");
         
         User peterTester = new User("peter.tester");
-        aloisTester.setDisplayName("Peter Tester");
-        aloisTester.setEmail("peter.tester@test.org");
+        peterTester.setDisplayName("Peter Tester");
+        peterTester.setEmail("peter.tester@test.org");
 
         msg2.setUser(peterTester);
         msg2.setOrigin(Origin.User);
@@ -1037,7 +1045,7 @@ public class ConversationWebserviceIT {
         
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(4)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(5*1000).times(4)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue(); //gets the result of the last call
@@ -1079,7 +1087,7 @@ public class ConversationWebserviceIT {
         
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        BDDMockito.verify(callbackService,BDDMockito.timeout(10*1000).times(5)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.after(5*1000).times(5)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue(); //gets the result of the last call
@@ -1240,7 +1248,150 @@ public class ConversationWebserviceIT {
                 .andExpect(jsonPath("docs[*].id",Matchers.containsInAnyOrder(expectedResultsSupportArea2)));
         
     }
-    
+    @Test
+    public void testQueryExecution() throws Exception {
+        //As we use the related conversation query builder we need to create/complete some
+        //conversation so that we do get some releated results
+        String supportArea1 = "unit test";
+        String supportArea2 = "integration test";
+        Map<String,List<String>> supportAreaMessages = new HashMap<>();
+        supportAreaMessages.put(supportArea1, Arrays.asList(
+                "Wie kann in eine Komponente mit Abhängigkeiten testen?",
+                "Wie definiere ich die jenigen Spring Komponenten welche ich für einen Test benötige",
+                "Funktioniert das automatische Binden von Komponenten bei Unit Tests?",
+                "Kann ich Komponenten auch im @BeforeClass verwenden?",
+                "Werden Spring Komponenten für mehrere Unit Tests wiederverwendet?",
+                "Wie kann ich Spring Webservices mit Unit Tests testen?"));
+        
+        supportAreaMessages.put(supportArea2, Arrays.asList(
+                "Wird die Spring Umgebung mit allen Komponenten für jeden einzelnen Integration Test neu gestartet?",
+                "Wie kann ich verhindern, dass Integration Tests bei jedem Build ausgeführt werden?"));
+        
+        List<Conversation> conversations = new LinkedList<>();
+        int i = 0;
+        for(Entry<String,List<String>> sa : supportAreaMessages.entrySet()){
+            for(String content : sa.getValue()){
+                String channel = "test-channel-" + i++;
+                Conversation conversation = new Conversation();
+                conversation.setChannelId(channel);
+                conversation.setOwner(client.getId());
+                conversation.setMeta(new ConversationMeta());
+                conversation.getMeta().setStatus(Status.New);
+                conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, channel);
+                conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, sa.getKey());
+                conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "testing");
+                conversation.setContext(new Context());
+                conversation.getContext().setDomain("test-domain");
+                conversation.getContext().setContextType("text-context");
+                conversation.getContext().setEnvironment("environment-test", "true");
+                conversation.setUser(new User("alois.tester"));
+                conversation.getUser().setDisplayName("Alois Tester");
+                conversation.getUser().setEmail("alois.tester@test.org");
+                Message msg = new Message(channel + "msg-1");
+                msg.setContent(content);
+                msg.setUser(conversation.getUser());
+                msg.setOrigin(Origin.User);
+                msg.setTime(new Date());
+                conversation.getMessages().add(msg);
+                conversations.add(conversationService.update(client, conversation));
+            }
+        }
+        //now complete the conversations so that they get indexed
+        conversations.forEach(c -> conversationService.completeConversation(c));
+        
+        //TODO: maybe we do not need to wait for indexing
+        TimeUnit.SECONDS.sleep(5);
+        
+        //Now We need to create an additional conversation to get releated conversations
+        Conversation conversation = new Conversation();
+        conversation.setChannelId("execution-test-channel");
+        conversation.setOwner(client.getId());
+        conversation.setMeta(new ConversationMeta());
+        conversation.getMeta().setStatus(Status.New);
+        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, conversation.getChannelId());
+        conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, supportArea1); //use the first for testing
+        conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
+        conversation.setContext(new Context());
+        conversation.getContext().setDomain("test-domain");
+        conversation.getContext().setContextType("text-context");
+        conversation.getContext().setEnvironment("environment-test", "true");
+        conversation.setUser(new User("alois.tester"));
+        conversation.getUser().setDisplayName("Hubert Tester");
+        conversation.getUser().setEmail("hubert.tester@test.org");
+        Message msg = new Message("execution-test-channel");
+        msg.setContent("Wie muss ich einen Spring Unit Test annotieren, damit ich Webservices testen kann?");
+        msg.setUser(conversation.getUser());
+        msg.setOrigin(Origin.User);
+        msg.setTime(new Date());
+        conversation.getMessages().add(msg);
+        String conversationJson = objectMapper.writerFor(Conversation.class).writeValueAsString(conversation);
+        
+        MockHttpServletResponse response = this.mvc.perform(MockMvcRequestBuilders.post("/conversation")
+                .header("X-Auth-Token", authToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(conversationJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andReturn().getResponse();
+        
+        //now get the analysis
+        String analyseLink = parseLinks(response.getHeaders("link")).get("analyse");
+        Assert.assertNotNull(analyseLink);
+        Analysis analysis = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.get(analyseLink)
+                .header("X-Auth-Token", authToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(conversationJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andReturn().getResponse().getContentAsString(), Analysis.class);
+        //this just asserts that Analysis supports both parse and read
+        Assert.assertNotNull(analysis);
+        Assert.assertNotNull(analysis.getTemplates());
+        AtomicInteger idx = new AtomicInteger(0);
+        
+        Entry<Integer, Template> templateEntry = analysis.getTemplates().stream()
+            .map(t -> new ImmutablePair<Integer,Template>(idx.getAndIncrement(), t))
+            .filter(p -> RELATED_CONVERSATION_TYPE.equals(p.getValue().getType()))
+            .findAny().orElse(null);
+        Assert.assertNotNull("missing expected template (type: " + RELATED_CONVERSATION_TYPE + ")", templateEntry);
+        Query query = templateEntry.getValue().getQueries().stream()
+            .filter(q -> q.getCreator().contains("queryBuilder:conversationmlt:"))
+            .findAny().orElse(null);
+        Assert.assertNotNull("missing expected query (creator: " + ConversationMltQueryBuilder.CREATOR_NAME + ")", query);
+        
+        String[] expectedResults = new String[]{
+                conversations.get(5).getId().toHexString(),
+                conversations.get(4).getId().toHexString(),
+                conversations.get(2).getId().toHexString()};
+        Conversation bestResult = conversations.get(5);
+        Message bestMessage = bestResult.getMessages().get(0);
+        
+        //Now we can execute the query
+        this.mvc.perform(MockMvcRequestBuilders.get(analyseLink + "/template/" + templateEntry.getKey() + "/result/" + query.getCreator())
+                .header("X-Auth-Token", authToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .content(conversationJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(jsonPath("numFound").value(5)) //5 of 6 have words in common
+                .andExpect(jsonPath("start").value(0))
+                .andExpect(jsonPath("pageSize").value(3))
+                .andExpect(jsonPath("docs").isArray())
+                .andExpect(jsonPath("docs[*].conversationId",Matchers.contains(expectedResults)))
+                .andExpect(jsonPath("docs[0].replySuggestion").value(bestMessage.getContent()))
+                .andExpect(jsonPath("docs[0].content").value(bestMessage.getContent()))
+                .andExpect(jsonPath("docs[0].score").isNumber())
+                .andExpect(jsonPath("docs[0].messageId").value(bestMessage.getId()))
+                .andExpect(jsonPath("docs[0].userName").value(bestMessage.getUser().getDisplayName()))
+                .andExpect(jsonPath("docs[0].messageIdx").value(0))
+                .andExpect(jsonPath("docs[0].votes").value(0))
+                .andExpect(jsonPath("docs[0].timestamp").value(bestMessage.getTime().getTime()))
+                .andExpect(jsonPath("docs[0].creator").value(query.getCreator()));
+        
+    }
     
     private Map<String,String> parseLinks(List<String> headerValues){
         return headerValues.stream().map(LINK_HEADER_PATTERN::matcher)
