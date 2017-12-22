@@ -16,7 +16,7 @@ be started by directly launching the executable jar. Check out a detailed link:d
 Currently Smarti is working with https://rocket.chat[Rocket.Chat] conversations, where it can be smoothly integrated via a https://github.com/mrsimpson/Rocket.Chat[RC plugin].
 Lookup the link:docs/integrations/rocketchat.adoc[Rocket.Chat plugin description] for further information.
 
-== How to contribution
+== How to contribute
 
 Smarti is an Open Source project so everyone is encouraged to improve it. Don't hesitate to report bugs, provide fixes or
 share new ideas with us. We have various ways for contribution:
@@ -24,6 +24,8 @@ share new ideas with us. We have various ways for contribution:
 * use the issue tracker - report bugs, suggest features or give hints how we can improve the documentation.
 * discuss issues with the community - two brains are better than one.
 * write code - no patch is too small. So even fixing typos helps to improve Smarti.
+
+See the link:CONTRIBUTING.adoc[Contributing Guidelines] for further details.
 
 == License
 Free use of this software is granted under the terms of the Apache License Version 2.0.
