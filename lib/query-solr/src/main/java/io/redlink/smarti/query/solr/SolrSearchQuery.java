@@ -32,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  */
@@ -106,6 +106,7 @@ public class SolrSearchQuery extends Query {
     public final ResultConfig getResultConfig() {
         return resultConfig;
     }
+    
     /**
      * Additional Solr Parameters that SHOULD be parsed with the query as defaults
      * @return the solr default parameters
@@ -119,7 +120,5 @@ public class SolrSearchQuery extends Query {
     public String toString() {
         return "SolrSearchQuery [title=" + getDisplayTitle() + ", creator=" + getCreator() + ",params=" + queryParams + "]";
     }
-    
-    
 }
 

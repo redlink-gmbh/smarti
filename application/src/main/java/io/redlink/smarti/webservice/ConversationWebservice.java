@@ -53,6 +53,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 
@@ -79,13 +80,39 @@ public class ConversationWebservice {
     public static final String PARAM_PAGE_SIZE = "size";
     public static final String DEFAULT_PAGE_SIZE = "10";
     public static final String PARAM_PROJECTION = "projection";
+    private static final String API_ASYNC_NOTE = "<p> If a '<code>callback</code>' is provided, the request will trigger an callback with analysis results"
+            + "for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call"
+            + "to '<code>GET /conversation/{id}/analysis</code>' <p>.";
+    private static final String EDITABLE_CONVERSATION_FIELDS = "<p>Supported fields include <ul>"
+            + "<li><code>context.contextType</code>"
+            + "<li><code>context.domain</code>"
+            + "<li><code>context.environment.*</code> and the shortcut <code>environment.*</code>"
+            + "<li><code>meta.status</code> with the shortcut <code>status</code>"
+            + "<li><code>meta.*</code> with the shortcut <code>*</code>: however note that <code>meta.*</code> is required for field names that would be mapped to other services of the conversation service."
+            + "</ul>";
+    private static final String CONVERSATION_FIELD_VALUES = "context.contextType, context.domain, context.environment.*, meta.status, meta.*";
+    private static final String EDITABLE_MESSAGE_FIELDS = "<p>Supported fields include <ul>"
+            + "<li><code>time</code>: value must be a Date, long time or an ISO date/time"
+            + "<li><code>origin</code>: value must be an member of the Orign enumeration"
+            + "<li><code>content</code> value must be a String</code>"
+            + "<li><code>private</code> value is interpreted as boolean</code>"
+            + "<li><code>votes</code> value must be an integer</code>"
+            + "<li><code>metadata.*</code> any metadata field"
+            + "</ul>";
+    private static final String MESSAGE_FIELD_VALUES = "time, origin, content, private, votes, metadata.*";
 
-    private static final String API_PARAM_CALLBACK = "URI where to POST the result (triggers async processing)";
-    private static final String API_ASYNC_NOTE = " If a 'callback' is provided, the request will be processed async.";
-    private static final String EDITABLE_CONVERSATION_FIELDS = "meta.status, meta.tags, meta.feedback, context.contextType, context.environmentType, context.domain, context.environment.*";
-    private static final String EDITABLE_MESSAGE_FIELDS = "time, origin, content, private, votes, metadata.*";
-
-    private static final String ANALYSIS_STATE = "If enabled the message will be analysed and the analysis results are included in the results";
+    private static final String DESCRIPTION_PARAM_CALLBACK = "URI where to POST the Analysis results as soon as they are available (async processing)";
+    private static final String DESCRIPTION_PARAM_ANALYSIS = "If enabled the analysis of the conversation is included in the response. This requires the"
+            + "request to wait for the analysis to be completed. In case a '<code>callback</code>' is supported and provided the analysis results "
+            + "will be POST to this URI instead. In any case requests supporting is parameter will start analysis and cache the results for "
+            + "improved response times on subsequent '<code>GET /conversation/{id}/analysis</code>' requests.";
+    private static final String DESCRIPTION_PARAM_PROJECTION = "Not yet implemented! Will allow to select different projections over the returned data";
+    private static final String DESCRIPTION_PARAM_CLIENT_ID = "If the authentication (by user or auth-token) allows access to multiple clients "
+            + "this parameter allows to  specify the clients to be considered for processing the request (intersection of "
+            + "assigend to the user and parsed). For processing of some requests only a single client is supported in those"
+            + "cases a BAD_REQUST response will be triggered in cases where multiple clients are selected";
+    private static final String DESCRIPTION_PARAM_PAGE = "The page number (NOTE that '<code>0</code>' is the first page - 0-indexed)";
+    private static final String DESCRIPTION_PARAM_PAGE_SIZE = "The number of elements on a single page";
 
     private final CallbackService callbackExecutor;
     private final ConversationService conversationService;
@@ -111,10 +138,10 @@ public class ConversationWebservice {
     @RequestMapping(method = RequestMethod.GET)
     public Page<ConversationData> listConversations(
             AuthContext authContext,
-            @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
-            @RequestParam(value = PARAM_PAGE, required = false, defaultValue = "0") int page,
-            @RequestParam(value = PARAM_PAGE_SIZE, required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_CLIENT_ID,allowMultiple=true,required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
+            @ApiParam(name=PARAM_PAGE,required=false, defaultValue="0", value=DESCRIPTION_PARAM_PAGE) @RequestParam(value = PARAM_PAGE, required = false, defaultValue = "0") int page,
+            @ApiParam(name=PARAM_PAGE_SIZE, required=false, defaultValue=DEFAULT_PAGE_SIZE, value=DESCRIPTION_PARAM_PAGE_SIZE) @RequestParam(value = PARAM_PAGE_SIZE, required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Set<ObjectId> clientIds = getClientIds(authContext, owners);
         if(CollectionUtils.isNotEmpty(clientIds)){
@@ -131,17 +158,16 @@ public class ConversationWebservice {
             consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "Create a new Conversation." + API_ASYNC_NOTE)
     @ApiResponses({
-            @ApiResponse(code = 201, message = "conversation created (sync)", response = Conversation.class),
-            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+            @ApiResponse(code = 201, message = "conversation created", response = ConversationData.class),
     })
     @RequestMapping(method = RequestMethod.POST , consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<ConversationData> createConversation(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @RequestBody(required = false) ConversationData parsedCd,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = parsedCd == null ? new Conversation() : ConversationData.toModel(parsedCd);
         // Create a new Conversation -> id must be null
@@ -169,34 +195,39 @@ public class ConversationWebservice {
         //store the new conversation!
         Conversation created = conversationService.update(client, conversation);
 
-        if(analysis){
-            analysisService.analyze(client, created)
-                    .whenComplete((a , e) -> {
-                        if(a != null){
-                            log.debug("callback {} with {}", callback, a);
-                            callbackExecutor.execute(callback, CallbackPayload.success(a));
-                        } else {
-                            log.warn("Analysis of {} failed sending error callback to {} ({} - {})", created.getId(), callback, e, e.getMessage());
-                            log.debug("STACKTRACE: ",e);
-                            callbackExecutor.execute(callback, CallbackPayload.error(e));
-                        }
-                    });
+        //trigger analysis
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client, created);
+        if(callback != null){
+            analysis.whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", created.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                }
+            });
         }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, created.getId())))
+        URI conversationUri = buildConversationURI(uriBuilder, created.getId());
+        return ResponseEntity.created(conversationUri)
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", conversationUri))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, created.getId())))
-                .body(ConversationData.fromModel(created));
+                .body(toConversationData(client, created, analysis, inclAnalysis));
 
     }
 
     @ApiOperation(value = "search for a conversation", response = ConversationSearchResult.class,
             notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The results of the search", response = ConversationSearchResult.class),
+        @ApiResponse(code = 503, message = "If conversation search is not supported")
+    })
     @RequestMapping(value = "search", method = RequestMethod.GET)
     public ResponseEntity<?> searchConversations(
             AuthContext authContext,
             @ApiParam() @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
-            @ApiParam("fulltext search") @RequestParam(value = "text", required = false) String text,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
+            @ApiParam(required=false, value="fulltext search") @RequestParam(value = "text", required = false) String text,
             @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
     ) {
 
@@ -213,15 +244,15 @@ public class ConversationWebservice {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
     }
 
-    @ApiOperation(value = "retrieve a conversation", response = Conversation.class)
+    @ApiOperation(value = "Retrieve a conversation optionally including analysis results.", response = ConversationData.class)
     @RequestMapping(value = "{conversationId}", method = RequestMethod.GET)
     public ResponseEntity<ConversationData> getConversation(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         
@@ -233,7 +264,7 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .body(toConversationData(client, conversation, analysis));
+                    .body(toConversationData(client, conversation, null, inclAnalysis));
         }
     }
 
@@ -254,24 +285,24 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "update/modify a specific field", response = Conversation.class,
-            notes = "Update a single property in the Conversation." + API_ASYNC_NOTE,
+    @ApiOperation(value = "update/modify a specific field", response = ConversationData.class,
+            notes = "Sets a single property in the Conversation to the value parsed in the payload." 
+                    + EDITABLE_CONVERSATION_FIELDS + API_ASYNC_NOTE,
             consumes = MimeTypeUtils.APPLICATION_JSON_VALUE)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "field updated (sync)", response = Conversation.class),
-            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+            @ApiResponse(code = 200, message = "field updated (sync)", response = ConversationData.class)
     })
     @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<ConversationData> modifyConversationField(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(value = "the new value", required = true) @RequestBody Object data,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(value = "the field to update", required = true, allowableValues = CONVERSATION_FIELD_VALUES) @PathVariable("field") String field,
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(value = "the new value for the field", required = true) @RequestBody Object data,
+            @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check access to the conversation
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
@@ -280,8 +311,9 @@ public class ConversationWebservice {
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.updateConversationField(conversationId, field, data);
-            if(analysis){
-                analysisService.analyze(client, updated).whenComplete((a , e) -> {
+            CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
+            if(callback != null){
+                analysis.whenComplete((a , e) -> {
                     if(a != null){
                         log.debug("callback {} with {}", callback, a);
                         callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -295,14 +327,15 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .body(ConversationData.fromModel(updated));
+                    .body(toConversationData(client, updated, analysis, inclAnalysis));
         } else {
             return ResponseEntity.notFound().build();
         }
     }
     
-    @ApiOperation(value = "delete a specific field", response = Conversation.class,httpMethod = "DELETE",
-            notes = "Deleting a single property in the Conversation." + API_ASYNC_NOTE)
+    @ApiOperation(value = "deletes the specific field", response = ConversationData.class, httpMethod = "DELETE",
+            notes = "Deleting a single property in the Conversation." 
+                    + EDITABLE_CONVERSATION_FIELDS + API_ASYNC_NOTE)
     @ApiResponses({
             @ApiResponse(code = 204, message = "field deleted (sync)", response = Conversation.class)
     })
@@ -311,11 +344,11 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_CONVERSATION_FIELDS) @PathVariable("field") String field,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(value = "the field to delete", required = true, allowableValues = CONVERSATION_FIELD_VALUES) @PathVariable("field") String field,
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check access to the conversation
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
@@ -324,8 +357,9 @@ public class ConversationWebservice {
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.deleteConversationField(conversationId, field);
-            if(analysis){
-                analysisService.analyze(client, updated).whenComplete((a , e) -> {
+            CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
+            if(callback != null){
+                analysis.whenComplete((a , e) -> {
                     if(a != null){
                         log.debug("callback {} with {}", callback, a);
                         callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -339,11 +373,12 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .body(ConversationData.fromModel(updated));
+                    .body(toConversationData(client, updated, analysis, inclAnalysis));
         } else {
             return ResponseEntity.notFound().build();
         }
     }
+    
     @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List",
             notes = "retrieves all messages in the accessed conversation")
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.GET)
@@ -351,7 +386,7 @@ public class ConversationWebservice {
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         if (conversation == null) {
@@ -371,9 +406,7 @@ public class ConversationWebservice {
                     "empty/null." +
                     API_ASYNC_NOTE)
     @ApiResponses({
-            @ApiResponse(code = 201, message = "message created"),
-            @ApiResponse(code = 202, message = "accepted for processing (async, aptionally analyed)",
-                    response = Conversation.class),
+            @ApiResponse(code = 201, message = "message created",response=Message.class),
             @ApiResponse(code = 404, message = "conversation not found")
     })
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
@@ -382,10 +415,9 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Message message,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         
@@ -405,8 +437,9 @@ public class ConversationWebservice {
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Created Message[id: "+message.getId()+"] not present in " + c));
 
-        if(analysis){
-            analysisService.analyze(client, c).whenComplete((a , e) -> {
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
+        if(callback != null){
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a);
                     callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -417,8 +450,9 @@ public class ConversationWebservice {
                 }  
             });
         }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, created.getId())))
+        URI messageLocation = buildMessageURI(uriBuilder, conversationId, created.getId());
+        return ResponseEntity.created(messageLocation)
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", messageLocation))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                 .body(created);
@@ -431,7 +465,7 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
 
         // Check authentication
@@ -455,8 +489,7 @@ public class ConversationWebservice {
             notes = "fully replace a message." +
                     API_ASYNC_NOTE)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "message updated (sync)", response = Message.class),
-            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Conversation.class),
+            @ApiResponse(code = 200, message = "message updated", response = Message.class),
             @ApiResponse(code = 404, message = "conversation or message not found")
     })
     @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
@@ -466,10 +499,9 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestBody Message message,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check authentication
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
@@ -483,8 +515,9 @@ public class ConversationWebservice {
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
-        if(analysis){
-            analysisService.analyze(client, c).whenComplete((a , e) -> {
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
+        if(callback != null){
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a);
                     callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -507,7 +540,6 @@ public class ConversationWebservice {
                     API_ASYNC_NOTE)
     @ApiResponses({
             @ApiResponse(code = 204, message = "deleted (no content)"),
-            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Conversation.class),
             @ApiResponse(code = 404, message = "conversation or message not found")
     })
     @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.DELETE)
@@ -516,9 +548,8 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "true") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         // Check authentication
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
@@ -526,9 +557,10 @@ public class ConversationWebservice {
         final Client client = getResponseClient(authContext, clientId, conversation);
 
         if(conversationService.deleteMessage(conversationId, messageId)){
-            if(analysis){
-                Conversation c = conversationService.getConversation(conversationId);
-                analysisService.analyze(client, c).whenComplete((a , e) -> {
+            Conversation c = conversationService.getConversation(conversationId);
+            CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
+            if(callback != null){
+                analysis.whenComplete((a , e) -> {
                     if(a != null){
                         log.debug("callback {} with {}", callback, a);
                         callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -550,10 +582,12 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "update/modify a specific filed of the message", response = Message.class,
             consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
-            notes = "Update a single property in the Message." + API_ASYNC_NOTE)
+            notes = "Sets the property of the Message to the parsed value" 
+                    + EDITABLE_MESSAGE_FIELDS + API_ASYNC_NOTE)
     @ApiResponses({
-            @ApiResponse(code = 200, message = "field updated (sync)", response = Message.class),
-            @ApiResponse(code = 202, message = "accepted for processing (async)", response = Entity.class)
+            @ApiResponse(code = 200, message = "field updated Message", response = Message.class),
+            @ApiResponse(code = 404, message = "if the conversation or message was not found"),
+            @ApiResponse(code = 400, message = "if the value is not valid for the field")
     })
     @RequestMapping(value = "{conversationId}/message/{msgId}/{field}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Message> modifyMessageField(
@@ -561,12 +595,10 @@ public class ConversationWebservice {
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
-            @ApiParam(value = "the field to update", required = true, allowableValues = EDITABLE_MESSAGE_FIELDS) @PathVariable("field") String field,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(value = "the field to update", required = true, allowableValues = MESSAGE_FIELD_VALUES) @PathVariable("field") String field,
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(value = "the new value", required = true) @RequestBody Object data,
-            @ApiParam(ANALYSIS_STATE) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean analysis,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
-            @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         // Check authentication
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
@@ -578,8 +610,9 @@ public class ConversationWebservice {
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
-        if(analysis){
-            analysisService.analyze(client, c).whenComplete((a , e) -> {
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
+        if(callback != null){
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a);
                     callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -598,14 +631,21 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "get the analysis-results of the conversation", response = Analysis.class,
-            notes = "retrieve the analysis for this conversation.")
+            notes = "retrieve the analysis for this conversation."
+                    + "<p> If a '<code>callback</code>' is provided, the request will trigger an callback with "
+                    + "analysis results for the parsed conversation soon as those are available.")
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "the analysis (sync - with no callback)", response = Analysis.class),
+        @ApiResponse(code = 202, message = "accepted with the analysis POST'ed to the callback"),
+        @ApiResponse(code = 404, message = "if the conversation is not found")
+})
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.GET)
     public ResponseEntity<Analysis> getAnalysis(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) throws InterruptedException, ExecutionException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
@@ -638,14 +678,17 @@ public class ConversationWebservice {
     @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class,
             consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
+    @ApiResponses({
+        @ApiResponse(code = 501, message = "not yet implemented")
+    })
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Analysis> rerunAnalysis(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Analysis updatedAnalysis,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
@@ -675,23 +718,30 @@ public class ConversationWebservice {
     }
 
 
-    @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List")
+    @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List",
+            notes = "Returns the tokens of the analysis (sync or async - if callback is present)" + API_ASYNC_NOTE)
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The tokens (sync)", response = Token.class, responseContainer = "List"),
+        @ApiResponse(code = 202, message = "Accepted (aync): If a callback is provided, the Tokens are POST'ed to"
+                + "the callback URI instead", response = Token.class, responseContainer = "List")
+    })
     @RequestMapping(value = "{conversationId}/analysis/token", method = RequestMethod.GET)
     public ResponseEntity<List<Token>> getTokens(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         final Client client = getResponseClient(authContext, clientId, conversation);
 
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){
-            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                    log.debug("callback {} with {}", callback, a.getTokens());
+                    callbackExecutor.execute(callback, CallbackPayload.success(a.getTokens()));
                 } else {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
@@ -706,27 +756,34 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .body(getAnalysis(client, conversation).getTokens());
+                    .body(waitFor(analysis).getTokens());
         }
     }
 
-    @ApiOperation(value = "get the (query-)templates in the conversation", response = Template.class, responseContainer = "List")
+    @ApiOperation(value = "get the (query-)templates in the conversation", response = Template.class, responseContainer = "List",
+            notes = "Returns the templates of the analysis (sync or async - if callback is present)" + API_ASYNC_NOTE)
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The templates (sync)", response = Template.class, responseContainer = "List"),
+        @ApiResponse(code = 202, message = "Accepted (aync): The Templates are POST'ed to"
+                + "the callback URI instead", response = Template.class, responseContainer = "List")
+    })
     @RequestMapping(value = "{conversationId}/analysis/template", method = RequestMethod.GET)
     public ResponseEntity<List<Template>> getTemplates(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         final Client client = getResponseClient(authContext, clientId, conversation);
 
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                    log.debug("callback {} with {}", callback, a.getTemplates());
+                    callbackExecutor.execute(callback, CallbackPayload.success(a.getTemplates()));
                 } else {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
@@ -740,26 +797,32 @@ public class ConversationWebservice {
         } else {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .body(getAnalysis(client, conversation).getTemplates());
+                    .body(waitFor(analysis).getTemplates());
         }
 
     }
 
-    @ApiOperation(value = "get a query template", response = Template.class)
+    @ApiOperation(value = "get a query template", response = Template.class,
+            notes = "Returns the template of the analysis (sync or async - if callback is present)" + API_ASYNC_NOTE)
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The templates (sync)", response = Template.class),
+        @ApiResponse(code = 202, message = "Accepted (aync): The Template is POST'ed to the callback URI instead", response = Template.class)
+    })
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}", method = RequestMethod.GET)
     public ResponseEntity<?> getTemplate(
             AuthContext authContext,
             UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         final Client client = getResponseClient(authContext, clientId, conversation);
 
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
                     if(a.getTemplates().size() > templateIdx){
                         log.debug("callback {} with {}", callback, a);
@@ -781,24 +844,25 @@ public class ConversationWebservice {
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                     .build();
         } else { //sync execution
-            final List<Template> templates = getAnalysis(client, conversation).getTemplates();
-            if (templateIdx < 0) {
-                return ResponseEntities.badRequest("No template with index "+templateIdx+" present");
-            } else if (templateIdx < templates.size()) {
+            final List<Template> templates = waitFor(analysis).getTemplates();
+            if (templateIdx < templates.size()) {
                 return ResponseEntity.ok()
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                         .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                         .body(templates.get(templateIdx));
             } else {
-                return ResponseEntity.notFound().build();
+                throw new NotFoundException(Template.class, templateIdx);
             }
         }
 
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", 
+    @ApiOperation(value = "get inline-results for the selected template and query creator", 
             response = InlineSearchResult.class)
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The search results", response = InlineSearchResult.class),
+    })
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(
             AuthContext authContext,
@@ -806,16 +870,21 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId
     ) throws IOException {
         //just forward to getResults with analysis == null
         return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null);
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the creator", 
+    @ApiOperation(value = "get inline-results for the selected template from the query creator", 
             response = InlineSearchResult.class,
-            consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
-            notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
+            consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
+            notes = "<strong>Parsing of an Analysis object is NOT IMPLEMENTED</strong>" + API_ASYNC_NOTE)
+    @ApiResponses({
+        @ApiResponse(code = 200, message = "The search results", response = InlineSearchResult.class),
+        @ApiResponse(code = 202, message = "Accepted (aync): The results are POST'ed to the callback URI instead", response = Template.class),
+        @ApiResponse(code = 501, message = "If a Analysis is parsed in the request body - <strong>NOT IMPLEMENTED</strong>")
+    })
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getResults(
             AuthContext authContext,
@@ -825,7 +894,7 @@ public class ConversationWebservice {
             @PathVariable("creator") String creator,
             @RequestBody Analysis updatedAnalysis,
             @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(API_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) throws IOException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         final Client client = getResponseClient(authContext, clientId, conversation);
@@ -838,8 +907,9 @@ public class ConversationWebservice {
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){
-            analysisService.analyze(client,conversation).whenComplete((a , e) -> {
+            analysis.whenComplete((a , e) -> {
                 if(a != null){
                     try {
                         SearchResult<? extends Result> result = execcuteQuery(client, conversation, a, templateIdx, creator);
@@ -857,11 +927,19 @@ public class ConversationWebservice {
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
                 }
             });
+            return ResponseEntity.accepted()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildResultURI(uriBuilder, conversationId, templateIdx, creator)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"template\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .build();
+        } else {
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildResultURI(uriBuilder, conversationId, templateIdx, creator)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"template\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .body(execcuteQuery(client, conversation, getAnalysis(client, conversation), templateIdx, creator));
         }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildResultURI(uriBuilder, conversationId, templateIdx, creator)))
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                .body(execcuteQuery(client, conversation, getAnalysis(client, conversation), templateIdx, creator));
     }
 
     private Set<ObjectId> getClientIds(AuthContext authContext, Collection<ObjectId> owners) {
@@ -972,13 +1050,13 @@ public class ConversationWebservice {
      * @param analysis the the analysis should be performed and included in the response
      * @return the ConversationData or <code>null</code> of <code>null</code> was parsed as conversation
      */
-    protected ConversationData toConversationData(final Client client, Conversation con, boolean analysis) {
+    protected ConversationData toConversationData(final Client client, Conversation con, CompletableFuture<Analysis> analysis, boolean inclAnalysis) {
         if(con == null){
             return null;
         }
         ConversationData cd = ConversationData.fromModel(con);
-        if(analysis){
-            cd.setAnalysis(getAnalysis(client, con));
+        if(inclAnalysis){
+            cd.setAnalysis(analysis == null ? getAnalysis(client, con) : waitFor(analysis));
         }
         return cd;
     }
@@ -987,8 +1065,15 @@ public class ConversationWebservice {
      * cares about Error Handling
      */
     protected Analysis getAnalysis(Client client, Conversation con){
+        return waitFor(analysisService.analyze(client, con));
+    }
+    
+    /**
+     * Waits for a Future and performs error handling
+     */
+    protected <T> T waitFor(Future<T> analysis){
         try {
-            return analysisService.analyze(client, con).get();
+            return analysis.get();
         } catch (ExecutionException e) {
             if(e.getCause() instanceof RuntimeException){
                 throw (RuntimeException) e.getCause();

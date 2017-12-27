@@ -82,6 +82,7 @@ import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConfigurationService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.CallbackPayload;
+import io.redlink.smarti.webservice.pojo.ConversationData;
 import io.redlink.solrlib.spring.boot.autoconfigure.SolrLibProperties;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -410,27 +411,29 @@ public class ConversationWebserviceIT {
         this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
                 .header("X-Auth-Token", authToken.getToken())
                 .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
-                .param("callback", callbackURI)
+                .param("analysis", "true") //include analysis (will wait until processing is done)
                 .content("\"some value\"")
                 .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful());
-        //wait 5sec to be sure that no analysis was performed and no callback happend
-        Mockito.verify(callbackService,Mockito.after(10*1000).never()).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+                .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(jsonPath("analysis").isMap())
+                .andExpect(jsonPath("analysis.tokens").isArray())
+                .andExpect(jsonPath("analysis.templates").isArray());
         
         //now parse analysis=true to re-analyse the conversation after the field update
          Conversation c = objectMapper.readValue(this.mvc.perform(MockMvcRequestBuilders.put("/conversation/" + conversation.getId()+"/meta.callbackTest")
                 .header("X-Auth-Token", authToken.getToken())
                 .header(HttpHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON_VALUE)
-                .param("analysis", "true")
+                //.param("analysis", "false") //assert this is the default
                 .param("callback", callbackURI)
                 .content("\"some value\"")
                 .accept(MediaType.APPLICATION_JSON_VALUE))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
+                .andExpect(jsonPath("analysis").doesNotExist()) //no analysis included!
                 .andReturn().getResponse().getContentAsString(),Conversation.class);
         
-        Mockito.verify(callbackService,Mockito.after(5*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         CallbackPayload<?> payload = callbackPayloadCapture.getValue();
@@ -579,7 +582,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
                         Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
                 .andReturn().getResponse();
@@ -638,7 +641,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
                         Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
                 .andReturn().getResponse().getContentAsString(),Conversation.class);
@@ -646,7 +649,7 @@ public class ConversationWebserviceIT {
         //now wait for the callback!
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(20*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         CallbackPayload<?> payload = callbackPayloadCapture.getValue();
@@ -661,6 +664,51 @@ public class ConversationWebserviceIT {
         //     and never JSON serialized. Both the analysis ID and the Client are @JsonIgnored!
         Assert.assertNotNull(analysis.getId());
         Assert.assertEquals(conversation.getOwner(), analysis.getClient()); //NOTE assert to conversaion.getOwner() and NOT created.getOwner() as the owner is @JsonIgnored!
+    }
+    
+    @Test
+    public void testCreateConversationWithInclAnalysis() throws Exception{
+        Conversation conversation = new Conversation();
+        conversation.setChannelId("test-channel-1");
+        conversation.setOwner(client.getId());
+        conversation.setMeta(new ConversationMeta());
+        conversation.getMeta().setStatus(Status.New);
+        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "test-channel-1");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, "testing");
+        conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
+        conversation.setContext(new Context());
+        conversation.getContext().setDomain("test-domain");
+        conversation.getContext().setContextType("text-context");
+        conversation.getContext().setEnvironment("environment-test", "true");
+        conversation.setUser(new User("alois.tester"));
+        conversation.getUser().setDisplayName("Alois Tester");
+        conversation.getUser().setEmail("alois.tester@test.org");
+        Message msg = new Message("test-channel-1-msg-1");
+        msg.setContent("Ich fahre mit Peter Tester von München nach Berlin");
+        msg.setUser(conversation.getUser());
+        msg.setOrigin(Origin.User);
+        msg.setTime(new Date());
+        conversation.getMessages().add(msg);
+        String conversationJson = objectMapper.writerFor(Conversation.class).writeValueAsString(conversation);
+
+        MockHttpServletResponse response = this.mvc.perform(MockMvcRequestBuilders.post("/conversation")
+                .header("X-Auth-Token", authToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON_VALUE)
+                .param("analysis", "true")
+                .content(conversationJson))
+                .andDo(MockMvcResultHandlers.print())
+                .andExpect(MockMvcResultMatchers.status().is(201))
+                .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
+                        Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
+                .andReturn().getResponse();
+        
+        Map<String,String> links = parseLinks(response.getHeaders("link"));
+        //NOTE we need to use ConversationData as Conversation does not support Analysis!
+        ConversationData created = objectMapper.readValue(response.getContentAsString(),ConversationData.class);
+        Assert.assertNotNull(created.getAnalysis());
+        Assert.assertNotNull(created.getAnalysis().getTokens());
+        Assert.assertNotNull(created.getAnalysis().getTemplates());
     }
     
     @Test
@@ -694,7 +742,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
                         Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
                 .andReturn().getResponse();
@@ -796,7 +844,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
                         Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
                 .andReturn().getResponse().getContentAsString(),Conversation.class);
@@ -816,7 +864,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(response)))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
                         Matchers.containsString("rel=\"self\""), Matchers.containsString("rel=\"up\""), Matchers.containsString("rel=\"analyse\""))))
                 .andReturn().getResponse().getContentAsString(),Message.class);
@@ -843,7 +891,7 @@ public class ConversationWebserviceIT {
         //now wait for the 2 callbacks (first for the creation; second for the appended message)!
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(5*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         //Assert the analysis of the original request
         callbackUriCapture.getAllValues().forEach(cb -> Assert.assertEquals(callbackURI, cb.toString()));
         Set<ObjectId> analysisIds = new HashSet<>();
@@ -881,7 +929,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE))
                 //.content(/* no payload!! */))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(MockMvcResultMatchers.header().stringValues("link", (Matcher)Matchers.containsInAnyOrder(
                         Matchers.containsString("rel=\"self\""),Matchers.containsString("rel=\"analyse\""))))
                 .andReturn().getResponse().getContentAsString(),Conversation.class);
@@ -891,7 +939,7 @@ public class ConversationWebserviceIT {
         //We also test callbacks herem, as we need to assert that this works for an empty conversation
         ArgumentCaptor<CallbackPayload> callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         ArgumentCaptor<URI> callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(20*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(1)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         CallbackPayload<?> payload = callbackPayloadCapture.getValue();
@@ -925,7 +973,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(msg)))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(jsonPath("id").value(msg.getId()))
                 .andExpect(jsonPath("content").value(msg.getContent()))
                 .andExpect(jsonPath("time").value(msg.getTime()))
@@ -942,7 +990,7 @@ public class ConversationWebserviceIT {
         //now consume the analysis results
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(5*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(2)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue();
@@ -989,7 +1037,7 @@ public class ConversationWebserviceIT {
         //now consume the analysis results and make sure Berlin is no longer a Token AND Bern is found!
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(5*1000).times(3)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(3)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue(); //gets the result of the last call
@@ -1029,7 +1077,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(objectMapper.writeValueAsString(msg2)))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andExpect(jsonPath("id").value(msg2.getId()))
                 .andExpect(jsonPath("content").value(msg2.getContent()))
                 .andExpect(jsonPath("time").value(msg2.getTime()))
@@ -1045,7 +1093,7 @@ public class ConversationWebserviceIT {
         
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(5*1000).times(4)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(4)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue(); //gets the result of the last call
@@ -1087,7 +1135,7 @@ public class ConversationWebserviceIT {
         
         callbackPayloadCapture = ArgumentCaptor.forClass(CallbackPayload.class);
         callbackUriCapture = ArgumentCaptor.forClass(URI.class);
-        Mockito.verify(callbackService,Mockito.after(5*1000).times(5)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
+        Mockito.verify(callbackService,Mockito.timeout(60*1000).times(5)).execute(callbackUriCapture.capture(), callbackPayloadCapture.capture());
         
         Assert.assertEquals(callbackURI, callbackUriCapture.getValue().toString());
         payload = callbackPayloadCapture.getValue(); //gets the result of the last call
@@ -1332,7 +1380,7 @@ public class ConversationWebserviceIT {
                 .accept(MediaType.APPLICATION_JSON_VALUE)
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
-                .andExpect(MockMvcResultMatchers.status().is(200))
+                .andExpect(MockMvcResultMatchers.status().is(201))
                 .andReturn().getResponse();
         
         //now get the analysis

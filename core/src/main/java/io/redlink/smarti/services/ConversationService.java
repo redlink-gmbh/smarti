@@ -27,10 +27,13 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.repositories.AnalysisRepository;
 import io.redlink.smarti.repositories.ConversationRepository;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +42,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -357,6 +363,58 @@ public class ConversationService {
      * @return The conversation on an update or <code>null</code> of no update was performed
      */
     public Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+        if(conversationId == null){
+            throw new NullPointerException();
+        }
+        if(messageId == null){
+            throw new NullPointerException();
+        }
+        if(data == null){
+            throw new BadArgumentException("data", null, "the parsed field data MUST NOT be NULL!");
+        }
+        //TODO validate message field
+        if("orign".equals(field)){
+            try {
+                Origin.valueOf(data.toString());
+            } catch (IllegalArgumentException e) {
+                throw new BadArgumentException(field, data, "unsupported value (supported: " + Arrays.toString(Origin.values())+ ")");
+            }
+        } else if("private".equals(field)){
+            if(!(data instanceof Boolean)){
+                data = Boolean.parseBoolean(data.toString());
+            }
+        } else if("votes".equals(field)){
+            if(!(data instanceof Integer)){
+                try {
+                    data = Integer.parseInt(data.toString());
+                } catch (NumberFormatException e) {
+                    throw new BadArgumentException(field, data, "not a valid integer");
+                }
+            }
+        } else if("content".equals(field)){
+            if(!(data instanceof String)){
+                throw new BadArgumentException(field, data, "MUST be a String");
+            }
+        } else if("time".equals(field)){
+            if(data instanceof Long){
+                data = new Date((Long)data);
+            } else if(data instanceof String){
+                try {
+                    data = Date.from(Instant.parse(data.toString()));
+                } catch (DateTimeParseException e) {
+                    try {
+                        data = DateFormatUtils.ISO_DATETIME_TIME_ZONE_FORMAT.parse(data.toString());
+                    } catch (java.text.ParseException e1) {
+                        throw new BadArgumentException(field, data, "not a valid date (supported: long time, ISO date/time format)");
+                    }
+                }
+            } else if(!(data instanceof Date)){
+                throw new BadArgumentException(field, data, "not a valid date (supported: long time, ISO date/time format)");
+            }
+        } else if(field.startsWith("metadata.")){
+            throw new BadArgumentException(field, data, "Unknown field (supported: time, origin, content, private, votes, metadata.*)");
+        }
+        //time, origin, content, private, votes, metadata.*
         final Conversation con = conversationRepository.updateMessageField(conversationId, messageId, field, data);
         if (con != null) {
             publishSaveEvent(con);
