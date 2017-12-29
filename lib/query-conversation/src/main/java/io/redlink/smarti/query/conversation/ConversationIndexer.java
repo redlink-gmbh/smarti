@@ -17,30 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CONTEXT;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_CONVERSATION_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_DOMAIN;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_END_TIME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_ENVIRONMENT;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGES;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE_COUNT;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE_IDX;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MODIFIED;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_START_TIME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_SYNC_DATE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TIME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_USER_ID;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_USER_NAME;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_VOTE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.TYPE_CONVERSATION;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.TYPE_MESSAGE;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getEnvironmentField;
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getMetaField;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -137,8 +114,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private final ExecutorService indexerPool;
 
-    @Value("${smarti.index.rebuildOnStartup:true}")
-    private boolean rebuildOnStartup = true;
+    @Value("${smarti.index.rebuildOnStartup:false}")
+    private boolean rebuildOnStartup = false;
 
     @Autowired
     public ConversationIndexer(SolrCoreContainer solrServer, StoreService storeService){
@@ -163,28 +140,37 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         indexTask = cloudSync == null ? null : new ConversationIndexTask(cloudSync);
         if(indexTask != null){
             log.info("initialize ConversationIndex after startup ...");
-            Date syncDate = null;
+            Date syncDate = null; //null triggers a full rebuild (default)
             if(!rebuildOnStartup){
                 try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-                    //read (1) FIELD_SYNC_DATE from index 
+                    //search for conversations indexed with an earlier version of the index
                     SolrQuery query = new SolrQuery("*:*");
-                    query.addSort(FIELD_SYNC_DATE, ORDER.desc);
-                    query.setFields(FIELD_SYNC_DATE);
-                    query.setRows(1);
-                    query.setStart(0);
-                    QueryResponse result = solr.query(query);
-                    if(result.getResults() != null && result.getResults().getNumFound() > 0){
-                        syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
-                        log.debug("set lastSync date to {}", syncDate);
+                    query.addFilterQuery(String.format("!%s:%s",FIELD_INDEX_VERSION,CONVERSATION_INDEX_VERSION));
+                    query.setRows(0); //we only need the count
+                    if(solr.query(query).getResults().getNumFound()  > 0){
+                        log.info("conversation index contains documents indexed with an outdated version - full re-build required");
+                    } else { //partial update possible. Search for the last sync date ...
+                        query = new SolrQuery("*:*");
+                        query.addSort(FIELD_SYNC_DATE, ORDER.desc);
+                        query.setFields(FIELD_SYNC_DATE);
+                        query.setRows(1);
+                        query.setStart(0);
+                        QueryResponse result = solr.query(query);
+                        if(result.getResults() != null && result.getResults().getNumFound() > 0){
+                            syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
+                            log.info("Perform partial update of conversation index (lastSync date:{})", syncDate);
+                        }
                     }
                 } catch (IOException | SolrServerException e) {
                     log.warn("Updating Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
                     log.debug("STACKTRACE:",e);
                 }
+            } else {
+                log.info("full re-build on startup required via configuration");
             }
             indexTask.setLastSync(syncDate);
             indexerPool.execute(indexTask);
-        } else { //manual initialization
+        } else { //manual initialization (performs a full re-index to be up-to-date)
             Iterators.partition(storeService.listConversationIDs().iterator(), 100).forEachRemaining(
                     ids -> {
                         ids.stream()
@@ -281,6 +267,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         final SolrInputDocument solrConversation = new SolrInputDocument();
 
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
+        //#150 index the current version of the index so that we can detect the need of a
+        //full re-index after a software update on startup
+        solrConversation.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);
         solrConversation.setField(FIELD_TYPE, TYPE_CONVERSATION);
         solrConversation.setField(FIELD_MODIFIED, conversation.getLastModified());
         
@@ -338,6 +327,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         solrMsg.setField(FIELD_CONVERSATION_ID, conversation.getId());
         solrMsg.setField(FIELD_MESSAGE_ID, message.getId());
         solrMsg.setField(FIELD_MESSAGE_IDX, i);
+        //#150 index the current version of the index so that we can detect the need of a
+        //full re-index after a software update on startup
+        solrMsg.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);
         solrMsg.setField(FIELD_TYPE, TYPE_MESSAGE);
         if (message.getUser() != null) {
             solrMsg.setField(FIELD_USER_ID, message.getUser().getId());
