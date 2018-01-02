@@ -1,4 +1,4 @@
-= Contributing to Smarti
+== Contributing to Smarti
 
 *First of all, thanks for taking the time to contribute!*
 
