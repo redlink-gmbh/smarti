@@ -32,7 +32,7 @@ __response body:__ a list of clients `[{"id":"1","name":"client_42","description
 
 ==== Get Client Configuration
 
-__endpoint:__ `POST /client/{client-id}/config` <br>
+__endpoint:__ `POST /client/{client-id}/config` +
 __response body:__ the updated client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
 
 __example:__
@@ -317,7 +317,7 @@ where:
 *** `date`: the date for the result (e.g. the modification date)
 *** `source`: the source of the result
 
-NOTE: The defaults can be set in via `application.properties`. See <<index.adoc#_query_builder_defalt_configuration, query builder default configuration>> for details.
+NOTE: The defaults can be set in via `application.properties`. See <<index.adoc#_query_builder_default_configuration, query builder default configuration>> for details.
 
 ===== Conversation Search Query Builder
 

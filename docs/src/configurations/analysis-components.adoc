@@ -12,11 +12,11 @@ Processors are components that plug directly into Redlink NLP.
 
 ====== Interesting Terms
 
-Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
+Interesting Terms is a kind of Keyword Extraction that uses `tf-idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
 It consists of two analysis components:
 
-1. **Interesting Term Extractor** that marks interesting terms in the conversation. As the text in Conversations is typically to short to calculate the importance based on the content external information like the `tf–idf` value of words are used to calculate the importance of words.
+1. **Interesting Term Extractor** that marks interesting terms in the conversation. As the text in Conversations is typically to short to calculate the importance based on the content external information like the `tf-idf` value of words are used to calculate the importance of words.
 2. **Interesting Phrase Collector** that collects interesting terms marked form possible multiple Interesting Term Extractor and creates Tokens for them. This component can optionally use phrases as annotated by phrase extraction and/or dependency parsing to mark whole phrases that contain words marked as interesting terms.
 
 Tokens created by this component have the type `Keyword` and the Hint `interestingTerm`

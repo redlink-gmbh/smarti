@@ -1,12 +1,13 @@
 :commons: commons/
 
-== Frequently asked questions (FAQ)
+= Frequently asked questions (FAQ)
+:toc: left
 
-THis FAQs are addressing common concerns, questions or objections that might come up to your mind, when get into touch with Smarti development.
+This FAQs are addressing common concerns, questions or objections that might come up to your mind, when get into touch with Smarti development.
 
-=== Administration
+== Administration
 
-==== What value should be passed by the chat as 'clientID'?
+=== What value should be passed by the chat as 'clientID'?
 
 Since Smarti has a multi client architecture a per 'customer' configuration is required.
 
@@ -18,9 +19,9 @@ For the Rocket.Chat integration this `name` MUST BE configured as `clientId` (ve
 All conversations refer exact one client. This concept enables to protect conversation
 access across clients.
 
-=== Integration and API
+== Integration and API
 
-==== Do I have to wait for the webhook's response after sending a 'POST/rocket/{clientId}'
+=== Do I have to wait for the webhook's response after sending a 'POST/rocket/{clientId}'
 
 For Smarti versions before `0.7` the retrieval of processing and query results
 
@@ -37,13 +38,13 @@ Smarti `v0.7` will introduce a revamped webservice API where updates for convers
 be synchronous and requests for processing results will allow for both synchronous and
 asynchronous execution via webhook's
 
-==== Should I only send the customer's messages to Smarti API or should I send messages from the agents as well?
+=== Should I only send the customer's messages to Smarti API or should I send messages from the agents as well?
 
 All messages of a conversation should be sent to the Smarti API. Messages of agents do
 also contain keywords, entities, etc. Including those is important for both suggestions and
 conversation search.
 
-==== Could you please describe the workflow for interacting with the conversational API?
+=== Could you please describe the workflow for interacting with the conversational API?
 
 NOTE: this describes the workflow until `v0.6.*`
 
@@ -56,7 +57,7 @@ NOTE: this describes the workflow until `v0.6.*`
 For more Information see the <<index.adoc#_working_with_smarti_processing_results, Working with Smarti processing results>> section of the
 Smarti Integration Guide
 
-==== Why do sent messages do not appear as suggestions, even if I enter the same question?
+=== Why do sent messages do not appear as suggestions, even if I enter the same question?
 
 A conversation consists of multiple messages send by different `callers`. In oder to make
 a conversation available as suggestion, it needs to be published.
@@ -71,9 +72,9 @@ NOTE: After a conversation is published a new conversation will be automatically
 on the next message sent to a room.
 
 
-=== Knowledge Base
+== Knowledge Base
 
-==== Do suggestions always refer to the last message within a conversation?
+=== Do suggestions always refer to the last message within a conversation?
 
 Currently (`v0.6.*)` suggestions always refer to the entire conversation. By default a
 conversation is the sum of all messages within a room.

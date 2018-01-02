@@ -1,11 +1,14 @@
 = Smarti Guide
 Assistify <info@assistify.de>;Redlink <info@redlink.co>
-v1.0, 2017-08-26
 :toc: left
+:sectanchors:
+:sectlinks:
+:idprefix:
+:idseparator: -
 
 :commons: commons/
 
-image::https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master[Build Status]
+image::https://travis-ci.org/redlink-gmbh/smarti.png[Build Status]
 
 
 [abstract]

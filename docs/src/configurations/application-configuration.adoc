@@ -2,7 +2,7 @@
 
 Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[configuration options] including:
 
-* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-command-line-args[Command line Properties]:* defining properties as arguments (e.g. `--server.part=8080`)
+* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-command-line-args[Command line Properties]:* defining properties as arguments (e.g. `--server.port=8080`)
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files[Application Properteis]:* a Java properties file with the name `application.properties`
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-profile-specific-properties[Profile specific configurations]:* requires to
     1. activate the profile by setting `spring.profiles.active`
@@ -164,7 +164,7 @@ The maximal parse length (`nlp.stanfordnlp.de.parseMaxlen`) defines the maximum 
 
 ===== Interesting Term Configuration
 
-The <<index.adoc#_interesting_terms, Interesting Terms>> component performs a keyword extraction. It uses `tf–idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
+The <<index.adoc#_interesting_terms, Interesting Terms>> component performs a keyword extraction. It uses `tf-idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
 Their are several ways to configure Solr endpoints to be used for interesting terms.
 
@@ -203,7 +203,7 @@ Hasso was a spefic use case of the predecessor of Smarti. The module `hasso-voca
 * `smarti.extractor.synonyms.sap =` `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
 
 
-==== Query Builder Defalt Configuration
+==== Query Builder Default Configuration
 
 Query Builder are configured per Client via the <<index.adoc#_client_configuration_web_service, Client Configuration>> service. However a system wide default configuration can be used to initialize configurations for new clients.
 
