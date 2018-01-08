@@ -7,7 +7,7 @@ This document shows the changes that are introduced into Smarti with the release
 
 
 == Smarti 0.6.1 Release Notes
-December 7^th^, 2017
+January 8^th^, 2018
 
 Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
 This is the first Smarti release, that has a *Docker image* as part of its distribution.
