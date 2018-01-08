@@ -1,0 +1,43 @@
+== Contributing to Smarti
+
+*First of all, thanks for taking the time to contribute!*
+
+Here's a quick overview on how to contribute to Smarti. By the way, did you notice the
+http://dev.redlink.io/smarti[Smarti-Documentation] on http://dev.redlink.io/smarti[]?
+
+=== Looking for something to help out?
+
+Check the https://github.com/redlink-gmbh/smarti/issues[current issues] or the
+https://waffle.io/redlink-gmbh/smarti[waffle-board] to see where help is needed.
+
+Issues that are a good entry point into Smarti for new contributors are labeled with
+https://github.com/redlink-gmbh/smarti/labels/help%20wanted[`help wanted`].
+
+=== Did you find a bug?
+
+If it's not already https://github.com/redlink-gmbh/smarti/issues[reported] (use the search!)
+please https://github.com/redlink-gmbh/smarti/issues/new[*create an issue*].
+
+Don't forget to include the required details on how to reproduce the error.
+
+=== Did you write a patch that fixes the bug?
+
+* Open a Pull-Request and provide clear description of the problem and solution.
+* Please *reference the issue* your PR is addressing!
+* Before submitting, check the http://dev.redlink.io/smarti/#_smarti_contribution_guide[Contribution Guide].
+
+=== Do you have an improvement for the documentation?
+
+The documentation is written in `asciidoc` (located in the `docs/`-folder) and
+hosted under http://dev.redlink.io/smarti/.
+
+If you have an improvement for the docs, open a PR with your changes. Please make sure not to
+change anything outside the `docs/`-folder when contributing to the documentation.
+
+=== Do you want to add a new feature or extend an existing one?
+
+Before you start implementing, create an issue to discuss the change with the community.
+
+---
+Thanks,
+the Smarti Team

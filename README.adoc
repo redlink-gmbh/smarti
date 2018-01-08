@@ -1,22 +1,22 @@
 image::https://travis-ci.org/redlink-gmbh/smarti.svg?branch=master[Build Status]
 
-= Smarti
+== Smarti
 
 Smarti is a service component for conversational data. It allows to classify conversation intents, extract entities using
 natural language components and makes this data actionable via turning it into queries for an extendable set of endpoints.
 In addition Smarti is able to store conversations and thus suggest similar historic conversation flows for new messages.
 
-== How to install
+=== How to install
 
 Installation packages are provided for https://www.debian.org[Debian]- and https://www.redhat.com[RedHat]-based systems. Alternatively the application can
 be started by directly launching the executable jar. Check out a detailed link:docs/installation.adoc[installation description] including system requirements.
 
-== How to integrate
+=== How to integrate
 
 Currently Smarti is working with https://rocket.chat[Rocket.Chat] conversations, where it can be smoothly integrated via a https://github.com/mrsimpson/Rocket.Chat[RC plugin].
 Lookup the link:docs/integrations/rocketchat.adoc[Rocket.Chat plugin description] for further information.
 
-== How to contribution
+=== How to contribute
 
 Smarti is an Open Source project so everyone is encouraged to improve it. Don't hesitate to report bugs, provide fixes or
 share new ideas with us. We have various ways for contribution:
@@ -25,14 +25,16 @@ share new ideas with us. We have various ways for contribution:
 * discuss issues with the community - two brains are better than one.
 * write code - no patch is too small. So even fixing typos helps to improve Smarti.
 
-== License
+See the link:CONTRIBUTING.adoc[Contributing Guidelines] for further details.
+
+=== License
 Free use of this software is granted under the terms of the Apache License Version 2.0.
 See the link:LICENSE.txt[License] for more details.
 
-== Authors
+=== Authors
 Smarti is lead by http://redlink.co[Redlink] and http://assistify.de[Assistify] and was initiated in 2017.
 
-== Changelog
+=== Changelog
 The link:docs/changelog.adoc[Changelog] provides a complete list of changes in older releases.
 
 
