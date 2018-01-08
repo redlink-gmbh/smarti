@@ -1,84 +1,60 @@
-=== Conversational API
+=== Conversational web service
 
 Through Smarti's conversational RESTful-API it can be seamlessly integrated into any Chat-based communication platform.
 
-==== Swagger
-
-The generated Swagger JSON data are available at 
-
- - abstract: `http://${smarti-host}:${smarti-port}/v2/api-docs`
- - specific: `http://localhost:8080/v2/api-doc`
- - ./swagger.json[copy] part of this documentation
-  
-The Swagger UI is available under 
-    
- - abstract: `http://${smarti-host}:${smarti-port}/swagger-ui.html`
- - concrete: `http://localhost:8080/swagger-ui.html`
- 
-[NOTE]
-====
-*TODO*
-
-. How to work with Swagger?
-====
- 
 ==== Conversation Data Model
 
-Conversation in Samrti use the following JSON model
+Conversations in Samrti are based on the following JSON model
 
 [source,json]
-----------------------
+----
 {
-  "id":"5a1403a535887bbdfc94b531",
-  "meta":{
-	"status":"New",
-	"lastMessageAnalyzed":4,
-	"channel_id":[
-	  "lp3aiunsij2664ft"
-	]
+  "id": "5a1403a535887bbdfc94b531",
+  "meta": {
+    "status": "New",
+    "lastMessageAnalyzed": 4,
+    "channel_id": [
+      "lp3aiunsij2664ft"
+    ]
   },
-  "user":{
-	"id":"be4df619-f273-4d15-b3fb-6fa91b08a71a",
-	"displayName":"Anonymous User"
+  "user": {
+    "id": "be4df619-f273-4d15-b3fb-6fa91b08a71a",
+    "displayName": "Anonymous User"
   },
-  "messages":[
-	{
-	  "id":"{message-id}",
-	  "time":1509619512000,
-	  "origin":"User",
-	  "content":"{message-content}",
-	  "user":{
-		"id":"hkxkyrwf",
-		"displayName":"Anonymous User"
-	  },
-	  "votes":0,
-	  "metadata":{
-
-	  },
-	  "private":false
-	}, {...}
-	],
-  "context":{
-    "contextType":"rocket.chat",
-    "domain":"loadtest",
-    "environment":{
-
+  "messages": [
+    {
+      "id": "{message-id}",
+      "time": 1509619512000,
+      "origin": "User",
+      "content": "{message-content}",
+      "user": {
+        "id": "hkxkyrwf",
+        "displayName": "Anonymous User"
+      },
+      "votes": 0,
+      "metadata": {},
+      "private": false
     }
+  ],
+  "context": {
+    "contextType": "rocket.chat",
+    "domain": "loadtest",
+    "environment": {}
   },
-  "lastModified":1511261254233,
-  }
-----------------------
- 
+  "lastModified": 1511261254233
+}
+----
+
 * `id`: Each conversation has an `id` that is assigned by Smarti
 * `meta`: meta information about the message. *NOTE* this element will change in future versions
-* `user`: The user that started this conversation. 
+* `user`: The user that started this conversation.
 ** only the `id` is required
 * `messages`: The messages of the conversation in the order as sent
 ** `id`: the id of the message (typically the id as provided by the messaging system). Smarti requires this id to be unique within the conversation.
 ** `time`: the time when the message was sent
 ** `origin`: the origin of the message (`User`, `Agent`)
 ** `content`: the textual content of the message
-** `user`: information about the user of this message. 
+** `user`: information about the user of this message.
 *** only the `id` is required
 ** `votes`: allows to set the votes for this message
 ** `metadata`: allows for additional metadata to be stored with this message
@@ -87,34 +63,39 @@ Conversation in Samrti use the following JSON model
 * * `environment`: allows for additional contextual information about the environment
 * `lastModified`: managed by Smarti this field holds the last modification date of this Conversation in Smarti
 
+
 ===== Tokens
 
 Information extracted by Smarti are represented by Tokens and later combined in Templates.
 
 [source,json]
-----------------------
-  "tokens":[
+----
+{
+  "tokens": [
     {
-      "messageIdx":0,
-      "start":0,
-      "end":8,
-      "origin":"System",
-      "state":"Suggested",
-      "value":"Physiker",
-      "type":"Keyword",
-      "hints":[
+      "messageIdx": 0,
+      "start": 0,
+      "end": 8,
+      "origin": "System",
+      "state": "Suggested",
+      "value": "Physiker",
+      "type": "Keyword",
+      "hints": [
         "interestingTerm"
       ],
-      "confidence":0.7794291
-    },
-----------------------
+      "confidence": 0.7794291
+    }
+  ]
+}
+----
+
 
 * The `messageIdx` is the index of the message within the conversation. `start` and `end` are offsets of the mention within the message. `-1` is allowed for both `messageIdx`, `start` and `end` in cases where a token has no mention in the conversation (e.g. a classification result based on the conversation as a whole would use `-1` for `messageIdx`, `start` and `end`; a classification of the first message would use `messageIdx=0` and `-1` for `start` and `end`).
 * The `origin` specifies who created the Token. Possible values are `System`, `Agent`. The value `System` is reserved for Tokens created by Smarti. Other values are for manual annotations.
 * The `state` allows for user feedback on Token level. `Suggested` is reserved for Tokens created by the Smarti processing pipeline. Users can `Confirmed` and `Rejected` Tokens. Manually created Tokens should use `Confirmed`.
 * The `type` defines the kind of the Token. The `type` also specifies the data type of the `value`
 ** `Date`: An extracted date/time. This type uses a JSON object with `{ "date": "2016-09-01T16:30:00.000Z", "grain": "minute"}` as value.
-*** `date` holds the extracted date/time value  
+*** `date` holds the extracted date/time value
 *** `grain` specifies the granularity of the extracted value - `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month` and `year` are allowed values.
 ** `Topic`: Used for any kind of classification. The value is the identifier of the topic
 ** `Place`, `Organization`, `Person`, `Product` and `Entity`: Extracted named entities of different kinds. `Entity` shall be used if the named entity is not of any of the more specific kinds.
@@ -130,77 +111,89 @@ Information extracted by Smarti are represented by Tokens and later combined in 
 An abstraction over single Tokens are Templates. Templates structure extracted information as required for a specific intend. Examples are things like travel planing, location based recommendations, route planing but also more abstract things like information retrieval or related content recommendation
 
 [source,json]
-----------------------
-  "templates":[
+----
+{
+  "templates": [
     {
-      "type":"related.conversation",
-      "slots":[
+      "type": "related.conversation",
+      "slots": [
         {
-          "role":"Term",
-          "tokenType":null,
-          "required":false,
-          "tokenIndex":36
-        },{..}],
-    	"queries": [{..}]
-        "confidence": 0.75306565,
+          "role": "Term",
+          "tokenType": null,
+          "required": false,
+          "tokenIndex": 36
+        }
+      ],
+      "queries": [],
+      "confidence": 0.75306565
     }
-----------------------
+  ]
+}
+----
 
 * `type`: the type refers to the definition this template was build based.
 * `slots`: this are slots of the template.
 ** `role` Templates define different roles for Tokens. Some roles may be multi valued. In this case multiple slots will have the same role.
 ** `tokenType`: if present the referenced Token MUST BE of the specified `type`
-** `required`: if this slot is required for the Template to be valid. Required Solts are always included in the template. If a required Slot can not be filled with a Token the `tokenIndex` is set to `-1`
+** `required`: if this slot is required for the Template to be valid. Required slots are always included in the template. If a required Slot can not be filled with a Token the `tokenIndex` is set to `-1`
 ** `tokenIndex`: the index of the token within the `tokens` array (`-1` means unassigned).
 * `confidence`: the confidence for this template. The confidence is typically used in combination with Intend classification. e.g. given a classification for the intend and templates representing intends the `confidence` will be set to the confidence of the intend to be present.
 
 ===== Query
 
-Queries are most specific extraction result of Smarti. Queries are used to retrieve information from a service and are build based on a template. Because of that `query` is also a sub-element of `template`. 
+Queries are most specific extraction result of Smarti. Queries are used to retrieve information from a service and are build based on a template. Because of that `query` is also a sub-element of `template`.
 
 [source,json]
-----------------------
-    "queries": [
-      {
-        "creator": "queryBuilder%3Aconversationmlt%3Arelated-conversations",
-        "displayTitle": "Flug Salzburg -> Berlin (01.09)",
-        "inlineResultSupport": false,
-        "state": "Suggested",
-        "url": "{}"
-        "confidence": 0.75306565,
-      }, {..}]
-----------------------
+----
+{
+  "queries": [
+    {
+      "creator": "queryBuilder%3Aconversationmlt%3Arelated-conversations",
+      "displayTitle": "Flug Salzburg -> Berlin (01.09)",
+      "inlineResultSupport": false,
+      "state": "Suggested",
+      "url": "{}",
+      "confidence": 0.75306565
+    }
+  ]
+}
+----
 
 Common fields supported by all queries include:
 
-* The `creator` identifies the component/configuration that created this query. 
-* The `displayTitle` is intended to be used for provide a human readable representation of this query. 
-* If `inlineResultSupport` is `true` the creator supports server-side execution of the query. 
-* The `state` can be used for user feedback. Every query will start with `Suggested`. Users can `Confirmed` and `Rejected` queries. 
+* The `creator` identifies the component/configuration that created this query.
+* The `displayTitle` is intended to be used for provide a human readable representation of this query.
+* If `inlineResultSupport` is `true` the creator supports server-side execution of the query.
+* The `state` can be used for user feedback. Every query will start with `Suggested`. Users can `Confirmed` and `Rejected` queries.
 * The `url` representing this query. If server side execution is supported this might be not present.
-* The `confidence` specifies how well the service is suited to search for information of the template (e.g. Bahn.de is very suitable for a travel planing template so a query for Bahn.de would get a high confidence. One could also create a Google Query for travel planing, but results would be less precise so this query should get a lower confidence).
+* The `confidence` specifies how well the service is suited to search for information of the template
+  (e.g. bahn.de is very suitable for a travel planing template so a query for Bahn.de would get a high confidence.
+  One could also create a Google Query for travel planing, but results would be less precise so this query should get a lower confidence).
 
-In addition to those fields queries can provide additional information. Those are specific to the `creator` of the query. 
- 
+In addition to those fields queries can provide additional information. Those are specific to the `creator` of the query.
+
 ==== Working with Smarti processing results
 
-Smarti processes ongoing Conversations. Those processing results are available via 
+Smarti processes ongoing Conversations. Those processing results are available via
 
 - abstract: `http(s)://${smarti-host}:${smarti-port}/conversation/{conversationId}/template`
-- concrete: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template`
+- specific: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template`
 
 This call returns processing results for a Conversation. This results includes the token and tempalte arrays as described above.
 
 * `tokens`: Information extracted form the conversation. Important as `template.slots` refer to token indexes
-* `templates`: Templates represent a structured view onto the extracted information. The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte. The <<analysis-components#_latch_template,LATCH template>> is an example of such a template intended to be used for information retrieval.
-* `queries`: Queries are built based on templates and are typically used to retrieve information related to the conversation from services. A single template can have multiple queries from different creators (e.g. the LATCH template can have multiple queries for different configured search indexes).
+* `templates`: Templates represent a structured view onto the extracted information.
+  The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte.
+  The <<index.adoc#_latch_template, LATCH template>> is an example of such a template intended to be used for information retrieval.
+* `queries`: Queries are built based on templates and are typically used to retrieve information related to the conversation from services.
+  A single template can have multiple queries from different creators (e.g. the LATCH template can have multiple queries for different configured search indexes).
 
 NOTE: Queries are NOT executed during processing of the conversation. The client is responsible for execution (typically based on a user interaction).
 
 When `inlineResultSupport` is `true` a query can be executed by Smarti. In such cases the `url` is often not defined - meaning that the query can only be executed by Smarti. To execute a query via smarti the following service has to be used:
 
 - abstract: `http(s)://${smarti-host}:${smarti-port}/conversation/{conversationId}/template/{templateIndex}/{creatorName}`
-- concrete: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template/0/queryBuilder%3Aconversationmlt%3Arelated-conversations`
+- specific: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template/0/queryBuilder%3Aconversationmlt%3Arelated-conversations`
 
 where:
 
@@ -209,5 +202,6 @@ where:
 
 The response format is not normalised and fully specific for the query type. Server side execution is e.g. used for the related conversation queries.
 
-For queries where `inlineResultSupport` is `false` the client needs to execute the query. Typically this can be done by using the `url` attribute. However specific queries might provide the information for query execution in additional fields.
-
+For queries where `inlineResultSupport` is `false` the client needs to execute the query.
+Typically this can be done by using the `url` attribute.
+However specific queries might provide the information for query execution in additional fields.

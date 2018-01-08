@@ -1,3 +1,5 @@
+:resourcesdir: ../../../dist/src/main/resources
+
 === Additional components
 
 Due to licensing-issues (e.g. https://www.gnu.org/licenses/gpl-3.0.html[GPL]), some optional dependencies are not part of the distribution packages.
@@ -5,28 +7,29 @@ To enable these additional modules, you need to put the missing libraries into t
 
 When installed with the provided `deb` or `rpm` package, this folder is located at `/var/lib/smarti/ext` by default and contains a simple readme.
 
+
 .plugin-info.json
-:sourcedir: ../../../dist/src/main/resources
-[source,txt]
+[source,json]
 ----
-include::{sourcedir}/plugin-info.json[]
+include::{resourcesdir}/plugin-info.json[Plugin information]
 ----
 
 IMPORTANT: *For developers:* When running Smarti by directly executing the jar file, you need to create the `ext` directory relative to the location where the `java` command is executed `${smarti-work-dir}/ext`.
 
 CAUTION: Make sure the user that is running the `java` process has the right permissions on the file system.
-In case you run into trouble, read the section <<troubleshooting-guide.adoc#, Troubleshooting>>.
+In case you run into trouble, read the section <<index.adoc#_smarti_troubleshooting_guide, Troubleshooting>>.
 
 
 ==== Enable Stanford NLP
 
 To enable analysis based on https://nlp.stanford.edu/[Stanford NLP], put the following libraries into the `ext`-folder.
 
-* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar[stanford-corenlp-3.6.0.jar]
-* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar[stanford-corenlp-3.6.0-models-german.jar]
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0.jar[stanford-corenlp-3.8.0.jar]
+* https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0-models-german.jar[stanford-corenlp-3.8.0-models-german.jar]
 
-```bash
+[source,bash]
+----
 $ cd ${smarti-work-dir}/ext
-$ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0.jar
-$ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.6.0/stanford-corenlp-3.6.0-models-german.jar
-```
+$ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0.jar
+$ wget https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0-models-german.jar
+----

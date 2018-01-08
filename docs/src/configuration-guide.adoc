@@ -1,6 +1,17 @@
+:configurationsdir: ./configurations
+
 == Smarti Configuration Guide
 
 The configuration of Smarti has two different levels
+
+
+=== Client Configuration
+
+The client configuration allows to define the configuration for specific clients.
+Configuration changes are applied immediately (no restart required).
+Configuration is done via the <<index.adoc#_client_configuration_web_service, client configuration web service>> or via the provided configuration UI.
+
+include::{configurationsdir}/administration-ui.adoc[Administration user interface]
 
 
 === Application Configuration
@@ -16,23 +27,6 @@ To apply custom configuration:
 
 A list of well known configuration option can be found [here](TODO)
 
-include::configurations/application-configuration.adoc[]
+include::{configurationsdir}/application-configuration.adoc[Application configuration]
 
-
-=== Client Configuration
-
-The client configuration allows to define the configuration for specific clients.
-Configuration changes are applied immediately (no restart required).
-Configuration is done via a RESTful service or via the provided configuration UI.
-
-include::configurations/client-configuration-api.adoc[]
-
-include::configurations/client-configuration-ui.adoc[]
-
-include::configurations/query-builder-configuration.adoc[]
-
-=== Configuration Endpoints
-
-==== Admin UI
-==== REST API (Swagger)
-==== Rocket.Chat integration JS
+include::{configurationsdir}/analysis-components.adoc[Analysis Components]

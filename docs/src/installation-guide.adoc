@@ -18,7 +18,7 @@ $ java -jar smarti-${smarti-version}-exec.jar
 ```
 
 IMPORTANT: To run Smarti in production it is recommended to deploy the `deb` or `rpm` package on your target environment instead executing the jar directly.
-If you like to setup your development client or a non-productive server read section <<developer-guide.adoc#,Build and Run>> explains how to do start Smarti by executing the executable jar.
+If you like to setup your development client or a non-productive server read section <<index.adoc#build_and_run, Build and Run>> explains how to do start Smarti by executing the executable jar.
 
 ==== Run MongoDB as a dedicated service
 
