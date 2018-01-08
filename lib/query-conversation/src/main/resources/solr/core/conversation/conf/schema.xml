@@ -25,6 +25,7 @@
     <!-- generic -->
     <field name="id"                    type="string"         indexed="true"  stored="true"  multiValued="false" required="true"/>
     <field name="type"                  type="type"           indexed="true"  stored="true"  multiValued="false" required="true"/>
+    <field name="index_version"         type="int"            indexed="true"  stored="false" multiValued="false" required="true"/>
     <field name="owner"                 type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="user_id"               type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="user_name"             type="string"         indexed="true"  stored="true"  multiValued="false"/>
@@ -82,6 +83,7 @@
     <defaultSearchField>text</defaultSearchField>
 
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="true" />
+    <fieldType name="int" class="solr.TrieIntField" docValues="true" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" docValues="true" precisionStep="0" positionIncrementGap="0"/>
     <fieldType name="date" class="solr.TrieDateField" precisionStep="6" positionIncrementGap="0"/>
     <fieldType name="text_iterms_de" class="solr.TextField" positionIncrementGap="100">

@@ -394,7 +394,12 @@
                                     <url>https://www.apache.org/licenses/LICENSE-2.0</url>
                                 </license>
                             </info>
-                            <modelSubstitute>/model-substitutes.txt</modelSubstitute>
+                            <securityDefinitions>
+                            <securityDefinition>
+                                <json>/swagger/security-definition.json</json>
+                            </securityDefinition>
+                            </securityDefinitions>
+                            <modelSubstitute>/swagger/model-substitutes.txt</modelSubstitute>
                             <swaggerDirectory>${project.build.outputDirectory}/META-INF</swaggerDirectory>
                         </apiSource>
                     </apiSources>
@@ -434,7 +439,9 @@
                         </manifestEntries>
                     </archive>
                     <excludes>
-                        <exclude>/model-substitutes.txt</exclude>
+                        <exclude>/swagger/**</exclude>
+                        <exclude>/application-local.properties</exclude>
+                        <exclude>/application-local.yaml</exclude>
                     </excludes>
                 </configuration>
             </plugin>

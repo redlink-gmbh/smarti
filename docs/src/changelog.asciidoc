@@ -7,7 +7,7 @@ This document shows the changes that are introduced into Smarti with the release
 
 
 == Smarti 0.6.1 Release Notes
-December 7^th^, 2017
+January 8^th^, 2018
 
 Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
 This is the first Smarti release, that has a *Docker image* as part of its distribution.
@@ -32,6 +32,7 @@ The Smarti Admin UI allows you to:
 * https://github.com/redlink-gmbh/smarti/issues/118[#118 - Added a Smarti Docker image]
 * https://github.com/redlink-gmbh/smarti/issues/142[#142 - Added Docker image to the release deployment]
 * https://github.com/redlink-gmbh/smarti/issues/121[#121 - Added highlighting for Conversation Search]
+* https://github.com/redlink-gmbh/smarti/issues/164[#164 - Added a configuration option to trigger a full reindex on system startup]
 * https://github.com/redlink-gmbh/smarti/issues/152[#152 - Improved Docker image memory consumption by using the JVM option MaxRAMFraction]
 * https://github.com/redlink-gmbh/smarti/issues/124[#124 - Improved Docker image for running database migration scripts on startup]
 * https://github.com/redlink-gmbh/smarti/issues/145[#145 - Improved cpu consumption for a configuration that allows to set the executor service pool size]
@@ -41,8 +42,18 @@ The Smarti Admin UI allows you to:
 * https://github.com/redlink-gmbh/smarti/issues/116[#116 - Improved widget by adding a button to clear all keywords]
 * https://github.com/redlink-gmbh/smarti/issues/128[#128 - Improved widget presentation by trimming labels of long keywords]
 * https://github.com/redlink-gmbh/smarti/issues/155[#155 - Fixed issue where no related conversations have been displayed if no tokens have been extracted]
+* https://github.com/redlink-gmbh/smarti/issues/162[#162 - Fixed issue where the conversation index runs out of synch when running Smarti on two or more instances]
+* https://github.com/redlink-gmbh/smarti/issues/157[#157 - Fixed issue where no search results have been displayed if keywords containing a # (hash) were extracted]
+* https://github.com/redlink-gmbh/smarti/issues/128[#128 - Fixed missing line breaks when very long keywords have been extracted e.g. URLs]
+* https://github.com/redlink-gmbh/smarti/issues/165[#165 - Fixed some out dated references within the documentation]
 
 === Upgrading
+
+==== Stanford-NLP
+
+For improved memory efficiency, smarti now uses `Stanford-CoreNLP v3.8.0`. If you added the Stanford-NLP dependencies
+in previous versions, you must update those libraries.
+Please refer to the <<index.adoc#_deploy_install, Installation Guide>> for details.
 
 ==== Configuration
 
@@ -51,8 +62,32 @@ The following changes in the configuration files are recommended:
 .application.properties
 [source,diff]
 ----
++ nlp.stanfordnlp.de.parseModel=edu/stanford/nlp/models/srparser/germanSR.ser.gz
++ nlp.stanfordnlp.de.parseMaxlen=40
+
 - security.password=
 + security.config.mongo.admin-password=
+
++ smarti.migration.mongo.script-home=/usr/share/smarti/scripts
+----
+
+.logback.xml
+[source,diff]
+----
+- <logger name="io.redlink.nlp" level="DEBUG"/>
++ <logger name="edu.stanford" level="INFO"/>
++ <logger name="io.redlink.nlp" level="INFO"/>
+----
+
+Previous client-configurations for `solrsearch`-query-builders might require an update of their `default` settings:
+While in previous versions those parameters needed to be url-encoded, this is now happening within the component.
+
+A migration-script is available and applied automatically on starup:
+
+.migrate-04_fix-param-encoding.js
+[source,javascript]
+----
+include::{migration_scripts}/migrate-04_fix-param-encoding.js[lines=112..-1]
 ----
 
 == Smarti 0.6.0 Release Notes
@@ -96,13 +131,13 @@ restricted to the same `support_area`. To enable this feature, update the config
 following settings:
 
 [source,json]
------------------------------------------------
+----
 {
   "filter": [
     "support_area"
   ]
 }
------------------------------------------------
+----
 
 ==== Database
 
@@ -113,10 +148,11 @@ A migration script is available. When using the installation packages, the migra
 will happen automatically on the first startup. Alternatively, the following script
 must be applied manually:
 
+.migrate-03_0.5-to-0.6.js
 [source,javascript]
------------------------------------------------
+----
 include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=112..-1]
------------------------------------------------
+----
 
 == Smarti 0.5.0 Release Notes
 September 18^th^, 2017
@@ -151,7 +187,8 @@ A migration script is available. When using the installation packages, the migra
 will happen automatically on the first startup. Alternatively, the following script
 must be applied manually:
 
+.migrate-02_0.3-to-0.5.js
 [source,javascript]
-------------------------------------------------
+----
 include::{migration_scripts}/migrate-02_0.3-to-0.5.js[lines=112..-1]
-------------------------------------------------
+----

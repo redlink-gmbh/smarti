@@ -1,5 +1,77 @@
+:webservicesdir: ./webservices
+
 == Smarti Integration Guide
 
-include::integrations/conversational-api.adoc[]
+The development of Smarti follows an API-driven approach (API-first).
 
-include::integrations/rocketchat.adoc[]
+Whenever new features will be released for Smarti, the first step is to develop the corresponding API.
+This means that before developing any Apps or other graphical user interfaces, the API already exists: No feature without an API.
+This makes it very easy to integrate Smarti into third party applications.
+
+Snarti's web services are basically divided into the following five components:
+
+. <<index.adoc#_conversational_web_service, Conversational Analyzing>>
+. <<index.adoc#_conversation_admin_web_service, Conversation Administration>>
+. <<index.adoc#_chat_adapter_web_service, Chat Adapter>>
+. <<index.adoc#_client_configuration_web_service, Client Configuration>>
+. <<index.adoc#_user_management_web_service, User Management>>
+
+In the following sections each web service is introduced briefly.
+
+The aim of this documentation is to explain every web service at a high level.
+It is not the aim of this documentation to learn how the individual API calls work in detail, but rather to understand what the goal of the individual web services is and why they are built as they are.
+
+=== Swagger documentation
+
+**Smarti's web services are designed and documented using Swagger.**
+Who is interested in implementing against the RESTful-API should move to Smarti's Swagger API documentation.
+If Swagger is new to you, follow this link to familiarize yourself with Swagger:
+https://swagger.io/getting-started/[Getting started with Swagger]
+
+At runtime Smarti provides a generated Swagger JSON file that can easily accessed by opening the following URLs within your web browser:
+
+- abstract: `http://${smarti-host}:${smarti-port}/v2/api-docs`
+- specific: `http://localhost:8080/v2/api-doc`
+- link:swagger.json[Swagger.json] (Copy - part of this documentation)
+
+You can copy & past the raw JSON from `http://${smarti-host}:${smarti-port}/v2/api-docs` into any Swagger editor of your choice.
+Alternatively Smarti provides a Swagger user interface to browse the API without using external tools:
+
+- abstract: `http://${smarti-host}:${smarti-port}/swagger-ui.html`
+- specific: `http://localhost:8080/swagger-ui.html`
+
+
+=== Integration tasks
+. Preconditions
+.. Setup Smarti
+.. Create a client
+.. Create a configuration
+.. Create a client token
+. Chat Integration
+.. Store the token
+.. Authenticate each request
+.. Adapt Smarti into Chat (onMessage, callback, onClose)
+.. Implement a backend for the integration widget/bot
+. User Interface
+.. Implement a widget
+
+
+=== RESTful-Integration Sequence
+
+image::chat-sequence-REST.png[RESTful-Integration Sequence]
+. Send messages to Smarti
+. Wait for Smarti magic
+. Handle callback
+. Get the conversation analyze results
+. Retrieve Query results
+. Publish a conversation
+
+include::{webservicesdir}/conversation-api.adoc[]
+
+include::{webservicesdir}/rocketchat-api.adoc[]
+
+include::{webservicesdir}/client-api.adoc[]
+
+include::{webservicesdir}/conversation-admin-api.adoc[]
+
+include::{webservicesdir}/user-api.adoc[]

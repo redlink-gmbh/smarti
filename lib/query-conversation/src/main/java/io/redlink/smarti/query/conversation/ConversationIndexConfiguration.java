@@ -29,7 +29,18 @@ public class ConversationIndexConfiguration {
     
     public final static String CONVERSATION_INDEX = "conversation";
     
+    /**
+     * The current conversation index version. Needs to be increased on schema.xml
+     * or software updates that do require a full re-index
+     */
+    public static final int CONVERSATION_INDEX_VERSION = 1; //start with 1 after introducing this feature with #150
+    
     public static final String FIELD_ID = "id";
+    /**
+     * Field used to store the current {@link #CONVERSATION_INDEX_VERSION} so that
+     * updates that require a full re-index can be detected on startup
+     */
+    public static final String FIELD_INDEX_VERSION = "index_version";
     public static final String FIELD_TYPE = "type";
     public static final String TYPE_MESSAGE = "message";
     public static final String TYPE_CONVERSATION = "conversation";

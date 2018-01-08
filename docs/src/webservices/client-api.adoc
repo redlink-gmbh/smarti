@@ -1,0 +1,346 @@
+=== Client configuration web service
+
+Smarti supports a multi client architecture, that allows to create separate knowledge bases for different domains/clients.
+The configuration module allows to manage client specific configurations.
+It consists of a storage component, a service layer, REST services and an UI.
+
+
+__base path:__ `/client`
+
+The configuration REST Services allow to manage clients and configurations via API calls.
+
+All endpoints use `application/json` as media type.
+
+==== Create/Update Client
+
+__endpoint:__ `POST /client` +
+__request body:__ `{"name":..., "description":..}` +
+__response body:__ the created/updated client configuration `{"id":..., "name":..., "description":..}`
+
+[source,bash]
+----------------------
+curl -X POST -H "content-type: application/json" "http://localhost:8080/client" -d '{"name":"client-42"}'
+----------------------
+
+IMPORTANT: The clients name has to match the pattern [a-z0-9-]+ (it is used also for posting messages)
+
+==== List Clients
+
+__endpoint:__ `GET /client` +
+__response body:__ a list of clients `[{"id":"1","name":"client_42","description","Some description"}]`
+
+
+==== Get Client Configuration
+
+__endpoint:__ `POST /client/{client-id}/config` +
+__response body:__ the updated client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
+
+__example:__
+
+[source,bash]
+----------------------
+curl -X GET -H "content-type: application/json" "http://localhost:8080/client/client_42/config"
+----------------------
+
+==== Update Client Configuration
+
+__endpoint:__ `POST /client/{client-id}/config` +
+__request body:__ `{<conf-cat>: [<comp-conf>,<comp-conf>]}` +
+__response body:__ the updated client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
+
+The endpoint accepts an request body with the configuration.
+
+All updated configurations are validates (see the [Client Configuration Validation](#clientConfigurationValidation) section for more information)
+
+__example:__
+
+[source,bash]
+----------------------
+curl -X POST -H "content-type: application/json" "http://localhost:8080/client/client_42/config"
+{
+  "queryBuilder": [
+    {
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
+      "unbound": false,
+      "solrEndpoint": "http://search.db.de/change/me",
+      [ ... ]
+    },
+    [ ... ]
+  ]
+}
+----------------------
+
+__Notes about Server Side Configuration parsing__
+
+Server-side parsing is done by https://github.com/FasterXML/jackson[Jackson]. The default `ComponentConfiguration` class parses additional parameters as `Map`. So By default configuration will use the default JSON to Java mappings.
+
+Components that use custom configuration classes can define additional fields. Additioal fields will be handeld as with the base `ComponentConfiguration` class.
+
+
+==== Component Configuration
+
+The JSON serialization of a configuration has the following base attributes
+
+[source,bash]
+----------------------
+{
+  "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+  "name": "solrsearch",
+  "displayName": "solrsearch",
+  "type": "solrsearch",
+  "enabled": false,
+  "unbound": false,
+  [...]
+}
+----------------------
+
+* _`_class`_ (`String`): used to store the Java type of custom configuration implementation. Can be ommited when the default type (`ComponentConfiguration`) is used by a component.
+* _`type`_ (`string`): The type of the component
+* _`enabled`_ (`boolean`): Allows to disable a configuration withou deleting it.
+* _`unbound`_ (`boolean`): if `true` this configuration is not bound to any component. This means that the `type` is wrong or the component of that `type` is currently not available
+
+Any other field can be used for the actual configuration of the component. Their are no limitations to the kind of the configuration as long as the Component referenced by the `type` value can understand it.
+
+==== Retrieve Client Configuration
+
+__endpoint__: `GET client/{client-id}/config` +
+__response body__: the created client configuration `{<conf-cat>: [<comp-conf>,<comp-conf>]}`
+
+Retrieve the configuration for the client with the `{client-id}`. If no configuration is present a `404 Not Found` is returned
+
+==== Client Configuration Validation
+
+Configuration are validated on any update. This validation has several steps that are done for every component configuration:
+
+1. it is checked if the Component targeted by the Configuration is active. For this the `category` and the `type` field of the configuration are matched against registerd components. If this succeeds `unbound` is set to `false`.
+2. for all _bound_ configurations the expected configuration class of the component is matched with the `_class` value of the configuration. If those do not match the configuration is marked as _illegal_
+3. the configuration is parsed to the component for validation. This validation can fail because of missing or illegal field values.
+
+During the validation process all validation errors are collected. If one or more are present a `422 Unprocessable Entity` response is generated. This response include https://github.com/json-path/JsonPath[JSON Path] pointer to missing and illegal fields to allow UI to highlight those issues.
+
+The following listing shows an example where an illegal URL was configured as `solrEndpoint` for the 2nd configuration of the `queryBuilder` category.
+
+[source,bash]
+----------------------
+curl -X POST -H "content-type: application/json" "http://localhost:8080/config/client25/config" --data-binary '{
+  "queryBuilder": [
+    [..],
+    {
+      "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguration",
+      "name": "solrsearch",
+      "displayName": "solrsearch",
+      "type": "solrsearch",
+      "enabled": false,
+      "unbound": false,
+      "solrEndpoint": "NOT A REAL URL",
+      ...
+    },
+    [..]
+    ]
+}'
+
+< HTTP/1.1 422
+< Content-Type: application/json;charset=UTF-8
+
+{
+  "data": {
+    "illegal": {
+      "queryBuilder[1].solrEndpoint": "unknown protocol: dummy"
+    }
+  },
+  "message": "Unable to process io.redlink.smarti.model.config.Configuration because of 1 illegal [queryBuilder[1].solrEndpoint] and 0 missing fields []",
+  "status": 422
+}
+----------------------
+
+==== Security
+
+===== Create Access-Token
+
+Access-Tokens can be used to authenticate to smarti.
+
+[source,bash]
+----------------------
+$ curl -XPOST 'http://localhost:9000/client/<clientId>/token' \
+    -H 'Content-Type: application/json' \
+    --data-binary '{"label":"rocket.chat"}'
+{
+  "id":"5a02d2539fcc0c7b2bf12e55",
+  "token":"3fbbc2575a309caaaf1b050c68461a1b5eec9c60/1p7NZ6IA",
+  "label":"rocket.chat",
+  "created":1510134355816
+}
+----------------------
+
+Provide the header `X-Auth-Token: 3fbbc2575a309caaaf1b050c68461a1b5eec9c60/1p7NZ6IA` with every request for that client.
+
+===== Create User
+
+Users are assigned to one or more clients. A user has full access to
+functionality of it's clients (change modifications, create/delete users and tokens, manage conversations, etc...)
+
+[source,bash]
+----------------------
+curl -XPOST 'http://localhost:9000/client/<clientId>/user' \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    --data-binary '{"login":"foo","profile":{"name":"Foo Bar","email":"foo@example.com"}}'
+
+{
+  "login":"foo",
+  "clients":["<clientId>"],
+  "profile": {
+    "name":"Foo Bar",
+    "email":"foo@example.com"
+  }
+}
+curl -XPUT 'http://localhost:9000/auth/foo/password' \
+    -H 'Content-Type: application/json;charset=UTF-8' \
+    --data-binary '{"password":"foo"}'
+----------------------
+
+
+
+
+==== Query Builder Configurations
+
+`QueryBulder` are one type of components that can be configured
+with the client configuration.
+
+===== Solr Search Query Builder
+
+The Solr Search Query Builder uses the <<index.adoc#_latch_template, LATCH Template>> to build a Solr Query based on the configured Solr Endpoint Configuration.
+
+Solr Endpoint Configurations are Client specific and are set by using the <<index.adoc#_client_configuration_web_service, Client service>> and or the <<index.adoc#_admin_ui, Admin UI>>.
+
+The following listing shows the JSON if such an configuration
+
+[source,json]
+----------------------
+{
+  "_class": "io.redlink.smarti.query.solr.SolrEndpointConfiguraion",
+  "name": null,
+  "displayName": "Solr Search Test",
+  "type": "solrsearch",
+  "enabled": true,
+  "unbound": false,
+  "solrEndpoint": "http://my.solr.org/test/me",
+  "search": {
+    "title": {
+      "enabled": true,
+      "field": "title@de"
+    },
+    "fullText": {
+      "enabled": true,
+      "field": "text@de"
+    },
+    "spatial": {
+      "enabled": true,
+      "locationNameField": "location",
+      "latLonPointSpatialField": null,
+      "rptField": null,
+      "bboxField": null
+    },
+    "temporal": {
+      "enabled": false,
+      "timeRangeField": null,
+      "startTimeField": null,
+      "endTimeField": null
+    },
+    "related": {
+      "enabled": false,
+      "fields": []
+    }
+  },
+  "defaults": {
+    "rows": 8,
+    "fields": "*,score"
+  },
+  "result": {
+    "numOfRows": 10,
+    "mappings": {
+      "title": "title",
+      "description": "description",
+      "type": "type",
+      "doctype": "doctype",
+      "thumb": "thumb",
+      "link": "link",
+      "date": "date",
+      "source": "source"
+    }
+  }
+}
+----------------------
+
+where:
+
+* `_class`: This property needs to refer the Java implementation of the configuration class. The value MUST BE `io.redlink.smarti.query.solr.SolrEndpointConfiguration`
+*  `name` and `displayName`: Eigher or both of those are required. `name` must be a slug name (`a-z0-9_`). If only one of the two is present the other one is set accordingly. The name MUST BE unique within all solr endpoint configurations for a Client.
+*  `type`: refers to the Query Builder Component. The value MUST BE `solrsearch`
+*  `enabled`: allows to disable a configuration without deleting it
+*  `unbound`: set by the server (read-only). If `true` the Solr Search Query Builder is not available in Smarti
+*  `solrEndpoint`: The URL if the Solr Endpoint (the Solr response handler to be used for search requests)
+*  `search`: Configuration on how to build Solr Queries based on Information from the LATCH Template
+** `title`: Configuration for the title search. The value of Tokens with the Roles **A**lphabet or **L**ocation will be used. The title search terms will get an increased boost.
+*** `enabled`: allows to enable/disable title search.
+*** `field`: the title field in the Solr index
+** `fullText`: full text search. The value of Tokens with the **A**lphabet roles will be used to create search terms
+*** `enabled`: allows to enable/disable full text search.
+*** `field`: the full text search field in the Solr index. If `null` or empty the default field (or `df` if present) will be used
+** `spatial`: **L**ocation role tokens will be used for spatial search terms.
+*** `enabled`: allows to enable/disable spatial search.
+*** `locationNameField`: The values of spatial tokens will be used to search in this field. If `null` or empty the default field (or `df` if present) will be used.
+*** `latLonPointSpatialField`: Lat/long information of Tokens will be used to create query terms for this field. Spatial Tokens without those information will be ignored.
+*** `rptField`: Lat/long information of Tokens will be used to create query terms for this field. Spatial Tokens without those information will be ignored.
+*** `bboxField`: Lat/long information of Tokens will be used to create query terms for this field. Spatial Tokens without those information will be ignored.
+** temporal: Tokens with the role **T**ime will be considered for temporal searches.
+*** `enabled`: allows to enable/disable temporal search.
+*** `timeRangeField`: Supports temporal queries on a Solr field using the `DateRangeField` field type
+*** `startTimeField`: Supports temporal queries on a Solr field using the date field type
+*** `endTimeField`: Optional time range support for Solr schemas that use a start/end date field for storing ranges
+** `related`: Allows to generate Solr MLT queries to suggest similar documents. This will use the content of the Conversation to search for similar content. Typically this should be only enabled if all other options are disabled.
+*** `enabled`: allows to enable/disable Solr MLT queries.
+*** `fields`: Array with the fields used for Solr MLT
+* `defaults`: A map with solr parameters that are sent with every request (examples `"fq" : "source:(news archive)"` or `"df": "text_de"`, `"fields": "*,score"`, `"rows": 10`, ...)
+* `result`: Defines how results are processed
+** `numOfRows`: defines the nuber of results in the UI
+** `mappings`: Defines how Solr document fields in the results are mapped to fields known by the UI presenting results
+*** `title`: the title as shown in the UI
+*** `description`: the description as shown in the UI
+*** `type`: the mime-type of the document (e.g. `text/html`)
+*** `doctype`: the type of the document (e.g. "blogpost", "webpage", "document" …)
+*** `thumb`: the thumbnail used in the UI
+*** `link`: the link to the result
+*** `date`: the date for the result (e.g. the modification date)
+*** `source`: the source of the result
+
+NOTE: The defaults can be set in via `application.properties`. See <<index.adoc#_query_builder_default_configuration, query builder default configuration>> for details.
+
+===== Conversation Search Query Builder
+
+A `Conversation Search Query Builder` offers relevant conversations that took place earlier covering a similar or related
+topic.
+There are two different approaches how _relevant_ is defined:
+
+* _Keyword-Based Similarity_ determines similar conversations based on detected keywords.
+* _Content-Based Similarity_ uses `more-like-this`-similarity on the initial message of other conversations.
+
+The following configuration options are available for `Conversation Search Query Builder`s:
+
+[source,json]
+----------------------
+{
+  "pageSize": 3,
+  "filter": [
+  	"support_area"
+  ]
+}
+----------------------
+
+where:
+
+* `pageSize`: the default number of related conversations.
+* `filter`: fields from `metadata` that should be used for filtering (Solr `fq`-parameter)
