@@ -1,6 +1,4 @@
-
-= Analysis Components
-:toc: left
+==== Analysis Components
 
 :commons: commons/
 
@@ -8,38 +6,38 @@ Smarti uses Redlink NLP for the analysis of Conversations. In addition it provid
 
 This documentation focus is on those extensions
 
-== Processors
+===== Processors
 
 Processors are components that plug directly into Redlink NLP.
 
-=== Interesting Terms
+====== Interesting Terms
 
-Interesting Terms is a kind of Keyword Extraction that uses `tf–idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
+Interesting Terms is a kind of Keyword Extraction that uses `tf-idf` over a document corpus to detect the most relevant terms within a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
 It consists of two analysis components:
 
-1. **Interesting Term Extractor** that marks interesting terms in the conversation. As the text in Conversations is typically to short to calculate the importance based on the content external information like the `tf–idf` value of words are used to calculate the importance of words.
+1. **Interesting Term Extractor** that marks interesting terms in the conversation. As the text in Conversations is typically to short to calculate the importance based on the content external information like the `tf-idf` value of words are used to calculate the importance of words.
 2. **Interesting Phrase Collector** that collects interesting terms marked form possible multiple Interesting Term Extractor and creates Tokens for them. This component can optionally use phrases as annotated by phrase extraction and/or dependency parsing to mark whole phrases that contain words marked as interesting terms.
 
 Tokens created by this component have the type `Keyword` and the Hint `interestingTerm`
 
-For more information on the configuration of Interesting Term Extractors see the according <<index.asciidoc#_interesting_term,section>> in the Smarti Configuration
+For more information on the configuration of Interesting Term Extractors see the according <<index.adoc#_interesting_terms, section>> in the Smarti Configuration
 
-=== Token Filter
+====== Token Filter
 
 Analysis Component that applies all registered Token Filters. If a single filter wants to filter a Token the token is removed from the conversation.
 
-==== Stopword Token Filter
+**Stopword Token Filter**
 
 This Analysis component allows to filter extracted Tokens based on their value. Filtering is done based on stopword lists. One list is used for all languages where additional language specific lists can also be configured.
 
-See the <<index.asciidoc#_token_filter_stopword, Stoword Token Filter configuration>> section of the Smarti Configuration for more information.
+See the <<index.adoc#_token_filter_stopword, Stoword Token Filter configuration>> section of the Smarti Configuration for more information.
 
-=== Token Processor
+====== Token Processor
 
 Analysis Component that allows to process extracted Tokens by defined Rules
 
-==== Regex Token Processing Ruleset
+**Regex Token Processing Ruleset**
 
 Tokens in the original texts are replaced with `<{Token.Type}>`. This allows to wirte regex patters against the type of the token instead of the actual value.
 
@@ -54,36 +52,36 @@ Typically those rules are used to add ``Hint``s to token extracted from a conver
 
 _NOTE:_ Currently it is not possible to configure Rules. To add Rulesets code needs to be written.
 
-=== Negated Token Marker
+====== Negated Token Marker
 
 Adds the hint `negated` to extracted Tokens if mention of the Token is negated (e.g. "no Pizzaia", "nicht über München")
 
-=== POS Collector
+====== POS Collector
 
 Allows to create Tokens for Words with specific Part-of-Speech (POS) tags. By default this component is configured to create Tokens with the type `Attribute` for words that are classified as adjectives.
 
 This analysis components also supports a stopword list with words for those no tokens are created.
 
-=== Adjective Location Processor
+====== Adjective Location Processor
 
 In German Location mentions often include words that are classified as Adjectives. A typical example would be a reference to the Munich Main Station as `Münchner Hauptbahnhof`. While Named Entity Recognition (NER) typically marks the noun `Hauptbahnhof` as place if often fails to also mark the adjective `Müncher`.
 
 This processor looks for cases like this and changes the Named Entity to also include the adjective.
 
-=== Url Extractor
+====== Url Extractor
 
 Uses a Regex pattern to find URLs mentioned in conversations and makrs them as Named Entities with tag `url` and type `misc`. Those Named Entities are later converted to Tokens by the Named Entity Collector.
 
-=== Named Entity Collector
+====== Named Entity Collector
 
 This Analysis Component collects low level Named Entity Annotations and adds `Token` for them to the Conversation. The `type` and `tag` of the Named Entity Annotations are mapped to `Token.Type` and `Hints`.
 
 
-== Templates
+===== Templates
 
 Templates are higher level models over extracted `Token`. Templates defines Slots. Those Slots do have specific Roles and may have [0..*] extracted tokens assigned.
 
-=== LATCH Template
+====== LATCH Template
 
 LATCH is a model for Information Retrieval. The acronym stands for the different search dimensions that are represented as Roles in this template:
 

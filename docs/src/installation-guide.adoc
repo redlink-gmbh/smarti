@@ -18,7 +18,7 @@ $ java -jar smarti-${smarti-version}-exec.jar
 ```
 
 IMPORTANT: To run Smarti in production it is recommended to deploy the `deb` or `rpm` package on your target environment instead executing the jar directly.
-If you like to setup your development client or a non-productive server read section <<developer-guide.adoc#,Build and Run>> explains how to do start Smarti by executing the executable jar.
+If you like to setup your development client or a non-productive server read section <<index.adoc#build_and_run, Build and Run>> explains how to do start Smarti by executing the executable jar.
 
 ==== Run MongoDB as a dedicated service
 
@@ -218,3 +218,28 @@ $ curl http://${smarti-host}:${smarti-port}/3rdPartyLicenses.json
 === Configuration
 
 Once Smarti is up and running, go ahead and read the next section <<index.adoc#_application_configuration, Application Configuration>> about Smarti's powerful configuration options.
+
+=== Requirements (Memory, CPU)
+
+NOTE: The default configuration of Smarti is optimized for 4 GByte of Memory (JVM parameter: `-Xmx4g`) and `2` CPU cores.
+
+Smarti performs text analysis over conversations. Such analysis are based on machine learning models that require a considerable amount of memory and CPU time. The selection of those models and the configuration of those components highly influence the memory requirements.
+
+
+Analysis are precessed asynchronously in a thread pool with a fixed size. The size of this pool should not exceed the number of available CPU cores. For a full utilization of the
+CPU resources the number of threads should be close or equals to the number of CPU cores. However every processing thread will also require additional memory. While this number highly depends on the analysis configuration 500 MByte is a good number to start with. 
+
+As an example running Smarti with the default Analysis configuration on a host with 16 CPU cores should use a thread pool with 15 threads and will require 3 GByte + 15 * 500 MByte = 10.5 GByte Memory.
+
+==== Relevant Configuration Options
+
+* `smarti.processing.numThreads = 2`: The number of analysis processing threads. This number should be close or equals to the number of CPUs. Each thread will also require additional memory to handle processing information. This amount highly depends on the analysis configuration. Especially of the Stanford NLP Parser component (see below).
+* Standord NLP includes several configuration options that influence the memory (both base and processing) memory requirements. 
+** `nlp.stanfordnlp.de.nerModel = edu/stanford/nlp/models/ner/german.conll.hgc_175m_600.crf.ser.gz`: Name Finder models are the biggest contribution to the base memory requirement. The default model uses about 300 MByte
+** Parser: The parsed component has the highest impact on the memory requirements of Smarti. The defautl configuration uses the Shift Reduce Parser as it requires the least memory. As potential configuration options do have a huge impact it is recommended to look at additional information provided by the Stanford https://nlp.stanford.edu/software/parser-faq.shtml#k[Parser FAQ] (NOTE that values provided on this page are for a 32bit JVM. So memory requirements on modern systems will be double those values).
+*** `nlp.stanfordnlp.de.parseModel = edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`: The parse model to use. Stanford does support three models that have hugely different memory
+and cpu requirements. Also not that those memory requirement are for processing memory, what
+means that this memory needs to be provided per analysis thread!
+*** `nlp.stanfordnlp.de.parseMaxlen = 30`: Parsing longer sentences requires square more memory. So restricting the maximum number of tokens of sentences is essential. 30 Tokens seams to be a good tradeoff. In settings where memory is not a concern this value can be increased to `40`. If memory consumption is a problem on can decrease this value to 20 tokens.
+* Open NLP provides an additional Named Entity Finder model for German. The model is provided by https://github.com/ixa-ehu/ixa-pipe-nerc[IXA Nerc] and requires about 500 MByte of memory.
+

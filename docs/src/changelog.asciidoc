@@ -7,7 +7,7 @@ This document shows the changes that are introduced into Smarti with the release
 
 
 == Smarti 0.6.1 Release Notes
-December 7^th^, 2017
+January 8^th^, 2018
 
 Smarti 0.6.1 is a *security feature* release, that also covers several improvements to optimize Smarti's resource consumption behavior.
 This is the first Smarti release, that has a *Docker image* as part of its distribution.
@@ -53,7 +53,7 @@ The Smarti Admin UI allows you to:
 
 For improved memory efficiency, smarti now uses `Stanford-CoreNLP v3.8.0`. If you added the Stanford-NLP dependencies
 in previous versions, you must update those libraries.
-Please refer to the <<index.asciidoc#_deploy_install,Installation Guide>> for details.
+Please refer to the <<index.adoc#_deploy_install, Installation Guide>> for details.
 
 ==== Configuration
 
@@ -84,10 +84,11 @@ While in previous versions those parameters needed to be url-encoded, this is no
 
 A migration-script is available and applied automatically on starup:
 
+.migrate-04_fix-param-encoding.js
 [source,javascript]
------------------------------------------------
+----
 include::{migration_scripts}/migrate-04_fix-param-encoding.js[lines=112..-1]
------------------------------------------------
+----
 
 == Smarti 0.6.0 Release Notes
 November 30^th^, 2017
@@ -130,13 +131,13 @@ restricted to the same `support_area`. To enable this feature, update the config
 following settings:
 
 [source,json]
------------------------------------------------
+----
 {
   "filter": [
     "support_area"
   ]
 }
------------------------------------------------
+----
 
 ==== Database
 
@@ -147,10 +148,11 @@ A migration script is available. When using the installation packages, the migra
 will happen automatically on the first startup. Alternatively, the following script
 must be applied manually:
 
+.migrate-03_0.5-to-0.6.js
 [source,javascript]
------------------------------------------------
+----
 include::{migration_scripts}/migrate-03_0.5-to-0.6.js[lines=112..-1]
------------------------------------------------
+----
 
 == Smarti 0.5.0 Release Notes
 September 18^th^, 2017
@@ -185,7 +187,8 @@ A migration script is available. When using the installation packages, the migra
 will happen automatically on the first startup. Alternatively, the following script
 must be applied manually:
 
+.migrate-02_0.3-to-0.5.js
 [source,javascript]
-------------------------------------------------
+----
 include::{migration_scripts}/migrate-02_0.3-to-0.5.js[lines=112..-1]
-------------------------------------------------
+----

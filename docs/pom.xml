@@ -26,7 +26,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.1-RC3-SNAPSHOT</version>
+        <version>0.6.1</version>
     </parent>
 
     <artifactId>smarti-documentation</artifactId>
@@ -34,7 +34,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <asciidoctor.maven.plugin.version>1.5.5</asciidoctor.maven.plugin.version>
+        <maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
+
+        <asciidoctor.maven.plugin.version>1.5.6</asciidoctor.maven.plugin.version>
         <asciidoctorj.pdf.version>1.5.0-alpha.16</asciidoctorj.pdf.version>
     </properties>
 
@@ -116,13 +118,11 @@
                         <configuration>
                             <sourceHighlighter>coderay</sourceHighlighter>
                             <backend>html</backend>
-                            <attributes>
-                                <toc />
-                                <linkcss>false</linkcss>
-                            </attributes>
                             <outputDirectory>${project.build.directory}/html</outputDirectory>
                             <preserveDirectories>true</preserveDirectories>
-                            <attributes>
+                            <attributes combine.children="append">
+                                <toc>left</toc>
+                                <linkcss>false</linkcss>
                                 <stylesheet>stylesheets/foundation.css</stylesheet>
                                 <icons>font</icons>
                             </attributes>
@@ -136,11 +136,11 @@
                         </goals>
                         <configuration>
                             <backend>pdf</backend>
-                            <outputDirectory>${project.build.directory}/pdf</outputDirectory>
-                            <outputFile>smarti-documentation.pdf</outputFile>
+                            <sourceDocumentName>index.asciidoc</sourceDocumentName>
+                            <outputFile>${project.build.directory}/pdf/smarti-documentation.pdf</outputFile>
                             <sourceHighlighter>coderay</sourceHighlighter>
                             <doctype>book</doctype>
-                            <attributes>
+                            <attributes combine.children="append">
                                 <icons>font</icons>
                                 <pagenums />
                                 <toc />
@@ -159,6 +159,8 @@
                     <imagesDir>images</imagesDir>
                     <attributes>
                         <allow-uri-read>true</allow-uri-read>
+                        <revnumber>v${project.version}</revnumber>
+                        <revdate>${maven.build.timestamp}</revdate>
                     </attributes>
                     <resources>
                         <resource>

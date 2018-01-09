@@ -2,7 +2,7 @@
 
 Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[configuration options] including:
 
-* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-command-line-args[Command line Properties]:* defining properties as arguments (e.g. `--server.part=8080`)
+* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-command-line-args[Command line Properties]:* defining properties as arguments (e.g. `--server.port=8080`)
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files[Application Properteis]:* a Java properties file with the name `application.properties`
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-profile-specific-properties[Profile specific configurations]:* requires to
     1. activate the profile by setting `spring.profiles.active`
@@ -113,17 +113,17 @@ The Speak Service managed resource bundles for bot generated replay messages in 
 
 Conversation are indexed in Solr managed by SolrLib
 
-* `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup 
+* `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup
 * `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
 * `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 
 ==== Analysis Configuration
 
-This section describes the configuration of the analysis workflow and the <<analysis-components.adoc#,Analysis Components>>
+This section describes the configuration of the analysis workflow and the <<index.adoc#_analysis_components, Analysis Components>>
 
 WARNING: For now Analysis configurations are global. No Client specific configuration is possible.
 
-NOTE: Client specific analysis configurations are planed for a future release. They will use the <<Client Configuration API>>
+NOTE: Client specific analysis configurations are planed for a future release. They will use the <<index.adoc#_client_configuration_web_service, client configuration web service>>.
 
 
 ===== Analysis Workflow
@@ -152,15 +152,19 @@ The following configuration properties allow to change the configuration:
 
 For the `parseModel` Stanford includes three models
 
-* PCFG Parser (`edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`): This is the default parser configured for Smarti. It runs fine with `4g` of heap and `parseMaxlen <= 30` (`parseMaxlen <= 40` is borderline ok)
-* Factored Parser (`edu/stanford/nlp/models/lexparser/germanFactored.ser.gz`): This is the default of Stanford NLP. It is the slowest and needs a lot of memory (especially with `parseMaxlen > 30`). Do NOT use this parser with setups providing `<8g` java heap (`-Xmx8g`)
-* Shift Reduce Parser (`edu/stanford/nlp/models/srparser/germanSR.ser.gz`): This is the fastest parser option available and recommended in situations where problems with the PCFG Parser occure. For more information see its https://nlp.stanford.edu/software/srparser.shtml[documentation] on Stanford NLP.
+* PCFG Parser (`edu/stanford/nlp/models/lexparser/germanPCFG.ser.gz`): This is the default parser configured for Smarti.
+  It runs fine with `4g` of heap and `parseMaxlen <= 30` (`parseMaxlen <= 40` is borderline ok)
+* Factored Parser (`edu/stanford/nlp/models/lexparser/germanFactored.ser.gz`): This is the default of Stanford NLP.
+  It is the slowest and needs a lot of memory (especially with `parseMaxlen > 30`).
+  Do NOT use this parser with setups providing `<8g` java heap (`-Xmx8g`)
+* Shift Reduce Parser (`edu/stanford/nlp/models/srparser/germanSR.ser.gz`): This is the fastest parser option available and recommended in situations where problems with the PCFG Parser occure.
+  For more information see its https://nlp.stanford.edu/software/srparser.shtml[documentation] on Stanford NLP.
 
 The maximal parse length (`nlp.stanfordnlp.de.parseMaxlen`) defines the maximum number of tokens a sentence can have to be processed by the parser. As the memory requirement of the parser is roughly the square of the sentence length. https://nlp.stanford.edu/software/parser-faq.shtml#k[More information] are available in the parser FAQ.
 
 ===== Interesting Term Configuration
 
-The <<analysis-components.asciidoc#_interesting_terms,Interesting Terms>> component performs a keyword extraction. It uses `tf–idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
+The <<index.adoc#_interesting_terms, Interesting Terms>> component performs a keyword extraction. It uses `tf-idf` of words in a document corpus to mark the most relevant words of a conversation. Implementation wise Solr is used to manage the text corpus and Solr MLT requests are used to retrieve relevant terms.
 
 Their are several ways to configure Solr endpoints to be used for interesting terms.
 
@@ -178,7 +182,7 @@ The above configuration requires a Solr Server. To allow the use of embedded Sol
 
 ===== Token Filter: Stopword
 
-The <<Stopword Token Filter>> allows to remove Keywords from a Conversation that are present in a configured stop-word list.
+The <<index.adoc#_token_filter, Token Filter>> allows to remove Keywords from a Conversation that are present in a configured stop-word list.
 
 **Module:** `token-processor`
 
@@ -199,9 +203,9 @@ Hasso was a spefic use case of the predecessor of Smarti. The module `hasso-voca
 * `smarti.extractor.synonyms.sap =` `CSV` file with `,` as column separator and `utf-8` as encoding. One vocabulary entry per row. The value in the first column is the preferred label. Additional columns for synonyms. The content is expected to be in German language. Extracted Entities will have the type `term` and the tag `sap-entity`
 
 
-==== Query Builder Defalt Configuration
+==== Query Builder Default Configuration
 
-Query Builder are configured per Client via the <<index.adoc#_client_configuration, Client Configuration>> service. However a system wide default configuration can be used to initialize configurations for new clients.
+Query Builder are configured per Client via the <<index.adoc#_client_configuration_web_service, Client Configuration>> service. However a system wide default configuration can be used to initialize configurations for new clients.
 
 This section includes configuration properties used to define the default configuration of query builders.
 
@@ -209,7 +213,7 @@ This section includes configuration properties used to define the default config
 
 A SolrEndpoint is used by the generic Solr `QueryProfider` provided by the `query-solr` module.
 
-NOTE: The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are only used as *defaults* for actual <<Solr Search Query Builder>> configurations.
+NOTE: The configuration properties described in this section do _NOT_ configure an actual Solr endpoint. They are only used as *defaults* for actual <<index.adoc#_solr_search_query_builder, Solr Search Query Builder>> configurations.
 
 **Prefix**: `query.solr`
 
