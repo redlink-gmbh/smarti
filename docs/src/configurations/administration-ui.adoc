@@ -1,4 +1,4 @@
-==== Client Configuration UI
+==== Admin UI
 
 Smarti includes a User Interface to maintain clients and configurations.
 

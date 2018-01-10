@@ -22,6 +22,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.config.Configuration;
+import io.redlink.smarti.query.conversation.ConversationIndexer;
 import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
@@ -32,16 +33,20 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.bson.types.ObjectId;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import static io.redlink.smarti.services.AuthenticationService.ADMIN;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @CrossOrigin
 @RestController
@@ -53,11 +58,13 @@ public class ConversationAdminWebservice {
     private final ObjectMapper jacksonObjectMapper;
     private final ConversationService conversationService;
     private final AuthenticationService authenticationService;
+    private final ConversationIndexer conversationIndexer;
 
-    public ConversationAdminWebservice(ObjectMapper jacksonObjectMapper, ConversationService conversationService, AuthenticationService authenticationService) {
+    public ConversationAdminWebservice(ObjectMapper jacksonObjectMapper, ConversationService conversationService, Optional<ConversationIndexer> conversationIndexer, AuthenticationService authenticationService) {
         this.jacksonObjectMapper = jacksonObjectMapper;
         this.conversationService = conversationService;
         this.authenticationService = authenticationService;
+        this.conversationIndexer = conversationIndexer.orElse(null);
     }
 
     @ApiOperation(value = "list conversations", response = PagedConversationList.class)
@@ -197,5 +204,19 @@ public class ConversationAdminWebservice {
             return ResponseEntity.badRequest().build();
         }
     }
+    
+    @ApiOperation(value = "re-indexes conversations for all clients. Requires ADMIN permissions")
+    @RequestMapping(value = "index", method = RequestMethod.POST)
+    public ResponseEntity<?> reindexConversation(
+            AuthContext authContext) {
+        authenticationService.assertRole(authContext, ADMIN);
+        if(conversationIndexer == null){
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        } else {
+            conversationIndexer.rebuildIndex();
+            return ResponseEntity.accepted().build();
+        }
+    }
+
 
 }

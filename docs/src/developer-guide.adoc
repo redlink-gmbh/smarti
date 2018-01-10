@@ -20,12 +20,12 @@ This section explains how to checkout and build the Smarti application from its 
 By following these steps you will learn how to build, run and debug Smarti.
 Transfer these instructions on your local machine in order to start setting up your Software Development Environment (SDE).
 
-In order to build & run Smarti the <<{commonsdir}system-requirements.adoc#,System requirements>> have to be fulfilled.
+In order to build & run Smarti the <<index.adoc#_system_requirements, System requirements>> have to be fulfilled.
 How to achieve that heavily depends on your target environment.
 When creating this documentation all commands have been executed and tested with http://releases.ubuntu.com/16.04/[Ubuntu 16.04. LTS] server running on https://aws.amazon.com/ec2/instance-types/[Amazon EC2 instance] (t2.large).
 Therefore and to keep it simple we decided to use Debian's package manager `apt-get` for documentation purpose.
 
-NOTE: If you have any trouble please have a look at <<troubleshooting-guide.adoc#, Troubleshooting>>, maybe you're not alone.
+NOTE: If you have any trouble please have a look at <<index.adoc#_smarti_troubleshooting_guide, Troubleshooting>>, maybe you're not alone.
 
 WARNING: *Be careful using `copy & paste`.* +
 The aim of this manual is to explain and not to provide scripts.
@@ -127,11 +127,11 @@ $ java -jar smarti-${smarti-version}-exec.jar
 ```
 +
 NOTE: *Stanford NLP* - If you want to use Stanford NLP analysis, ensure that the required libraries are included in the class path.
-For more information and how to achieve this read section <<Enable Stanford NLP>>.
+For more information and how to achieve this read section <<index.adoc#_enable_stanford_nlp, Enable Stanford NLP>>.
 +
 NOTE: *Common challenges* - If this the first time you're running *Smarti*, you may have been stepped into a pitfall and it does not work.
 We have picked up some common challenges that might be helpful.
-See sections <<troubleshooting-guide.adoc#, Troubleshooting>> in any case of problems.
+See sections <<index.adoc#_smarti_troubleshooting_guide, Troubleshooting>> in any case of problems.
 
 ==== Debug
 
@@ -167,4 +167,4 @@ Additionally, the version number of the develop branch is set to the new snapsho
 NOTE: Now you are ready to start developing the next amazing feature for *Smarti*.
 
 
-CAUTION: Read <<index.adoc#_additional_components,Additional Components>> section.
+CAUTION: Read <<index.adoc#_additional_components, Additional Components>> section.

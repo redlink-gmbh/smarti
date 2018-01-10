@@ -17,6 +17,7 @@
 
 package io.redlink.smarti.configuration;
 
+import io.redlink.smarti.webservice.pojo.AuthContext;
 import io.swagger.annotations.Api;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,14 +25,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
+import springfox.documentation.service.*;
 import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  */
@@ -69,10 +71,40 @@ public class SwaggerConfiguration {
                 .select()
                     .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
                     .paths(PathSelectors.any())
-                .build()
-                .directModelSubstitute(ObjectId.class, String.class)
-                .directModelSubstitute(URI.class, String.class)
-                ;
+                    .build()
+                .securitySchemes(Arrays.asList(authToken(), basicAuth()))
+                .securityContexts(Arrays.asList(publicContext(), defaultContext()))
+                .ignoredParameterTypes(AuthContext.class)
+                .directModelSubstitute(ObjectId.class, String.class);
+    }
+
+    private SecurityContext publicContext() {
+        return SecurityContext.builder()
+                .forPaths(PathSelectors.regex("/auth(/.*)?"))
+                .build();
+    }
+
+    private SecurityContext defaultContext() {
+        return SecurityContext.builder()
+                .forPaths(PathSelectors.any())
+                .securityReferences(defaultAuth())
+                .build();
+    }
+
+    private List<SecurityReference> defaultAuth() {
+        final AuthorizationScope[] authScopes = {};
+        return Arrays.asList(
+                new SecurityReference(basicAuth().getName(), authScopes),
+                new SecurityReference(authToken().getName(), authScopes)
+        );
+    }
+
+    private BasicAuth basicAuth() {
+        return new BasicAuth("basic");
+    }
+
+    private ApiKey authToken() {
+        return new ApiKey("token", "X-Auth-Token", "header");
     }
 
 }

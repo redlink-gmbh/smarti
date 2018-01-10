@@ -1,8 +1,9 @@
+:commons: commons/
+
 = Frequently asked questions (FAQ)
 :toc: left
 
-:commons: commons/
-
+This FAQs are addressing common concerns, questions or objections that might come up to your mind, when get into touch with Smarti development.
 
 == Administration
 
@@ -15,31 +16,31 @@ In Smarti `Client` is used to represent customer information. Each `Client` has 
 
 For the Rocket.Chat integration this `name` MUST BE configured as `clientId` (versions `< 0.7`)
 
-All conversations refer exact one client. This concept enables to protect conversation 
+All conversations refer exact one client. This concept enables to protect conversation
 access across clients.
 
 == Integration and API
 
 === Do I have to wait for the webhook's response after sending a 'POST/rocket/{clientId}'
 
-For Smarti versions before `0.7` the retrieval of processing and query results 
+For Smarti versions before `0.7` the retrieval of processing and query results
 
 ```
-GET /conversation/{id}/template 
-GET /conversation/{id}/template/{template}/{creator} 
+GET /conversation/{id}/template
+GET /conversation/{id}/template/{template}/{creator}
 ```
-    
-is complete only when the processing of the webhook has been completed. 
+
+is complete only when the processing of the webhook has been completed.
 
 Messages, can be transmitted at any time at any frequency and speed.
 
 Smarti `v0.7` will introduce a revamped webservice API where updates for conversations will
-be synchronous and requests for processing results will allow for both synchronous and 
+be synchronous and requests for processing results will allow for both synchronous and
 asynchronous execution via webhook's
 
 === Should I only send the customer's messages to Smarti API or should I send messages from the agents as well?
 
-All messages of a conversation should be sent to the Smarti API. Messages of agents do 
+All messages of a conversation should be sent to the Smarti API. Messages of agents do
 also contain keywords, entities, etc. Including those is important for both suggestions and
 conversation search.
 
@@ -51,14 +52,14 @@ NOTE: this describes the workflow until `v0.6.*`
 . Smarti answers to the chat server via a web hook as soon as the processing of the message has been completed.
 . call `GET /conversation/{conversationId}/template` and extracts the correct values for `template` and `creator` from the result.
 .. call `GET /conversation/{conversationId}/template/{template}/{creator}` to execute a the query provided by the `creator` based on the `template`
-.. or use the information provided by the `template.query` to directly execute the query 
+.. or use the information provided by the `template.query` to directly execute the query
 
-For more Information see the <<index.askiidoc#_working_with_smarti_processing_results,Working with Smarti processing results>> section of the
+For more Information see the <<index.adoc#_working_with_smarti_processing_results, Working with Smarti processing results>> section of the
 Smarti Integration Guide
 
 === Why do sent messages do not appear as suggestions, even if I enter the same question?
 
-A conversation consists of multiple messages send by different `callers`. In oder to make 
+A conversation consists of multiple messages send by different `callers`. In oder to make
 a conversation available as suggestion, it needs to be published.
 In Rocket.Chat this happens when a room is closed, but if this is not the case one can
 manually trigger publish a conversation by calling:
@@ -78,9 +79,8 @@ on the next message sent to a room.
 Currently (`v0.6.*)` suggestions always refer to the entire conversation. By default a
 conversation is the sum of all messages within a room.
 
-As long as every single message of a conversation has been sent to Smarti, all of them are 
+As long as every single message of a conversation has been sent to Smarti, all of them are
 considered by Smarti for retrieving suggestions.
 
 This might change in future version through as rules (e.g. ageing, classification, ...)
 might be introduced the automatically split messages in a room to different conversations.
-

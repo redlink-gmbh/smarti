@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.annotation.PostConstruct;
 
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.repositories.AuthTokenRepository;
@@ -48,12 +51,18 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -66,14 +75,20 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 
 import io.redlink.smarti.Application;
+import io.redlink.smarti.health.MongoHealthCheck;
+import io.redlink.smarti.health.MongoHealthCheck.DbVersion;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.query.conversation.ConversationIndexConfiguration;
 import io.redlink.smarti.query.conversation.ConversationMltQueryBuilder;
 
+import static io.redlink.smarti.health.MongoHealthCheck.COLLECTION_NAME;
+import static io.redlink.smarti.health.MongoHealthCheck.EXPECTED_DB_VERSION;
+import static io.redlink.smarti.health.MongoHealthCheck.SMARTI_DB_VERSION_ID;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.RELATED_CONVERSATION_TYPE;
 import io.redlink.smarti.repositories.ClientRepository;
 import io.redlink.smarti.repositories.ConfigurationRepo;
@@ -87,7 +102,7 @@ import io.redlink.solrlib.spring.boot.autoconfigure.SolrLibProperties;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
-@ContextConfiguration(classes={Application.class,ConversationWebserviceIT.EmbeddedSolrConfiguration.class})
+@ContextConfiguration(classes={Application.class,ConversationWebserviceIT.EmbeddedSolrConfiguration.class, ConversationWebserviceIT.SmartiDbVersionInitializer.class})
 @ActiveProfiles("test")
 //@WebAppConfiguration
 //@EnableMongoRepositories(basePackageClasses={ConversationRepository.class, ClientRepository.class, ConfigurationRepo.class})
@@ -1471,5 +1486,23 @@ public class ConversationWebserviceIT {
             return properties;
         }
 
+    }
+
+    /**
+     * Helper component that ensures that the correct Database version is set before the integration test runs
+     */
+    @Component
+    public static class SmartiDbVersionInitializer {
+        
+        final MongoTemplate mongoTemplate;
+        
+        public SmartiDbVersionInitializer(MongoTemplate mongoTemplate) {
+            this.mongoTemplate = mongoTemplate;
+        }
+        
+        @PostConstruct
+        protected void initDatabaseVersion() {
+            mongoTemplate.save(new DbVersion(SMARTI_DB_VERSION_ID).setVersion(EXPECTED_DB_VERSION), COLLECTION_NAME);
+        }
     }
 }
