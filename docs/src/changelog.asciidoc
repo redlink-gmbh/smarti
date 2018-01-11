@@ -7,7 +7,7 @@ This document shows the changes that are introduced into Smarti with the release
 
 == Smarti 0.7.0 Release Notes
 
-==== Upgrading
+=== Upgrading
 
 With `0.7.0`, the datamodel has changed so data from older installations
 must be migrated to the new model.
