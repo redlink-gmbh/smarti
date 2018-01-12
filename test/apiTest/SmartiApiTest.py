@@ -4,11 +4,20 @@ import unittest
 import exrex
 import json
 import random
+import sys
 
 admin_user = 'admin'
 admin_password = 'admin'
-
 url = 'http://localhost:8080/'
+
+if '--user' in str(sys.argv):
+    admin_user = sys.argv[sys.argv.index('--user')+1]
+if '--pwd' in str(sys.argv):
+    admin_password = sys.argv[sys.argv.index('--pwd')+1]
+if '--url' in str(sys.argv):
+    url = sys.argv[sys.argv.index('--url')+1]
+    if not url.endswith('/'):
+        url = url+'/'
 
 # Requests
 
@@ -388,6 +397,7 @@ class TestStringMethods(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    del sys.argv[1:]
     unittest.main()
 
 
