@@ -270,11 +270,11 @@ function Smarti(options) {
 
         // fetch last Smarti results when the wiget gets initialized (channel entered)
         console.debug('Smarti widget init -> try get last Smarti result for channel %s', options.channel);
-        const lastConfCallId = ddp.method("getConversationId", [options.channel]);
+        const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", function(message) {
             if (message.error) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
-            } else if(message.id === lastConfCallId) {
+            } else if(message.id === lastConvCallId) {
                 if(message.result) {
                     // message found for channel -> fetch conversation results
                     console.debug('Smarti widget init -> get last conversation result for message: %s', message.result);
@@ -295,7 +295,7 @@ function Smarti(options) {
             if(message.id = subId) {
                 // subscriotion has changed (message send) -> fetch conversation results
                 console.debug('Smarti widget subscription changed -> get conversation result for message: %s', message.fields.args[0]);
-                getConversation(message.fields.args[0].conversationId, failure);
+                pubsub('smarti.data').publish(message.fields.args[0]);
             }
         });
     }
@@ -313,7 +313,7 @@ function Smarti(options) {
         ddp.on("result", function(message) {
 
             if (message.error) {
-                return failure({code:"get.conversation.params",args:[message.error.reason]});
+                return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === msgid) {
                 if(message.result) {
                     // why don't call query() from here instead using a subscrition?
@@ -668,10 +668,11 @@ function SmartiWidget(element, _options) {
 
                     if(data.response.numFound === 0) {
                         resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
-                        return;
                     }
 
                     params.elem.show();
+
+                    if(!data.response.numFound) return;
 
                     //map to search results
                     let docs = $.map(data.response.docs, function(doc) {
@@ -1013,7 +1014,7 @@ function SmartiWidget(element, _options) {
             $.each(data.templates, function(i, template){
                 $.each(template.queries, function(j, query) {
 
-                    let constructor = undefined;
+                    let constructor;
 
                     switch(template.type) {
                         case 'ir_latch':
@@ -1026,12 +1027,12 @@ function SmartiWidget(element, _options) {
                         let elem = $('<div class="smarti-widget">').appendTo(contentDiv);
 
                         let params = {
-                            elem:elem,
-                            id:data.id,
-                            slots:template.slots,
-                            tempid:i,
-                            tokens:data.tokens,
-                            query:query
+                            elem: elem,
+                            id: data.conversation,
+                            slots: template.slots,
+                            tempid: i,
+                            tokens: data.tokens,
+                            query: query
                         };
 
                         let config = options.widget[query.creator] || {};
@@ -1042,10 +1043,10 @@ function SmartiWidget(element, _options) {
                 })
             });
 
-            if(!widgets.length > 0) {
-                showError({code:'smarti.result.no-result-yet'});
-            } else {
+            if(widgets.length > 0) {
                 initialized = true;
+            } else {
+                showError({code:'smarti.result.no-result-yet'});
             }
         } else {
             $.each(widgets, function(i,wgt){
