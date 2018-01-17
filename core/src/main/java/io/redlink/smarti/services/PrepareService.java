@@ -19,9 +19,11 @@ package io.redlink.smarti.services;
 
 import io.redlink.nlp.api.ProcessingException;
 import io.redlink.nlp.api.Processor;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.processing.ProcessingData;
+import io.redlink.smarti.model.config.Configuration;
+import io.redlink.smarti.processing.AnalysisData;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,13 +126,11 @@ public class PrepareService {
         _processors.clear();
     }
     
-    public void prepare(Client client, Conversation conversation) {
+    public Analysis prepare(Client client, Conversation conversation, Date date) {
+        Analysis analysis = new Analysis(client.getId(), conversation.getId(), date);
         //TODO: get pipeline and processor configuration for the parsed client
         log.debug("Preparing query for {}", conversation);
-        while(conversation.getTokens().remove(null)){
-            log.warn("Parsed Conversation {} contained a NULL Token", conversation);
-        }
-        ProcessingData pd = ProcessingData.create(conversation);
+        AnalysisData pd = AnalysisData.create(conversation, analysis);
         final long start = System.currentTimeMillis();
         pipeline.forEach(p -> {
             log.debug(" -> calling {}", p.getClass().getSimpleName());
@@ -139,12 +139,14 @@ public class PrepareService {
                 log.trace("  <- completed {}", p.getClass().getSimpleName());
             } catch (ProcessingException e) {
                 log.warn("Unable to process {} with Processor {} (class: {}) ", conversation, p, p.getClass().getName());
+                log.debug("STACKTRACE", e);
                 //TODO: check if this was a required or an optional processor
             }
         });
-        log.debug("prepared Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
-        conversation.getMeta().setLastMessageAnalyzed(conversation.getMessages().size()-1);
-        log.trace("set lastMessageAnalyzed: {}", conversation.getMeta().getLastMessageAnalyzed());
+        log.debug("analysed Conversation[id:{}] in {}ms", conversation.getId(), start-System.currentTimeMillis());
+        //now sort the Tokens
+        Collections.sort(analysis.getTokens());
+        return analysis;
     }
 
     

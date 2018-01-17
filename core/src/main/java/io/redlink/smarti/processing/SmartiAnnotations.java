@@ -19,6 +19,7 @@ package io.redlink.smarti.processing;
 
 import io.redlink.nlp.api.model.Annotation;
 import io.redlink.nlp.model.Section;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
@@ -38,5 +39,8 @@ public interface SmartiAnnotations {
     
     public final static Annotation<Conversation> CONVERSATION_ANNOTATION  = new Annotation<>(
             "io_redlink_smarti_annotation_conversation", Conversation.class);
+
+    public final static Annotation<Analysis> ANALYSIS_ANNOTATION  = new Annotation<>(
+            "io_redlink_smarti_annotation_analysis", Analysis.class);
 
 }

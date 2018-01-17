@@ -26,11 +26,12 @@ import io.redlink.nlp.negation.de.GermanNegationRule;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.Token.Hint;
-import io.redlink.smarti.processing.ProcessingData;
+import io.redlink.smarti.processing.AnalysisData;
 import io.redlink.smarti.processor.pos.NegatedTokenMarker;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
+import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -48,7 +49,7 @@ import java.util.concurrent.*;
  * Tests collecting {@link Token}s for {@link Annotations#NER_ANNOTATION}s
  * present in the {@link AnalyzedText}. In addition this also tests that the
  * {@link NegationHandler} also marks Named Entity Tokens as {@link Hint#negated}
- * if they are in a text section that is marked as {@link ProcessingData#NEGATION_ANNOTATION}.
+ * if they are in a text section that is marked as {@link AnalysisData#NEGATION_ANNOTATION}.
  * 
  * @author Rupert Westenthaler
  *
@@ -116,17 +117,16 @@ public class NamedEntityCollectorTest {
     }
     
     private static final Conversation initConversation(int index) {
-        Conversation c = new Conversation();
+        Conversation c = new Conversation(new ObjectId(), new ObjectId());
+        c.setLastModified(new Date());
         c.setMeta(new ConversationMeta());
-        c.getMeta().setLastMessageAnalyzed(-1);
         c.getMeta().setStatus(ConversationMeta.Status.New);
         List<Message> messages = new ArrayList<>();
         log.trace("Conversation: ");
         for(MsgData md : CONTENTS.get(index).getLeft()){
             log.trace("    {}", md);
-            messages.add(md.toMessage());
+            c.getMessages().add(md.toMessage());
         }
-        c.setMessages(messages);
         c.setUser(new User());
         c.getUser().setDisplayName("Test Dummy");
         c.getUser().setPhoneNumber("+43210123456");
@@ -139,7 +139,7 @@ public class NamedEntityCollectorTest {
         negationHandler = new NegatedTokenMarker();
     }
     
-    private static final void preprocessConversation(ProcessingData pd) throws ProcessingException{
+    private static final void preprocessConversation(AnalysisData pd) throws ProcessingException{
         for(Processor processor : REQUIRED_PREPERATORS){
             processor.process(pd);
         }
@@ -150,13 +150,13 @@ public class NamedEntityCollectorTest {
     public void testSingle() throws ProcessingException{
         int idx = Math.round((float)Math.random()*(CONTENTS.size()-1));
         Conversation conversation = initConversation(idx);
-        ProcessingData processingData = ProcessingData.create(conversation);
+        AnalysisData processingData = AnalysisData.create(conversation, new Client());
         processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         processConversation(processingData);
         assertNerProcessingResults(processingData, CONTENTS.get(idx).getRight());
     }
 
-    void processConversation(ProcessingData processingData) throws ProcessingException {
+    void processConversation(AnalysisData processingData) throws ProcessingException {
         log.trace(" - preprocess conversation {}", processingData.getConversation());
         preprocessConversation(processingData);
         log.trace(" - start processing");
@@ -215,14 +215,14 @@ public class NamedEntityCollectorTest {
         executor.shutdown();
     }
     
-    private void assertNerProcessingResults(ProcessingData processingData, List<Pair<String,Hint[]>> expected) {
+    private void assertNerProcessingResults(AnalysisData processingData, List<Pair<String,Hint[]>> expected) {
         expected = new LinkedList<>(expected); //copy so we can remove
         Conversation conv = processingData.getConversation();
-        Assert.assertFalse(conv.getTokens().isEmpty());
-        for(Token token : conv.getTokens()){
+        Analysis analysis = processingData.getAnalysis();
+        Assert.assertFalse(analysis.getTokens().isEmpty());
+        for(Token token : analysis.getTokens()){
             log.debug("Token(idx: {}, span[{},{}], type: {}): {}", token.getMessageIdx(), token.getStart(), token.getEnd(), token.getType(), token.getValue());
             Assert.assertNotNull(token.getType());
-            Assert.assertTrue(conv.getMeta().getLastMessageAnalyzed() < token.getMessageIdx());
             Assert.assertTrue(conv.getMessages().size() > token.getMessageIdx());
             Message message = conv.getMessages().get(token.getMessageIdx());
             Assert.assertTrue(message.getOrigin() == Origin.User);
@@ -242,12 +242,12 @@ public class NamedEntityCollectorTest {
     private class ConversationProcessor implements Callable<ConversationProcessor> {
 
         private final int idx;
-        private final ProcessingData processingData;
+        private final AnalysisData processingData;
         private int duration;
 
         ConversationProcessor(int idx, String lang){
             this.idx = idx;
-            this.processingData = ProcessingData.create(initConversation(idx));
+            this.processingData = AnalysisData.create(initConversation(idx), new Client());
             this.processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         }
         
@@ -264,7 +264,7 @@ public class NamedEntityCollectorTest {
             return idx;
         }
         
-        public ProcessingData getProcessingData() {
+        public AnalysisData getProcessingData() {
             return processingData;
         }
         

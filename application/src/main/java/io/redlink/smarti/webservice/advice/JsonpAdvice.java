@@ -29,7 +29,7 @@ import org.springframework.web.servlet.mvc.method.annotation.AbstractJsonpRespon
 public class JsonpAdvice extends AbstractJsonpResponseBodyAdvice {
 
     @Autowired
-    public JsonpAdvice(@Value("${jsonp.callback:callback}") String callbackFunctionName) {
+    public JsonpAdvice(@Value("${jsonp.callback:jsonp}") String callbackFunctionName) {
         super(callbackFunctionName);
     }
 

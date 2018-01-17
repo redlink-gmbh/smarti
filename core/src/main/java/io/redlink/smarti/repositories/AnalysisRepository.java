@@ -14,22 +14,23 @@
  * limitations under the License.
  *
  */
-package io.redlink.smarti.events;
+package io.redlink.smarti.repositories;
 
-import io.redlink.smarti.model.Conversation;
+import java.util.Date;
+import java.util.List;
 
-/**
- * An event that the processing of a Conversation is complete
- */
-public class ConversationProcessCompleteEvent {
+import org.bson.types.ObjectId;
+import org.springframework.data.repository.CrudRepository;
 
-    private final Conversation conversation;
+import io.redlink.smarti.model.Analysis;
 
-    public ConversationProcessCompleteEvent(Conversation conversation) {
-        this.conversation = conversation;
-    }
+public interface AnalysisRepository extends CrudRepository<Analysis, ObjectId>, AnalysisRepositoryCustom {
 
-    public Conversation getConversation() {
-        return conversation;
-    }
+    Analysis findByClientAndConversationAndDate(ObjectId client, ObjectId conversation, Date date);
+
+    List<Analysis> findByClientAndConversation(ObjectId client, ObjectId conversation);
+
+    void deleteByConversation(ObjectId id);
+
+    
 }

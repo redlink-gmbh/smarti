@@ -22,6 +22,8 @@ import io.redlink.nlp.api.model.Annotation;
 import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.AnalyzedText.AnalyzedTextBuilder;
 import io.redlink.nlp.model.Section;
+import io.redlink.smarti.model.Analysis;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
@@ -35,15 +37,22 @@ import org.apache.commons.lang3.StringUtils;
 
 import static io.redlink.smarti.processing.SmartiAnnotations.*;
 
-public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
+public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
     
-    protected ProcessingData(Conversation conversation, AnalyzedText at) {
+    protected AnalysisData(Conversation conversation, Analysis analysis, AnalyzedText at) {
         super(new StringContent(at.getText()), null);
         addAnnotation(AnalyzedText.ANNOTATION, at);
         addAnnotation(CONVERSATION_ANNOTATION, conversation);
+        if(analysis != null){
+            addAnnotation(ANALYSIS_ANNOTATION, analysis);
+        }
     }
     
-    public static ProcessingData create(Conversation conversation){
+    public static AnalysisData create(Conversation conversation, Client client){
+        return create(conversation, new Analysis(client.getId(), conversation.getId(),conversation.getLastModified()));
+    }
+    
+    public static AnalysisData create(Conversation conversation, Analysis analysis){
         AnalyzedTextBuilder atb = AnalyzedText.build();
         int numMessages = conversation.getMessages().size();
         boolean first = true;
@@ -56,14 +65,21 @@ public class ProcessingData extends io.redlink.nlp.api.ProcessingData {
                 first = false;
             } //else ignore blank messages for analysis
         }
-        return new ProcessingData(conversation, atb.create());
+        return new AnalysisData(conversation, analysis, atb.create());
     }
     /**
-     * Shorthand for {@link #getAnnotation(Annotation)} with {@link #CONVERSATION_ANNOTATION}
-     * @return the Conversation for this {@link ProcessingData}
+     * Shorthand for {@link #getAnnotation(Annotation)} with {@link SmartiAnnotations#CONVERSATION_ANNOTATION}
+     * @return the Conversation for this {@link AnalysisData}
      */
     public final Conversation getConversation(){
         return getAnnotation(CONVERSATION_ANNOTATION);
+    }
+    /**
+     * Shorthand for {@link #getAnnotation(Annotation)} with {@link SmartiAnnotations#ANALYSIS_ANNOTATION}
+     * @return the Analysis for this {@link AnalysisData}
+     */
+    public final Analysis getAnalysis(){
+        return getAnnotation(ANALYSIS_ANNOTATION);
     }
     
     /**

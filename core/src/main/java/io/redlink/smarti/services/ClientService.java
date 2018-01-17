@@ -1,5 +1,6 @@
 package io.redlink.smarti.services;
 
+import com.google.common.collect.ImmutableMap;
 import com.mongodb.DuplicateKeyException;
 import io.redlink.smarti.exception.ConflictException;
 import io.redlink.smarti.model.Client;
@@ -8,7 +9,10 @@ import io.redlink.smarti.repositories.ClientRepository;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -134,7 +138,8 @@ public class ClientService {
         return client;
     }
 
-    public Iterable<Client> list(Set<ObjectId> clients) {
+    public Iterable<Client> list(Iterable<ObjectId> clients) {
         return clientRepository.findAll(clients);
     }
+    
 }

@@ -41,15 +41,19 @@ public class LatchTemplateBuilder extends TemplateBuilder {
     }
 
     @Override
-    protected Set<Integer> updateTemplate(Template template, Conversation conversation, int startMsgIdx) {
+    protected Set<Integer> updateTemplate(Template template, Conversation conversation, Analysis analysis) {
         if(template.getState() == State.Confirmed || template.getState() == State.Rejected){
             return null; //do not update this template
         }
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int startMsgIdx = 0;  
         //map used to avoid adding multiple slots with the same Role pointing to a Token with the same value
         Map<String, Map<String, Slot>> roleNameSlots = new HashMap<>();
         template.getSlots().stream()
             .filter(s -> s.getTokenIndex() >= 0)
-            .forEach(s -> addSlot(roleNameSlots, conversation, s));
+            .forEach(s -> addSlot(roleNameSlots, analysis, s));
         
         
         Set<Integer> usedTokenIdxs = template.getSlots().stream()
@@ -58,8 +62,8 @@ public class LatchTemplateBuilder extends TemplateBuilder {
         
         Set<Integer> updatedIdxs = new HashSet<>();
         
-        for(int i=0;i<conversation.getTokens().size();i++){
-            Token t = conversation.getTokens().get(i);
+        for(int i=0;i<analysis.getTokens().size();i++){
+            Token t = analysis.getTokens().get(i);
             if(t.getMessageIdx() >= startMsgIdx && !usedTokenIdxs.contains(i)){
                 final Slot slot;
                 if(t.getType() == Token.Type.Place){
@@ -82,7 +86,7 @@ public class LatchTemplateBuilder extends TemplateBuilder {
                 }
                 if(slot != null){
                     slot.setTokenIndex(i);
-                    if(addSlot(roleNameSlots, conversation, slot)){
+                    if(addSlot(roleNameSlots, analysis, slot)){
                         template.getSlots().add(slot);
                         updatedIdxs.add(i);
                     }
@@ -92,9 +96,9 @@ public class LatchTemplateBuilder extends TemplateBuilder {
         return updatedIdxs;
     }
 
-    private boolean addSlot(Map<String, Map<String, Slot>> roleNameSlots, Conversation conversation, Slot slot) {
+    private boolean addSlot(Map<String, Map<String, Slot>> roleNameSlots, Analysis analysis, Slot slot) {
         Map<String, Slot> roleSlots = roleNameSlots.get(slot.getRole());
-        Token t = conversation.getTokens().get(slot.getTokenIndex());
+        Token t = analysis.getTokens().get(slot.getTokenIndex());
         if(t.getValue() != null){
             if(roleSlots == null){
                 roleSlots = new HashMap<>();
@@ -106,7 +110,7 @@ public class LatchTemplateBuilder extends TemplateBuilder {
                 roleSlots.put(value, slot);
                 return true;
             } else {
-                Token presentToken = conversation.getTokens().get(present.getTokenIndex());
+                Token presentToken = analysis.getTokens().get(present.getTokenIndex());
                 if(presentToken.getConfidence() < t.getConfidence()){
                     roleSlots.put(value, slot);
                     return true;

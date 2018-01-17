@@ -175,16 +175,6 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public Conversation completeConversation(ObjectId conversationId) {
-        final Query query = new Query(Criteria.where("_id").is(conversationId));
-        final Update update = new Update().set("meta.status", ConversationMeta.Status.Complete);
-
-        mongoTemplate.updateFirst(query, update, Conversation.class);
-
-        return mongoTemplate.findOne(query, Conversation.class);
-    }
-
-    @Override
     public Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta) {
         final Query query = new Query(Criteria.where("_id").is(conversationId))
                 .addCriteria(Criteria.where("messages._id").is(messageId));
@@ -198,12 +188,31 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     @Override
     public Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status) {
+        return updateConversationField(conversationId, "meta.status", status);
+    }
+
+    @Override
+    public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
-                .set("meta.status", status)
+                .set(field, data)
                 .currentDate("lastModified");
 
-        mongoTemplate.updateFirst(query, update, Conversation.class);
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+    
+    @Override
+    public Conversation deleteConversationField(ObjectId conversationId, String field) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update()
+                .unset(field)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
 
         return mongoTemplate.findById(conversationId, Conversation.class);
     }
@@ -217,6 +226,52 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
         final WriteResult result = mongoTemplate.updateFirst(query, update, Conversation.class);
         return result.getN() == 1;
+    }
+
+    @Override
+    public Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId))
+                .addCriteria(Criteria.where("messages._id").is(messageId));
+        final Update update = new Update()
+                .set("messages.$." + field, data)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+
+    @Override
+    public Message findMessage(ObjectId conversationId, String messageId) {
+        // TODO: with mongo 3.4 you could do this with aggregation
+        /*
+        final TypedAggregation aggregation = newAggregation(Conversation.class,
+                Aggregation.match(Criteria.where("_id").is(conversationId)),
+                Aggregation.project("messages"),
+                Aggregation.unwind("messages"),
+                Aggregation.replaceRoot("messages"),
+                Aggregation.match(Criteria.where("_id").is(messageId))
+        );
+        return mongoTemplate.aggregate(aggregation, Message.class).getUniqueMappedResult();
+        */
+
+        final Conversation conversation = mongoTemplate.findById(conversationId, Conversation.class);
+        if (conversation == null) {
+            return null;
+        } else {
+            return conversation.getMessages().stream()
+                    .filter(m -> messageId.equals(m.getId()))
+                    .findFirst().orElse(null);
+        }
+    }
+
+    @Override
+    public boolean exists(ObjectId conversationId, String messageId) {
+        final Query query = Query.query(Criteria
+                .where("_id").is(conversationId)
+                .and("messages._id").is(messageId));
+        return mongoTemplate.exists(query, Conversation.class);
     }
 
     @Override

@@ -118,7 +118,12 @@ public class LocationTypeAppender extends Processor {
             return;
         }
         List<Message> messages = conv.getMessages();
-        int lastAnalyzed = conv.getMeta().getLastMessageAnalyzed();
+
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int lastAnalyzed = -1;
+        
         Iterator<Section> sections = at.getSections();
         while(sections.hasNext()){
             Section section = sections.next();

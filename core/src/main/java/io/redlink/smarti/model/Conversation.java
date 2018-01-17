@@ -30,6 +30,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -60,16 +61,13 @@ public class Conversation {
 
     @JsonProperty(required = true)
     @ApiModelProperty(required = true)
-    private User user = new User(); // TODO: needs discussion for REISEBUDDY-28
+    private User user = new User();
 
     @ApiModelProperty(required = true, value = "List of Messages")
-    private List<Message> messages = new ArrayList<>();
+    private final List<Message> messages = new LinkedList<>();
 
-    @ApiModelProperty(value = "Tokens extracted")
-    private List<Token> tokens = new ArrayList<>();
-
-    @ApiModelProperty(value = "Templates for possible queries")
-    private List<Template> queryTemplates = new ArrayList<>();
+//    @ApiModelProperty(required = true, value = "the analysis results")
+//    private Analysis analysis = new Analysis();
 
     @ApiModelProperty
     private Context context = new Context();
@@ -103,7 +101,7 @@ public class Conversation {
     public ObjectId getClientId() {
         return getOwner();
     }
-    
+
     /**
      * @deprecated use {@link #setOwner(ObjectId)} instead
      */
@@ -111,7 +109,7 @@ public class Conversation {
     public void setClientId(ObjectId clientId) {
         setOwner(clientId);;
     }
-    
+
     public ObjectId getOwner() {
         return owner;
     }
@@ -144,28 +142,12 @@ public class Conversation {
         this.user = user;
     }
 
+    /**
+     * Read-/writeable list of {@link Message}s
+     * @return the messages of this conversation
+     */
     public List<Message> getMessages() {
         return messages;
-    }
-
-    public void setMessages(List<Message> messages) {
-        this.messages = messages;
-    }
-
-    public List<Token> getTokens() {
-        return tokens;
-    }
-
-    public void setTokens(List<Token> tokens) {
-        this.tokens = tokens;
-    }
-
-    public List<Template> getTemplates() {
-        return queryTemplates;
-    }
-
-    public void setQueryTemplates(List<Template> queryTemplates) {
-        this.queryTemplates = queryTemplates;
     }
 
     public Context getContext() {
@@ -187,7 +169,7 @@ public class Conversation {
     @Override
     public String toString() {
         return "Conversation [id=" + id + ", channelId=" + channelId + ", user=" + user + ", lastModified="
-                + lastModified + ", " + messages.size() + " messages, " + tokens.size() + "tokens, " + queryTemplates.size() + " templates]";
+                + lastModified + ", " + messages.size() + " messages]";
     }
     
 }

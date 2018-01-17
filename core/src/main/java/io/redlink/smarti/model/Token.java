@@ -31,7 +31,7 @@ import java.util.Set;
  * A token - this is what a {@link io.redlink.smarti.api.QueryPreparator} normally produces.
  */
 @ApiModel
-public class Token {
+public class Token implements Comparable<Token>{
 
     public enum Type {
         /**
@@ -436,6 +436,37 @@ public class Token {
      */
     public void setOrigin(Origin origin) {
         this.origin = origin == null ? Origin.System : origin;
+    }
+    
+    @Override
+    public int compareTo(Token o) {
+        int c = 0;
+        c = Integer.compare(messageIdx, o.messageIdx);
+        if(c == 0){
+            c = Integer.compare(start, o.start);
+            if(c == 0){
+                c = Integer.compare(o.end, end);
+                if(c == 0){
+                    c = Integer.compare(type == null ? -1 : type.ordinal(), o.type == null ? -1 : o.type.ordinal());
+                    if(c == 0){
+                        //compare based on value
+                        if(value != null && o.value != null){
+                            c = value.getClass().getName().compareTo(o.value.getClass().getName());
+                            if(c == 0){
+                                if(value instanceof Comparable){
+                                    c = ((Comparable)value).compareTo(o.value);
+                                } else {
+                                    c = value.toString().compareTo(o.value.toString());
+                                }
+                            }
+                        } else if(value != null || o.value != null){
+                            c = value == null ? -1 : 1;
+                        } //else both are null -> return equals
+                    }
+                }
+            }
+        }
+        return c;
     }
     
     @Override
