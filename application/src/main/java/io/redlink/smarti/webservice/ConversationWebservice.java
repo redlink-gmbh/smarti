@@ -163,7 +163,7 @@ public class ConversationWebservice {
     @RequestMapping(method = RequestMethod.POST , consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<ConversationData> createConversation(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @RequestBody(required = false) ConversationData parsedCd,
             @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
@@ -248,7 +248,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}", method = RequestMethod.GET)
     public ResponseEntity<ConversationData> getConversation(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
@@ -295,7 +295,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<ConversationData> modifyConversationField(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(value = "the field to update", required = true, allowableValues = CONVERSATION_FIELD_VALUES) @PathVariable("field") String field,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
@@ -342,7 +342,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.DELETE)
     public ResponseEntity<ConversationData> deleteConversationField(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(value = "the field to delete", required = true, allowableValues = CONVERSATION_FIELD_VALUES) @PathVariable("field") String field,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
@@ -384,7 +384,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.GET)
     public ResponseEntity<List<Message>> listMessages(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
@@ -412,7 +412,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> appendMessage(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Message message,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
@@ -462,7 +462,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.GET)
     public ResponseEntity<Message> getMessage(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
@@ -495,7 +495,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Message> updateMessage(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @RequestBody Message message,
@@ -545,7 +545,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/message/{msgId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteMessage(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
@@ -592,7 +592,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/message/{msgId}/{field}", method = RequestMethod.PUT, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Message> modifyMessageField(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("msgId") String messageId,
             @ApiParam(value = "the field to update", required = true, allowableValues = MESSAGE_FIELD_VALUES) @PathVariable("field") String field,
@@ -642,7 +642,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.GET)
     public ResponseEntity<Analysis> getAnalysis(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
@@ -684,7 +684,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<Analysis> rerunAnalysis(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Analysis updatedAnalysis,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
@@ -728,7 +728,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/token", method = RequestMethod.GET)
     public ResponseEntity<List<Token>> getTokens(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
@@ -770,7 +770,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/template", method = RequestMethod.GET)
     public ResponseEntity<List<Template>> getTemplates(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
@@ -811,7 +811,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}", method = RequestMethod.GET)
     public ResponseEntity<?> getTemplate(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
@@ -866,7 +866,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.GET)
     public ResponseEntity<?> getResults(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
@@ -888,7 +888,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getResults(
             AuthContext authContext,
-            UriComponentsBuilder uriBuilder,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
