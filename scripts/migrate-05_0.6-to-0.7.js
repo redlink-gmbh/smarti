@@ -15,7 +15,7 @@
  *
  */
 var smarti = db.getCollection('smarti'),
-    versionFrom = 3, versionTo = 4;
+    versionFrom = 4, versionTo = 5;
 
 while (true) {
     var dbVersion = smarti.findOne({_id: 'db-version'});
@@ -112,10 +112,11 @@ while (true) {
 function runDatabaseMigration() {
     var conversations = db.getCollection('conversations');
 
-    conversations.update({analysis: {$exists: false}}, {
-        $rename: {
-            tokens: 'analysis.tokens',
-            queryTemplates: 'analysis.queryTemplates'
+    conversations.update({tokens: {$exists: true}}, {
+        $unset: {
+            tokens: true,
+            queryTemplates: true,
+            'meta.lastMessageAnalyzed': true
         }
     }, {multi: true});
 }
