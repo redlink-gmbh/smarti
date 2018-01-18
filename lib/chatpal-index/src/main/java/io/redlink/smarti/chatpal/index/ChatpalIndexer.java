@@ -108,17 +108,17 @@ public class ChatpalIndexer {
     @EventListener(ContextRefreshedEvent.class)
     protected void startup() {
         log.info("sync chatpal index on startup");
-        log.info("initialize ConversationIndex after startup ...");
+        log.info("initialize ChatpalIndex after startup ...");
         indexingTask = new IndexingTask();
         Date syncDate = null; //null triggers a full rebuild (default)
         if(!rebuildOnStartup){
             try (SolrClient solr = solrServer.getSolrClient(chatpalCore)){
-                //search for conversations indexed with an earlier version of the index
+                //search for messages indexed with an earlier version of the index
                 SolrQuery query = new SolrQuery("*:*");
                 query.addFilterQuery(String.format("!%s:%s",FIELD_INDEX_VERSION,INDEX_VERSION));
                 query.setRows(0); //we only need the count
                 if(solr.query(query).getResults().getNumFound()  > 0){
-                    log.info("conversation index contains documents indexed with an outdated version - full re-build required");
+                    log.info("Chatpal index contains documents indexed with an outdated version - full re-build required");
                 } else { //partial update possible. Search for the last sync date ...
                     query = new SolrQuery("*:*");
                     query.addSort(FIELD_SYNC_DATE, ORDER.desc);
@@ -128,11 +128,11 @@ public class ChatpalIndexer {
                     QueryResponse result = solr.query(query);
                     if(result.getResults() != null && result.getResults().getNumFound() > 0){
                         syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
-                        log.info("Perform partial update of conversation index (lastSync date:{})", syncDate);
+                        log.info("Perform partial update of Chatpal index (lastSync date:{})", syncDate);
                     }
                 }
             } catch (IOException | SolrServerException e) {
-                log.warn("Updating Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
+                log.warn("Updating Chatpal index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
                 log.debug("STACKTRACE:",e);
             }
         } else {
@@ -196,7 +196,7 @@ public class ChatpalIndexer {
     @Scheduled(initialDelay=15*1000,fixedDelay=15*1000)
     public void syncIndex() {
         Instant now = Instant.now();
-        log.debug("sync conversation index with Repository");
+        log.debug("sync Chatpal index with Repository");
         if(indexingTask.isCompleted()) {
             indexerPool.execute(indexingTask);
         } else if(indexingTask.isActive()){
@@ -208,7 +208,7 @@ public class ChatpalIndexer {
     
 //    @Scheduled(cron = "30 0 3 * * *" /* once per day at 03:00:30 AM */)
 //    public void rebuildIndex() {
-//        log.info("starting scheduled full sync of the conversation index");
+//        log.info("starting scheduled full sync of the Chatpal index");
 //        indexingTask.enqueueFullRebuild(); //enqueue a full rebuild
 //        if(indexingTask.isCompleted()) {
 //            indexerPool.execute(indexingTask); //and start it when not running
