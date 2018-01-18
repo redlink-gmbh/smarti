@@ -133,7 +133,7 @@ public class QueryBuilderService {
     public SearchResult<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> params) throws IOException {
         Configuration conf = confService.getClientConfiguration(client);
         if(conf == null){
-            throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
+            throw new IllegalStateException("The client '" + conversation.getOwner() + "' of the parsed conversation does not have a Configuration!");
         }
         final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> creator = getQueryBuilder(creatorString, conf);
         if (creator != null) {
