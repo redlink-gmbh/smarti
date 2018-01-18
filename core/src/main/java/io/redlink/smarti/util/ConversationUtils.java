@@ -41,7 +41,7 @@ public final class ConversationUtils {
     }
     public static void logConversation(Logger log, Conversation c) {
         if(!log.isDebugEnabled()) return;
-        log.debug("Conversation[id:{} | channel: {} | modified: {}]", c.getId(), c.getChannelId(),
+        log.debug("Conversation[id:{} | owner: {} | modified: {}]", c.getId(), c.getOwner(),
                 c.getLastModified() != null ? DateFormatUtils.ISO_DATETIME_FORMAT.format(c.getLastModified()) : "unknown");
         if(c.getUser() != null){
             log.debug(" > user[id: {}| name: {}] ", c.getUser().getId(), c.getUser().getDisplayName());

@@ -176,7 +176,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testGetConversation() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -225,7 +225,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testDeleteConversation() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -278,7 +278,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testModifyConversationField() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -477,11 +477,10 @@ public class ConversationWebserviceIT {
         
         for(int i = 0 ; i < 20; i++){
             Conversation conversation = new Conversation();
-            conversation.setChannelId("test-channel-" + i%2);
             conversation.setOwner(i%2 == 0 ? client.getId() : client2.getId());
             conversation.setMeta(new ConversationMeta());
             conversation.getMeta().setStatus(Status.New);
-            conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, conversation.getChannelId());
+            conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "test-channel-" + i%2);
             conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, "testing");
             conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
             conversation.setContext(new Context());
@@ -569,7 +568,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testCreateConversation() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId();
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -625,7 +624,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testCreateConversationAsyncAnalysisCallback() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -684,7 +683,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testCreateConversationWithInclAnalysis() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -729,7 +728,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testCreateConversationAnalysisRequest() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -828,7 +827,7 @@ public class ConversationWebserviceIT {
     @Test
     public void testCreateConversationAndAddMessage() throws Exception{
         Conversation conversation = new Conversation();
-        conversation.setChannelId("test-channel-1");
+        //conversation.setChannelId("test-channel-1");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
@@ -1189,7 +1188,7 @@ public class ConversationWebserviceIT {
             for(String content : sa.getValue()){
                 String channel = "test-channel-" + i++;
                 Conversation conversation = new Conversation();
-                conversation.setChannelId(channel);
+                //conversation.setChannelId(channel);
                 conversation.setOwner(client.getId());
                 conversation.setMeta(new ConversationMeta());
                 conversation.getMeta().setStatus(Status.New);
@@ -1336,7 +1335,7 @@ public class ConversationWebserviceIT {
             for(String content : sa.getValue()){
                 String channel = "test-channel-" + i++;
                 Conversation conversation = new Conversation();
-                conversation.setChannelId(channel);
+                //conversation.setChannelId(channel);
                 conversation.setOwner(client.getId());
                 conversation.setMeta(new ConversationMeta());
                 conversation.getMeta().setStatus(Status.New);
@@ -1367,11 +1366,10 @@ public class ConversationWebserviceIT {
         
         //Now We need to create an additional conversation to get releated conversations
         Conversation conversation = new Conversation();
-        conversation.setChannelId("execution-test-channel");
         conversation.setOwner(client.getId());
         conversation.setMeta(new ConversationMeta());
         conversation.getMeta().setStatus(Status.New);
-        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, conversation.getChannelId());
+        conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, "execution-test-channel");
         conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, supportArea1); //use the first for testing
         conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "test");
         conversation.setContext(new Context());

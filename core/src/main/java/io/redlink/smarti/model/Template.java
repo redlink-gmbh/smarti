@@ -37,16 +37,18 @@ public class Template implements Comparable<Template> {
     @JsonProperty("type")
     @ApiModelProperty(notes = "type of the template that can be build from this template", required = true)
     private String type;
-    @ApiModelProperty(notes = "probability that this template is the right one")
+    @ApiModelProperty(notes = "probability that this template is the right one [0..1]")
     private float probability;
-    @ApiModelProperty(notes = "state of this template")
+    @ApiModelProperty(notes = "state of this template. All templates created by Smarti will start as 'Suggested'. User"
+            + "interactions with tempaltes should update states to 'Confirmed' or 'Rejected'.", 
+            allowableValues= "Suggested, Confirmed, Rejected", example="Confirmed", required=true, allowEmptyValue=false)
     private State state = State.Suggested;
 
     @JsonProperty("slots")
-    @ApiModelProperty(notes = "slots to fill with tokens", required = true)
+    @ApiModelProperty(notes = "slots to fill with tokens", required = true, allowEmptyValue=false)
     private Collection<Slot> slots;
 
-    @ApiModelProperty(value = "Queries suggested/executed")
+    @ApiModelProperty(notes = "Queries build based on the information provided by this template.")
     private List<Query> queries = new ArrayList<>();
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

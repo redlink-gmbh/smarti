@@ -37,25 +37,26 @@ public class Message {
 
     public enum Origin {
         User,
-        Agent
+        Agent,
+        Bot
     }
 
-    @ApiModelProperty("the id of the message")
+    @ApiModelProperty(notes="the id of the message. If not set by the client this will be assigned by the server on creation", required=true)
     private String id;
-    @ApiModelProperty
+    @ApiModelProperty(notes="time when this message was sent")
     private Date time = new Date();
     @ApiModelProperty("origin of the message")
     private Origin origin = Origin.User;
-    @ApiModelProperty(value = "message content", required = true)
+    @ApiModelProperty(value = "message content", required = true, allowEmptyValue=true)
     private String content;
-    @ApiModelProperty
+    @ApiModelProperty(notes="The user sending this message")
     private User user = null;
-    @ApiModelProperty(name = "private", value = "marks a private message (not searchable)")
+    @ApiModelProperty(name = "private", value = "marks a private message (not searchable)", required=false)
     @JsonProperty("private") @Field("private")
     private boolean _private = false;
-    @ApiModelProperty(value = "votes for this message - how often this message was considered helpful")
+    @ApiModelProperty(value = "votes for this message - how often this message was considered helpful", required=false)
     private int votes = 0;
-    @ApiModelProperty(value = "message metadata")
+    @ApiModelProperty(value = "message metadata", notes="Allows for storing additional information for this message", required=false)
     @JsonInclude(content=Include.NON_EMPTY) //exclude if empty
     private final Map<String, Object> metadata = new HashMap<>();
 
