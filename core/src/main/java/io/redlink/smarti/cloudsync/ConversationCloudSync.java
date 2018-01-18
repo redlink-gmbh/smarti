@@ -5,6 +5,7 @@ import io.redlink.smarti.repositories.ConversationRepository;
 import io.redlink.smarti.repositories.UpdatedIds;
 
 import org.apache.commons.collections4.ListUtils;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +38,7 @@ public class ConversationCloudSync {
         AtomicInteger count = new AtomicInteger();
         //load in batches of 10 from the MongoDB
         ListUtils.partition(updated.ids(), 10).forEach(batch -> {
-            conversationRepository.findAll(batch).forEach(c -> {
+            conversationRepository.findAll((Iterable<ObjectId>)batch).forEach(c -> {
                     callback.updateConversation(c, lastUpdate);
                     count.incrementAndGet();
                 });
