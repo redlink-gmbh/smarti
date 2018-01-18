@@ -2,7 +2,8 @@ package io.redlink.smarti.cloudsync;
 
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.repositories.ConversationRepository;
-import io.redlink.smarti.repositories.ConversationRepositoryCustom.UpdatedConversationIds;
+import io.redlink.smarti.repositories.UpdatedIds;
+
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,7 +32,7 @@ public class ConversationCloudSync {
 
     public SyncData sync(ConversytionSyncCallback callback, Date since) {
         long start = System.currentTimeMillis();
-        UpdatedConversationIds updated = conversationRepository.updatedSince(since);
+        UpdatedIds updated = conversationRepository.updatedSince(since);
         Date lastUpdate = updated.getLastModified();
         AtomicInteger count = new AtomicInteger();
         //load in batches of 10 from the MongoDB

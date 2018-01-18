@@ -321,7 +321,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
             .max("lastModified").as("lastModified");
     
     @Override
-    public UpdatedConversationIds updatedSince(Date date) {
+    public UpdatedIds<ObjectId> updatedSince(Date date) {
         //IMPLEMENTATION NOTES (Rupert Westenthaler, 2017-07-19):
         // * we need to use $gte as we might get additional updates in the same ms ...
         // * Instead of $max: modified we would like to use the current Server time of the
@@ -336,19 +336,19 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                     //else return all updates
                     Aggregation.newAggregation(ID_MODIFIED_PROJECTION, GROUP_MODIFIED);
         log.trace("UpdatedSince Aggregation: {}", agg);
-        AggregationResults<UpdatedConversationIds> aggResult = mongoTemplate.aggregate(agg,Conversation.class, 
-                UpdatedConversationIds.class);
+        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(agg,Conversation.class, 
+                UpdatedIds.class);
         if(log.isTraceEnabled()){
             log.trace("updated Conversations : {}", aggResult.getMappedResults());
         }
         if(aggResult.getUniqueMappedResult() == null){
-            return new UpdatedConversationIds(date, Collections.emptyList());
+            return new UpdatedIds<ObjectId>(date, Collections.emptyList());
         } else {
-            UpdatedConversationIds updates = aggResult.getUniqueMappedResult();
+            UpdatedIds<ObjectId> updates = aggResult.getUniqueMappedResult();
             //NOTE: workaround for SERVER-23656 (see above impl. notes)
             if(date != null && date.equals(updates.getLastModified())) { //no update since the last request
                 //increase the time by 1 ms to avoid re-indexing the last update
-                return new UpdatedConversationIds(new Date(date.getTime()+1), updates.ids());
+                return new UpdatedIds<ObjectId>(new Date(date.getTime()+1), updates.ids());
             } else {
                 return updates;
             }    
