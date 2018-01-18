@@ -16,8 +16,9 @@
  */
 
 require('./style.scss');
-$ = require('jquery');
 md5 = require('js-md5');
+//$ = require('jquery');
+require('jsviews');
 
 const ld_lang = require('lodash/lang');
 
@@ -49,6 +50,10 @@ const localize = new Localize({
     "get.conversation.params": {
         "de": "Konversations-Parameter konnten nicht geladen werden: $[1]",
         "en": "Cannot load conversation params: $[1]"
+    },
+    "widget.tags.label": {
+        "de": "Ergebnisse zu:",
+        "en": "Results for:"
     },
     "widget.latch.query.failed":{
         "de": "Widget $[1] hat Probleme bei der Anfrage: $[2]",
@@ -101,12 +106,20 @@ const localize = new Localize({
     "widget.conversation.post-all": {
         "de":"Alle $[1] Nachrichten posten",
         "en":"Post all $[1] messages"
+    },
+    "widget.conversation.post-selected": {
+        "de": "Selektierte Nachricht posten",
+        "en": "Post selected message"
+    },
+    "widget.conversation.post-selected-all": {
+        "de": "Selektierte Nachrichten posten",
+        "en": "Post selected messages"
     }
 });
 
 const Utils = {
     getAvatarUrl : function(id) {
-        return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon"
+        return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon";
     },
     getAnonymUser: function(id) {
         return 'User-' + (parseInt(md5('redlink'+id),16)%10000); //TODO check if this works somehow...
@@ -238,12 +251,14 @@ function Smarti(options) {
                 }, false
             ]);
 
-        } else if(localStorage
-            && localStorage.getItem('Meteor.loginToken')
-            && localStorage.getItem('Meteor.loginTokenExpires')
-            && (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())) {
-
-            console.debug('found token %s for user %s that expires on %s',
+        } else if(
+            localStorage &&
+            localStorage.getItem('Meteor.loginToken') &&
+            localStorage.getItem('Meteor.loginTokenExpires') &&
+            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())
+        ) {
+            console.debug(
+                'found token %s for user %s that expires on %s',
                 localStorage.getItem('Meteor.loginToken'),
                 localStorage.getItem('Meteor.userId'),
                 localStorage.getItem('Meteor.loginTokenExpires')
@@ -269,7 +284,7 @@ function Smarti(options) {
     function init(failure) {
 
         // fetch last Smarti results when the wiget gets initialized (channel entered)
-        console.debug('Smarti widget init -> try get last Smarti result for channel %s', options.channel);
+        console.debug('Smarti widget init -> try get last Smarti result for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", function(message) {
             if (message.error) {
@@ -277,7 +292,7 @@ function Smarti(options) {
             } else if(message.id === lastConvCallId) {
                 if(message.result) {
                     // message found for channel -> fetch conversation results
-                    console.debug('Smarti widget init -> get last conversation result for message: %s', message.result);
+                    console.debug('Smarti widget init -> get last conversation result for message:', message.result);
                     getConversation(message.result, failure);
                 } else {
                     return failure({code:'smarti.result.no-result-yet'});
@@ -286,15 +301,15 @@ function Smarti(options) {
         });
 
         // subscribe changes on the channel that is passed by SmartiWidget constructor (message send)
-        console.debug('Smarti widget init -> subscribe channel %s', options.channel);
+        console.debug('Smarti widget init -> subscribe channel', options.channel);
         const subId = ddp.sub("stream-notify-room", [options.channel+"/newConversationResult", false]);
         ddp.on("nosub", function() {
             failure({code:'sub.new-conversation-result.nosub'});
         });
         ddp.on("changed", function(message) {
-            if(message.id = subId) {
+            if(message.id == subId) {
                 // subscriotion has changed (message send) -> fetch conversation results
-                console.debug('Smarti widget subscription changed -> get conversation result for message: %s', message.fields.args[0]);
+                console.debug('Smarti widget subscription changed -> get conversation result for message:', message.fields.args[0]);
                 pubsub('smarti.data').publish(message.fields.args[0]);
             }
         });
@@ -308,7 +323,7 @@ function Smarti(options) {
      */
     function getConversation(conversationId, failure) {
 
-        console.debug('fetch results for conversation with Id: %s', conversationId);
+        console.debug('fetch results for conversation with Id:', conversationId);
         const msgid = ddp.method("getConversation",[conversationId]);
         ddp.on("result", function(message) {
 
@@ -358,7 +373,7 @@ function Smarti(options) {
             if(message.id === methodId) {
                 if(message.error && failure) {
 
-                    console.debug('cannot post message:\n%s', JSON.stringify(message.error,null,2));
+                    console.debug('cannot post message:\n', JSON.stringify(message.error,null,2));
 
                     if(failure) failure({code:"msg.post.failure"});
                 }
@@ -370,11 +385,11 @@ function Smarti(options) {
     return {
         login: login,
         init: init,
-        subscribe: function(id,func){pubsub(id).subscribe(func)},
-        unsubscribe: function(id,func){pubsub(id).unsubscribe(func)},
+        subscribe: (id, func) => pubsub(id).subscribe(func),
+        unsubscribe: (id, func) => pubsub(id).unsubscribe(func),
         query: query,
         post: post
-    }
+    };
 }
 
 /**
@@ -388,7 +403,7 @@ function Tracker(category, roomId, onEvent) {
     this.trackEvent = function(action, value) {
         console.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
         if(onEvent) onEvent(category, action, roomId, value);
-    }
+    };
 
 }
 
@@ -441,7 +456,7 @@ function SmartiWidget(element, _options) {
 
     $.extend(true,options,_options);
 
-    console.debug('init smarti widget:\n%s', JSON.stringify(options,null,2));
+    console.debug('init smarti widget:\n', JSON.stringify(options,null,2));
 
     localize.setLocale(options.lang);
 
@@ -449,14 +464,14 @@ function SmartiWidget(element, _options) {
 
     let widgets = [];
 
-    let messageInputField = undefined;
+    let messageInputField;
 
     function InputField(elem) {
         this.post = function(msg) {
             console.debug(`write text to element: ${msg}`);
             elem.val(msg);
             elem.focus();
-        }
+        };
     }
 
     if(options.postings && options.postings.type === 'suggestText') {
@@ -500,7 +515,7 @@ function SmartiWidget(element, _options) {
                     ).attr('title', token.value)
                 .append('<i class="icon-cancel"></i>')
                 .data('token',token)
-                .click(function(){
+                .click(function() {
                     $(this).hide();
                     getResults(0);
                     tracker.trackEvent(params.query.creator + ".tag.remove");
@@ -522,14 +537,14 @@ function SmartiWidget(element, _options) {
         let termPillCancel = $('<div class="smarti-token-pills-remove">').append(
             $('<button>').text(
                 Utils.localize({code:'widget.latch.query.remove.all'})
-            ).click(function(){
+            ).click(function() {
                 clearAllTokens();
             })
         );
         termPillCancel.appendTo(content);
 
         function clearAllTokens() {
-            termPills.children().each(function(){
+            termPills.children().each(function() {
                 $(this).hide();
             });
             getResults(0);
@@ -545,7 +560,7 @@ function SmartiWidget(element, _options) {
          */
         function perparePillTokens(slots, tokens) {
             let pillTokens = [];
-            $.each(slots, function(i, slot){
+            $.each(slots, function(i, slot) {
                 if(slot.tokenIndex !== undefined && slot.tokenIndex > -1) {
                     pillTokens.push(tokens[slot.tokenIndex]);
                 } else if(!slot.tokenIndex) {
@@ -558,13 +573,13 @@ function SmartiWidget(element, _options) {
 
         let pillTokens = perparePillTokens(params.slots,params.tokens);
 
-        $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
+        $.each(removeDuplicatesBy(v=>v.value,pillTokens), function(i,t) {
             termPills.append(createTermPill(t));
         });
 
         function refresh(data) {
 
-            console.debug('refresh ir-latch search widget:\n%s', JSON.stringify(data,null,2));
+            console.debug('refresh ir-latch search widget:\n', JSON.stringify(data,null,2));
 
             let tokens = data.tokens;
             let slots = data.templates[params.tempid].slots;
@@ -572,9 +587,9 @@ function SmartiWidget(element, _options) {
 
             let reload = false;
 
-            $.each(removeDuplicatesBy(function(v){return v.value},pillTokens), function(i,t){
+            $.each(removeDuplicatesBy(v=>v.value,pillTokens), function(i,t) {
                 let contained = false;
-                $.each(termPills.children(), function(j,tp){
+                $.each(termPills.children(), function(j,tp) {
                     if($(tp).data('token').value === t.value) {
                         contained = true;
                     }
@@ -593,7 +608,7 @@ function SmartiWidget(element, _options) {
         let inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
         let inputField = inputForm.find('input');
 
-        inputField.keypress(function(e){
+        inputField.keypress(function(e) {
             if(e.which === 13) {
                 let val = $(this).val();
                 if(val!== undefined && val !== '') {
@@ -610,14 +625,14 @@ function SmartiWidget(element, _options) {
         });
 
         params.elem.append(inputForm);
-        let resultCount = $('<h3></h3>').appendTo(params.elem);
-        let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div> </div>').hide().appendTo(params.elem);
-        let results = $('<ul class="search-results">').appendTo(params.elem);
-        let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+        //let resultCount = $('<h3></h3>').appendTo(params.elem);
+        //let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div> </div>').hide().appendTo(params.elem);
+        //let results = $('<ul class="search-results">').appendTo(params.elem);
+        //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page) {
             let tks = termPills.children(':visible')
-                .map(function(){return $(this).data().token.value})
+                .map(function() {return $(this).data().token.value;})
                 .get()
                 .join(" ");
 
@@ -638,10 +653,10 @@ function SmartiWidget(element, _options) {
             }
             queryParams.start = page > 0 ? (page*numOfRows) : 0;
 
-            results.empty();
-            resultCount.empty();
-            resultPaging.empty();
-            loader.show();
+            //results.empty();
+            //resultCount.empty();
+            //resultPaging.empty();
+            //loader.show();
 
             // external Solr search
             console.log(`executeSearch ${ params.query.url }, with ${queryParams}`);
@@ -661,16 +676,16 @@ function SmartiWidget(element, _options) {
                  * @param {Number} data.response.numFound
                  *
                  */
-                success: function(data){
-                    loader.hide();
+                success: function(data) {
+                    //loader.hide();
 
                     tracker.trackEvent(params.query.creator + "",data.response.numFound);
 
                     if(data.response.numFound === 0) {
-                        resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
+                        //resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
                     }
 
-                    params.elem.show();
+                    //params.elem.show();
 
                     if(!data.response.numFound) return;
 
@@ -687,9 +702,10 @@ function SmartiWidget(element, _options) {
                         };
                     });
 
-                    resultCount.text(Utils.localize({code:'widget.latch.query.header',args:[data.response.numFound]}));
-
-                    $.each(docs,function(i,doc){
+                    //resultCount.text(Utils.localize({code:'widget.latch.query.header',args:[data.response.numFound]}));
+                    
+                    /*
+                    $.each(docs,function(i,doc) {
                         let docli = $('<li>' +
                             (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
                             '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+(doc.date ? doc.date.toLocaleDateString() : '')+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
@@ -697,7 +713,7 @@ function SmartiWidget(element, _options) {
                             (i+1 !== docs.length ? '<li class="result-separator"><div></div></li>':'') +
                             '</li>');
 
-                        docli.find('.postAnswer').click(function(){
+                        docli.find('.postAnswer').click(function() {
                             let text = Utils.localize({code:"widget.latch.answer.title",args:[params.query.displayTitle]});
                             let attachments = [{
                                 title: doc.title,
@@ -719,11 +735,12 @@ function SmartiWidget(element, _options) {
                         results.append(docli);
                     });
 
+                    
                     let prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
                     let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
 
                     if(page > 0) {
-                        prev.click(function(){
+                        prev.click(function() {
                             tracker.trackEvent(params.query.creator + ".result.paging", page-1);
                             getResults(page-1)
                         });
@@ -732,7 +749,7 @@ function SmartiWidget(element, _options) {
                     }
 
                     if((data.response.numFound/numOfRows) > (page+1)) {
-                        next.addClass('active').click(function(){
+                        next.addClass('active').click(function() {
                             tracker.trackEvent(params.query.creator + ".result.paging", page+1);
                             getResults(page+1)
                         });
@@ -745,6 +762,7 @@ function SmartiWidget(element, _options) {
                         .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.response.numFound/numOfRows)))
                         .append($('<td class="pageLink pageLinkRight">').append(next))
                         .appendTo(resultPaging);
+                    */
                 }
             });
         }
@@ -752,8 +770,8 @@ function SmartiWidget(element, _options) {
         getResults(0);
 
         return {
-            refresh: refresh
-        }
+            refresh
+        };
     }
 
     /**
@@ -765,25 +783,31 @@ function SmartiWidget(element, _options) {
      */
     function ConversationWidget(params) {
 
-        params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
+        
+        widgetConversationTemplate.link(params.elem, params.templateData);
+    
+
+        //params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
 
         function refresh() {
             getResults(0);
         }
 
-        let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>').hide().appendTo(params.elem);
-        let msg = $('<div class="no-result">').appendTo(params.elem);
-        let results = $('<ul class="search-results">').appendTo(params.elem);
+        //let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>').hide().appendTo(params.elem);
+        //let msg = $('<div class="no-result">').appendTo(params.elem);
+        //let results = $('<ul class="search-results">').appendTo(params.elem);
 
-        let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
+        //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page, pageSize) {
 
             //TODO get remote
-            results.empty();
-            loader.show();
-            resultPaging.empty();
+            //results.empty();
+            //loader.show();
+            //resultPaging.empty();
 
+            $.observable(params.templateData).setProperty("loading", true);
+            
             let start = pageSize ? page * pageSize : 0;
 
             smarti.query({
@@ -792,13 +816,16 @@ function SmartiWidget(element, _options) {
                 creator: params.query.creator,
                 start: start
             }, function(data) {
+                console.log(data);
+                //loader.hide();
 
-                loader.hide();
-
+                $.observable(params.templateData).setProperty("loading", false);
+                $.observable(params.templateData.results).refresh(data.docs);
+        
                 if (data.numFound > 0) {
-                    msg.empty();
+                    //msg.empty();
                 } else {
-                    msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
+                    //msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
                     return;
                 }
 
@@ -828,12 +855,13 @@ function SmartiWidget(element, _options) {
                     return attachment;
                 }
 
+                /*
                 $.each(data.docs, function (i, doc) {
 
                     function getSubcontent(docs,mainUser) {
                         let result = $('<ul>');
 
-                        $.each(docs, function(j,subdoc){
+                        $.each(docs, function(j,subdoc) {
 
                             let liClass = mainUser === subdoc.userName ? 'question' : 'answer';
 
@@ -843,7 +871,7 @@ function SmartiWidget(element, _options) {
                                         '<span>'+(new Date(subdoc.timestamp)).toLocaleDateString()+'</span></div>')
                                     .append('<div class="subdoc-content">'+subdoc.content.replace(/\n/g, "<br />")+'</div>')
                                     .append($('<div>').addClass('result-actions').append(
-                                        $('<button>').addClass('postMessage').click(function(){
+                                        $('<button>').addClass('postMessage').click(function() {
 
                                             let text = Utils.localize({code:"widget.conversation.answer.title_msg"});
                                             let attachments = [buildAttachments(subdoc)];
@@ -870,7 +898,7 @@ function SmartiWidget(element, _options) {
                         .append($('<div>').addClass('result-content')
                             .append($('<div>').addClass('result-content-title')
                                 .append('<span class="date-only">' + (new Date(doc.timestamp)).toLocaleString() + '</span>')
-                                .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e){
+                                .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e) {
                                         $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
                                         if($(e.target).hasClass('icon-right-dir')) {
                                             tracker.trackEvent("conversation.part.open", i);
@@ -914,6 +942,7 @@ function SmartiWidget(element, _options) {
 
                     results.append(docli);
                 });
+                
 
                 let prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
                 let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
@@ -941,7 +970,7 @@ function SmartiWidget(element, _options) {
                     .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.numFound/data.pageSize)))
                     .append($('<td class="pageLink pageLinkRight">').append(next))
                     .appendTo(resultPaging);
-
+                */
             }, showError
           );
         }
@@ -949,41 +978,17 @@ function SmartiWidget(element, _options) {
         getResults(0);
 
         return {
-            refresh: refresh
-        }
+            refresh
+        };
     }
 
-    //Main layout
-    element = $(element);
-
-    element.empty();
-
-    let mainDiv = $('<div>').addClass('widget').appendTo(element);
-
-    let contentDiv = $('<div>').appendTo(mainDiv);
-    let messagesDiv = $('<div>').appendTo(mainDiv);
-
-    //Smarti
-
-    let smarti = new Smarti({
-      DDP: {
-        endpoint: options.socketEndpoint
-      },
-      tracker: tracker,
-      channel: options.channel
-    });//TODO wait for connect?
-
-    smarti.subscribe('smarti.data', function(data){
-        refreshWidgets(data);
-    });
-
     function showError(err) {
-        messagesDiv.empty().append($('<p>').text(Utils.localize(err)));
+        widgetMessage.empty().append($('<p>').text(Utils.localize(err)));
     }
 
     function drawLogin() {
 
-        contentDiv.empty();
+        widgetContent.empty();
 
         let form = $('<form><span>Username</span><input type="text"><br><span>Password</span><input type="password"><br><button>Submit</button></form>');
 
@@ -1002,14 +1007,32 @@ function SmartiWidget(element, _options) {
             return false;
         });
 
-        form.appendTo(contentDiv);
+        form.appendTo(widgetContent);
 
     }
 
     function refreshWidgets(data) {
+        let uniqueTokens = [...new Set(data.tokens.map(t => t.value))];
+        $.observable(widgetHeaderTagsTemplateData.tags).refresh(uniqueTokens);
+
+        let queries = [];
+        data.templates.forEach(t => t.queries.forEach(q => queries.push(q)));
+        if(!queries.length) {
+            tabs.hide();
+            //innerTabSearch.hide();
+        }
+        let firstQueryTitle = queries[0] && queries[0].displayTitle || "";
+        $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", firstQueryTitle);
+        $.observable(widgetHeaderTabsTemplateData).setProperty("containerTitle", firstQueryTitle);
+        $.observable(widgetHeaderTabsTemplateData.queries).refresh(queries.slice(1));
+        if(queries.length) {
+            tabs.show();
+            //innerTabSearch.show();
+        }
+
         if(!initialized) {
-            contentDiv.empty();
-            messagesDiv.empty();
+            widgetContent.empty();
+            widgetMessage.empty();
 
             $.each(data.templates, function(i, template){
                 $.each(template.queries, function(j, query) {
@@ -1023,11 +1046,13 @@ function SmartiWidget(element, _options) {
                             constructor = ConversationWidget;break;
                     }
 
-                    if(constructor && (options.widget[query.creator] ? !options.widget[query.creator].disabled : true)) {
-                        let elem = $('<div class="smarti-widget">').appendTo(contentDiv);
+                    
+                    if(constructor && (!options.widget[query.creator] || !options.widget[query.creator].disabled)) {
+                        let elem = $('<div class="smarti-widget">').appendTo(widgetContent);
 
                         let params = {
                             elem: elem,
+                            templateData: {loading: false, results: []},
                             id: data.conversation,
                             slots: template.slots,
                             tempid: i,
@@ -1037,10 +1062,10 @@ function SmartiWidget(element, _options) {
 
                         let config = options.widget[query.creator] || {};
 
-                        widgets.push(new constructor(params,config))
+                        widgets.push(new constructor(params, config));
                     }
 
-                })
+                });
             });
 
             if(widgets.length > 0) {
@@ -1051,13 +1076,144 @@ function SmartiWidget(element, _options) {
         } else {
             $.each(widgets, function(i,wgt){
                 wgt.refresh(data);
-            })
+            });
         }
     }
 
     function initialize() {
         smarti.init(showError);
     }
+
+    const widgetHeaderTagsTemplateStr = `
+        <span>Ergebnisse zu:</span>
+        <ul>
+            <li class="add">+</li>
+            {^{for tags}}
+            <li>{{:}}</li>
+            {{/for}}
+            <li class="remove">Alle löschen</li>
+        </ul>
+    `;
+    const widgetHeaderTabsTemplateStr = `
+        <div id="tabContainer">
+            <span class="nav-item current">{^{:containerTitle}}</span>
+            <span class="nav-item more">Kanäle</span>
+        </div>
+        <ul class="moreSources">
+            {^{for queries}}
+            <li>{{:displayTitle}}</li>
+            {{/for}}
+        </ul>
+    `;
+    const searchIcon = "assets/search.png";
+    const widgetHeaderInnerTabSearchTemplateStr = `
+        <input type="search" placeholder="" data-link="placeholder{: 'Suchen in [' + containerTitle + ']' }">
+        <a href="#" id="innerTabSearchSubmit">
+            <img src="${searchIcon}" alt="search">
+        </a>
+    `;
+    const widgetFooterPostButtonTemplateStr = `
+        <span><i class="icon-paper-plane"></i> {^{:title}}</span>
+    `;
+    const widgetConversationTemplateStr = `
+        {^{if loading}}
+            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+        {{else}}
+            {^{for results}}
+                <div class="conversation">
+                    <div class="message" data-link="class{merge: answers toggle='parent'}">
+                        <div class="middle">
+                            <div class="datetime">
+                                {{tls:timestamp}}
+                                {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
+                                {^{if answers}}<span class="answers">{{: answers.length}} Antworten</span>{{/if}}
+                            </div>
+                            <div class="title"></div>
+                            <div class="text"><p>{{nl:content}}</p></div>
+                            <div class="postAction">Konversation posten</div>
+                            <div class="selectMessage"></div>
+                        </div>
+                    </div>
+                    {^{if answers}}
+                        <div class="responseContainer">
+                            {^{for answers}}
+                                <div class="message">
+                                    <div class="middle">
+                                        <div class="datetime">
+                                        {{tls:timestamp}}
+                                        </div>
+                                        <div class="title"></div>
+                                        <div class="text"><p>{{nl:content}}</p></div>
+                                        <div class="postAction">Nachricht posten</div>
+                                        <div class="selectMessage"></div>
+                                    </div>
+                                </div>
+                            {{/for}}
+                        </div>
+                    {{/if}}
+                </div>
+            {{else}}
+                <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+            {{/for}}
+        {{/if}}
+    `;
+    
+    //Main layout
+    element = $(element);
+
+    let widgetHeader = element.find('#widgetHeader');
+    let widgetHeaderWrapper = widgetHeader.find('.widgetHeaderWrapper');
+    let widgetTitle = widgetHeaderWrapper.find('h4');
+    let widgetBody = element.find('#widgetBody');
+    let widgetMessage = widgetBody.find('.widgetMessage');
+    let widgetFooter = element.find('#widgetFooter');
+
+    let tags = $('<div id="tags">').appendTo(widgetHeaderWrapper);
+    let tabs = $('<nav id="tabs">').appendTo(widgetHeader);
+    let innerTabSearch = $('<div id="innerTabSearch">').appendTo(widgetHeader);
+
+    let widgetContent = $('<div class="widgetContent">').appendTo(widgetBody);
+
+    let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
+
+    widgetTitle.css('marginBottom', '30px');
+
+    widgetMessage.empty();
+    widgetContent.empty();
+    tabs.hide();
+    innerTabSearch.hide();
+    
+    let widgetHeaderTagsTemplate = $.templates(widgetHeaderTagsTemplateStr);
+    let widgetHeaderTabsTemplate = $.templates(widgetHeaderTabsTemplateStr);
+    let widgetHeaderInnerTabSearchTemplate = $.templates(widgetHeaderInnerTabSearchTemplateStr);
+    let widgetFooterPostButtonTemplate = $.templates(widgetFooterPostButtonTemplateStr);
+    let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
+
+    let widgetHeaderTagsTemplateData = {tags: []};
+    widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
+
+    let widgetHeaderTabsTemplateData = {queries: [], containerTitle: ""};
+    widgetHeaderTabsTemplate.link(tabs, widgetHeaderTabsTemplateData);
+
+    let widgetHeaderInnerTabSearchTemplateData = {containerTitle: ""};
+    widgetHeaderInnerTabSearchTemplate.link(innerTabSearch, widgetHeaderInnerTabSearchTemplateData);
+
+    let widgetFooterPostButtonTemplateData = {title: ""};
+    widgetFooterPostButtonTemplate.link(footerPostButton, widgetFooterPostButtonTemplateData);
+
+    //Smarti
+
+    let smarti = new Smarti({
+      DDP: {
+        endpoint: options.socketEndpoint
+      },
+      tracker: tracker,
+      channel: options.channel
+    });//TODO wait for connect?
+
+    smarti.subscribe('smarti.data', function(data) {
+        refreshWidgets(data);
+    });
 
     smarti.login(
         initialize,
@@ -1075,7 +1231,132 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    return {}; //whatever is necessary..
+    // widget interaction logic
+    var selectionCount = 0;
+
+    widgetBody.scroll(function (event) {
+        if (widgetBody.scrollTop() > 1) {
+            widgetTitle.slideUp(250);
+            //innerTabSearch.slideUp(100);
+            tabs.addClass('shadow');
+        }
+        else {
+            widgetTitle.slideDown(200);
+            //innerTabSearch.slideDown(100);
+            tabs.removeClass('shadow');
+        }
+    });
+
+    let sources = tabs.find('.moreSources');
+    tabs.on('click', '.more', function () {
+        if (sources.hasClass('open')) {
+            sources.slideUp(100).removeClass('open');
+            $(this).html("Kanäle");
+        } else {
+            sources.slideDown(200).addClass('open');
+            $(this).html(" <svg width=\"8px\" height=\"8px\" class=\"close\" viewBox=\"0 0 8 8\" version=\"1.1\"\n" +
+                "                     xmlns=\"http://www.w3.org/2000/svg\"\n" +
+                "                     xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n" +
+                "                    <!-- Generator: Sketch 48.1 (47250) - http://www.bohemiancoding.com/sketch -->\n" +
+                "                    <desc>Created with Sketch.</desc>\n" +
+                "                    <defs></defs>\n" +
+                "                    <g id=\"Page-1\" stroke=\"none\" stroke-width=\"1\" fill=\"none\" fill-rule=\"evenodd\">\n" +
+                "                        <g id=\"Desktop-HD\" transform=\"translate(-1343.000000, -194.000000)\">\n" +
+                "                            <image id=\"np_multiply_1156273_000000\" x=\"1341\" y=\"192\" width=\"12\" height=\"12\"\n" +
+                "                                   xlink:href=\"data:image/png;base64,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\"></image>\n" +
+                "                        </g>\n" +
+                "                    </g>\n" +
+                "                </svg>");
+        }
+    });
+
+    sources.on('click', 'li', function () {
+        let tabsCurrent = tabs.find('.current');
+        var newSelection = $(this).text();
+        var currentSelection = tabsCurrent.text();
+        $(this).text(currentSelection);
+        //tabsCurrent.text(newSelection);
+        sources.slideUp(100).removeClass('open');
+        tabs.find('.more').text("Kanäle");
+        //innerTabSearch.find('input').attr('placeholder', 'Suchen in "'+newSelection.split(' (')[0]+'\"');
+
+        $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", newSelection);
+        $.observable(widgetHeaderTabsTemplateData).setProperty("containerTitle", newSelection);
+    });
+
+    widgetBody.on('click', '.message .selectMessage', function () {
+        let parent = $(this).parent().parent();
+
+        if (parent.hasClass('selected')) {
+            parent.removeClass('selected');
+            selectionCount--;
+        } else {
+            parent.addClass('selected');
+            selectionCount++;
+        }
+
+        if (
+            parent.hasClass('parent') &&
+            parent.hasClass('selected') &&
+            !$(this).closest('.conversation').children('.responseContainer').is(':visible')
+        ) {
+            $(this).closest('.conversation').children('.responseContainer').toggle(200);
+        }
+
+        if(selectionCount === 0) {
+            footerPostButton.css('transform', 'translateY(200%)');
+        } else {
+            $.observable(widgetFooterPostButtonTemplateData).setProperty("title", Utils.localize({code:'widget.conversation.post-selected' + (selectionCount == 1 ? '' : '-all')}));
+            footerPostButton.css('transform', 'translateY(0)');
+        }
+    });
+
+    widgetBody.on('click', '.message.parent .answers', function () {
+        $(this).closest('.conversation').children('.responseContainer').toggle(200);
+    });
+
+    tags.on('click', 'li:not(".add, .remove")', function () {
+        $(this).remove();
+    });
+
+    tags.on('click', 'li.remove', function () {
+        tags.find('li').not('.add, .remove').remove();
+    });
+
+    tags.on('click', 'li.add', function () {
+        $(this).addClass('active').html('<input type="text" id="newTagInput" placeholder="New tag">');
+        tags.find('#newTagInput').focus();
+    });
+
+    $(tags).keydown(function (e) {
+        if (tags.find('li.add').hasClass('active')) {
+            if(e.which == 13) {
+                var newTag = tags.find('#newTagInput').val();
+                if(newTag != "") {
+                    if(tags.find('li').not('.add, .remove').map((idx, item) => $(item).text()).get().indexOf(newTag) == -1) {
+                        tags.find('ul').children('li.add').after('<li>' + newTag + '</li>');
+                    }
+                    tags.find('li.add').html('+').removeClass('active');
+                }
+            }
+            if(e.which == 13 || e.which == 27) {
+                tags.find('li.add').html('+').removeClass('active');
+            }
+        }
+    });
+
+
+    return {};
 }
+
+// custom new line converter for jsrender/views
+$.views.converters("nl", function(val) {
+    return val.replace(/\n/g, '<br />');
+});
+
+// custom timestamp to local string converter for jsrender/views
+$.views.converters("tls", function(val) {
+    return (new Date(val)).toLocaleString();
+});
 
 window.SmartiWidget = SmartiWidget;
