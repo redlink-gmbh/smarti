@@ -35,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@ApiModel
+@ApiModel(description="The analysis of a conversation based on the configuration of a client")
 @Document
 @CompoundIndexes(value={
         @CompoundIndex(def= "{'conversation': 1, 'date': 1}")
@@ -46,25 +46,29 @@ public class Analysis {
      * NOTE about JSON serialization: 
      * Used embedded into the ConversationData so we do not need id, conversation and date
      */
+    @ApiModelProperty(hidden=true)
     @Id
     @JsonIgnore 
     private final ObjectId id;
     
+    @ApiModelProperty(hidden=true)
     @Indexed
     @JsonIgnore
     private final ObjectId client;
     
+    @ApiModelProperty(notes="The id of the conversation this analysis is about. Might be absent if serialized as part of a conversation")
     @Indexed
     private final ObjectId conversation;
     
+    @ApiModelProperty(notes="The last modification date of the analyzed conversation. Might be absent if serialized as part of a conversation")
     private final Date date;
     
     //TODO: maybe add additional data for user modified analysis
     
-    @ApiModelProperty(value = "extracted tokens")
+    @ApiModelProperty(value = "extracted tokens", required=true, allowEmptyValue=true)
     private List<Token> tokens = new ArrayList<>();
 
-    @ApiModelProperty(value = "Templates for possible queries")
+    @ApiModelProperty(value = "Templates for possible queries", required=true, allowEmptyValue=true)
     private List<Template> templates = new ArrayList<>();
 
     

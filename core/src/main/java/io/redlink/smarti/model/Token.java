@@ -142,7 +142,8 @@ public class Token implements Comparable<Token>{
      */
     public enum Origin {
         System,
-        Agent
+        Agent,
+        User
     }
 
 
@@ -200,19 +201,24 @@ public class Token implements Comparable<Token>{
     /**
      * Who created the token
      */
-    @ApiModelProperty(value = "origin", notes = "who created the token")
+    @ApiModelProperty(value = "origin", notes = "who created the token. Tokens created by Smarti will use 'System'. Tokens"
+            + "create by the chat systems users should use 'User' or 'Agent'", 
+            allowableValues="System, Agent, User", example="User", required=true, allowEmptyValue=false)
     private Origin origin = Origin.System;
 
     /**
      * The {@link State} of the token
      */
-    @ApiModelProperty("token state")
+    @ApiModelProperty(notes="token state. Tokens created by Smarti will use 'Suggested'. Interactions with suggested tokens should"
+            + "result in state updates to 'Confirmed' or 'Rejected'. Tokens created by chat system users should start with"
+            + "the state 'Confiremd'",
+            allowableValues="Suggested, Confirmed, Rejected", example="Confirmed", required=true, allowEmptyValue=false)
     private State state = State.Suggested;
 
     /**
      * The value of the token. The type of the value depends on the {@link Type} of the token
      */
-    @ApiModelProperty(value = "token value", notes = "the actual value of the token", required = true)
+    @ApiModelProperty(notes = "the actual value of the token. The type of the value depends on the type of the token", required = true)
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "type", defaultImpl = String.class)
     @JsonSubTypes({
             @JsonSubTypes.Type(value = DateValue.class, name = "Date"),
@@ -224,17 +230,19 @@ public class Token implements Comparable<Token>{
     /**
      * The {@link Type} of the token
      */
-    @ApiModelProperty(value = "token type", notes = "the type of the token", required = true)
+    @ApiModelProperty(notes = "the type of the token", required = true, allowEmptyValue=false,
+            allowableValues="Date, Topic, Entity, Place, Organization, Person, Product, Attribute, Term, Keyword, Other")
     private Token.Type type;
 
-    @ApiModelProperty(value = "token hints", notes = "collection of strings providing additional hints about the token", required = false)
+    @ApiModelProperty(notes = "collection of strings providing additional hints about the token. This allows any string, but "
+            + "well known hints include: start, end, from, to, via, at, depart, arrive, negated, instant", required = false)
     private Set<String> hints = new HashSet<>();
 
     /**
      * The confidence of the token. Provided by the component that extracted the token
      * from the {@link #getMessageIdx() message}
      */
-    @ApiModelProperty("confidence")
+    @ApiModelProperty(notes="the confidence for the token [0..1]")
     private float confidence;
 
     /**

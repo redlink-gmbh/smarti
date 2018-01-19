@@ -15,7 +15,7 @@ must be migrated to the new model.
 A migration script is available and must be applied manually:
 [source,javascript]
 -----------------------------------------------
-include::{migration_scripts}/migrate-05_0.6-to-0.7.js[lines=17..-1]
+include::{migration_scripts}/migrate-05_0.6-to-0.7.js[lines=112..-1]
 -----------------------------------------------
 
 

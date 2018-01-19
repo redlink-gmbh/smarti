@@ -43,16 +43,22 @@ import java.util.List;
 public class Conversation {
 
     @Id
-    @ApiModelProperty
+    @ApiModelProperty(readOnly=true,notes="Server assigned ID of the conversation")
     @Indexed
     @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
-    @Indexed
-    @JsonIgnore
-    private String channelId;
+//    NOTE: removed with 0.7.0 as Smarti does no longer manage mappings of Conversations to Channels.
+//    This is now the responsibility of the client (e.g. Rocket.Chat widget)
+//    @Indexed
+//    @JsonIgnore
+//    private String channelId;
 
     @Indexed
+    @ApiModelProperty(notes="The Smarti client owning this conversation. Set during creation. MUST NOT be changed "
+            + "afterwadrs. If the authenticated user is assigned to a single client (always the case for tokens) the "
+            + "owner is set by the server. If a owner is parsed it MUST correspond to one of the clients the "
+            + "authenticated user is assigned to.")
     @JsonIgnore
     private ObjectId owner;
     
@@ -60,18 +66,23 @@ public class Conversation {
     private ConversationMeta meta = new ConversationMeta();
 
     @JsonProperty(required = true)
-    @ApiModelProperty(required = true)
+    @ApiModelProperty(required = true, notes="Information about the user that created this conversation. "
+            + "Represents the user of the chat system and NOT the Smarti user")
     private User user = new User();
 
     @ApiModelProperty(required = true, value = "List of Messages")
     private final List<Message> messages = new LinkedList<>();
 
+//    NOTE: removed with 0.7.0: Analysis is now stored in an own collection. Mainly because one
+//    conversation might have different analysis for clients with different configurations.
+//    ConversationData still allows for sending conversation data with analysis to clients.
 //    @ApiModelProperty(required = true, value = "the analysis results")
 //    private Analysis analysis = new Analysis();
 
-    @ApiModelProperty
+    @ApiModelProperty(notes="Contextual information aboout the conversation")
     private Context context = new Context();
 
+    @ApiModelProperty(readOnly=true,notes="Server assigned modification date")
     private Date lastModified = null;
 
     public Conversation(){
@@ -118,14 +129,14 @@ public class Conversation {
         this.owner = owner;
     }
     
-    public String getChannelId() {
-        return channelId;
-    }
-
-    public void setChannelId(String channelId) {
-        this.channelId = channelId;
-    }
-
+//    public String getChannelId() {
+//        return channelId;
+//    }
+//
+//    public void setChannelId(String channelId) {
+//        this.channelId = channelId;
+//    }
+//
     public ConversationMeta getMeta() {
         return meta;
     }
@@ -168,7 +179,7 @@ public class Conversation {
 
     @Override
     public String toString() {
-        return "Conversation [id=" + id + ", channelId=" + channelId + ", user=" + user + ", lastModified="
+        return "Conversation [id=" + id + ", owner=" + owner + ", user=" + user + ", lastModified="
                 + lastModified + ", " + messages.size() + " messages]";
     }
     
