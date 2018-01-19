@@ -114,6 +114,7 @@ function runDatabaseMigration() {
 
     conversations.update({tokens: {$exists: true}}, {
         $unset: {
+            channelId: true,
             tokens: true,
             queryTemplates: true,
             'meta.lastMessageAnalyzed': true
