@@ -206,6 +206,7 @@
                     color: $grey100;
                     background: $grey25;
                     border-top: 2px solid $grey75;
+                    cursor: default;
                 }
 
                 &.more{
@@ -232,6 +233,8 @@
                 display:none;
 
                 li{
+                    @extend .noselect;
+
                     padding:7px 20px;
                     border-top:1px solid $grey25;
                     cursor:pointer;
@@ -245,6 +248,11 @@
                         border-top:1px solid $grey50;
                         background:$grey25
                     }
+
+                    &.selected {
+                        cursor: default;
+                        opacity: 0.5;
+                    }    
                 }
             }
 
@@ -289,11 +297,18 @@
                 right: 25px;
                 top: 22px;
                 width: 20px;
+                height: 20px;
                 cursor: pointer;
 
-                img {
-                width: 100%;
-                height: auto;
+                .submit-icon {
+                    display: inline-block;
+                    background-image: url("assets/search.png");
+                    background-size: contain;
+                    background-repeat: no-repeat;
+                    width: 100%;
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
                 }
             }
         }
@@ -434,6 +449,90 @@
                 .message {
                 margin-top: 5px;
                 border-left: 3px solid $grey50;
+                }
+            }
+
+            .irl-result {
+                position: relative;
+                border-left: 3px solid $grey75;
+                padding: 5px;
+                width: 100%;
+                margin-top: 10px;
+
+                .middle {
+                    padding: 2px 10px;
+
+                    .datetime {
+                        position: relative;
+                        display: block;
+                        font-size: 12px;
+                        color: $grey75;
+                        margin: 2px 0 5px 0;
+
+                        .source, .type {
+                            position: relative;
+                            margin-left: 5px;
+                            font-size: 10px;
+                            font-weight:bold;
+                            background: $grey75;
+                            color: $white;
+                            border-radius: 3px;
+                            padding: 2px 7px;
+                            top: -1px;
+                        }
+                    }
+                    .title {
+                        font-size: 14px;
+                        margin-bottom: 5px;
+                        font-weight: bold;
+                        a {
+                            color: inherit;
+                        }
+                    }
+                    .text {
+                        font-size: 14px;
+                        line-height: 1.3em;
+                    }
+                    .postAction {
+                        position: relative;
+                        font-size: 12px;
+                        background: $grey50;
+                        color: $grey75;
+                        padding: 3px 7px;
+                        border-radius: 3px;
+                        display: inline-block;
+                        margin: 5px 0;
+                        cursor: pointer;
+
+                        &:hover {
+                        background: $darkblue;
+                        color: $white;
+                        }
+                    }
+                    .selectMessage{
+                        position:absolute;
+                        right:12px;
+                        bottom:12px;
+                        width:20px;
+                        height:20px;
+                        background-image:url("assets/select.png");
+                        background-size:contain;
+                        background-repeat: no-repeat;
+                        background-position:left bottom;
+                        cursor:pointer;
+                    }
+                }
+
+                &.selected{
+                    .middle{
+                        .selectMessage{
+                        background-image:url("assets/selected.png");
+                        }
+                    }
+                }
+
+                &:first-child {
+                    margin-top: 0;
                 }
             }
         }

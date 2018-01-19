@@ -440,7 +440,7 @@ function SmartiWidget(element, _options) {
         },
         widget: {},
         tracker: {
-            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function () {
+            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function() {
             },
             category: "knowledgebase"
         },
@@ -501,9 +501,11 @@ function SmartiWidget(element, _options) {
      */
     function IrLatchWidget(params,wgt_conf) {
 
+        widgetIrLatchTemplate.link(params.elem, params.templateData);
+
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
-        params.elem.hide();
-        params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
+        //params.elem.hide();
+        //params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
         let content = $('<div>').appendTo(params.elem);
 
         function createTermPill(token) {
@@ -533,6 +535,7 @@ function SmartiWidget(element, _options) {
             });
         }
 
+        /*
         let termPills = $('<div class="smarti-token-pills">').appendTo(content);
         let termPillCancel = $('<div class="smarti-token-pills-remove">').append(
             $('<button>').text(
@@ -550,6 +553,7 @@ function SmartiWidget(element, _options) {
             getResults(0);
             tracker.trackEvent(params.query.creator + ".tag.remove-all");
         }
+        */
 
         /**
          * @param {Object[]} slots
@@ -570,12 +574,13 @@ function SmartiWidget(element, _options) {
             return pillTokens;
         }
 
-
+        /*
         let pillTokens = perparePillTokens(params.slots,params.tokens);
 
         $.each(removeDuplicatesBy(v=>v.value,pillTokens), function(i,t) {
             termPills.append(createTermPill(t));
         });
+        */
 
         function refresh(data) {
 
@@ -605,6 +610,7 @@ function SmartiWidget(element, _options) {
             }
         }
 
+        /*
         let inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
         let inputField = inputForm.find('input');
 
@@ -623,18 +629,23 @@ function SmartiWidget(element, _options) {
                 getResults(0);
             }
         });
+        */
 
-        params.elem.append(inputForm);
+        //params.elem.append(inputForm);
         //let resultCount = $('<h3></h3>').appendTo(params.elem);
         //let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div> </div>').hide().appendTo(params.elem);
         //let results = $('<ul class="search-results">').appendTo(params.elem);
         //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page) {
+            /*
             let tks = termPills.children(':visible')
                 .map(function() {return $(this).data().token.value;})
                 .get()
                 .join(" ");
+            */
+
+            let tks = widgetHeaderTagsTemplateData.tags.join(" ");
 
             let queryParams = {
                 'wt': 'json',
@@ -659,7 +670,8 @@ function SmartiWidget(element, _options) {
             //loader.show();
 
             // external Solr search
-            console.log(`executeSearch ${ params.query.url }, with ${queryParams}`);
+            console.log(`executeSearch ${ params.query.url }, with`, queryParams);
+            $.observable(params.templateData).setProperty("loading", true);
             $.ajax({
                 url: params.query.url,
                 data: queryParams,
@@ -689,19 +701,39 @@ function SmartiWidget(element, _options) {
 
                     if(!data.response.numFound) return;
 
+                    console.log(params.query);
+                    console.log(data.response.docs);
+
                     //map to search results
                     let docs = $.map(data.response.docs, function(doc) {
-                        return {
-                            source: params.query.resultConfig.mappings.source ? doc[params.query.resultConfig.mappings.source] : undefined,
-                            title: params.query.resultConfig.mappings.title ? doc[params.query.resultConfig.mappings.title] : undefined,
-                            description: params.query.resultConfig.mappings.description ? doc[params.query.resultConfig.mappings.description] : undefined,
-                            type: params.query.resultConfig.mappings.type ? doc[params.query.resultConfig.mappings.type] : undefined,
-                            doctype: params.query.resultConfig.mappings.doctype ? (Utils.mapDocType(doc[params.query.resultConfig.mappings.doctype])) : undefined,
-                            link: params.query.resultConfig.mappings.link ? doc[params.query.resultConfig.mappings.link] : undefined,
-                            date: params.query.resultConfig.mappings.date ? new Date(doc[params.query.resultConfig.mappings.date]) : undefined
-                        };
+                        let newDoc = {};
+                        Object.keys(params.query.resultConfig.mappings).forEach(k => {
+                            let v = params.query.resultConfig.mappings[k];
+                            if(v) {
+                                if(k === "doctype") {
+                                    newDoc[k] = Utils.mapDocType(doc[v]);
+                                } else if(k === "date") {
+                                    newDoc[k] = new Date(doc[v]).getTime();
+                                } else if(k === "link") {
+                                    newDoc[k] = Array.isArray(doc[v]) ? doc[v][0] : doc[v];
+                                } else if(k === "type") {
+                                    newDoc[k] = doc[v].split(".").pop();
+                                } else {
+                                    newDoc[k] = doc[v];
+                                }
+                            }
+                        });
+                        return newDoc;
+                    }).filter(doc => {
+                        // required fields
+                        return doc.title && doc.link;
                     });
 
+                    console.log(docs);
+
+                    $.observable(params.templateData).setProperty("loading", false);
+                    $.observable(params.templateData.results).refresh(docs);
+    
                     //resultCount.text(Utils.localize({code:'widget.latch.query.header',args:[data.response.numFound]}));
                     
                     /*
@@ -770,6 +802,7 @@ function SmartiWidget(element, _options) {
         getResults(0);
 
         return {
+            params,
             refresh
         };
     }
@@ -913,7 +946,7 @@ function SmartiWidget(element, _options) {
                         .append($('<div class="result-subcontent">')
                             .append(getSubcontent(doc.answers,doc.userName)).hide())
                         .append($('<div>').addClass('result-actions').append(
-                            $('<button>').addClass('postAnswer').addClass('button').text(Utils.localize({code:'widget.conversation.post-all',args:[doc.answers.length+1]})).click(function(){
+                            $('<button>').addClass('postAnswer').addClass('button').text(Utils.localize({code:'widget.conversation.post-all',args:[doc.answers.length+1]})).click(function() {
                                 let text = Utils.localize({code:'widget.conversation.answer.title'});
                                 let attachments = [buildAttachments(doc)];
 
@@ -948,7 +981,7 @@ function SmartiWidget(element, _options) {
                 let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
 
                 if(page > 0) {
-                    prev.click(function(){
+                    prev.click(function() {
                         tracker.trackEvent(params.query.creator + ".result.paging", page-1);
                         getResults(page-1,data.pageSize)
                     });
@@ -957,7 +990,7 @@ function SmartiWidget(element, _options) {
                 }
 
                 if((data.numFound/data.pageSize) > (page+1)) {
-                    next.addClass('active').click(function(){
+                    next.addClass('active').click(function() {
                         tracker.trackEvent(params.query.creator + ".result.paging", page+1);
                         getResults(page+1,data.pageSize)
                     });
@@ -978,6 +1011,7 @@ function SmartiWidget(element, _options) {
         getResults(0);
 
         return {
+            params,
             refresh
         };
     }
@@ -992,7 +1026,7 @@ function SmartiWidget(element, _options) {
 
         let form = $('<form><span>Username</span><input type="text"><br><span>Password</span><input type="password"><br><button>Submit</button></form>');
 
-        form.find('button').click(function(){
+        form.find('button').click(function() {
 
             let username = form.find('input[type="text"]').val();
             let password = form.find('input[type="password"]').val();
@@ -1015,6 +1049,66 @@ function SmartiWidget(element, _options) {
         let uniqueTokens = [...new Set(data.tokens.map(t => t.value))];
         $.observable(widgetHeaderTagsTemplateData.tags).refresh(uniqueTokens);
 
+        if(!initialized) {
+            widgetContent.empty();
+            widgetMessage.empty();
+
+            $.each(data.templates, function(i, template) {
+                $.each(template.queries, function(j, query) {
+
+                    let constructor;
+
+                    switch(template.type) {
+                        case 'ir_latch':
+                            constructor = IrLatchWidget;break;
+                        case 'related.conversation':
+                            constructor = ConversationWidget;break;
+                    }
+
+                    
+                    if(constructor && (!options.widget[query.creator] || !options.widget[query.creator].disabled)) {
+                        let elem = $('<div class="smarti-widget">').hide().appendTo(widgetContent);
+
+                        let params = {
+                            elem: elem,
+                            templateData: {loading: false, results: []},
+                            id: data.conversation,
+                            slots: template.slots,
+                            type: template.type,
+                            tempid: i,
+                            tokens: data.tokens,
+                            query: query
+                        };
+
+                        let config = options.widget[query.creator] || {};
+
+                        $.observable(widgets).insert(new constructor(params, config));
+                    }
+
+                });
+            });
+
+            if(widgets.length > 0) {
+                initNavTabs();
+                initialized = true;
+            } else {
+                showError({code:'smarti.result.no-result-yet'});
+            }
+        } else {
+            $.each(widgets, function(i,wgt) {
+                wgt.refresh(data);
+            });
+        }
+    }
+
+    function initialize() {
+        smarti.init(showError);
+    }
+
+    function initNavTabs() {
+        tabs.show();
+        tabs.find('.moreSources li').first().click();
+        /*
         let queries = [];
         data.templates.forEach(t => t.queries.forEach(q => queries.push(q)));
         if(!queries.length) {
@@ -1029,59 +1123,7 @@ function SmartiWidget(element, _options) {
             tabs.show();
             //innerTabSearch.show();
         }
-
-        if(!initialized) {
-            widgetContent.empty();
-            widgetMessage.empty();
-
-            $.each(data.templates, function(i, template){
-                $.each(template.queries, function(j, query) {
-
-                    let constructor;
-
-                    switch(template.type) {
-                        case 'ir_latch':
-                            constructor = IrLatchWidget;break;
-                        case 'related.conversation':
-                            constructor = ConversationWidget;break;
-                    }
-
-                    
-                    if(constructor && (!options.widget[query.creator] || !options.widget[query.creator].disabled)) {
-                        let elem = $('<div class="smarti-widget">').appendTo(widgetContent);
-
-                        let params = {
-                            elem: elem,
-                            templateData: {loading: false, results: []},
-                            id: data.conversation,
-                            slots: template.slots,
-                            tempid: i,
-                            tokens: data.tokens,
-                            query: query
-                        };
-
-                        let config = options.widget[query.creator] || {};
-
-                        widgets.push(new constructor(params, config));
-                    }
-
-                });
-            });
-
-            if(widgets.length > 0) {
-                initialized = true;
-            } else {
-                showError({code:'smarti.result.no-result-yet'});
-            }
-        } else {
-            $.each(widgets, function(i,wgt){
-                wgt.refresh(data);
-            });
-        }
-    }
-
-    function initialize() {
-        smarti.init(showError);
+        */
     }
 
     const widgetHeaderTagsTemplateStr = `
@@ -1096,20 +1138,19 @@ function SmartiWidget(element, _options) {
     `;
     const widgetHeaderTabsTemplateStr = `
         <div id="tabContainer">
-            <span class="nav-item current">{^{:containerTitle}}</span>
+            <span class="nav-item current">{^{if widgets.length}}{^{:widgets[selectedWidget].params.query.displayTitle}} ({^{:widgets[selectedWidget].params.templateData.results.length || 0}}){{/if}}</span>
             <span class="nav-item more">Kanäle</span>
         </div>
         <ul class="moreSources">
-            {^{for queries}}
-            <li>{{:displayTitle}}</li>
+            {^{for widgets}}
+            <li>{^{:params.query.displayTitle}} ({^{:params.templateData.results.length || 0}})</li>
             {{/for}}
         </ul>
     `;
-    const searchIcon = "assets/search.png";
     const widgetHeaderInnerTabSearchTemplateStr = `
-        <input type="search" placeholder="" data-link="placeholder{: 'Suchen in [' + containerTitle + ']' }">
+        <input type="search" placeholder="" data-link="placeholder{: 'Suchen in &#34;' + containerTitle + '&#34;' }">
         <a href="#" id="innerTabSearchSubmit">
-            <img src="${searchIcon}" alt="search">
+            <div class="submit-icon"></div>
         </a>
     `;
     const widgetFooterPostButtonTemplateStr = `
@@ -1157,6 +1198,29 @@ function SmartiWidget(element, _options) {
             {{/for}}
         {{/if}}
     `;
+    const widgetIrLatchTemplateStr = `
+        {^{if loading}}
+            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+        {{else}}
+            {^{for results}}
+                <div class="irl-result">
+                    <div class="middle">
+                        <div class="datetime">
+                            {^{tls:date}}
+                            {^{if source}}<span class="source">{^{:source}}</span>{{/if}}
+                            {^{if type}}<span class="type">{^{:type}}</span>{{/if}}
+                        </div>
+                        <div class="title"><a data-link="href{:link}" target="_blank">{^{:title}}</a></div>
+                        <div class="text"><p>{^{>description}}</p></div>
+                        <div class="postAction">Konversation posten</div>
+                        <div class="selectMessage"></div>
+                    </div>
+                </div>
+            {{else}}
+                <div class="no-result">${Utils.localize({code: 'widget.latch.query.no-results'})}</div>
+            {{/for}}
+        {{/if}}
+    `;
     
     //Main layout
     element = $(element);
@@ -1188,11 +1252,12 @@ function SmartiWidget(element, _options) {
     let widgetHeaderInnerTabSearchTemplate = $.templates(widgetHeaderInnerTabSearchTemplateStr);
     let widgetFooterPostButtonTemplate = $.templates(widgetFooterPostButtonTemplateStr);
     let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
+    let widgetIrLatchTemplate = $.templates(widgetIrLatchTemplateStr);
 
     let widgetHeaderTagsTemplateData = {tags: []};
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
-    let widgetHeaderTabsTemplateData = {queries: [], containerTitle: ""};
+    let widgetHeaderTabsTemplateData = {widgets: widgets, selectedWidget: 0};
     widgetHeaderTabsTemplate.link(tabs, widgetHeaderTabsTemplateData);
 
     let widgetHeaderInnerTabSearchTemplateData = {containerTitle: ""};
@@ -1237,54 +1302,63 @@ function SmartiWidget(element, _options) {
     widgetBody.scroll(function (event) {
         if (widgetBody.scrollTop() > 1) {
             widgetTitle.slideUp(250);
-            //innerTabSearch.slideUp(100);
+            if(innerTabSearch.hasClass('active')) innerTabSearch.slideUp(100);
             tabs.addClass('shadow');
-        }
-        else {
+        } else {
             widgetTitle.slideDown(200);
-            //innerTabSearch.slideDown(100);
+            if(innerTabSearch.hasClass('active')) innerTabSearch.slideDown(100);
             tabs.removeClass('shadow');
         }
     });
 
     let sources = tabs.find('.moreSources');
-    tabs.on('click', '.more', function () {
+    tabs.on('click', '.more', function() {
         if (sources.hasClass('open')) {
             sources.slideUp(100).removeClass('open');
-            $(this).html("Kanäle");
+            $(this).text("Kanäle");
         } else {
             sources.slideDown(200).addClass('open');
-            $(this).html(" <svg width=\"8px\" height=\"8px\" class=\"close\" viewBox=\"0 0 8 8\" version=\"1.1\"\n" +
-                "                     xmlns=\"http://www.w3.org/2000/svg\"\n" +
-                "                     xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n" +
-                "                    <!-- Generator: Sketch 48.1 (47250) - http://www.bohemiancoding.com/sketch -->\n" +
-                "                    <desc>Created with Sketch.</desc>\n" +
-                "                    <defs></defs>\n" +
-                "                    <g id=\"Page-1\" stroke=\"none\" stroke-width=\"1\" fill=\"none\" fill-rule=\"evenodd\">\n" +
-                "                        <g id=\"Desktop-HD\" transform=\"translate(-1343.000000, -194.000000)\">\n" +
-                "                            <image id=\"np_multiply_1156273_000000\" x=\"1341\" y=\"192\" width=\"12\" height=\"12\"\n" +
-                "                                   xlink:href=\"data:image/png;base64,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\"></image>\n" +
-                "                        </g>\n" +
-                "                    </g>\n" +
-                "                </svg>");
+            $(this).html('<i class="icon-cancel"></i>');
         }
     });
 
-    sources.on('click', 'li', function () {
-        let tabsCurrent = tabs.find('.current');
-        var newSelection = $(this).text();
-        var currentSelection = tabsCurrent.text();
-        $(this).text(currentSelection);
-        //tabsCurrent.text(newSelection);
-        sources.slideUp(100).removeClass('open');
-        tabs.find('.more').text("Kanäle");
-        //innerTabSearch.find('input').attr('placeholder', 'Suchen in "'+newSelection.split(' (')[0]+'\"');
+    sources.on('click', 'li', function() {
+        let currentTab = tabs.find('.selected');
+        let newTab = $(this);
 
-        $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", newSelection);
-        $.observable(widgetHeaderTabsTemplateData).setProperty("containerTitle", newSelection);
+        if(!newTab.hasClass('selected')) {
+            currentTab.removeClass('selected');
+            newTab.addClass('selected');
+    
+            let currentWidget = currentTab.get(0) && $.view(currentTab).data;
+            let newWidget = $.view(newTab).data;
+    
+            if(currentWidget) currentWidget.params.elem.hide();
+            newWidget.params.elem.show();
+            
+            if(newWidget.params.type === "related.conversation") {
+                innerTabSearch.removeClass('active');
+                innerTabSearch.slideUp(100);
+            } else {
+                innerTabSearch.addClass('active');
+                if(widgetBody.scrollTop() > 1) {
+                    innerTabSearch.slideUp(100);
+                } else {
+                    innerTabSearch.slideDown(100);
+                }
+            }
+    
+            sources.slideUp(100).removeClass('open');
+            tabs.find('.more').text("Kanäle");
+    
+            let newTitle = newTab.text();
+    
+            $.observable(widgetHeaderTabsTemplateData).setProperty("selectedWidget", $.view(newTab).index);
+            $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", newWidget.params.query.displayTitle);
+        }
     });
 
-    widgetBody.on('click', '.message .selectMessage', function () {
+    widgetBody.on('click', '.smarti-widget .selectMessage', function() {
         let parent = $(this).parent().parent();
 
         if (parent.hasClass('selected')) {
@@ -1311,19 +1385,61 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.message.parent .answers', function () {
+    widgetBody.on('click', '.message.parent .answers', function() {
         $(this).closest('.conversation').children('.responseContainer').toggle(200);
     });
 
-    tags.on('click', 'li:not(".add, .remove")', function () {
+    footerPostButton.click(() => {
+
+        
+
+        /*
+        let text = Utils.localize({code:'widget.conversation.answer.title'});
+        let attachments = [buildAttachments(doc)];
+
+        function createTextMessage() {
+            text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
+            $.each(doc.answers, function(i,answer) {
+                text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, " ");
+            });
+            return text;
+        }
+
+        if(options.postings && options.postings.type === 'suggestText') {
+            messageInputField.post(createTextMessage());
+        } else if(options.postings && options.postings.type === 'postText') {
+            smarti.post(createTextMessage(),[]);
+        } else {
+            smarti.post(text,attachments);
+        }
+
+        tracker.trackEvent("conversation.post", i);
+
+
+        let text = Utils.localize({code:"widget.conversation.answer.title_msg"});
+        let attachments = [buildAttachments(subdoc)];
+
+        if(options.postings && options.postings.type === 'suggestText') {
+            messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
+        } else if(options.postings && options.postings.type === 'postText') {
+            smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
+        } else {
+            smarti.post(text,attachments);
+        }
+
+        tracker.trackEvent("conversation.part.post", i);
+        */
+    });
+
+    tags.on('click', 'li:not(".add, .remove")', function() {
         $(this).remove();
     });
 
-    tags.on('click', 'li.remove', function () {
+    tags.on('click', 'li.remove', function() {
         tags.find('li').not('.add, .remove').remove();
     });
 
-    tags.on('click', 'li.add', function () {
+    tags.on('click', 'li.add', function() {
         $(this).addClass('active').html('<input type="text" id="newTagInput" placeholder="New tag">');
         tags.find('#newTagInput').focus();
     });
