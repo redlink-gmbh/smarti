@@ -17,11 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.model.Analysis;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.State;
-import io.redlink.smarti.model.Template;
-import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
@@ -40,7 +36,8 @@ import org.springframework.util.MultiValueMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.TYPE_MESSAGE;
 
 /**
  */
@@ -114,7 +111,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 .map(Token::getValue)
                 .map(String::valueOf)
                 .collect(Collectors.toList());
-        String displayTitle = String.format("Conversationen zum Thema %s", strs);
+        String displayTitle = String.format("%s zum Thema %s",
+                StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName()),        strs);
         if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
             displayTitle += " (" + conversation.getContext().getDomain() + ")";
         }

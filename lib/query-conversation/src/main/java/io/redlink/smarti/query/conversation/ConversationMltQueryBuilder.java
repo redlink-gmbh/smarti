@@ -17,11 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.model.Analysis;
-import io.redlink.smarti.model.Conversation;
-import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.State;
-import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
@@ -40,8 +36,6 @@ import java.util.Date;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.RELATED_CONVERSATION_TYPE;
-import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_KEYWORD;
-import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_TERM;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -111,8 +105,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if(StringUtils.isBlank(content)){
             return null; //no content in the conversation to search for releated!
         }
-        
-        String displayTitle = "Ähnliche Conversationen/Threads";
+
+        String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
         if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
             displayTitle += " (" + conversation.getContext().getDomain() + ")";
         }
