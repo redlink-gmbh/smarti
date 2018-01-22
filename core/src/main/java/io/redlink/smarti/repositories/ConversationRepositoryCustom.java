@@ -79,6 +79,8 @@ public interface ConversationRepositoryCustom {
     @Transient
     UpdatedConversationIds updatedSince(Date date);
 
+    Conversation findLegacyConversation(ObjectId ownerId, String contextType, String channelId);
+
 
     public static class UpdatedConversationIds {
 
