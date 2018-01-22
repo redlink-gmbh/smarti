@@ -22,6 +22,7 @@ import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.webservice.pojo.AuthContext;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.bson.types.ObjectId;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,7 @@ public class LegacyWebservice {
         this.conversationService = conversationService;
     }
 
+    @ApiOperation(value = "find conversation by channel_id", response = Conversation.class)
     @RequestMapping(value = "rocket.chat", method = RequestMethod.GET)
     public ResponseEntity<Conversation> findConversation(AuthContext authContext,
                                                          @RequestParam(value = "client_id", required = false) ObjectId clientId,
