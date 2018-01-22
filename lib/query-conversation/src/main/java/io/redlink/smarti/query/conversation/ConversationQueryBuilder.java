@@ -23,6 +23,7 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,7 +38,8 @@ import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.util.*;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getMetaField;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
@@ -177,12 +179,13 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         if (fieldValues == null || fieldValues.isEmpty()) {
             solrQuery.addFilterQuery("-" + getMetaField(fieldName) + ":*");
         } else {
-            final String filterVal = fieldValues.stream()
+            fieldValues.stream()
+                    .filter(StringUtils::isNotBlank)
                     .map(ClientUtils::escapeQueryChars)
                     .reduce((a, b) -> a + " OR " + b)
-                    .orElse("");
-            solrQuery.addFilterQuery(
-                    getMetaField(fieldName) + ":(" + filterVal + ")");
+                    .ifPresent(filterVal ->
+                            solrQuery.addFilterQuery(getMetaField(fieldName) + ":(" + filterVal + ")")
+                    );
         }
     }
 }
