@@ -1149,7 +1149,7 @@ function SmartiWidget(element, _options) {
         {{else}}
             {^{for results}}
                 <div class="conversation">
-                    <div class="widgetMessage" data-link="class{merge: answers toggle='parent'}">
+                    <div class="convMessage" data-link="class{merge: answers toggle='parent'}">
                         <div class="middle">
                             <div class="datetime">
                                 {{tls:timestamp}}
@@ -1165,7 +1165,7 @@ function SmartiWidget(element, _options) {
                     {^{if answers}}
                         <div class="responseContainer">
                             {^{for answers}}
-                                <div class="widgetMessage">
+                                <div class="convMessage">
                                     <div class="middle">
                                         <div class="datetime">
                                         {{tls:timestamp}}
@@ -1341,7 +1341,7 @@ function SmartiWidget(element, _options) {
             sources.slideUp(100).removeClass('open');
             tabs.find('.more').text("Kanäle");
 
-            if(currentWidget) currentWidget.params.elem.find('.widgetMessage.selected').removeClass('selected');
+            if(currentWidget) currentWidget.params.elem.find('.convMessage.selected').removeClass('selected');
             selectionCount = 0;
             footerPostButton.css('transform', 'translateY(200%)');
     
@@ -1379,7 +1379,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.widgetMessage.parent .answers', function() {
+    widgetBody.on('click', '.convMessage.parent .answers', function() {
         $(this).closest('.conversation').children('.responseContainer').toggle(200);
     });
 
@@ -1442,14 +1442,14 @@ function SmartiWidget(element, _options) {
         let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
         if(currentWidget && currentWidget.params.elem) {
             let selectedItems = [];
-            currentWidget.params.elem.find('.conversation>.widgetMessage').each((idx, item) => {
+            currentWidget.params.elem.find('.conversation>.convMessage').each((idx, item) => {
                 let parentMessageData = $.view(item).data;
                 let parentIsSelected = $(item).hasClass('selected');
                 let conv = {parent: parentMessageData, selectedChildIndices: []};
                 if(parentIsSelected) selectedItems.push(conv);
                 let responseContainer = $(item).closest('.conversation').children('.responseContainer');
                 if(responseContainer.length) {
-                    responseContainer.find('.widgetMessage').each((idx, item) => {
+                    responseContainer.find('.convMessage').each((idx, item) => {
                         let childData = $.view(item).data;
                         let childIndex = $.view(item).index;
                         if($(item).hasClass('selected')) {
