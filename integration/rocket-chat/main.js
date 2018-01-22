@@ -504,128 +504,19 @@ function SmartiWidget(element, _options) {
      * @constructor
      */
     function IrLatchWidget(params,wgt_conf) {
-
         widgetIrLatchTemplate.link(params.elem, params.templateData);
 
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
-        //params.elem.hide();
-        //params.elem.append('<h2>' + params.query.displayTitle + '</h2>');
-        let content = $('<div>').appendTo(params.elem);
-
-        function createTermPill(token) {
-
-            return $('<div class="smarti-token-pill">')
-                .append($('<span>')
-                    .text(
-                        Utils.cropLabel(token.value, options.ui.tokenpill.textlength, options.ui.tokenpill.textreplace, options.ui.tokenpill.textreplacemode))
-                    ).attr('title', token.value)
-                .append('<i class="icon-cancel"></i>')
-                .data('token',token)
-                .click(function() {
-                    $(this).hide();
-                    getResults(0);
-                    tracker.trackEvent(params.query.creator + ".tag.remove");
-                });
-        }
-
-        //TODO should be done server side
-        function removeDuplicatesBy(keyFn, array) {
-            let mySet = new Set();
-
-            return array.filter(function(x) {
-                let key = keyFn(x), isNew = !mySet.has(key);
-                if (isNew) mySet.add(key);
-                return isNew;
-            });
-        }
-
-        /*
-        let termPills = $('<div class="smarti-token-pills">').appendTo(content);
-        let termPillCancel = $('<div class="smarti-token-pills-remove">').append(
-            $('<button>').text(
-                Utils.localize({code:'widget.latch.query.remove.all'})
-            ).click(function() {
-                clearAllTokens();
-            })
-        );
-        termPillCancel.appendTo(content);
-
-        function clearAllTokens() {
-            termPills.children().each(function() {
-                $(this).hide();
-            });
-            getResults(0);
-            tracker.trackEvent(params.query.creator + ".tag.remove-all");
-        }
-        */
-
-        /**
-         * @param {Object[]} slots
-         * @param {Number} slots.tokenIndex
-         * @param tokens
-         *
-         * @returns {Array}
-         */
-        function perparePillTokens(slots, tokens) {
-            let pillTokens = [];
-            $.each(slots, function(i, slot) {
-                if(slot.tokenIndex !== undefined && slot.tokenIndex > -1) {
-                    pillTokens.push(tokens[slot.tokenIndex]);
-                } else if(!slot.tokenIndex) {
-                    pillTokens.push(slot.token);
-                }
-            });
-            return pillTokens;
-        }
-
-        /*
-        let pillTokens = perparePillTokens(params.slots,params.tokens);
-
-        $.each(removeDuplicatesBy(v=>v.value,pillTokens), function(i,t) {
-            termPills.append(createTermPill(t));
-        });
-        */
 
         function refresh() {
             getResults(0);
         }
 
-        /*
-        let inputForm = $('<div class="search-form" role="form"><div class="input-line search"><input type="text" class="search content-background-color" placeholder="Weiter Suchterme" autocomplete="off"> <i class="icon-search secondary-font-color"></i> </div></div>');
-        let inputField = inputForm.find('input');
+        function getResults(page, useSearchTerms) {
 
-        inputField.keypress(function(e) {
-            if(e.which === 13) {
-                let val = $(this).val();
-                if(val!== undefined && val !== '') {
-                    termPills.append(createTermPill({
-                        origin:'User',
-                        value:val,
-                        type:'Keyword'
-                    }));
-                    $(this).val('');
-                    tracker.trackEvent(params.query.creator + '.tag.add');
-                }
-                getResults(0);
-            }
-        });
-        */
-
-        //params.elem.append(inputForm);
-        //let resultCount = $('<h3></h3>').appendTo(params.elem);
-        //let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div> </div>').hide().appendTo(params.elem);
-        //let results = $('<ul class="search-results">').appendTo(params.elem);
-        //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
-
-        function getResults(page, searchTerms) {
-            /*
-            let tks = termPills.children(':visible')
-                .map(function() {return $(this).data().token.value;})
-                .get()
-                .join(" ");
-            */
-
-            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens).concat(searchTerms || []).join(" ");
+            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
+            if(useSearchTerms) tks = tks.concat(searchTerms || []);
+            tks = tks.join(" ");
 
             let queryParams = {
                 'wt': 'json',
@@ -634,7 +525,6 @@ function SmartiWidget(element, _options) {
                 'q':  tks
             };
 
-            //TODO still a hack !!!
             params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
 
             //append params
@@ -643,11 +533,6 @@ function SmartiWidget(element, _options) {
                     queryParams[property] = params.query.defaults[property];
             }
             queryParams.start = page > 0 ? (page*numOfRows) : 0;
-
-            //results.empty();
-            //resultCount.empty();
-            //resultPaging.empty();
-            //loader.show();
 
             // external Solr search
             console.log(`executeSearch ${ params.query.url }, with`, queryParams);
@@ -669,15 +554,7 @@ function SmartiWidget(element, _options) {
                  *
                  */
                 success: function(data) {
-                    //loader.hide();
-
                     tracker.trackEvent(params.query.creator + "",data.response.numFound);
-
-                    if(data.response.numFound === 0) {
-                        //resultCount.text(Utils.localize({code:'widget.latch.query.no-results'}));
-                    }
-
-                    //params.elem.show();
 
                     console.log(params.query);
                     console.log(data.response.docs);
@@ -801,28 +678,16 @@ function SmartiWidget(element, _options) {
      * @constructor
      */
     function ConversationWidget(params) {
-
-        
         widgetConversationTemplate.link(params.elem, params.templateData);
     
-
-        //params.elem.append('<h2>' + Utils.localize({code:'widget.conversation.title'}) + '</h2>');
-
         function refresh() {
             getResults(0);
         }
-
-        //let loader = $('<div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>').hide().appendTo(params.elem);
-        //let msg = $('<div class="no-result">').appendTo(params.elem);
-        //let results = $('<ul class="search-results">').appendTo(params.elem);
 
         //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
         function getResults(page, pageSize) {
 
-            //TODO get remote
-            //results.empty();
-            //loader.show();
             //resultPaging.empty();
 
             $.observable(params.templateData).setProperty("loading", true);
@@ -835,7 +700,6 @@ function SmartiWidget(element, _options) {
                 creator: params.query.creator,
                 start: start
             }, function(data) {
-                //loader.hide();
 
                 if(data.docs & data.docs.length) {
                     data.docs.forEach(d => {
@@ -848,13 +712,6 @@ function SmartiWidget(element, _options) {
                 $.observable(params.templateData).setProperty("loading", false);
                 $.observable(params.templateData.results).refresh(data.docs);
         
-                if (data.numFound > 0) {
-                    //msg.empty();
-                } else {
-                    //msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
-                    return;
-                }
-
                 /*
                 $.each(data.docs, function (i, doc) {
 
@@ -1086,22 +943,6 @@ function SmartiWidget(element, _options) {
     function initNavTabs() {
         tabs.show();
         tabs.find('.moreSources li').first().click();
-        /*
-        let queries = [];
-        data.templates.forEach(t => t.queries.forEach(q => queries.push(q)));
-        if(!queries.length) {
-            tabs.hide();
-            //innerTabSearch.hide();
-        }
-        let firstQueryTitle = queries[0] && queries[0].displayTitle || "";
-        $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", firstQueryTitle);
-        $.observable(widgetHeaderTabsTemplateData).setProperty("containerTitle", firstQueryTitle);
-        $.observable(widgetHeaderTabsTemplateData.queries).refresh(queries.slice(1));
-        if(queries.length) {
-            tabs.show();
-            //innerTabSearch.show();
-        }
-        */
     }
 
     const widgetHeaderTagsTemplateStr = `
@@ -1151,7 +992,7 @@ function SmartiWidget(element, _options) {
                                 {^{if answers}}<span class="answers">{{: answers.length}} Antworten</span>{{/if}}
                             </div>
                             <div class="title"></div>
-                            <div class="text"><p>{{nl:content}}</p></div>
+                            <div class="text"><p>{{nl:~hl(content, true)}}</p></div>
                             <div class="postAction">Konversation posten</div>
                             <div class="selectMessage"></div>
                         </div>
@@ -1165,7 +1006,7 @@ function SmartiWidget(element, _options) {
                                         {{tls:timestamp}}
                                         </div>
                                         <div class="title"></div>
-                                        <div class="text"><p>{{nl:content}}</p></div>
+                                        <div class="text"><p>{{nl:~hl(content, true)}}</p></div>
                                         <div class="postAction">Nachricht posten</div>
                                         <div class="selectMessage"></div>
                                     </div>
@@ -1190,11 +1031,11 @@ function SmartiWidget(element, _options) {
                             {^{tls:date}}
                         </div>
                         {^{if link}}
-                            <div class="title"><a data-link="href{:link}" target="_blank">{^{:title}}</a></div>
+                            <div class="title"><a data-link="href{:link}" target="_blank">{^{:~hl(title)}}</a></div>
                         {{else}}
-                            <div class="title">{^{:title}}</div>
+                            <div class="title">{^{:~hl(title)}}</div>
                         {{/if}}
-                        <div class="text"><p>{^{>description}}</p></div>
+                        <div class="text"><p>{^{:~hl(description)}}</p></div>
                         {^{if source}}<span class="source">{^{:source}}</span>{{/if}}
                         {^{if type}}<span class="type">{^{:type}}</span>{{/if}} <br />
                         <div class="postAction">${Utils.localize({code: 'widget.post'})}</div>
@@ -1337,7 +1178,6 @@ function SmartiWidget(element, _options) {
             if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
-                innerTabSearchInput.val("");
             } else {
                 innerTabSearch.addClass('active');
                 if(widgetBody.scrollTop() > 1) {
@@ -1346,6 +1186,10 @@ function SmartiWidget(element, _options) {
                     innerTabSearch.slideDown(100);
                 }
             }
+
+            innerTabSearchInput.val("");
+            searchTerms = [];
+            search(widgetHeaderTabsTemplateData.selectedWidget);
     
             sources.slideUp(100).removeClass('open');
             tabs.find('.more').text("Kanäle");
@@ -1488,27 +1332,29 @@ function SmartiWidget(element, _options) {
     });
 
     let searchTimeout = null;
-    function search() {
+    let searchTerms = [];
+    function search(widgetIdx) {
         if(searchTimeout) clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             searchTimeout = null;
 
-            let searchTerms = innerTabSearchInput.val();
+            searchTerms = innerTabSearchInput.val();
             searchTerms = searchTerms.trim().toLowerCase().replace(/\s+/g, ' ');
-
             searchTerms = searchTerms.length ? searchTerms.split(' ') : [];
 
-            widgets.forEach(w => {
-                if(w && w.params.elem && w.templateType === "ir_latch") {
-                    w.getResults(0, searchTerms);
+            widgets.forEach((w, idx) => {
+                if(w && w.params.elem && w.templateType === "ir_latch" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
+                    w.getResults(0, idx == widgetHeaderTabsTemplateData.selectedWidget);
                 }
             });
         }, 200);
     }
 
-    innerTabSearchSubmit.click(search);
+    innerTabSearchSubmit.click(() => {
+        search(widgetHeaderTabsTemplateData.selectedWidget);
+    });
     innerTabSearchInput.keydown((e) => {
-        if(e.which == 13) search(e);
+        if(e.which == 13) search(widgetHeaderTabsTemplateData.selectedWidget);
     });
 
     tags.on('click', 'li:not(".add, .remove")', function() {
@@ -1549,6 +1395,21 @@ function SmartiWidget(element, _options) {
 
     $.observable(widgetHeaderTagsTemplateData).observeAll(function() {
         search();
+    });
+
+    
+    $.views.helpers({
+        // helper method to highlight text
+        hl: (text, noSearchTerms) => {
+            if(!text) return text;
+            let terms = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
+            if(!noSearchTerms) terms = terms.concat(searchTerms);
+            terms = [...new Set(terms)]; // unique terms
+            terms.forEach(t => {
+                text = text.replace(new RegExp(`(${t})`, 'ig'), '<mark>$1</mark>');
+            });
+            return text;
+        }
     });
 
     return {};
