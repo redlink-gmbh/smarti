@@ -191,7 +191,7 @@
                 border-top: 1px solid $grey25;
                 border-bottom: 1px solid $grey50;
                 color: $grey75;
-                padding: 8px 10px 10px 20px;
+                padding: 10px 10px 10px 20px;
                 cursor: pointer;
                 flex:auto;
                 text-align: left;
@@ -215,9 +215,9 @@
                     border-top: 2px solid $grey75;
                     border-bottom:0px;
                     width:75px;
-                    height:41px;
+                    height:36px;
                     font-size:10px;
-                    padding:12px 15px 0 15px;
+                    padding:13px 15px 0 15px;
                     text-align:right;
 
                     &:hover{
@@ -330,7 +330,7 @@
                 margin-bottom: 120px;
             }
 
-            .message {
+            .widgetMessage {
                 position: relative;
                 border-left: 3px solid $grey75;
                 padding: 5px;
@@ -446,7 +446,7 @@
                 display: none;
                 margin-bottom:20px;
 
-                .message {
+                .widgetMessage {
                 margin-top: 5px;
                 border-left: 3px solid $grey50;
                 }
@@ -468,18 +468,6 @@
                         font-size: 12px;
                         color: $grey75;
                         margin: 2px 0 5px 0;
-
-                        .source, .type {
-                            position: relative;
-                            margin-left: 5px;
-                            font-size: 10px;
-                            font-weight:bold;
-                            background: $grey75;
-                            color: $white;
-                            border-radius: 3px;
-                            padding: 2px 7px;
-                            top: -1px;
-                        }
                     }
                     .title {
                         font-size: 14px;
@@ -492,6 +480,17 @@
                     .text {
                         font-size: 14px;
                         line-height: 1.3em;
+                    }
+                    .source, .type {
+                        position: relative;
+                        margin-right: 5px;
+                        font-size: 10px;
+                        font-weight:bold;
+                        background: $grey75;
+                        color: $white;
+                        border-radius: 3px;
+                        padding: 2px 7px;
+                        top: -1px;
                     }
                     .postAction {
                         position: relative;

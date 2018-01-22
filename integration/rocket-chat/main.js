@@ -51,6 +51,10 @@ const localize = new Localize({
         "de": "Konversations-Parameter konnten nicht geladen werden: $[1]",
         "en": "Cannot load conversation params: $[1]"
     },
+    "widget.post": {
+        "de": "Posten",
+        "en": "Post"
+    },
     "widget.tags.label": {
         "de": "Ergebnisse zu:",
         "en": "Results for:"
@@ -112,8 +116,8 @@ const localize = new Localize({
         "en": "Post selected message"
     },
     "widget.conversation.post-selected-all": {
-        "de": "Selektierte Nachrichten posten",
-        "en": "Post selected messages"
+        "de": "$[1] selektierte Nachrichten posten",
+        "en": "Post $[1] selected messages"
     }
 });
 
@@ -645,7 +649,7 @@ function SmartiWidget(element, _options) {
                 .join(" ");
             */
 
-            let tks = widgetHeaderTagsTemplateData.tags.join(" ");
+            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).join(" ");
 
             let queryParams = {
                 'wt': 'json',
@@ -679,7 +683,7 @@ function SmartiWidget(element, _options) {
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
                 failure: function(err) {
-                    console.error({code:'widget.latch.query.failed',args:[params.query.displayTitle,err.responseText]});
+                    console.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
                 /**
                  *
@@ -726,7 +730,7 @@ function SmartiWidget(element, _options) {
                         return newDoc;
                     }).filter(doc => {
                         // required fields
-                        return doc.title && doc.link;
+                        return doc.title;
                     });
 
                     console.log(docs);
@@ -860,32 +864,6 @@ function SmartiWidget(element, _options) {
                 } else {
                     //msg.text(Utils.localize({code: 'widget.conversation.no-results'}));
                     return;
-                }
-
-                /**
-                 * @param {Object} doc
-                 * @param {Object} doc.answers
-                 * @param {String} doc.userName
-                 * @param {String} doc.content
-                 * @param {String} doc.timestamp
-                 *
-                 * @returns {{author_name: string, author_icon: *, text, attachments: Array, bot: string, ts}}
-                 */
-                function buildAttachments(doc) {
-                    let attachment = {
-                        author_name: "\t",
-                        author_icon: Utils.getAvatarUrl(doc.userName),
-                        text: doc.content,
-                        attachments: [],
-                        bot: 'assistify',
-                        ts: doc.timestamp
-                    };
-
-                    $.each(doc.answers, function(i,answer) {
-                        attachment.attachments.push(buildAttachments(answer));
-                    });
-
-                    return attachment;
                 }
 
                 /*
@@ -1046,8 +1024,17 @@ function SmartiWidget(element, _options) {
     }
 
     function refreshWidgets(data) {
-        let uniqueTokens = [...new Set(data.tokens.map(t => t.value))];
-        $.observable(widgetHeaderTagsTemplateData.tags).refresh(uniqueTokens);
+        let tokens = data.tokens.filter(t => t.type != "Attribute").sort((a, b) => {
+            return a.messageIdx - b.messageIdx;
+        }).reverse();
+        let filteredTokens = {};
+        let uniqueTokens = tokens.filter(function(t) {
+            if (filteredTokens[t.value]) return false;
+            filteredTokens[t.value] = true;
+            return true;
+        }).reverse().slice(-7);
+        console.log("Filtered tokens:", uniqueTokens);
+        $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
 
         if(!initialized) {
             widgetContent.empty();
@@ -1071,7 +1058,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: []},
+                            templateData: {loading: true, results: []},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1130,8 +1117,8 @@ function SmartiWidget(element, _options) {
         <span>Ergebnisse zu:</span>
         <ul>
             <li class="add">+</li>
-            {^{for tags}}
-            <li>{{:}}</li>
+            {^{for tokens}}
+            <li>{{:value}}</li>
             {{/for}}
             <li class="remove">Alle löschen</li>
         </ul>
@@ -1162,7 +1149,7 @@ function SmartiWidget(element, _options) {
         {{else}}
             {^{for results}}
                 <div class="conversation">
-                    <div class="message" data-link="class{merge: answers toggle='parent'}">
+                    <div class="widgetMessage" data-link="class{merge: answers toggle='parent'}">
                         <div class="middle">
                             <div class="datetime">
                                 {{tls:timestamp}}
@@ -1178,7 +1165,7 @@ function SmartiWidget(element, _options) {
                     {^{if answers}}
                         <div class="responseContainer">
                             {^{for answers}}
-                                <div class="message">
+                                <div class="widgetMessage">
                                     <div class="middle">
                                         <div class="datetime">
                                         {{tls:timestamp}}
@@ -1207,12 +1194,16 @@ function SmartiWidget(element, _options) {
                     <div class="middle">
                         <div class="datetime">
                             {^{tls:date}}
-                            {^{if source}}<span class="source">{^{:source}}</span>{{/if}}
-                            {^{if type}}<span class="type">{^{:type}}</span>{{/if}}
                         </div>
-                        <div class="title"><a data-link="href{:link}" target="_blank">{^{:title}}</a></div>
+                        {^{if link}}
+                            <div class="title"><a data-link="href{:link}" target="_blank">{^{:title}}</a></div>
+                        {{else}}
+                            <div class="title">{^{:title}}</div>
+                        {{/if}}
                         <div class="text"><p>{^{>description}}</p></div>
-                        <div class="postAction">Konversation posten</div>
+                        {^{if source}}<span class="source">{^{:source}}</span>{{/if}}
+                        {^{if type}}<span class="type">{^{:type}}</span>{{/if}} <br />
+                        <div class="postAction">${Utils.localize({code: 'widget.post'})}</div>
                         <div class="selectMessage"></div>
                     </div>
                 </div>
@@ -1243,7 +1234,6 @@ function SmartiWidget(element, _options) {
     widgetTitle.css('marginBottom', '30px');
 
     widgetMessage.empty();
-    widgetContent.empty();
     tabs.hide();
     innerTabSearch.hide();
     
@@ -1254,7 +1244,7 @@ function SmartiWidget(element, _options) {
     let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
     let widgetIrLatchTemplate = $.templates(widgetIrLatchTemplateStr);
 
-    let widgetHeaderTagsTemplateData = {tags: []};
+    let widgetHeaderTagsTemplateData = {tokens: []};
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
     let widgetHeaderTabsTemplateData = {widgets: widgets, selectedWidget: 0};
@@ -1350,6 +1340,10 @@ function SmartiWidget(element, _options) {
     
             sources.slideUp(100).removeClass('open');
             tabs.find('.more').text("Kanäle");
+
+            if(currentWidget) currentWidget.params.elem.find('.widgetMessage.selected').removeClass('selected');
+            selectionCount = 0;
+            footerPostButton.css('transform', 'translateY(200%)');
     
             let newTitle = newTab.text();
     
@@ -1380,55 +1374,108 @@ function SmartiWidget(element, _options) {
         if(selectionCount === 0) {
             footerPostButton.css('transform', 'translateY(200%)');
         } else {
-            $.observable(widgetFooterPostButtonTemplateData).setProperty("title", Utils.localize({code:'widget.conversation.post-selected' + (selectionCount == 1 ? '' : '-all')}));
+            $.observable(widgetFooterPostButtonTemplateData).setProperty("title", Utils.localize({code:'widget.conversation.post-selected' + (selectionCount == 1 ? '' : '-all'), args:[selectionCount]}));
             footerPostButton.css('transform', 'translateY(0)');
         }
     });
 
-    widgetBody.on('click', '.message.parent .answers', function() {
+    widgetBody.on('click', '.widgetMessage.parent .answers', function() {
         $(this).closest('.conversation').children('.responseContainer').toggle(200);
     });
 
-    footerPostButton.click(() => {
-
-        
-
-        /*
-        let text = Utils.localize({code:'widget.conversation.answer.title'});
-        let attachments = [buildAttachments(doc)];
-
-        function createTextMessage() {
-            text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
-            $.each(doc.answers, function(i,answer) {
-                text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, " ");
+    function postItems(items) {
+        function createTextMessage(text, conv) {
+            if(conv.parent.creator.indexOf('queryBuilder:conversationmlt') > -1) {
+                text = text + '\n' + conv.parent.content.replace(/\n/g, " ");
+            } else {
+                text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + '): ' + conv.parent.description;
+            }
+            $.each(conv.selectedChildIndices, function(i, childIdx) {
+                text += createTextMessage('', {parent : conv.parent.answers[childIdx]});
             });
             return text;
         }
+        function buildAttachments(conv) {
+            let attachment;
+            if(conv.parent.creator.indexOf('queryBuilder:conversationmlt') > -1) {
+                attachment = {
+                    author_name: "\t",
+                    author_icon: Utils.getAvatarUrl(conv.parent.userName),
+                    text: conv.parent.content,
+                    attachments: [],
+                    bot: 'assistify',
+                    ts: conv.parent.timestamp
+                };
+                $.each(conv.selectedChildIndices, function(i, childIdx) {
+                    attachment.attachments.push(buildAttachments({parent: conv.parent.answers[childIdx]}));
+                });
+            } else {
+                attachment = {
+                    title: conv.parent.title,
+                    title_link: conv.parent.link,
+                    thumb_url: conv.parent.thumb || undefined,
+                    text: conv.parent.description
+                };
+            }
 
-        if(options.postings && options.postings.type === 'suggestText') {
-            messageInputField.post(createTextMessage());
-        } else if(options.postings && options.postings.type === 'postText') {
-            smarti.post(createTextMessage(),[]);
-        } else {
-            smarti.post(text,attachments);
+            return attachment;
         }
+        items.forEach(conv => {
+            let text;
+            if(conv.parent.creator.indexOf('queryBuilder:conversationmlt') > -1) {
+                text = Utils.localize({code:'widget.conversation.answer.title' + (conv.selectedChildIndices.length ? '' : '_msg')});
+            } else {
+                text = Utils.localize({code:"widget.latch.answer.title", args:[currentWidget.params.query.displayTitle]});
+            }
 
-        tracker.trackEvent("conversation.post", i);
+            if(options.postings && options.postings.type === 'suggestText') {
+                messageInputField.post(createTextMessage(text, conv));
+            } else if(options.postings && options.postings.type === 'postText') {
+                smarti.post(createTextMessage(text, conv),[]);
+            } else {
+                smarti.post(text, [buildAttachments(conv)]);
+            }
+        });
+    }
 
-
-        let text = Utils.localize({code:"widget.conversation.answer.title_msg"});
-        let attachments = [buildAttachments(subdoc)];
-
-        if(options.postings && options.postings.type === 'suggestText') {
-            messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
-        } else if(options.postings && options.postings.type === 'postText') {
-            smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
-        } else {
-            smarti.post(text,attachments);
+    footerPostButton.click(() => {
+        let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
+        if(currentWidget && currentWidget.params.elem) {
+            let selectedItems = [];
+            currentWidget.params.elem.find('.conversation>.widgetMessage').each((idx, item) => {
+                let parentMessageData = $.view(item).data;
+                let parentIsSelected = $(item).hasClass('selected');
+                let conv = {parent: parentMessageData, selectedChildIndices: []};
+                if(parentIsSelected) selectedItems.push(conv);
+                let responseContainer = $(item).closest('.conversation').children('.responseContainer');
+                if(responseContainer.length) {
+                    responseContainer.find('.widgetMessage').each((idx, item) => {
+                        let childData = $.view(item).data;
+                        let childIndex = $.view(item).index;
+                        if($(item).hasClass('selected')) {
+                            if(parentIsSelected) {
+                                conv.selectedChildIndices.push(childIndex);
+                            } else {
+                                selectedItems.push({parent: childData, selectedChildIndices: []});
+                            }
+                        }
+                    });
+                }
+                
+            });
+            console.log(selectedItems);
+            postItems(selectedItems);
         }
+    });
 
-        tracker.trackEvent("conversation.part.post", i);
-        */
+    widgetBody.on('click', '.smarti-widget .postAction', function() {
+        let selectedItems = [];
+        let parent = $(this).parent().parent();
+        let parentMessageData = $.view(parent).data;
+        let conv = {parent: parentMessageData, selectedChildIndices: parentMessageData.answers ? Array.apply(null, {length: parentMessageData.answers.length}).map(Number.call, Number) : []};
+        selectedItems.push(conv);
+        console.log(selectedItems);
+        postItems(selectedItems);
     });
 
     tags.on('click', 'li:not(".add, .remove")', function() {
@@ -1440,7 +1487,7 @@ function SmartiWidget(element, _options) {
     });
 
     tags.on('click', 'li.add', function() {
-        $(this).addClass('active').html('<input type="text" id="newTagInput" placeholder="New tag">');
+        $(this).addClass('active').html('<input type="text" id="newTagInput" placeholder="Neuer Suchterm">');
         tags.find('#newTagInput').focus();
     });
 
