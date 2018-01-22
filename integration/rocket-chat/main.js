@@ -625,7 +625,7 @@ function SmartiWidget(element, _options) {
                 .join(" ");
             */
 
-            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(searchTerms || []).join(" ");
+            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens).concat(searchTerms || []).join(" ");
 
             let queryParams = {
                 'wt': 'json',
@@ -678,8 +678,6 @@ function SmartiWidget(element, _options) {
                     }
 
                     //params.elem.show();
-
-                    if(!data.response.numFound) return;
 
                     console.log(params.query);
                     console.log(data.response.docs);
@@ -790,7 +788,8 @@ function SmartiWidget(element, _options) {
         return {
             params,
             refresh,
-            getResults
+            getResults,
+            templateType: "ir_latch"
         };
     }
 
@@ -980,7 +979,9 @@ function SmartiWidget(element, _options) {
 
         return {
             params,
-            refresh
+            refresh,
+            getResults,
+            templateType: "related.conversation"
         };
     }
 
@@ -1107,6 +1108,9 @@ function SmartiWidget(element, _options) {
         <span>Ergebnisse zu:</span>
         <ul>
             <li class="add">+</li>
+            {^{for userTokens}}
+            <li>{{:}}</li>
+            {{/for}}
             {^{for tokens}}
             <li>{{:value}}</li>
             {{/for}}
@@ -1245,7 +1249,7 @@ function SmartiWidget(element, _options) {
     let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
     let widgetIrLatchTemplate = $.templates(widgetIrLatchTemplateStr);
 
-    let widgetHeaderTagsTemplateData = {tokens: []};
+    let widgetHeaderTagsTemplateData = {tokens: [], userTokens: []};
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
     let widgetHeaderTabsTemplateData = {widgets: widgets, selectedWidget: 0};
@@ -1333,6 +1337,7 @@ function SmartiWidget(element, _options) {
             if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
+                innerTabSearchInput.val("");
             } else {
                 innerTabSearch.addClass('active');
                 if(widgetBody.scrollTop() > 1) {
@@ -1482,17 +1487,23 @@ function SmartiWidget(element, _options) {
         postItems(selectedItems);
     });
 
-
+    let searchTimeout = null;
     function search() {
-        let searchTerms = innerTabSearchInput.val();
-        searchTerms = searchTerms.trim().toLowerCase().replace(/\s+/g, ' ');
+        if(searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchTimeout = null;
 
-        searchTerms = searchTerms.length ? searchTerms.split(' ') : [];
+            let searchTerms = innerTabSearchInput.val();
+            searchTerms = searchTerms.trim().toLowerCase().replace(/\s+/g, ' ');
 
-        let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
-        if(currentWidget && currentWidget.params.elem) {
-            currentWidget.getResults(0, searchTerms);
-        }
+            searchTerms = searchTerms.length ? searchTerms.split(' ') : [];
+
+            widgets.forEach(w => {
+                if(w && w.params.elem && w.templateType === "ir_latch") {
+                    w.getResults(0, searchTerms);
+                }
+            });
+        }, 200);
     }
 
     innerTabSearchSubmit.click(search);
@@ -1501,11 +1512,15 @@ function SmartiWidget(element, _options) {
     });
 
     tags.on('click', 'li:not(".add, .remove")', function() {
-        $(this).remove();
+        let tokenIds = $.view(this).index;
+        let tokenData = $.view(this).data;
+        let tokensArray = typeof tokenData === "string" ? widgetHeaderTagsTemplateData.userTokens : widgetHeaderTagsTemplateData.tokens;
+        $.observable(tokensArray).remove(tokenIds);
     });
 
     tags.on('click', 'li.remove', function() {
-        tags.find('li').not('.add, .remove').remove();
+        $.observable(widgetHeaderTagsTemplateData.userTokens).refresh([]);
+        $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
     });
 
     tags.on('click', 'li.add', function() {
@@ -1516,10 +1531,10 @@ function SmartiWidget(element, _options) {
     $(tags).keydown(function (e) {
         if (tags.find('li.add').hasClass('active')) {
             if(e.which == 13) {
-                var newTag = tags.find('#newTagInput').val();
+                var newTag = tags.find('#newTagInput').val().trim();
                 if(newTag != "") {
-                    if(tags.find('li').not('.add, .remove').map((idx, item) => $(item).text()).get().indexOf(newTag) == -1) {
-                        tags.find('ul').children('li.add').after('<li>' + newTag + '</li>');
+                    if(widgetHeaderTagsTemplateData.tokens.map(t => t.value.toLowerCase()).concat(widgetHeaderTagsTemplateData.userTokens).indexOf(newTag.toLowerCase()) == -1) {
+                        $.observable(widgetHeaderTagsTemplateData.userTokens).insert(newTag);
                     }
                     tags.find('li.add').html('+').removeClass('active');
                 }
@@ -1532,6 +1547,9 @@ function SmartiWidget(element, _options) {
         }
     });
 
+    $.observable(widgetHeaderTagsTemplateData).observeAll(function() {
+        search();
+    });
 
     return {};
 }
