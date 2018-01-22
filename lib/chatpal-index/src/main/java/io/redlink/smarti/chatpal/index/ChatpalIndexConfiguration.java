@@ -30,19 +30,21 @@ public class ChatpalIndexConfiguration {
     
     public final static String CHATPAL_INDEX = "chatpal";
     
+    public final static String SMARTI_FIELD_PREFIX = "smarti_";
+    
     public static final int INDEX_VERSION = 1; //increase after a schema change in the index
     
-    public final static String FIELD_CLIENT = "client";
+    public final static String FIELD_CLIENT = SMARTI_FIELD_PREFIX + "client";
     /**
      * The field used to store the {@link ChatpalMessage#getId()} value
      */
-    public static final String FIELD_ID = "oid";
+    public static final String FIELD_ID = SMARTI_FIELD_PREFIX + "id";
     /**
      * Field used to store the current {@link #CONVERSATION_INDEX_VERSION} so that
      * updates that require a full re-index can be detected on startup
      */
-    public static final String FIELD_INDEX_VERSION = "index_version";
-    public static final String FIELD_SYNC_DATE = "sync_date";
+    public static final String FIELD_INDEX_VERSION = SMARTI_FIELD_PREFIX + "index_version";
+    public static final String FIELD_SYNC_DATE = SMARTI_FIELD_PREFIX + "sync_date";
 
     
     @Bean(name=CHATPAL_INDEX)

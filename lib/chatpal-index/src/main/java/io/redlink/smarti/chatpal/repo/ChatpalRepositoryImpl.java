@@ -13,18 +13,15 @@ import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.CriteriaDefinition;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.stereotype.Component;
 
 import com.mongodb.WriteResult;
 
+import io.redlink.smarti.chatpal.model.ChatpalMessage;
 import io.redlink.smarti.repositories.UpdatedIds;
 
 public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
-
-    private static final String CHATPAL_COLLECTION = "chatpal";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
@@ -49,8 +46,10 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
         Object msgId = chatpalMessage.get("id");
         WriteResult result = mongoTemplate.upsert(
                 Query.query(Criteria.where("msgId").is(msgId).and("client").is(client)),
-                Update.update("data", chatpalMessage).currentDate("modified"),
-                CHATPAL_COLLECTION);
+                Update.update("data", chatpalMessage)
+                    .set("removed", false) //
+                    .currentDate("modified"),
+                ChatpalMessage.class);
         if(log.isTraceEnabled()){
             if(result.isUpdateOfExisting()){
                 log.trace("updated chatpal message {} for client {} [data: {}]", msgId, client, chatpalMessage);
@@ -61,11 +60,11 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
     }
     
     @Override
-    public void delete(ObjectId client, String msgId) {
+    public void markAsDeleted(ObjectId client, String msgId) {
         WriteResult result = mongoTemplate.updateMulti(
                 Query.query(Criteria.where("msgId").is(msgId).and("client").is(client)),
                 Update.update("removed", true).unset("data").currentDate("modified"),
-                CHATPAL_COLLECTION);
+                ChatpalMessage.class);
         if(log.isTraceEnabled()){
             if(result.getN() > 0){
                 log.trace("marked chatpal message {} for client {} as deleted", msgId, client);
@@ -75,6 +74,21 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
         }
         
     }
+    @Override
+    public void markAsDeleted(ObjectId client) {
+        WriteResult result = mongoTemplate.updateMulti(
+                Query.query(Criteria.where("client").is(client)),
+                Update.update("removed", true).unset("data").currentDate("modified"),
+                ChatpalMessage.class);
+        if(log.isTraceEnabled()){
+            if(result.getN() > 0){
+                log.trace("marked {} chatpal messages for client {} as deleted", result.getN(), client);
+            } else {
+                log.trace("no chatpal messages for client {} present (no need to mark anything as deleted)", client);
+            }
+        }
+    }
+    
     /* (non-Javadoc)
      * @see io.redlink.smarti.chatpal.repo.ChatpalRepositoryCustom#updatedSince(java.util.Date)
      */
@@ -95,10 +109,10 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
                     Aggregation.newAggregation(ID_MODIFIED_PROJECTION, GROUP_MODIFIED);
         log.trace("UpdatedSince Aggregation: {}", agg);
         @SuppressWarnings("rawtypes")
-        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(agg,CHATPAL_COLLECTION, 
-                UpdatedIds.class);
+        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(agg, ChatpalMessage.class, UpdatedIds.class);
         if(log.isTraceEnabled()){
-            log.trace("{} : {} updated since {}", CHATPAL_COLLECTION, aggResult.getMappedResults(), date.toInstant());
+            log.trace("{} : {} updated since {}", ChatpalMessage.class, aggResult.getMappedResults(), 
+                    date == null ? null : date.toInstant());
         }
         if(aggResult.getUniqueMappedResult() == null){
             return new UpdatedIds<>(date, Collections.emptyList());

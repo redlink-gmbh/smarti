@@ -5,13 +5,14 @@
   <field name="_version_" type="long" indexed="true" stored="true"/>
   
   <!-- smarti specific -->
-  <field name="oid" type="string" indexed="true" stored="false" multiValued="false" required="true"/>
-  <field name="client" type="string" indexed="true" stored="false" required="true" multiValued="false"/> 
-  <field name="sync_date" type="date" indexed="true" stored="true" multiValued="false"/><!-- required for cloud sync -->
-  <field name="index_version" type="int" indexed="true" stored="false" multiValued="false" required="true"/>
+  <field name="smarti_id" type="string" indexed="true" stored="false" multiValued="false" required="true"/>
+  <field name="smarti_client" type="string" indexed="true" stored="false" required="true" multiValued="false"/> 
+  <field name="smarti_sync_date" type="tdate" indexed="true" stored="true" multiValued="false"/><!-- required for cloud sync -->
+  <field name="smarti_index_version" type="int" indexed="true" stored="false" multiValued="false" required="true"/>
   
   <!-- generic -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>  
+  <field name="type" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
   <field name="room" type="string" indexed="true" stored="true" multiValued="false"/>
   <field name="text" type="text_general" indexed="true" stored="true" multiValued="false"/>
   <field name="user" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -23,11 +24,17 @@
   <field name="text_de" type="text_de" indexed="true" stored="true" multiValued="false"/>
   <field name="text_en" type="text_en" indexed="true" stored="true" multiValued="false"/>
   
-  <copyField source="text_*" dest="text" />
+  <field name="user_username" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="user_name" type="text_general" indexed="true" stored="true" multiValued="true"/>
+  <field name="user_email" type="text_general" indexed="true" stored="true" multiValued="false"/>
   
-  <uniqueKey>id</uniqueKey>
+  <copyField source="text_*" dest="text" />
+  <copyField source="user_*" dest="text" />
+  
+  <uniqueKey>smarti_id</uniqueKey>
   
   <!-- field types -->
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />

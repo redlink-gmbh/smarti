@@ -1,26 +1,40 @@
 package io.redlink.smarti.chatpal.model;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.PersistenceConstructor;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+import io.redlink.smarti.chatpal.repo.ChatpalRepository;
+
+@Document(collection = ChatpalRepository.CHATPAL_COLLECTION)
 public class ChatpalMessage {
-
     
     private final ObjectId id;
     private String msgId;
     private ObjectId client;
     private boolean removed = false;
+    private final Date modified;
     Map<String,Object> data;
     
+    public ChatpalMessage() {
+        this(null,null);
+    }
+    
     @PersistenceConstructor
-    protected ChatpalMessage(ObjectId id){
+    protected ChatpalMessage(ObjectId id, Date modified){
         this.id = id;
+        this.modified = modified;
     }
 
-    public ObjectId getId() {
+    public final ObjectId getId() {
         return id;
+    }
+    
+    public final Date getModified() {
+        return modified;
     }
 
     public String getMsgId() {
@@ -57,7 +71,8 @@ public class ChatpalMessage {
     
     @Override
     public String toString() {
-        return "ChatpalMessage [id=" + id + ", client=" + client + ", removed=" + removed + ", data=" + data + "]";
+        return "ChatpalMessage [id=" + id + ", modified=" + (modified == null ? null : modified.toInstant()) 
+                + ", client=" + client + ", removed=" + removed + ", data=" + data + "]";
     }
 
     @Override

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import io.redlink.smarti.chatpal.model.ChatpalMessage;
 import io.redlink.smarti.chatpal.repo.ChatpalRepository;
-import io.redlink.smarti.model.Client;
 import io.redlink.smarti.repositories.UpdatedIds;
 
 @Component
@@ -20,8 +19,8 @@ public class ChatpalMessageServcie {
         this.repo = repo;
     }
     
-    public void store(Client client, Map<String,Object> data){
-        repo.store(client.getId(), data);
+    public void store(ObjectId clientId, Map<String,Object> data){
+        repo.store(clientId, data);
     }
     
     public UpdatedIds<ObjectId> updatedSince(Date date){
@@ -34,6 +33,14 @@ public class ChatpalMessageServcie {
     
     public Iterable<ChatpalMessage> get(Iterable<ObjectId> ids){
         return repo.findAll(ids);
+    }
+    
+    public void delete(ObjectId clientId, String msgId){
+        repo.markAsDeleted(clientId, msgId);
+    }
+    
+    public void deleteClientMessages(ObjectId clientId){
+        repo.markAsDeleted(clientId);
     }
     
 }

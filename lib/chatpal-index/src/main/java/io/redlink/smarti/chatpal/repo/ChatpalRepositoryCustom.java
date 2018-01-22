@@ -11,7 +11,8 @@ public interface ChatpalRepositoryCustom {
 
     void store(ObjectId client, Map<String, Object> chatpalMessage);
 
-    void delete(ObjectId client, String messageIdx);
+    void markAsDeleted(ObjectId client, String messageIdx);
+    void markAsDeleted(ObjectId client);
     
     UpdatedIds<ObjectId> updatedSince(Date date);
 

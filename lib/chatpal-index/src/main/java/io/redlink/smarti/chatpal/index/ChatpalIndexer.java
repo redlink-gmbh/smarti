@@ -330,7 +330,7 @@ public class ChatpalIndexer {
             //load in batches of 10 from the MongoDB
             ListUtils.partition(updated.ids(), 10).forEach(batch -> {
                 chatpalService.get(batch).forEach(c -> {
-                        index(c, lastUpdate);
+                        indexMessage(c, lastUpdate);
                         count.incrementAndGet();
                     });
             });
@@ -365,11 +365,6 @@ public class ChatpalIndexer {
         public String toString() {
             return "SyncData [syncDate=" + (syncDate == null ? null : syncDate.toInstant()) + ", count=" + count + ", duration=" + duration + "ms]";
         }
-        
-    }
-
-    public void index(ChatpalMessage c, Date lastUpdate) {
-        // TODO Auto-generated method stub
         
     }
 
