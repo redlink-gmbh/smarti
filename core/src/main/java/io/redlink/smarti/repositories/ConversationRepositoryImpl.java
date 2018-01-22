@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
-
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
@@ -37,15 +36,12 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -65,6 +61,16 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     public ConversationRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+
+        /* see #findLegacyConversation */
+        mongoTemplate.indexOps(Conversation.class)
+                .ensureIndex(new Index()
+                        .named("legacyLookup")
+                        .on("owner", Direction.ASC)
+                        .on("meta.properties.channel_id", Direction.ASC)
+                        .on("context.contextType", Direction.ASC)
+                        .sparse()
+                );
     }
 
     @Override
@@ -355,4 +361,13 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         }
     }
 
+    @Override
+    public Conversation findLegacyConversation(ObjectId ownerId, String contextType, String channelId) {
+        Query query = new Query();
+        query.addCriteria(where("owner").is(ownerId));
+        query.addCriteria(where("meta.properties.channel_id").is(channelId));
+        query.addCriteria(where("context.contextType").is(contextType));
+
+        return mongoTemplate.findOne(query, Conversation.class);
+    }
 }

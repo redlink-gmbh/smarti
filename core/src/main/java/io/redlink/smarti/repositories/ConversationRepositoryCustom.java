@@ -69,6 +69,8 @@ public interface ConversationRepositoryCustom {
 
     boolean exists(ObjectId conversationId, String messageId);
 
+    Conversation findLegacyConversation(ObjectId ownerId, String contextType, String channelId);
+
     /**
      * Provides the ids of entities that where updated
      * since the parsed date. In addition it provides the
@@ -78,4 +80,5 @@ public interface ConversationRepositoryCustom {
      */
     @Transient
     UpdatedIds updatedSince(Date date);
+
 }
