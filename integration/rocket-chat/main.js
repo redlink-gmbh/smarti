@@ -1120,7 +1120,7 @@ function SmartiWidget(element, _options) {
             {^{for tokens}}
             <li>{{:value}}</li>
             {{/for}}
-            <li class="remove">Alle löschen</li>
+            <li class="remove">${Utils.localize({code: 'widget.latch.query.remove.all'})}</li>
         </ul>
     `;
     const widgetHeaderTabsTemplateStr = `
@@ -1222,6 +1222,17 @@ function SmartiWidget(element, _options) {
     let widgetBody = element.find('#widgetBody');
     let widgetMessage = widgetBody.find('.widgetMessage');
     let widgetFooter = element.find('#widgetFooter');
+    let noChatCloseBtn = false;
+
+    /*
+    const MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    let footerObserver = new MutationObserver((mutationRecords) => {
+        console.log("Footer Observer:", mutationRecords);
+        noChatCloseBtn = widgetFooter.children().length === 1;
+        if(noChatCloseBtn && footerPostButton) footerPostButton.css('position', 'relative');
+    });
+    footerObserver.observe(widgetFooter.get(0), {childList: true});
+    */
 
     let tags = $('<div id="tags">').appendTo(widgetHeaderWrapper);
     let tabs = $('<nav id="tabs">').appendTo(widgetHeader);
@@ -1230,8 +1241,8 @@ function SmartiWidget(element, _options) {
     let widgetContent = $('<div class="widgetContent">').appendTo(widgetBody);
 
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
-
-    widgetTitle.css('marginBottom', '30px');
+    
+    widgetTitle.css('marginBottom', '10px');
 
     widgetMessage.empty();
     tabs.hide();
@@ -1504,6 +1515,8 @@ function SmartiWidget(element, _options) {
             }
             if(e.which == 13 || e.which == 27) {
                 tags.find('li.add').html('+').removeClass('active');
+                event.preventDefault();
+                event.stopPropagation();
             }
         }
     });
