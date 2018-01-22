@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.util.NamedList;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,9 @@ import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_CL
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -144,10 +147,48 @@ public class ChatpalWebservice {
                         
                 });
             }
-            return ResponseEntity.ok(result.getResponse().asMap(Integer.MAX_VALUE));
+            result.getResponse().remove("immutableCopy");
+            return ResponseEntity.ok(asMap(result.getResponse(),Integer.MAX_VALUE));
         } 
     }
-    
+    /**
+     * Converts a {@link NamedList} to a {@link Map} suitable for JSON serialization
+     * by fixing an issue in the native {@link NamedList#asMap(int)} implementation
+     * that does not process values of {@link Collection}s used as values.
+     * @param nl
+     * @param maxDepth
+     * @return
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private Map<String,Object> asMap(NamedList<?> nl, int maxDepth) {
+        LinkedHashMap<String,Object> result = new LinkedHashMap<>();
+        int size = nl.size();
+        for(int i=0;i < size; i++){
+          Object val = nl.getVal(i);
+          if (val instanceof NamedList && maxDepth> 0) {
+            //the maxDepth check is to avoid stack overflow due to infinite recursion
+            val = asMap((NamedList)val, maxDepth-1);
+          } else if(val instanceof Collection){
+              val = ((Collection<?>)val).stream()
+                  .map(v -> v instanceof NamedList ? asMap((NamedList)v, maxDepth) : v)
+                  .collect(Collectors.toList());
+          }
+          Object old = result.put(nl.getName(i), val);
+          if(old!=null){
+            if (old instanceof List) {
+              List list = (List) old;
+              list.add(val);
+              result.put(nl.getName(i),old);
+            } else {
+              ArrayList l = new ArrayList();
+              l.add(old);
+              l.add(val);
+              result.put(nl.getName(i), l);
+            }
+          }
+        }
+        return result;
+      }
     @RequestMapping(value = "/clear", method=RequestMethod.POST, 
             consumes=MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> clear(AuthContext authContext, @RequestBody Map<String,Object> data) {
