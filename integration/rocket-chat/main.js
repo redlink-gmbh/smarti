@@ -586,32 +586,8 @@ function SmartiWidget(element, _options) {
         });
         */
 
-        function refresh(data) {
-
-            console.debug('refresh ir-latch search widget:\n', JSON.stringify(data,null,2));
-
-            let tokens = data.tokens;
-            let slots = data.templates[params.tempid].slots;
-            let pillTokens = perparePillTokens(slots,tokens);
-
-            let reload = false;
-
-            $.each(removeDuplicatesBy(v=>v.value,pillTokens), function(i,t) {
-                let contained = false;
-                $.each(termPills.children(), function(j,tp) {
-                    if($(tp).data('token').value === t.value) {
-                        contained = true;
-                    }
-                });
-                if(!contained) {
-                    termPills.append(createTermPill(t));
-                    reload = true;
-                }
-            });
-
-            if(reload) {
-                getResults(0);
-            }
+        function refresh() {
+            getResults(0);
         }
 
         /*
@@ -641,7 +617,7 @@ function SmartiWidget(element, _options) {
         //let results = $('<ul class="search-results">').appendTo(params.elem);
         //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
-        function getResults(page) {
+        function getResults(page, searchTerms) {
             /*
             let tks = termPills.children(':visible')
                 .map(function() {return $(this).data().token.value;})
@@ -649,7 +625,7 @@ function SmartiWidget(element, _options) {
                 .join(" ");
             */
 
-            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).join(" ");
+            let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(searchTerms || []).join(" ");
 
             let queryParams = {
                 'wt': 'json',
@@ -733,6 +709,12 @@ function SmartiWidget(element, _options) {
                         return doc.title;
                     });
 
+                    if(docs & docs.length) {
+                        docs.forEach(d => {
+                            d.templateType = "ir_latch";
+                        });
+                    }
+
                     console.log(docs);
 
                     $.observable(params.templateData).setProperty("loading", false);
@@ -807,7 +789,8 @@ function SmartiWidget(element, _options) {
 
         return {
             params,
-            refresh
+            refresh,
+            getResults
         };
     }
 
@@ -853,8 +836,15 @@ function SmartiWidget(element, _options) {
                 creator: params.query.creator,
                 start: start
             }, function(data) {
-                console.log(data);
                 //loader.hide();
+
+                if(data.docs & data.docs.length) {
+                    data.docs.forEach(d => {
+                        d.templateType = "related.conversation";
+                    });
+                }
+
+                console.log(data);
 
                 $.observable(params.templateData).setProperty("loading", false);
                 $.observable(params.templateData.results).refresh(data.docs);
@@ -1083,7 +1073,7 @@ function SmartiWidget(element, _options) {
             }
         } else {
             $.each(widgets, function(i,wgt) {
-                wgt.refresh(data);
+                wgt.refresh();
             });
         }
     }
@@ -1136,9 +1126,9 @@ function SmartiWidget(element, _options) {
     `;
     const widgetHeaderInnerTabSearchTemplateStr = `
         <input type="search" placeholder="" data-link="placeholder{: 'Suchen in &#34;' + containerTitle + '&#34;' }">
-        <a href="#" id="innerTabSearchSubmit">
+        <div id="innerTabSearchSubmit">
             <div class="submit-icon"></div>
-        </a>
+        </div>
     `;
     const widgetFooterPostButtonTemplateStr = `
         <span><i class="icon-paper-plane"></i> {^{:title}}</span>
@@ -1237,7 +1227,7 @@ function SmartiWidget(element, _options) {
     let tags = $('<div id="tags">').appendTo(widgetHeaderWrapper);
     let tabs = $('<nav id="tabs">').appendTo(widgetHeader);
     let innerTabSearch = $('<div id="innerTabSearch">').appendTo(widgetHeader);
-
+    
     let widgetContent = $('<div class="widgetContent">').appendTo(widgetBody);
 
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
@@ -1266,6 +1256,9 @@ function SmartiWidget(element, _options) {
 
     let widgetFooterPostButtonTemplateData = {title: ""};
     widgetFooterPostButtonTemplate.link(footerPostButton, widgetFooterPostButtonTemplateData);
+
+    let innerTabSearchInput = innerTabSearch.find('input');
+    let innerTabSearchSubmit = innerTabSearch.find('#innerTabSearchSubmit');
 
     //Smarti
 
@@ -1352,7 +1345,7 @@ function SmartiWidget(element, _options) {
             sources.slideUp(100).removeClass('open');
             tabs.find('.more').text("Kanäle");
 
-            if(currentWidget) currentWidget.params.elem.find('.convMessage.selected').removeClass('selected');
+            if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
             footerPostButton.css('transform', 'translateY(200%)');
     
@@ -1396,7 +1389,7 @@ function SmartiWidget(element, _options) {
 
     function postItems(items) {
         function createTextMessage(text, conv) {
-            if(conv.parent.creator.indexOf('queryBuilder:conversationmlt') > -1) {
+            if(conv.parent.templateType === "related.conversation") {
                 text = text + '\n' + conv.parent.content.replace(/\n/g, " ");
             } else {
                 text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + '): ' + conv.parent.description;
@@ -1408,7 +1401,7 @@ function SmartiWidget(element, _options) {
         }
         function buildAttachments(conv) {
             let attachment;
-            if(conv.parent.creator.indexOf('queryBuilder:conversationmlt') > -1) {
+            if(conv.parent.templateType === "related.conversation") {
                 attachment = {
                     author_name: "\t",
                     author_icon: Utils.getAvatarUrl(conv.parent.userName),
@@ -1433,10 +1426,10 @@ function SmartiWidget(element, _options) {
         }
         items.forEach(conv => {
             let text;
-            if(conv.parent.creator.indexOf('queryBuilder:conversationmlt') > -1) {
+            if(conv.parent.templateType === "related.conversation") {
                 text = Utils.localize({code:'widget.conversation.answer.title' + (conv.selectedChildIndices.length ? '' : '_msg')});
             } else {
-                text = Utils.localize({code:"widget.latch.answer.title", args:[currentWidget.params.query.displayTitle]});
+                text = Utils.localize({code:"widget.latch.answer.title", args:[widgets[widgetHeaderTabsTemplateData.selectedWidget].params.query.displayTitle]});
             }
 
             if(options.postings && options.postings.type === 'suggestText') {
@@ -1453,7 +1446,7 @@ function SmartiWidget(element, _options) {
         let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
         if(currentWidget && currentWidget.params.elem) {
             let selectedItems = [];
-            currentWidget.params.elem.find('.conversation>.convMessage').each((idx, item) => {
+            currentWidget.params.elem.find('.convMessage, .irl-result').each((idx, item) => {
                 let parentMessageData = $.view(item).data;
                 let parentIsSelected = $(item).hasClass('selected');
                 let conv = {parent: parentMessageData, selectedChildIndices: []};
@@ -1487,6 +1480,24 @@ function SmartiWidget(element, _options) {
         selectedItems.push(conv);
         console.log(selectedItems);
         postItems(selectedItems);
+    });
+
+
+    function search() {
+        let searchTerms = innerTabSearchInput.val();
+        searchTerms = searchTerms.trim().toLowerCase().replace(/\s+/g, ' ');
+
+        searchTerms = searchTerms.length ? searchTerms.split(' ') : [];
+
+        let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
+        if(currentWidget && currentWidget.params.elem) {
+            currentWidget.getResults(0, searchTerms);
+        }
+    }
+
+    innerTabSearchSubmit.click(search);
+    innerTabSearchInput.keydown((e) => {
+        if(e.which == 13) search(e);
     });
 
     tags.on('click', 'li:not(".add, .remove")', function() {
