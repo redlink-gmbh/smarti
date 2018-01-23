@@ -16,7 +16,8 @@
  */
 
 require('./style.scss');
-md5 = require('js-md5');
+const md5 = require('js-md5');
+const moment = require('moment');
 //$ = require('jquery');
 require('jsviews');
 
@@ -1449,7 +1450,7 @@ $.views.converters("nl", function(val) {
 
 // custom timestamp to local string converter for jsrender/views
 $.views.converters("tls", function(val) {
-    return (new Date(val)).toLocaleString();
+    return moment(val).format('DD.MM.YYYY HH:mm:ss');
 });
 
 window.SmartiWidget = SmartiWidget;
