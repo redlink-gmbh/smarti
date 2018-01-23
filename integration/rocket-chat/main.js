@@ -52,6 +52,10 @@ const localize = new Localize({
         "de": "Neuer Suchterm",
         "en": "New search term"
     },
+    "smarti.date-format": {
+        "de": "DD.MM.YYYY HH:mm:ss",
+        "en": "DD-MM-YYYY HH:mm:ss"
+    },
     "msg.post.failure": {
         "de": "Nachricht konnte nicht gepostet werden",
         "en": "Posting message failed"
@@ -1450,7 +1454,7 @@ $.views.converters("nl", function(val) {
 
 // custom timestamp to local string converter for jsrender/views
 $.views.converters("tls", function(val) {
-    return moment(val).format('DD.MM.YYYY HH:mm:ss');
+    return moment(val).format(Utils.localize({code: 'smarti.date-format'}));
 });
 
 window.SmartiWidget = SmartiWidget;
