@@ -613,7 +613,7 @@ function SmartiWidget(element, _options) {
                         return doc.title;
                     });
 
-                    if(docs & docs.length) {
+                    if(docs && docs.length) {
                         docs.forEach(d => {
                             d.templateType = "ir_latch";
                         });
@@ -730,9 +730,12 @@ function SmartiWidget(element, _options) {
                 start: start
             }, function(data) {
 
-                if(data.docs & data.docs.length) {
+                if(data.docs && data.docs.length) {
                     data.docs.forEach(d => {
                         d.templateType = "related.conversation";
+                        d.answers.forEach(a => {
+                            a.templateType = "related.conversation";
+                        });
                     });
                 }
 
