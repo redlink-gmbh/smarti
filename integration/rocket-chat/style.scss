@@ -410,13 +410,22 @@
                             background-repeat: no-repeat;
                             background-position:left bottom;
                             cursor:pointer;
+                            opacity: 0;
+                        }
+
+                        &:hover {
+                            .selectMessage {
+                                opacity: 1;
+                            }
                         }
                     }
 
                     &.selected{
                         .middle{
                             .selectMessage{
-                            background-image:url("assets/selected.png");
+                                background-image:url("assets/selected.png");
+                                bottom: 13px;
+                                opacity: 1;
                             }
                         }
                     }
@@ -526,13 +535,22 @@
                         background-repeat: no-repeat;
                         background-position:left bottom;
                         cursor:pointer;
+                        opacity: 0;
+                    }
+
+                    &:hover {
+                        .selectMessage {
+                            opacity: 1;
+                        }
                     }
                 }
 
                 &.selected{
                     .middle{
                         .selectMessage{
-                        background-image:url("assets/selected.png");
+                            background-image:url("assets/selected.png");
+                            bottom: 13px;
+                            opacity: 1;
                         }
                     }
                 }
