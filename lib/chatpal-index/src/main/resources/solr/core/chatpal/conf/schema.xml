@@ -5,10 +5,10 @@
   <field name="_version_" type="long" indexed="true" stored="true"/>
   
   <!-- smarti specific -->
-  <field name="smarti_id" type="string" indexed="true" stored="false" multiValued="false" required="true"/>
-  <field name="smarti_client" type="string" indexed="true" stored="false" required="true" multiValued="false"/> 
+  <field name="smarti_id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="smarti_client" type="string" indexed="true" stored="true" required="true" multiValued="false"/> 
   <field name="smarti_sync_date" type="tdate" indexed="true" stored="true" multiValued="false"/><!-- required for cloud sync -->
-  <field name="smarti_index_version" type="int" indexed="true" stored="false" multiValued="false" required="true"/>
+  <field name="smarti_index_version" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
   
   <!-- generic -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>

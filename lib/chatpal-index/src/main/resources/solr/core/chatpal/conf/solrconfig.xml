@@ -387,11 +387,11 @@
     <!-- SEARCH handler used by chatpal-search -->
     <requestHandler name="/chatpal/search" class="solr.SearchHandler">
         <lst name="defaults">
-            <str name="sort">updated desc</str>
-            <str name="df">text</str>
+            <str name="defType">edismax</str>
         </lst>
         <lst name="invariants">
-            <str name="fl">id,room,user,created,text</str>
+            <str name="df">text</str>
+            <str name="fl">smarti_*,id,room,user,created,text,type,user_username,user_name,user_email</str>
             <str name="hl">true</str>
 
             <str name="wt">json</str>
@@ -411,12 +411,11 @@
     </requestHandler>
 
     <!-- CLEAR handler used by chatpal-search -->
-    <!-- FIXME: @thomas - this does not work, any idea? -->
     <requestHandler name="/chatpal/clear" class="solr.UpdateRequestHandler" >
         <lst name="invariants">
             <str name="stream.contentType">application/json</str>
-            <str name="stream.body">{"delete":{"query":"*:*"}}</str>
             <str name="json.command">true</str>
+            <bool name="commit">true</bool>
         </lst>
     </requestHandler>
 
