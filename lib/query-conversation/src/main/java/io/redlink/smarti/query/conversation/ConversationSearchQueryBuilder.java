@@ -111,11 +111,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 .map(Token::getValue)
                 .map(String::valueOf)
                 .collect(Collectors.toList());
-        String displayTitle = String.format("%s zum Thema %s",
-                StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName()),        strs);
-        if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
-            displayTitle += " (" + conversation.getContext().getDomain() + ")";
-        }
+
+        final String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
 
         query.setInlineResultSupport(isResultSupported())
                 .setState(State.Suggested)

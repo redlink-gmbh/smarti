@@ -106,10 +106,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
             return null; //no content in the conversation to search for releated!
         }
 
-        String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
-        if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
-            displayTitle += " (" + conversation.getContext().getDomain() + ")";
-        }
+        final String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
+
         return new ConversationMltQuery(getCreatorName(conf))
                 .setInlineResultSupport(isResultSupported())
                 .setDisplayTitle(displayTitle)
