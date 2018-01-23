@@ -133,6 +133,7 @@ public class ChatpalWebservice {
         if(client == null){
             return ResponseEntities.badRequest("Unable to determine client based on request");
         }
+        log.debug("exec /search for params: {}", params);
         try (SolrClient solr = solrServer.getSolrClient(chatpalCore)){
             SolrQuery query = new SolrQuery();
             params.entrySet().stream().forEach(e -> query.add(e.getKey(), e.getValue().toArray(new String[0])));
@@ -147,6 +148,7 @@ public class ChatpalWebservice {
                         
                 });
             }
+            log.trace("results: {}", result.getResponse());
             result.getResponse().remove("immutableCopy");
             return ResponseEntity.ok(asMap(result.getResponse(),Integer.MAX_VALUE));
         } 
