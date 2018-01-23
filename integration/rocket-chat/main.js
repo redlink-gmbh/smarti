@@ -44,9 +44,9 @@ const localize = new Localize({
         "de": "Noch keine Antworten verfügbar",
         "en": "No answers yet"
     },
-    "smarti.channels": {
-        "de": "Kanäle",
-        "en": "Channels"
+    "smarti.sources": {
+        "de": "Quellen",
+        "en": "Sources"
     },
     "smarti.new-search-term": {
         "de": "Neuer Suchterm",
@@ -118,7 +118,7 @@ const localize = new Localize({
     },
     "widget.latch.answer.title":{
         "de": "Das hab ich dazu in $[1] gefunden:",
-        "en": "That I found in $[1]:"
+        "en": "Here is what I found in $[1]:"
     },
     "widget.conversation.title":{
         "en":"Related Conversation",
@@ -990,7 +990,7 @@ function SmartiWidget(element, _options) {
     const widgetHeaderTabsTemplateStr = `
         <div id="tabContainer">
             <span class="nav-item current">{^{if widgets.length}}{^{:widgets[selectedWidget].params.query.displayTitle}} ({^{:widgets[selectedWidget].params.templateData.results.length || 0}}){{/if}}</span>
-            <span class="nav-item more">${Utils.localize({code: 'smarti.channels'})}</span>
+            <span class="nav-item more">${Utils.localize({code: 'smarti.sources'})}</span>
         </div>
         <ul class="moreSources">
             {^{for widgets}}
@@ -1186,7 +1186,7 @@ function SmartiWidget(element, _options) {
     tabs.on('click', '.more', function() {
         if (sources.hasClass('open')) {
             sources.slideUp(100).removeClass('open');
-            $(this).text(Utils.localize({code: 'smarti.channels'}));
+            $(this).text(Utils.localize({code: 'smarti.sources'}));
         } else {
             sources.slideDown(200).addClass('open');
             $(this).html('<i class="icon-cancel"></i>');
@@ -1224,7 +1224,7 @@ function SmartiWidget(element, _options) {
             search(widgetHeaderTabsTemplateData.selectedWidget);
     
             sources.slideUp(100).removeClass('open');
-            tabs.find('.more').text(Utils.localize({code: 'smarti.channels'}));
+            tabs.find('.more').text(Utils.localize({code: 'smarti.sources'}));
 
             if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
