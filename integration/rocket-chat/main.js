@@ -1214,11 +1214,11 @@ function SmartiWidget(element, _options) {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
             } else {
-                innerTabSearch.addClass('active');
+                //innerTabSearch.addClass('active');
                 if(widgetBody.scrollTop() > 1) {
                     innerTabSearch.slideUp(100);
                 } else {
-                    innerTabSearch.slideDown(100);
+                    //innerTabSearch.slideDown(100);
                 }
             }
 
