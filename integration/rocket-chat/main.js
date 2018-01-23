@@ -43,6 +43,14 @@ const localize = new Localize({
         "de": "Noch keine Antworten verfügbar",
         "en": "No answers yet"
     },
+    "smarti.channels": {
+        "de": "Kanäle",
+        "en": "Channels"
+    },
+    "smarti.new-search-term": {
+        "de": "Neuer Suchterm",
+        "en": "New search term"
+    },
     "msg.post.failure": {
         "de": "Nachricht konnte nicht gepostet werden",
         "en": "Posting message failed"
@@ -54,6 +62,18 @@ const localize = new Localize({
     "widget.post": {
         "de": "Posten",
         "en": "Post"
+    },
+    "widget.post-message": {
+        "de": "Nachricht posten",
+        "en": "Post message"
+    },
+    "widget.post-conversation": {
+        "de": "Konversation posten",
+        "en": "Post conversation"
+    },
+    "widget.answers": {
+        "de": "Antworten",
+        "en": "answers"
     },
     "widget.tags.label": {
         "de": "Ergebnisse zu:",
@@ -78,6 +98,10 @@ const localize = new Localize({
     "widget.latch.query.remove.all": {
         "en": "Clear all",
         "de": "Alle löschen"
+    },
+    "widget.latch.query.remove": {
+        "en": "remove",
+        "de": "löschen"
     },
     "widget.latch.query.paging.next":{
         "en": "Next",
@@ -119,7 +143,7 @@ const localize = new Localize({
         "de": "$[1] selektierte Nachrichten posten",
         "en": "Post $[1] selected messages"
     }
-});
+}, undefined, 'xx');
 
 const Utils = {
     getAvatarUrl : function(id) {
@@ -946,7 +970,7 @@ function SmartiWidget(element, _options) {
     }
 
     const widgetHeaderTagsTemplateStr = `
-        <span>Ergebnisse zu:</span>
+        <span>${Utils.localize({code: 'widget.tags.label'})}</span>
         <ul>
             <li class="add">+</li>
             {^{for userTokens}}
@@ -961,7 +985,7 @@ function SmartiWidget(element, _options) {
     const widgetHeaderTabsTemplateStr = `
         <div id="tabContainer">
             <span class="nav-item current">{^{if widgets.length}}{^{:widgets[selectedWidget].params.query.displayTitle}} ({^{:widgets[selectedWidget].params.templateData.results.length || 0}}){{/if}}</span>
-            <span class="nav-item more">Kanäle</span>
+            <span class="nav-item more">${Utils.localize({code: 'smarti.channels'})}</span>
         </div>
         <ul class="moreSources">
             {^{for widgets}}
@@ -989,15 +1013,15 @@ function SmartiWidget(element, _options) {
                             <div class="datetime">
                                 {{tls:timestamp}}
                                 {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                                {^{if answers}}<span class="answers">{{: answers.length}} Antworten</span>{{/if}}
+                                <span class="answers">{{: answers.length}} ${Utils.localize({code: 'widget.answers'})}</span>
                             </div>
                             <div class="title"></div>
                             <div class="text"><p>{{nl:~hl(content, true)}}</p></div>
-                            <div class="postAction">Konversation posten</div>
+                            <div class="postAction">{^{if answers.length}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
                             <div class="selectMessage"></div>
                         </div>
                     </div>
-                    {^{if answers}}
+                    {^{if answers.length}}
                         <div class="responseContainer">
                             {^{for answers}}
                                 <div class="convMessage">
@@ -1007,7 +1031,7 @@ function SmartiWidget(element, _options) {
                                         </div>
                                         <div class="title"></div>
                                         <div class="text"><p>{{nl:~hl(content, true)}}</p></div>
-                                        <div class="postAction">Nachricht posten</div>
+                                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                         <div class="selectMessage"></div>
                                     </div>
                                 </div>
@@ -1078,6 +1102,9 @@ function SmartiWidget(element, _options) {
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
     
     widgetTitle.css('marginBottom', '10px');
+    // add a style to translate the remove button of tags!
+    $('#smarti-custom-style').remove();
+    $(`<style id="smarti-custom-style">.smarti #widgetContainer #widgetWrapper #widgetHeader #tags ul li:after {content:"${Utils.localize({code: 'widget.latch.query.remove'})}"}</style>`).appendTo('head');
 
     widgetMessage.empty();
     tabs.hide();
@@ -1154,7 +1181,7 @@ function SmartiWidget(element, _options) {
     tabs.on('click', '.more', function() {
         if (sources.hasClass('open')) {
             sources.slideUp(100).removeClass('open');
-            $(this).text("Kanäle");
+            $(this).text(Utils.localize({code: 'smarti.channels'}));
         } else {
             sources.slideDown(200).addClass('open');
             $(this).html('<i class="icon-cancel"></i>');
@@ -1192,7 +1219,7 @@ function SmartiWidget(element, _options) {
             search(widgetHeaderTabsTemplateData.selectedWidget);
     
             sources.slideUp(100).removeClass('open');
-            tabs.find('.more').text("Kanäle");
+            tabs.find('.more').text(Utils.localize({code: 'smarti.channels'}));
 
             if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
@@ -1370,7 +1397,7 @@ function SmartiWidget(element, _options) {
     });
 
     tags.on('click', 'li.add', function() {
-        $(this).addClass('active').html('<input type="text" id="newTagInput" placeholder="Neuer Suchterm">');
+        $(this).addClass('active').html(`<input type="text" id="newTagInput" placeholder="${Utils.localize({code: 'smarti.new-search-term'})}">`);
         tags.find('#newTagInput').focus();
     });
 
