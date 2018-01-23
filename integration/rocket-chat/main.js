@@ -1287,8 +1287,6 @@ function SmartiWidget(element, _options) {
             let attachment;
             if(conv.parent.templateType === "related.conversation") {
                 attachment = {
-                    author_name: "\t",
-                    author_icon: Utils.getAvatarUrl(conv.parent.userName),
                     text: conv.parent.content,
                     attachments: [],
                     bot: 'assistify',
