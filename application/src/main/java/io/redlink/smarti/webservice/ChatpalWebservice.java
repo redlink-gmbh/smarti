@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -170,11 +172,21 @@ public class ChatpalWebservice {
           if (val instanceof NamedList && maxDepth> 0) {
             //the maxDepth check is to avoid stack overflow due to infinite recursion
             val = asMap((NamedList)val, maxDepth-1);
+          } else if(val instanceof SolrDocumentList){ //this is also a collection
+              SolrDocumentList docList = (SolrDocumentList) val;
+              Map<String,Object> docMap = new HashMap<>();
+              docMap.put("numFound", docList.getNumFound());
+              if(docList.getMaxScore() != null){
+                  docMap.put("maxScore", docList.getMaxScore());
+              }
+              docMap.put("start", docList.getStart());
+              docMap.put("docs", docList);
+              val = docMap;
           } else if(val instanceof Collection){
               val = ((Collection<?>)val).stream()
                   .map(v -> v instanceof NamedList ? asMap((NamedList)v, maxDepth) : v)
                   .collect(Collectors.toList());
-          }
+          } 
           Object old = result.put(nl.getName(i), val);
           if(old!=null){
             if (old instanceof List) {
