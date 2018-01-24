@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 @CrossOrigin
 @RestController
 @RequestMapping(value = "/chatpal")
-@Api
+@Api(hidden=true) //this SHOULD NOT be used by other clients as Chatpal anyways!
 public class ChatpalWebservice {
 
     private final Logger log = LoggerFactory.getLogger(getClass());

@@ -17,7 +17,12 @@
 
 package io.redlink.smarti.chatpal.index;
 
-import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.*;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.CHATPAL_INDEX;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_CLIENT;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_ID;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_INDEX_VERSION;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_SYNC_DATE;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.INDEX_VERSION;
 
 import java.io.IOException;
 import java.time.Instant;

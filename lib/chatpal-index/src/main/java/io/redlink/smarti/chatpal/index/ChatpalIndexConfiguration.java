@@ -17,13 +17,14 @@
 
 package io.redlink.smarti.chatpal.index;
 
-import io.redlink.smarti.chatpal.model.ChatpalMessage;
-import io.redlink.solrlib.SimpleCoreDescriptor;
-import io.redlink.solrlib.SolrCoreDescriptor;
+import java.io.IOException;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
+import io.redlink.smarti.chatpal.model.ChatpalMessage;
+import io.redlink.solrlib.SimpleCoreDescriptor;
+import io.redlink.solrlib.SolrCoreDescriptor;
 
 @Configuration
 public class ChatpalIndexConfiguration {
