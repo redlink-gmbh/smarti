@@ -1439,7 +1439,7 @@ function SmartiWidget(element, _options) {
             if(!noSearchTerms) terms = terms.concat(searchTerms);
             terms = [...new Set(terms)]; // unique terms
             terms.forEach(t => {
-                text = text.replace(new RegExp(`(${t})`, 'ig'), '<mark>$1</mark>');
+                text = text.replace(new RegExp(`(${escapeRegExp(t)})`, 'ig'), '<mark>$1</mark>');
             });
             return text;
         }
@@ -1457,5 +1457,9 @@ $.views.converters("nl", function(val) {
 $.views.converters("tls", function(val) {
     return moment(val).format(Utils.localize({code: 'smarti.date-format'}));
 });
+
+function escapeRegExp(str) {
+    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
 
 window.SmartiWidget = SmartiWidget;
