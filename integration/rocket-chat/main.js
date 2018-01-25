@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Redlink GmbH
+ * Copyright 2018 Redlink GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,8 @@
 require('./style.scss');
 const md5 = require('js-md5');
 const moment = require('moment');
-//$ = require('jquery');
-require('jsviews');
-
 const ld_lang = require('lodash/lang');
+require('jsviews');
 
 const DDP = require("ddp.js").default;
 
@@ -151,13 +149,13 @@ const localize = new Localize({
 }, undefined, 'xx');
 
 const Utils = {
-    getAvatarUrl : function(id) {
+    getAvatarUrl : (id) => {
         return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon";
     },
-    getAnonymUser: function(id) {
+    getAnonymUser: (id) => {
         return 'User-' + (parseInt(md5('redlink'+id),16)%10000); //TODO check if this works somehow...
     },
-    localize: function(obj) {
+    localize: (obj) => {
         if(obj.args && obj.args.length > 0) {
             const args_clone = ld_lang.cloneDeep(obj.args);
             args_clone.unshift(obj.code);
@@ -165,13 +163,13 @@ const Utils = {
         }
         return localize.translate(obj.code);
     },
-    mapDocType: function(doctype) {
+    mapDocType: (doctype) => {
         switch(doctype) {
             case 'application/xhtml+xml': return 'html';
         }
         return doctype.substring(doctype.indexOf('/')+1).slice(0,4);
     },
-    cropLabel: function(label,max_length,replace,mode) {
+    cropLabel: (label,max_length,replace,mode) => {
         max_length = max_length-replace.length;
 
         if(label.length <= max_length) return label;
@@ -263,7 +261,7 @@ function Smarti(options) {
          */
         function loginRequest(params) {
             const loginId = ddp.method("login", params);
-            ddp.on('result', function (message) {
+            ddp.on('result', (message) => {
 
                 if (message.id === loginId) {
                     if (message.error) return failure({code:"login.failed",args:[message.error.reason]});
@@ -319,7 +317,7 @@ function Smarti(options) {
         // fetch last Smarti results when the wiget gets initialized (channel entered)
         console.debug('Smarti widget init -> try get last Smarti result for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
-        ddp.on("result", function(message) {
+        ddp.on("result", (message) => {
             if (message.error) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === lastConvCallId) {
@@ -336,10 +334,10 @@ function Smarti(options) {
         // subscribe changes on the channel that is passed by SmartiWidget constructor (message send)
         console.debug('Smarti widget init -> subscribe channel', options.channel);
         const subId = ddp.sub("stream-notify-room", [options.channel+"/newConversationResult", false]);
-        ddp.on("nosub", function() {
+        ddp.on("nosub", () => {
             failure({code:'sub.new-conversation-result.nosub'});
         });
-        ddp.on("changed", function(message) {
+        ddp.on("changed", (message) => {
             if(message.id == subId) {
                 // subscriotion has changed (message send) -> fetch conversation results
                 console.debug('Smarti widget subscription changed -> get conversation result for message:', message.fields.args[0]);
@@ -358,7 +356,7 @@ function Smarti(options) {
 
         console.debug('fetch results for conversation with Id:', conversationId);
         const msgid = ddp.method("getConversation",[conversationId]);
-        ddp.on("result", function(message) {
+        ddp.on("result", (message) => {
 
             if (message.error) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
@@ -377,7 +375,7 @@ function Smarti(options) {
 
       console.debug('get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
       const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
-      ddp.on("result", function(message) {
+      ddp.on("result", (message) => {
 
           if (message.error) return failure({code:"get.query.params",args:[message.error.reason]});
 
@@ -402,7 +400,7 @@ function Smarti(options) {
     function post(msg,attachments,success,failure) {
         const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
 
-        ddp.on("result", function(message) {
+        ddp.on("result", (message) => {
             if(message.id === methodId) {
                 if(message.error && failure) {
 
@@ -433,7 +431,7 @@ function Smarti(options) {
  * @constructor
  */
 function Tracker(category, roomId, onEvent) {
-    this.trackEvent = function(action, value) {
+    this.trackEvent = (action, value) => {
         console.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
         if(onEvent) onEvent(category, action, roomId, value);
     };
@@ -473,7 +471,7 @@ function SmartiWidget(element, _options) {
         },
         widget: {},
         tracker: {
-            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : function() {
+            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : () => {
             },
             category: "knowledgebase"
         },
@@ -500,7 +498,7 @@ function SmartiWidget(element, _options) {
     let messageInputField;
 
     function InputField(elem) {
-        this.post = function(msg) {
+        this.post = (msg) => {
             console.debug(`write text to element: ${msg}`);
             elem.val(msg);
             elem.focus();
@@ -572,7 +570,7 @@ function SmartiWidget(element, _options) {
                 traditional: true,
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
-                failure: function(err) {
+                failure: (err) => {
                     console.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
                 /**
@@ -582,14 +580,14 @@ function SmartiWidget(element, _options) {
                  * @param {Number} data.response.numFound
                  *
                  */
-                success: function(data) {
+                success: (data) => {
                     tracker.trackEvent(params.query.creator + "",data.response.numFound);
 
                     console.log(params.query);
                     console.log(data.response.docs);
 
                     //map to search results
-                    let docs = $.map(data.response.docs, function(doc) {
+                    let docs = $.map(data.response.docs, (doc) => {
                         let newDoc = {};
                         Object.keys(params.query.resultConfig.mappings).forEach(k => {
                             let v = params.query.resultConfig.mappings[k];
@@ -623,68 +621,6 @@ function SmartiWidget(element, _options) {
 
                     $.observable(params.templateData).setProperty("loading", false);
                     $.observable(params.templateData.results).refresh(docs);
-    
-                    //resultCount.text(Utils.localize({code:'widget.latch.query.header',args:[data.response.numFound]}));
-                    
-                    /*
-                    $.each(docs,function(i,doc) {
-                        let docli = $('<li>' +
-                            (doc.thumb ? '<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+doc.thumb+'\')"></div></div>' : '<div class="result-type result-type-'+doc.doctype+'"><div>'+doc.doctype+'</div></div>') +
-                            '<div class="result-content"><div class="result-content-title"><a href="'+doc.link+'" target="blank">'+doc.title+'</a><span>'+(doc.date ? doc.date.toLocaleDateString() : '')+'</span></div>' + (doc.description ? '<p>'+doc.description+'</p>' : '') + '</div>' +
-                            '<div class="result-actions"><button class="postAnswer">Posten<i class="icon-paper-plane"></i></button></div>'+
-                            (i+1 !== docs.length ? '<li class="result-separator"><div></div></li>':'') +
-                            '</li>');
-
-                        docli.find('.postAnswer').click(function() {
-                            let text = Utils.localize({code:"widget.latch.answer.title",args:[params.query.displayTitle]});
-                            let attachments = [{
-                                title: doc.title,
-                                title_link: doc.link,
-                                thumb_url: doc.thumb ? doc.thumb : undefined,
-                                text:doc.description
-                            }];
-                            if(options.postings && options.postings.type === 'suggestText') {
-                                messageInputField.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description);
-                            } else if(options.postings && options.postings.type === 'postText') {
-                                smarti.post(text + '\n' + '[' + doc.title + '](' + doc.link + '): ' + doc.description,[]);
-                            } else {
-                                smarti.post(text,attachments);
-                            }
-
-                            tracker.trackEvent(params.query.creator + ".result.post", (page*numOfRows) + i);
-                        });
-
-                        results.append(docli);
-                    });
-
-                    
-                    let prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
-                    let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
-
-                    if(page > 0) {
-                        prev.click(function() {
-                            tracker.trackEvent(params.query.creator + ".result.paging", page-1);
-                            getResults(page-1)
-                        });
-                    } else {
-                        prev.hide();
-                    }
-
-                    if((data.response.numFound/numOfRows) > (page+1)) {
-                        next.addClass('active').click(function() {
-                            tracker.trackEvent(params.query.creator + ".result.paging", page+1);
-                            getResults(page+1)
-                        });
-                    } else {
-                        next.hide();
-                    }
-
-                    $('<tr>')
-                        .append($('<td class="pageLink pageLinkLeft">').append(prev))
-                        .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.response.numFound/numOfRows)))
-                        .append($('<td class="pageLink pageLinkRight">').append(next))
-                        .appendTo(resultPaging);
-                    */
                 }
             });
         }
@@ -728,7 +664,7 @@ function SmartiWidget(element, _options) {
                 template: params.tempid,
                 creator: params.query.creator,
                 start: start
-            }, function(data) {
+            }, (data) => {
 
                 if(data.docs && data.docs.length) {
                     data.docs.forEach(d => {
@@ -744,122 +680,6 @@ function SmartiWidget(element, _options) {
                 $.observable(params.templateData).setProperty("loading", false);
                 $.observable(params.templateData.results).refresh(data.docs);
         
-                /*
-                $.each(data.docs, function (i, doc) {
-
-                    function getSubcontent(docs,mainUser) {
-                        let result = $('<ul>');
-
-                        $.each(docs, function(j,subdoc) {
-
-                            let liClass = mainUser === subdoc.userName ? 'question' : 'answer';
-
-                            result.append($('<li>')
-                                .addClass(liClass)
-                                .append('<div class="subdoc-title"><img src="'+Utils.getAvatarUrl(subdoc.userName)+'">' +
-                                        '<span>'+(new Date(subdoc.timestamp)).toLocaleDateString()+'</span></div>')
-                                    .append('<div class="subdoc-content">'+subdoc.content.replace(/\n/g, "<br />")+'</div>')
-                                    .append($('<div>').addClass('result-actions').append(
-                                        $('<button>').addClass('postMessage').click(function() {
-
-                                            let text = Utils.localize({code:"widget.conversation.answer.title_msg"});
-                                            let attachments = [buildAttachments(subdoc)];
-
-                                            if(options.postings && options.postings.type === 'suggestText') {
-                                                messageInputField.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "));
-                                            } else if(options.postings && options.postings.type === 'postText') {
-                                                smarti.post(text + '\n' + '*' + Utils.getAnonymUser(subdoc.userName) + '*: ' + subdoc.content.replace(/\n/g, " "),[]);
-                                            } else {
-                                                smarti.post(text,attachments);
-                                            }
-
-                                            tracker.trackEvent("conversation.part.post", i);
-                                        }).append('<i class="icon-paper-plane"></i>')
-                                    ))
-                            );
-                        });
-
-                        return result;
-                    }
-
-                    let docli = $('<li>')
-                        .append('<div class="result-type"><div class="result-avatar-image" style="background-image:url(\''+Utils.getAvatarUrl(doc.userName)+'\')"></div></div>')
-                        .append($('<div>').addClass('result-content')
-                            .append($('<div>').addClass('result-content-title')
-                                .append('<span class="date-only">' + (new Date(doc.timestamp)).toLocaleString() + '</span>')
-                                .append($('<span>').addClass('toggle').addClass('icon-right-dir').click(function(e) {
-                                        $(e.target).parent().parent().parent().find('.result-subcontent').toggle();
-                                        if($(e.target).hasClass('icon-right-dir')) {
-                                            tracker.trackEvent("conversation.part.open", i);
-                                            $(e.target).removeClass('icon-right-dir').addClass('icon-down-dir');
-                                        } else {
-                                            tracker.trackEvent("conversation.part.close", i);
-                                            $(e.target).removeClass('icon-down-dir').addClass('icon-right-dir');
-                                        }
-                                    })
-                                ))
-                            .append('<p>' + doc.content.replace(/\n/g, "<br />") + '</p>'))
-                        .append($('<div class="result-subcontent">')
-                            .append(getSubcontent(doc.answers,doc.userName)).hide())
-                        .append($('<div>').addClass('result-actions').append(
-                            $('<button>').addClass('postAnswer').addClass('button').text(Utils.localize({code:'widget.conversation.post-all',args:[doc.answers.length+1]})).click(function() {
-                                let text = Utils.localize({code:'widget.conversation.answer.title'});
-                                let attachments = [buildAttachments(doc)];
-
-                                function createTextMessage() {
-                                    text = text + '\n' + '*' + Utils.getAnonymUser(doc.userName) + '*: ' + doc.content.replace(/\n/g, " ");
-                                    $.each(doc.answers, function(i,answer) {
-                                        text += '\n*' + Utils.getAnonymUser(answer.userName) + '*: ' + answer.content.replace(/\n/g, " ");
-                                    });
-                                    return text;
-                                }
-
-                                if(options.postings && options.postings.type === 'suggestText') {
-                                    messageInputField.post(createTextMessage());
-                                } else if(options.postings && options.postings.type === 'postText') {
-                                    smarti.post(createTextMessage(),[]);
-                                } else {
-                                    smarti.post(text,attachments);
-                                }
-
-                                tracker.trackEvent("conversation.post", i);
-                            }).append('<i class="icon-paper-plane"></i>')));
-
-                        if(i + 1 !== data.length) {
-                            docli.append('<li class="result-separator"><div></div></li>');
-                        }
-
-                    results.append(docli);
-                });
-                
-
-                let prev = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.prev'})).prepend('<i class="icon-angle-left">');
-                let next = $('<span>').text(Utils.localize({code:'widget.latch.query.paging.next'})).append('<i class="icon-angle-right">');
-
-                if(page > 0) {
-                    prev.click(function() {
-                        tracker.trackEvent(params.query.creator + ".result.paging", page-1);
-                        getResults(page-1,data.pageSize)
-                    });
-                } else {
-                    prev.hide();
-                }
-
-                if((data.numFound/data.pageSize) > (page+1)) {
-                    next.addClass('active').click(function() {
-                        tracker.trackEvent(params.query.creator + ".result.paging", page+1);
-                        getResults(page+1,data.pageSize)
-                    });
-                } else {
-                    next.hide();
-                }
-
-                $('<tr>')
-                    .append($('<td class="pageLink pageLinkLeft">').append(prev))
-                    .append($('<td class="pageNum">').text((page+1)+'/'+Math.ceil(data.numFound/data.pageSize)))
-                    .append($('<td class="pageLink pageLinkRight">').append(next))
-                    .appendTo(resultPaging);
-                */
             }, showError
           );
         }
@@ -884,7 +704,7 @@ function SmartiWidget(element, _options) {
 
         let form = $('<form><span>Username</span><input type="text"><br><span>Password</span><input type="password"><br><button>Submit</button></form>');
 
-        form.find('button').click(function() {
+        form.find('button').click(() => {
 
             let username = form.find('input[type="text"]').val();
             let password = form.find('input[type="password"]').val();
@@ -908,7 +728,7 @@ function SmartiWidget(element, _options) {
             return a.messageIdx - b.messageIdx;
         }).reverse();
         let filteredTokens = {};
-        let uniqueTokens = tokens.filter(function(t) {
+        let uniqueTokens = tokens.filter((t) => {
             if (filteredTokens[t.value]) return false;
             filteredTokens[t.value] = true;
             return true;
@@ -920,8 +740,8 @@ function SmartiWidget(element, _options) {
             widgetContent.empty();
             widgetMessage.empty();
 
-            $.each(data.templates, function(i, template) {
-                $.each(template.queries, function(j, query) {
+            $.each(data.templates, (i, template) => {
+                $.each(template.queries, (j, query) => {
 
                     let constructor;
 
@@ -962,7 +782,7 @@ function SmartiWidget(element, _options) {
                 showError({code:'smarti.result.no-result-yet'});
             }
         } else {
-            $.each(widgets, function(i,wgt) {
+            $.each(widgets, (i, wgt) => {
                 wgt.refresh();
             });
         }
@@ -1150,7 +970,7 @@ function SmartiWidget(element, _options) {
       channel: options.channel
     });//TODO wait for connect?
 
-    smarti.subscribe('smarti.data', function(data) {
+    smarti.subscribe('smarti.data', (data) => {
         refreshWidgets(data);
     });
 
@@ -1164,16 +984,16 @@ function SmartiWidget(element, _options) {
 
     tabOpenButton.unbind('click.closeTracker');
 
-    tabOpenButton.bind('click.closeTracker', function() {
+    tabOpenButton.bind('click.closeTracker', () => {
         if($('.external-search-content').is(":visible")) {
             tracker.trackEvent('sidebar.close');
         }
     });
 
     // widget interaction logic
-    var selectionCount = 0;
+    let selectionCount = 0;
 
-    widgetBody.scroll(function (event) {
+    widgetBody.scroll((event) => {
         if (widgetBody.scrollTop() > 1) {
             widgetTitle.slideUp(250);
             if(innerTabSearch.hasClass('active')) innerTabSearch.slideUp(100);
@@ -1278,7 +1098,7 @@ function SmartiWidget(element, _options) {
             } else {
                 text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + '): ' + conv.parent.description;
             }
-            $.each(conv.selectedChildIndices, function(i, childIdx) {
+            $.each(conv.selectedChildIndices, (i, childIdx) => {
                 text += createTextMessage('', {parent : conv.parent.answers[childIdx]});
             });
             return text;
@@ -1292,7 +1112,7 @@ function SmartiWidget(element, _options) {
                     bot: 'assistify',
                     ts: conv.parent.timestamp
                 };
-                $.each(conv.selectedChildIndices, function(i, childIdx) {
+                $.each(conv.selectedChildIndices, (i, childIdx) => {
                     attachment.attachments.push(buildAttachments({parent: conv.parent.answers[childIdx]}));
                 });
             } else {
@@ -1407,10 +1227,10 @@ function SmartiWidget(element, _options) {
         tags.find('#newTagInput').focus();
     });
 
-    $(tags).keydown(function (e) {
+    $(tags).keydown((e) => {
         if (tags.find('li.add').hasClass('active')) {
             if(e.which == 13) {
-                var newTag = tags.find('#newTagInput').val().trim();
+                const newTag = tags.find('#newTagInput').val().trim();
                 if(newTag != "") {
                     if(widgetHeaderTagsTemplateData.tokens.map(t => t.value.toLowerCase()).concat(widgetHeaderTagsTemplateData.userTokens).indexOf(newTag.toLowerCase()) == -1) {
                         $.observable(widgetHeaderTagsTemplateData.userTokens).insert(newTag);
@@ -1426,7 +1246,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    $.observable(widgetHeaderTagsTemplateData).observeAll(function() {
+    $.observable(widgetHeaderTagsTemplateData).observeAll(() => {
         search();
     });
 
@@ -1449,12 +1269,12 @@ function SmartiWidget(element, _options) {
 }
 
 // custom new line converter for jsrender/views
-$.views.converters("nl", function(val) {
+$.views.converters("nl", (val) => {
     return val.replace(/\n/g, '<br />');
 });
 
 // custom timestamp to local string converter for jsrender/views
-$.views.converters("tls", function(val) {
+$.views.converters("tls", (val) => {
     return moment(val).format(Utils.localize({code: 'smarti.date-format'}));
 });
 
