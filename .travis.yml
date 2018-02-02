@@ -40,16 +40,20 @@ jobs:
       before_script:
         - sudo apt-get -qq update
         - sudo apt-get install -y rpm pbzip2
-      script: mvn -B -f dist/ install -Pdeb,rpm,docker
+      script:
+        - mvn -B -f dist/ install -Pdeb,rpm,docker
+        - mvn -B -f integration/solr-docker/ install -Pdeb,rpm,docker
       before_deploy:
         - SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
         - docker save redlinkgmbh/smarti:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
+        - docker save redlinkgmbh/smarti-solr:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-solr-${SMARTI_VERSION}.docker.tbz2"
       deploy:
         provider: releases
         api_key: ${GH_TOKEN}
         file_glob: true
         file:
           - application/target/*-exec.jar
+          - application/target/*-solrcores.zip
           - dist/target/*.deb
           - dist/target/rpm/smarti/RPMS/noarch/*.rpm
           - dist/target/*.docker.tbz2
