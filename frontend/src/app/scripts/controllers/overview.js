@@ -8,7 +8,7 @@
  * Controller of the smartiApp
  */
 angular.module('smartiApp')
-  .controller('OverviewCtrl', function ($scope, $window, $location, ClientService) {
+  .controller('OverviewCtrl', function ($scope, $uibModal, $location, ClientService) {
 
     $scope.defaultClient = null;
 
@@ -44,9 +44,19 @@ angular.module('smartiApp')
     };
 
     $scope.delete = function(client) {
-      if($window.confirm("Do you realy want to delete " + client.data.name + "?")) {
-        client.delete().then(listClients);
-      }
+      $uibModal.open({
+        templateUrl: 'views/modal/confirm-client-delete.html',
+        resolve: {
+          client: angular.copy(client.data)
+        },
+        controller: function () {}
+      }).result
+        .then(function () {
+            client.delete().then(listClients);
+          },
+          function () {
+            //nop;
+          });
     };
 
     $scope.manageConversations = function (clientId) {
