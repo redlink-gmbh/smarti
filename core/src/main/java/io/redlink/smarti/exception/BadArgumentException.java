@@ -24,11 +24,11 @@ import java.util.Collections;
 import java.util.Map;
 
 @ResponseStatus(code=HttpStatus.BAD_REQUEST)
-public class BadArgumentException extends IllegalArgumentException implements DataException<Map<String,String>>{
+public class BadArgumentException extends IllegalArgumentException implements DataException<Map<String,Object>>{
 
     private static final long serialVersionUID = -2487599342423211225L;
 
-    private final Map<String,String> data;
+    private final Map<String,Object> data;
     
     public BadArgumentException(String field, Object value) {
         this(field,value,null);
@@ -52,7 +52,7 @@ public class BadArgumentException extends IllegalArgumentException implements Da
     }
 
     @Override
-    public Map<String, String> getData() {
+    public Map<String, Object> getData() {
         return data;
     }
     

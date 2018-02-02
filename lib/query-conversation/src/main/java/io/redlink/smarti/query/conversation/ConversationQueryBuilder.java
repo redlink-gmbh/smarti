@@ -23,6 +23,7 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,7 +38,8 @@ import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.util.*;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.getMetaField;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
@@ -68,8 +70,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
     @Override
-    protected void doBuildQuery(ComponentConfiguration config, Template template, Conversation conversation) {
-        final Query query = buildQuery(config, template, conversation);
+    protected void doBuildQuery(ComponentConfiguration config, Template template, Conversation conversation, Analysis analysis) {
+        final Query query = buildQuery(config, template, conversation, analysis);
         if (query != null) {
             template.getQueries().add(query);
         }
@@ -89,7 +91,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
     @Override
-    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
+    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> queryParams) throws IOException {
         // read default page-size from builder-configuration
         int pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
         // if present, a queryParam 'rows' takes precedence.
@@ -97,7 +99,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         long offset = toInt(queryParams.getFirst("start"), 0);
 
 
-        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, offset, pageSize, queryParams);
+        final QueryRequest solrRequest = buildSolrRequest(conf, template, conversation, analysis, offset, pageSize, queryParams);
         if (solrRequest == null) {
             return new SearchResult<ConversationResult>(pageSize);
         }
@@ -119,7 +121,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
                 QueryResponse answers = solrClient.query(query);
 
-                results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
+                results.add(toHassoResult(conf, solrDocument, answers.getResults(), template.getType()));
             }
             return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
         } catch (SolrServerException e) {
@@ -147,11 +149,11 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams);
+    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams);
 
     protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
-    protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation);
+    protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation, Analysis analysis);
     
     /**
      * Adds a FilterQuery that ensures that only conversations with the same <code>owner</code> as
@@ -177,12 +179,13 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         if (fieldValues == null || fieldValues.isEmpty()) {
             solrQuery.addFilterQuery("-" + getMetaField(fieldName) + ":*");
         } else {
-            final String filterVal = fieldValues.stream()
+            fieldValues.stream()
+                    .filter(StringUtils::isNotBlank)
                     .map(ClientUtils::escapeQueryChars)
                     .reduce((a, b) -> a + " OR " + b)
-                    .orElse("");
-            solrQuery.addFilterQuery(
-                    getMetaField(fieldName) + ":(" + filterVal + ")");
+                    .ifPresent(filterVal ->
+                            solrQuery.addFilterQuery(getMetaField(fieldName) + ":(" + filterVal + ")")
+                    );
         }
     }
 }

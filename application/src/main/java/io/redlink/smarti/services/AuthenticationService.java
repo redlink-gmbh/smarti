@@ -21,6 +21,8 @@ import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.webservice.pojo.AuthContext;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * Various helper-methods for checking and asserting access permissions
@@ -133,17 +136,43 @@ public class AuthenticationService {
                         .anyMatch(roles::contains));
     }
 
-    public Set<ObjectId> getClients(Authentication authentication) {
+    public Set<Client> getClients(Authentication authentication) {
+        Set<ObjectId> ids = getClientIds(authentication);
+        if(CollectionUtils.isEmpty(ids)){
+            return Collections.emptySet();
+        } else {
+            return StreamSupport.stream(clientService.list(ids).spliterator(),false).collect(Collectors.toSet());
+        }
+    }
+    public Set<ObjectId> getClientIds(Authentication authentication) {
         if (authentication == null) return Collections.emptySet();
         return userService.getClientsForUser(authentication.getName());
     }
 
-    public Set<ObjectId> getClients(AuthContext authContext) {
+    public Set<ObjectId> getClientIds(AuthContext authContext) {
         if (authContext == null) return Collections.emptySet();
         if (StringUtils.isNotBlank(authContext.getAuthToken())) {
             final ObjectId clientId = authTokenService.getClientId(authContext.getAuthToken());
             if (clientId != null) {
                 return Collections.singleton(clientId);
+            } else {
+                return Collections.emptySet();
+            }
+        }
+        return getClientIds(authContext.getAuthentication());
+    }
+    public Set<Client> getClients(AuthContext authContext) {
+        if (authContext == null) return Collections.emptySet();
+        if (StringUtils.isNotBlank(authContext.getAuthToken())) {
+            final ObjectId clientId = authTokenService.getClientId(authContext.getAuthToken());
+            if (clientId != null) {
+                Client client = clientService.get(clientId);
+                if(client != null){
+                    return Collections.singleton(client);
+                } else {
+                    log.debug("NOT_FOUND client {}", clientId);
+                    return Collections.emptySet();
+                }
             } else {
                 return Collections.emptySet();
             }
@@ -186,7 +215,7 @@ public class AuthenticationService {
      */
     public Client assertClient(AuthContext authContext, ObjectId clientId) {
         if (!hasRole(authContext, ADMIN)) {
-            if (!getClients(authContext).contains(clientId)) {
+            if (!getClientIds(authContext).contains(clientId)) {
                 log.debug("DENY access to client {} for {}", clientId, authContext);
                 throw new NotFoundException(Client.class, clientId);
             }
@@ -221,7 +250,7 @@ public class AuthenticationService {
         }
 
         if (!hasRole(authContext, ADMIN)) {
-            if (!getClients(authContext).contains(conversation.getOwner())) {
+            if (!getClientIds(authContext).contains(conversation.getOwner())) {
                 log.debug("DENY access to conversation {} for {}", conversationId, authContext);
                 throw new NotFoundException(Conversation.class, conversationId);
             }
@@ -251,22 +280,19 @@ public class AuthenticationService {
     }
 
     public boolean hasAccessToClient(AuthContext authContext, ObjectId clientId) {
-        return hasRole(authContext, ADMIN) || getClients(authContext).contains(clientId);
+        return hasRole(authContext, ADMIN) || getClientIds(authContext).contains(clientId);
     }
 
     public boolean hasAccessToConversation(AuthContext authContext, ObjectId conversationId) {
         final Conversation conversation = conversationService.getConversation(conversationId);
 
         return conversation != null
-                && (hasRole(authContext, ADMIN) || getClients(authContext).contains(conversation.getOwner()));
+                && (hasRole(authContext, ADMIN) || getClientIds(authContext).contains(conversation.getOwner()));
 
     }
 
     public Set<Client> assertClients(AuthContext authContext) {
-        final Set<Client> clients = assertClientIds(authContext).stream()
-                .map(clientService::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+        final Set<Client> clients = getClients(authContext);
         if (clients.isEmpty()) {
             log.debug("NO_CLIENT for {}", authContext);
             throw new AccessDeniedException("Access Denied");
@@ -279,7 +305,7 @@ public class AuthenticationService {
     }
 
     public Set<ObjectId> assertClientIds(AuthContext authContext) {
-        final Set<ObjectId> clientIds = getClients(authContext);
+        final Set<ObjectId> clientIds = getClientIds(authContext);
         if (clientIds.isEmpty()) {
             log.debug("NO_CLIENT for {}", authContext);
             throw new AccessDeniedException("Access Denied");

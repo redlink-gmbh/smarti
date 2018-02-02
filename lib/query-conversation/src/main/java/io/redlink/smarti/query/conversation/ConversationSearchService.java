@@ -16,15 +16,16 @@
  */
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.SearchResult;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.util.SearchUtils;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -61,22 +62,37 @@ public class ConversationSearchService {
     private final SolrCoreContainer solrServer;
     private final SolrCoreDescriptor conversationCore;
 
-    private final StoreService storeService;
+    private final ConversationService conversationService;
 
     @Autowired
-    public ConversationSearchService(SolrCoreContainer solrServer, @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, StoreService storeService) {
+    public ConversationSearchService(SolrCoreContainer solrServer, @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, ConversationService storeService) {
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
-        this.storeService = storeService;
+        this.conversationService = storeService;
     }
 
-
     public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
+        if (client == null) return search((ObjectId) null, queryParams);
+        else return search(client.getId(), queryParams);
+    }
+    public SearchResult<Conversation> search(ObjectId client, MultiValueMap<String, String> queryParams) throws IOException {
+        if (client == null) return search((Set<ObjectId>) null, queryParams);
+        else return search(Collections.singleton(client), queryParams);
+    }
+
+    public SearchResult<Conversation> search(Set<ObjectId> clients, MultiValueMap<String, String> queryParams) throws IOException {
 
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, "text"));
 
         solrParams.add(CommonParams.FL, "id");
-        solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_OWNER, client.getId().toHexString()));
+        if (clients != null) {
+            if (clients.isEmpty()) {
+              return new SearchResult<>();
+            }
+            solrParams.add(CommonParams.FQ,
+                    String.format("%s:(%s)", FIELD_OWNER,
+                            clients.stream().map(ObjectId::toHexString).collect(Collectors.joining(" OR "))));
+        }
         solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_TYPE, TYPE_MESSAGE));
         solrParams.set(GroupParams.GROUP, "true");
         solrParams.set(GroupParams.GROUP_FIELD, "_root_");
@@ -104,17 +120,12 @@ public class ConversationSearchService {
     }
 
     private Conversation readConversation(Group group) {
-        Conversation conversation = storeService.get(new ObjectId(String.valueOf(group.getGroupValue())));
+        Conversation conversation = conversationService.getConversation(new ObjectId(String.valueOf(group.getGroupValue())));
         //clean all messages that does not fit
-        conversation.setMessages(
-                conversation.getMessages()
-                        .stream()
-                        .filter(
-                                m -> group.getResult().stream()
-                                        .anyMatch(c -> {
-                                            return c.get("id").equals(conversation.getId().toHexString() + "_" + m.getId());
-                                        })
-                        ).collect(Collectors.toList()));
+        conversation.getMessages().removeIf(
+                m -> group.getResult().stream()
+                        .noneMatch(c -> c.get("id").equals(conversation.getId().toHexString() + "_" + m.getId()))
+        );
         return conversation;
     }
 

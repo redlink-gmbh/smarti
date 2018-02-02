@@ -1,0 +1,25 @@
+{
+      "_class" : "io.redlink.smarti.query.solr.SolrSearchQuery",
+      "displayTitle" : "solrsearch",
+      "confidence" : 0.8,
+      "url" : "http://search.db.de/change/me?q=%22M%C3%BCnchen%22%5E0.8487954+OR+%22Berlin%22%5E0.84876066+OR+%22Peter%5C+Tester%22%5E0.84794664",
+      "creator" : "queryBuilder:solrsearch:solrsearch",
+      "inlineResultSupport" : false,
+      "state" : "Suggested",
+      "resultConfig" : {
+        "mappings" : {
+          "source" : null,
+          "title" : null,
+          "description" : null,
+          "type" : null,
+          "doctype" : null,
+          "link" : null,
+          "date" : null,
+          "thumb" : null
+        },
+        "numOfRows" : 10
+      },
+      "defaults" : { },
+      "queryParams" : [ "\"München\"^0.8487954", "\"Berlin\"^0.84876066", "\"Peter\\ Tester\"^0.84794664" ],
+      "filterQueries" : [ ]
+    }

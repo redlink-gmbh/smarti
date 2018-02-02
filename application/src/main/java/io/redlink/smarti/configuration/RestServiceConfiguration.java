@@ -18,18 +18,19 @@ package io.redlink.smarti.configuration;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.databind.type.MapLikeType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import io.redlink.smarti.model.config.ComponentConfiguration;
+import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.webservice.pojo.AuthContext;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -48,8 +49,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-@Configuration
+@org.springframework.context.annotation.Configuration
 public class RestServiceConfiguration extends WebMvcConfigurerAdapter {
+
+    private final Logger log = LoggerFactory.getLogger(RestServiceConfiguration.class);
 
     @Override
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
@@ -58,6 +61,7 @@ public class RestServiceConfiguration extends WebMvcConfigurerAdapter {
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+        log.debug("Configuring MessageConverters");
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper());
         converters.add(converter);
     }
@@ -65,7 +69,7 @@ public class RestServiceConfiguration extends WebMvcConfigurerAdapter {
     @Bean
     @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public ObjectMapper objectMapper() {
-        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
+        final Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
         // serialize ObjectId,URI as String
         builder.serializerByType(ObjectId.class, new ToStringSerializer());
         builder.serializerByType(URI.class, new ToStringSerializer());
@@ -74,51 +78,48 @@ public class RestServiceConfiguration extends WebMvcConfigurerAdapter {
 
         final ObjectMapper objectMapper = builder.build();
 
-        registerSmartiConfigModule(objectMapper);
+        log.debug("Register module 'smartiConfigModule'");
+        objectMapper.registerModule(createSmartiConfigModule(objectMapper));
 
         return objectMapper;
     }
 
-    private ObjectMapper registerSmartiConfigModule(ObjectMapper objectMapper) {
+    private SimpleModule createSmartiConfigModule(ObjectMapper objectMapper) {
+        final SimpleModule smartiConfigModule = new SimpleModule();
 
-        SimpleModule smartiConfigModule = new SimpleModule();
-        smartiConfigModule.addSerializer(io.redlink.smarti.model.config.Configuration.class, buildConfigurationSerializer(objectMapper));
-        smartiConfigModule.addDeserializer(io.redlink.smarti.model.config.Configuration.class, buildConfigurationDeserializer(objectMapper));
-        objectMapper.registerModule(smartiConfigModule);
+        smartiConfigModule.addSerializer(Configuration.class,
+                new JsonSerializer<Configuration>() {
+                    @Override
+                    public void serialize(Configuration value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+                        log.debug("Serializing Configuration with custom serializer");
+                        final TypeFactory tf = provider.getTypeFactory();
+                        final MapLikeType smartiConfigType = tf.constructMapLikeType(Map.class,
+                                tf.constructType(String.class),
+                                tf.constructCollectionLikeType(List.class,
+                                        ComponentConfiguration.class));
+                        objectMapper.writerFor(smartiConfigType).writeValue(jgen, value.getConfig());
+                    }
+                });
+        smartiConfigModule.addDeserializer(Configuration.class,
+                new JsonDeserializer<Configuration>() {
+                    @Override
+                    public Configuration deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+                        log.debug("Deserializing Configuration with custom deserializer");
 
-        return objectMapper;
-    }
+                        final TypeFactory tf = ctxt.getTypeFactory();
+                        final MapLikeType smartiConfigType = tf.constructMapLikeType(Map.class,
+                                tf.constructType(String.class),
+                                tf.constructCollectionLikeType(List.class,
+                                        ComponentConfiguration.class));
 
-    private JsonSerializer<io.redlink.smarti.model.config.Configuration > buildConfigurationSerializer(ObjectMapper objectMapper) {
-        return new JsonSerializer<io.redlink.smarti.model.config.Configuration >() {
-            @Override
-            public void serialize(io.redlink.smarti.model.config.Configuration  value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-                final TypeFactory tf = provider.getTypeFactory();
-                final MapLikeType smartiConfigType = tf.constructMapLikeType(Map.class,
-                        tf.constructType(String.class),
-                        tf.constructCollectionLikeType(List.class,
-                                ComponentConfiguration.class));
-                objectMapper.writerFor(smartiConfigType).writeValue(jgen, value.getConfig());
-            }
-        };
-    }
-    private JsonDeserializer<io.redlink.smarti.model.config.Configuration > buildConfigurationDeserializer(ObjectMapper objectMapper) {
-        return new JsonDeserializer<io.redlink.smarti.model.config.Configuration>() {
-            @Override
-            public io.redlink.smarti.model.config.Configuration deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                        final Configuration configuration = new Configuration();
+                        configuration.setConfig(objectMapper.readerFor(smartiConfigType).readValue(p, smartiConfigType));
+                        return configuration;
+                    }
 
-                final TypeFactory tf = ctxt.getTypeFactory();
-                final MapLikeType smartiConfigType = tf.constructMapLikeType(Map.class,
-                        tf.constructType(String.class),
-                        tf.constructCollectionLikeType(List.class,
-                                ComponentConfiguration.class));
+                });
 
-                final io.redlink.smarti.model.config.Configuration configuration = new io.redlink.smarti.model.config.Configuration();
-                configuration.setConfig(objectMapper.readerFor(smartiConfigType).readValue(p, smartiConfigType));
-                return configuration;
-            }
-
-        };
+        return smartiConfigModule;
     }
 
     private class AuthContextResolver implements HandlerMethodArgumentResolver {
@@ -128,8 +129,7 @@ public class RestServiceConfiguration extends WebMvcConfigurerAdapter {
         }
 
         @Override
-        public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
-
+        public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
             final String token = webRequest.getHeader("X-Auth-Token");
             final Authentication authentication = SecurityContextHolder.getContext()
                     .getAuthentication();

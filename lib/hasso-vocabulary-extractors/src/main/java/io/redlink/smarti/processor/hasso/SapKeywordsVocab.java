@@ -19,6 +19,8 @@ package io.redlink.smarti.processor.hasso;
 import io.redlink.nlp.model.ner.NerTag;
 import io.redlink.nlp.regex.ner.csv.CsvVocabularyNerDetector;
 import io.redlink.smarti.model.Token;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
@@ -36,6 +38,7 @@ public class SapKeywordsVocab extends CsvVocabularyNerDetector {
     private static final Charset UTF8 = Charset.forName("UTF-8");
     private final Resource dataFile;
 
+    @Autowired
     public SapKeywordsVocab(@Value("${smarti.extractor.synonyms.sap}") Resource dataFile) {
         super("SAP Keywords", new NerTag("sap-entity",Token.Type.Term.name()), Locale.GERMAN, CaseSensitivity.smart);
         this.dataFile = dataFile;

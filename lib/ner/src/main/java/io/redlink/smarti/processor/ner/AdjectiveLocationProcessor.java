@@ -30,6 +30,7 @@ import io.redlink.nlp.model.pos.LexicalCategory;
 import io.redlink.nlp.model.pos.Pos;
 import io.redlink.nlp.model.pos.PosSet;
 import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.Message.Origin;
@@ -96,7 +97,12 @@ public class AdjectiveLocationProcessor extends Processor {
             return;
         }
         List<Message> messages = conv.getMessages();
-        int lastAnalyzed = conv.getMeta().getLastMessageAnalyzed();
+
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int lastAnalyzed = -1;
+        
         Iterator<Section> sections = at.getSections();
         while(sections.hasNext()){
             Section section = sections.next();

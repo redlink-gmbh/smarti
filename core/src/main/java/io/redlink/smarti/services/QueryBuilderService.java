@@ -64,20 +64,20 @@ public class QueryBuilderService {
         }
     }
 
-    public void buildQueries(Client client, Conversation conversation) {
+    public void buildQueries(Client client, Conversation conversation, Analysis analysis) {
         if(conversation == null){
             return;
         }
         
         if(!confService.isConfiguration(client)) return;
 
-        Configuration clientConfig = confService.getClientConfiguration(conversation.getOwner());
+        Configuration clientConfig = confService.getClientConfiguration(client.getId());
 
-        buildQueries(clientConfig, conversation);
+        buildQueries(clientConfig, conversation, analysis);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void buildQueries(Configuration config, Conversation conversation) {
+    public void buildQueries(Configuration config, Conversation conversation, Analysis analysis) {
         if(config == null){
             throw new NullPointerException("parsed config MUST NOT be NULL!");
         }
@@ -85,7 +85,7 @@ public class QueryBuilderService {
         //retrieve the states for the queries
         final Map<Integer,Map<String,State>> queryStates = new HashMap<>();
         final AtomicInteger idx = new AtomicInteger();
-        conversation.getTemplates().forEach(t -> {
+        analysis.getTemplates().forEach(t -> {
             final Map<String,State> templateQueryStates = new HashMap<>();
             t.getQueries().stream()
                 .filter(q -> q.getCreator() != null)
@@ -104,7 +104,7 @@ public class QueryBuilderService {
             for(ComponentConfiguration cc : builderConfigs){
                 log.trace("build queries [{} | {} | {}]", queryBuilder, cc, conversation);
                 try {
-                    queryBuilder.buildQuery(conversation, cc);
+                    queryBuilder.buildQuery(conversation, analysis, cc);
                 } catch (RuntimeException e) {
                     log.warn("Failed to build Queries using {} with {} for {} ({} - {})",
                             queryBuilder, cc, conversation, e.getClass().getSimpleName(), e.getMessage());
@@ -115,7 +115,7 @@ public class QueryBuilderService {
 
         //recover the state of known queries
         idx.set(0); //rest the template index
-        conversation.getTemplates().forEach(t -> {
+        analysis.getTemplates().forEach(t -> {
             final Map<String,State> templateQueryStates = queryStates.get(Integer.valueOf(idx.getAndIncrement()));
             t.getQueries().stream().forEach(q -> {
                 State state = templateQueryStates.get(q.getCreator());
@@ -126,18 +126,18 @@ public class QueryBuilderService {
         });
     }
 
-    public SearchResult<? extends Result> execute(Client client, String creator, Template template, Conversation conversation) throws IOException {
-        return execute(client, creator, template, conversation, new LinkedMultiValueMap<>());
+    public SearchResult<? extends Result> execute(Client client, String creator, Template template, Conversation conversation, Analysis analysis) throws IOException {
+        return execute(client, creator, template, conversation, analysis, new LinkedMultiValueMap<>());
     }
 
-    public SearchResult<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
+    public SearchResult<? extends Result> execute(Client client, String creatorString, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> params) throws IOException {
         Configuration conf = confService.getClientConfiguration(client);
         if(conf == null){
-            throw new IllegalStateException("The client '" + conversation.getChannelId() + "' of the parsed conversation does not have a Configuration!");
+            throw new IllegalStateException("The client '" + conversation.getOwner() + "' of the parsed conversation does not have a Configuration!");
         }
         final Entry<QueryBuilder<ComponentConfiguration>, ComponentConfiguration> creator = getQueryBuilder(creatorString, conf);
         if (creator != null) {
-            return creator.getKey().execute(creator.getValue(), template, conversation, params);
+            return creator.getKey().execute(creator.getValue(), template, conversation, analysis, params);
         } else {
             throw new NotFoundException(QueryBuilder.class, creatorString, "QueryBuilder for creator '"+ creatorString +"' not present");
         }

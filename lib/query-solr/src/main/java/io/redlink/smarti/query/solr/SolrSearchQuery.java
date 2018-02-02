@@ -29,8 +29,10 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  */
@@ -45,7 +47,10 @@ public class SolrSearchQuery extends Query {
     @JsonProperty("filterQueries")
     private Set<String> filterQueries = new LinkedHashSet<>();
 
-    public SolrSearchQuery(String creator, ResultConfig resultConfig, Map<String,Object> defaults) {
+    @JsonCreator
+    public SolrSearchQuery(@JsonProperty("creator") String creator, 
+            @JsonProperty("resultConfig") ResultConfig resultConfig, 
+            @JsonProperty("defaults") Map<String,Object> defaults) {
         super(creator);
         if(resultConfig == null){
             throw new NullPointerException("ResultConfig MUST NOT be NULL!");
@@ -79,6 +84,7 @@ public class SolrSearchQuery extends Query {
         this.filterQueries.clear();
         addFilterQuery(fq);
     }
+
     public final void addFilterQuery(String fq){
         if(StringUtils.isNoneBlank(fq)){
             this.filterQueries.add(fq);
@@ -100,6 +106,7 @@ public class SolrSearchQuery extends Query {
     public final ResultConfig getResultConfig() {
         return resultConfig;
     }
+    
     /**
      * Additional Solr Parameters that SHOULD be parsed with the query as defaults
      * @return the solr default parameters
@@ -113,7 +120,5 @@ public class SolrSearchQuery extends Query {
     public String toString() {
         return "SolrSearchQuery [title=" + getDisplayTitle() + ", creator=" + getCreator() + ",params=" + queryParams + "]";
     }
-    
-    
 }
 

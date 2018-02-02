@@ -5,6 +5,19 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.0 Release Notes
+
+=== Upgrading
+
+With `0.7.0`, the datamodel has changed so data from older installations
+must be migrated to the new model.
+
+A migration script is available and must be applied manually:
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-05_0.6-to-0.7.js[lines=112..-1]
+-----------------------------------------------
+
 
 == Smarti 0.6.1 Release Notes
 January 8^th^, 2018
