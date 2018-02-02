@@ -28,19 +28,16 @@ import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import org.springframework.util.MultiValueMap;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_KEYWORD;
 
 /**
  */
@@ -56,59 +53,69 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         super(CREATOR_NAME, solrServer, conversationCore, registry);
     }
 
-    @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
-        final ConversationSearchQuery searchQuery = buildQuery(conf, intent, conversation, analysis);
-        if (searchQuery == null) {
-            return null;
-        }
+//    @Override
+//    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
+//        final ConversationSearchQuery searchQuery = buildQuery(conf, intent, conversation, analysis);
+//        if (searchQuery == null) {
+//            return null;
+//        }
+//
+//        // TODO: build the real request.
+//        final SolrQuery solrQuery = new SolrQuery(searchQuery.getKeyword().stream().reduce((s, s2) -> s + " OR " + s2).orElse("*:*"));
+//        solrQuery.addField("*").addField("score");
+//        solrQuery.set(CommonParams.DF, "text");
+//        solrQuery.addFilterQuery(String.format("%s:%s",FIELD_TYPE, TYPE_MESSAGE));
+//        solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort("vote", SolrQuery.ORDER.desc);
+//
+//        // #39 - paging
+//        solrQuery.setStart((int) offset);
+//        solrQuery.setRows(pageSize);
+//
+//        //since #46 the client field is used to filter for the current user
+//        addClientFilter(solrQuery, conversation);
+//        
+//        //since #191
+//        if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
+//            addCompletedFilter(solrQuery);
+//        }
+//        
+//        addPropertyFilters(solrQuery, conversation, conf);
+//        
+//        return new QueryRequest(solrQuery);
+//    }
 
-        // TODO: build the real request.
-        final SolrQuery solrQuery = new SolrQuery(searchQuery.getKeyword().stream().reduce((s, s2) -> s + " OR " + s2).orElse("*:*"));
-        solrQuery.addField("*").addField("score");
-        solrQuery.set(CommonParams.DF, "text");
-        solrQuery.addFilterQuery(String.format("%s:%s",FIELD_TYPE, TYPE_MESSAGE));
-        solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort("vote", SolrQuery.ORDER.desc);
+//    @Override
+//    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
+//        final ConversationResult hassoResult = new ConversationResult(getCreatorName(conf));
+//        hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
+//        hassoResult.setContent(String.valueOf(solrDocument.getFirstValue("message")));
+//        hassoResult.setReplySuggestion(hassoResult.getContent());
+//        hassoResult.setConversationId(String.valueOf(solrDocument.getFieldValue("conversation_id")));
+//        hassoResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("message_idx"))));
+//        hassoResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("vote"))));
+//        return hassoResult;
+//    }
 
-        // #39 - paging
-        solrQuery.setStart((int) offset);
-        solrQuery.setRows(pageSize);
-
-        //since #46 the client field is used to filter for the current user
-        addClientFilter(solrQuery, conversation);
-
-        addPropertyFilters(solrQuery, conversation, conf);
-        
-        return new QueryRequest(solrQuery);
-    }
-
-    @Override
-    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName(conf));
-        hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
-        hassoResult.setContent(String.valueOf(solrDocument.getFirstValue("message")));
-        hassoResult.setReplySuggestion(hassoResult.getContent());
-        hassoResult.setConversationId(String.valueOf(solrDocument.getFieldValue("conversation_id")));
-        hassoResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("message_idx"))));
-        hassoResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue("vote"))));
-        return hassoResult;
-    }
-
-    @Override
-    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
-        ConversationResult result = toHassoResult(conf, question, type);
-        for(SolrDocument answer : answers) {
-            result.addAnswer(toHassoResult(conf, answer,type));
-        }
-        return result;
-    }
+//    @Override
+//    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
+//        ConversationResult result = toHassoResult(conf, question, type);
+//        for(SolrDocument answer : answers) {
+//            result.addAnswer(toHassoResult(conf, answer,type));
+//        }
+//        return result;
+//    }
 
     @Override
     protected ConversationSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
-        final List<Token> keywords = getTokens("keyword", intent, analysis);
+        List<Token> keywords = getTokens(ROLE_KEYWORD, intent, analysis);
+        int contextStart = getContextStart(conversation.getMessages());
+        if(contextStart > 0){
+            keywords = keywords.stream()
+                .filter(t -> t.getMessageIdx() >= contextStart)
+                .collect(Collectors.toList());
+        }
         if (keywords == null || keywords.isEmpty()) return null;
 
-        // TODO: Build the real query.
         final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName(conf));
         final List<String> strs = keywords.stream()
                 .map(Token::getValue)
@@ -123,9 +130,19 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 .setState(State.Suggested)
                 .setConfidence(.6f)
                 .setDisplayTitle(displayTitle);
-
+        
         query.setKeywords(strs);
-
+        
+        query.getDefaults().put("rows", conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, DEFAULT_PAGE_SIZE));
+        if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
+            query.addFilterQuery(FIELD_COMPLETED + ":true");
+        }
+        //add config specific filter queries
+        SolrQuery sq = new SolrQuery();
+        addPropertyFilters(sq, conversation, conf);
+        if(sq.getFilterQueries() != null){
+            Arrays.stream(sq.getFilterQueries()).forEach(query::addFilterQuery);
+        }
         return query;
     }
 }
