@@ -139,7 +139,7 @@ public class ConversationWebservice {
     public Page<ConversationData> listConversations(
             AuthContext authContext,
             @ApiParam(name=PARAM_CLIENT_ID,allowMultiple=true,required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
-            @ApiParam(name=PARAM_PAGE,required=false, defaultValue="0", value=DESCRIPTION_PARAM_PAGE) @RequestParam(value = PARAM_PAGE, required = false, defaultValue = "0") int page,
+            @ApiParam(name=PARAM_PAGE, required=false, defaultValue="0", value=DESCRIPTION_PARAM_PAGE) @RequestParam(value = PARAM_PAGE, required = false, defaultValue = "0") int page,
             @ApiParam(name=PARAM_PAGE_SIZE, required=false, defaultValue=DEFAULT_PAGE_SIZE, value=DESCRIPTION_PARAM_PAGE_SIZE) @RequestParam(value = PARAM_PAGE_SIZE, required = false, defaultValue = DEFAULT_PAGE_SIZE) int pageSize,
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
@@ -164,12 +164,12 @@ public class ConversationWebservice {
     public ResponseEntity<ConversationData> createConversation(
             AuthContext authContext,
             @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
-            @RequestBody(required = false) ConversationData parsedCd,
+            @RequestBody(required = false) ConversationData parsedConversation,
             @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
-        final Conversation conversation = parsedCd == null ? new Conversation() : ConversationData.toModel(parsedCd);
+        final Conversation conversation = parsedConversation == null ? new Conversation() : ConversationData.toModel(parsedConversation);
         // Create a new Conversation -> id must be null
         conversation.setId(null);
         //TODO: check which fields we allow to be set on create...
@@ -682,14 +682,14 @@ public class ConversationWebservice {
         @ApiResponse(code = 501, message = "not yet implemented")
     })
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Analysis> rerunAnalysis(
+    public ResponseEntity<?> rerunAnalysis(
             AuthContext authContext,
             @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @RequestBody Analysis updatedAnalysis,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
-    ) {
+    ) throws InterruptedException, ExecutionException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
         final Client client = getResponseClient(authContext, clientId, conversation);
@@ -713,8 +713,29 @@ public class ConversationWebservice {
 
         //NOTE: a simple implementation (that ignores above issues) might just take the parsed analysis
         //      and the current state of the Conversation to update Templates and queries.
-
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        
+        final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation, updatedAnalysis);
+        if(callback == null){
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .body(analysis.get());
+        } else {
+            analysis.whenComplete((a , e) -> {
+                if(a != null){
+                    log.debug("callback {} with {}", callback, a);
+                    callbackExecutor.execute(callback, CallbackPayload.success(a));
+                } else {
+                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
+                    log.debug("STACKTRACE: ",e);
+                    callbackExecutor.execute(callback, CallbackPayload.error(e));
+                } 
+            });
+            return ResponseEntity.accepted()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .build();
+        }
     }
 
 
@@ -899,15 +920,10 @@ public class ConversationWebservice {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         final Client client = getResponseClient(authContext, clientId, conversation);
 
-        if(updatedAnalysis != null){
-            //TODO: See information at #rerunAnalysis(..)
-            return ResponseEntities.status(HttpStatus.NOT_IMPLEMENTED,"parsing an updated analysis not yet supported!");
-        }
-
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
-        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation, updatedAnalysis);
         if(callback != null){
             analysis.whenComplete((a , e) -> {
                 if(a != null){
