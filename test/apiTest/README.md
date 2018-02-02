@@ -16,9 +16,9 @@ docker run --rm smarti:apiTest [options]
 _Mandatory arguments to long options are mandatory for short options too_
 
 * `--username`: _admin-user_ for Smarti, default is `admin`
-* `--password`: _admin_password_ for Smarti, default ist `admin`
-* `--url`: _base-url_ for Smarti, default ist `http://localhost:8080/`
-
+* `--password`: _admin_password_ for Smarti, default is `admin`
+* `--url`: _base-url_ for Smarti, default is `http://localhost:8080/`
+* `--loglevel`: _loglevel_ for Requests, default is `error`
 
 ### Troubleshooting
 
