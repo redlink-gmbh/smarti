@@ -1,8 +1,0 @@
-FROM solr:6.6.2-alpine
-
-COPY ./lib/query-conversation/target/classes/solr/core/ /opt/solr/server/solr/
-
-USER root
-RUN chown solr:solr -R /opt/solr/server/solr/conversation
-
-USER solr

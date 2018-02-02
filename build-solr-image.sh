@@ -1,1 +1,0 @@
-docker build . -f ./integration/solr-dockerfile -t solr:6.6.2-alpine-smarti
