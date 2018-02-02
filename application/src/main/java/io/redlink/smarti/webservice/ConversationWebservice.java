@@ -23,6 +23,7 @@ import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.query.conversation.ConversationSearchService;
+import io.redlink.smarti.query.conversation.MessageSearchService;
 import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthenticationService;
 import io.redlink.smarti.services.ClientService;
@@ -55,6 +56,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
 
 
 /**
@@ -118,19 +121,24 @@ public class ConversationWebservice {
     private final ConversationService conversationService;
     private final AnalysisService analysisService;
     private final ConversationSearchService conversationSearchService;
+    private final MessageSearchService messageSearchService;
     private final AuthenticationService authenticationService;
     private final ClientService clientService;
+
 
 
     @Autowired
     public ConversationWebservice(AuthenticationService authenticationService, 
                                   ClientService clientService, ConversationService conversationService, AnalysisService analysisService,
-                                  CallbackService callbackExecutor, @Autowired(required = false) ConversationSearchService conversationSearchService) {
+                                  CallbackService callbackExecutor, 
+                                  Optional<ConversationSearchService> conversationSearchService,
+                                  Optional<MessageSearchService> messageSearchService) {
         this.callbackExecutor = callbackExecutor;
         this.conversationService = conversationService;
         this.analysisService = analysisService;
         this.clientService = clientService;
-        this.conversationSearchService = conversationSearchService;
+        this.conversationSearchService = conversationSearchService.orElse(null);
+        this.messageSearchService = messageSearchService.orElse(null);
         this.authenticationService = authenticationService;
     }
 
@@ -236,6 +244,36 @@ public class ConversationWebservice {
         if (conversationSearchService != null) {
             try {
                 return ResponseEntity.ok(conversationSearchService.search(clientIds, queryParams));
+            } catch (IOException e) {
+                return ResponseEntities.internalServerError(e);
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+    }
+    
+    /**
+     * Allow conversation-independent search.
+     * @param clientName the client id
+     * @param request the request to get the query params
+     */
+    @ApiOperation(value = "search for messages", response = SearchResult.class,
+            notes = "like solr.")
+    @RequestMapping(value = "search-message", method = RequestMethod.GET)
+    public ResponseEntity<?> searchMessage(
+            AuthContext authContext,
+            @ApiParam() @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
+            @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams) {
+        final Set<ObjectId> clientIds = getClientIds(authContext, owners);
+        if (log.isTraceEnabled()) {
+            log.debug("{}[{}]: message-search for '{}'", clientIds, authContext, queryParams.get("q"));
+        } else {
+            log.debug("{}: message-search for '{}'", clientIds, queryParams.get("q"));
+        }
+
+        if (messageSearchService != null) {
+            try {
+                return ResponseEntity.ok(messageSearchService.search(clientIds, queryParams));
             } catch (IOException e) {
                 return ResponseEntities.internalServerError(e);
             }

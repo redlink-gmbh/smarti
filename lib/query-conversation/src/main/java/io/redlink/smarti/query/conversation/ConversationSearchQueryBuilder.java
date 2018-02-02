@@ -33,7 +33,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
@@ -44,6 +47,9 @@ import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDe
 @Component
 public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
 
+
+    public static final String CONFIG_KEY_DEFAULTS = "defaults";
+    
     public static final String CREATOR_NAME = "query_related_search";
 
     @Autowired
@@ -133,7 +139,25 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         
         query.setKeywords(strs);
         
-        query.getDefaults().put("rows", conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, DEFAULT_PAGE_SIZE));
+        //apply the defaults from the configuration
+        Object value = conf.getConfiguration(CONFIG_KEY_DEFAULTS);
+        if(value instanceof Map){
+            query.getDefaults().putAll((Map<String,Object>)value);;
+        } else if(value instanceof Collection){
+            ((Collection<Object>)value).stream()
+                .filter(v -> v instanceof Map)
+                .map(v -> Map.class.cast(v))
+                .filter(m -> m.containsKey("key") && m.containsKey("value"))
+                .forEach(m -> query.getDefaults().put(String.valueOf(m.get("key")), m.get("value")));
+        }
+        //apply the ROE
+        //NOTE: do not override if row is not set but rows is set as default 
+        if(conf.isConfiguration(CONFIG_KEY_PAGE_SIZE) || !query.getDefaults().containsKey("rows")){
+            query.getDefaults().put("rows", conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, DEFAULT_PAGE_SIZE));
+        }
+        if(!query.getDefaults().containsKey("fl")){
+            query.getDefaults().put("fl", "id,message_id,meta_channel_id,user_id,time,message,type");
+        }
         if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
             query.addFilterQuery(FIELD_COMPLETED + ":true");
         }
@@ -145,4 +169,26 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         }
         return query;
     }
+    
+    @Override
+    public ComponentConfiguration getDefaultConfiguration() {
+        ComponentConfiguration cc = super.getDefaultConfiguration();
+        if(cc == null){
+            cc = new ComponentConfiguration();
+        }
+        Map<String,Object> defaults = new HashMap<>();
+        defaults.put("sort", "time desc");
+        defaults.put("hl", "true");
+        defaults.put("hl.fl", "message");
+        cc.setConfiguration(CONFIG_KEY_DEFAULTS, defaults.entrySet().stream()
+                .map(e -> {
+                    Map<String,Object> map = new HashMap<>(2);
+                    map.put("key", e.getKey());
+                    map.put("value", e.getValue());
+                    return map;
+                })
+                .collect(Collectors.toList()));
+        return cc;
+    }
+    
 }
