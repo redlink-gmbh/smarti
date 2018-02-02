@@ -10,9 +10,14 @@
 angular.module('smartiApp')
   .controller('OverviewCtrl', function ($scope, $window, $location, ClientService) {
 
+    $scope.defaultClient = null;
+
     function listClients() {
       ClientService.list().then(function(clients){
         $scope.clients = clients;
+        $scope.defaultClient = clients.filter(function (c) {
+          return c.data.defaultClient || false;
+        })[0] || null;
       })
     }
 
@@ -22,6 +27,12 @@ angular.module('smartiApp')
 
     $scope.clone = function(clientId) {
       $location.path('client/' + clientId).search('clone');
+    };
+
+    $scope.cloneDefaultClient = function () {
+      if ($scope.defaultClient) {
+        $scope.clone($scope.defaultClient.data.id);
+      }
     };
 
     $scope.createClient = function() {
