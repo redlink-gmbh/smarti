@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<enumsConfig>
+  <enum name="doctype">
+    <value>document</value>
+    <value>dataitem</value>
+  </enum>
+</enumsConfig>
