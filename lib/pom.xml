@@ -38,6 +38,8 @@
         <module>token-processor</module>
         <module>query-conversation</module>
         <module>query-solr</module>
+        
+        <module>chatpal-index</module>
     </modules>
 
     <build>

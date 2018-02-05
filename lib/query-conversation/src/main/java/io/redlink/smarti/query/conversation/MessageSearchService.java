@@ -3,24 +3,25 @@ package io.redlink.smarti.query.conversation;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import io.redlink.smarti.model.Client;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
@@ -41,10 +42,13 @@ public class MessageSearchService {
         this.conversationCore = conversationCore;
     }
 
-    public Object search(Client client, Map<String, String[]> requestParameterMap) throws IOException {
-        final ModifiableSolrParams solrParams = new ModifiableSolrParams(new HashMap<>(requestParameterMap));
+    public Object search(Set<ObjectId> clientIds, MultiValueMap<String, String> requestParameterMap) throws IOException {
+        final ModifiableSolrParams solrParams = new ModifiableSolrParams();
+        requestParameterMap.entrySet().forEach(e -> solrParams.set(e.getKey(), e.getValue().toArray(new String[0])));
 
-        solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_OWNER, client.getId().toHexString()));
+        clientIds.stream().map(ObjectId::toHexString).reduce((a,b) -> a + " OR " + b).ifPresent(clientFilter -> {
+            solrParams.add(CommonParams.FQ, String.format("%s:(%s)", FIELD_OWNER, clientFilter));
+        });
         solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_TYPE, TYPE_MESSAGE));
 
         log.trace("SolrParams: {}", solrParams);

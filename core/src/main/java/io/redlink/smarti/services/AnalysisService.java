@@ -96,6 +96,18 @@ public class AnalysisService {
     public CompletableFuture<Analysis> analyze(Conversation con){
         return analyze(null, con);
     }
+    /**
+     * Analyzes the parsed conversation and returns a Future on the results.
+     * If the {@link Analysis} is present a {@link CompletableFuture#completedFuture(Object) completed Future}
+     * is returned.
+     * @param con the conversation to be analyzed by using the configuration of its owner
+     * @param parsedAnalysis if an existing analysis should be used to re-build templates and queries or <code>null</code> 
+     * to analyse the parsed conversation
+     * @return the future on the results
+     */
+    public CompletableFuture<Analysis> analyze(Conversation con, Analysis parsedAnalysis){
+        return analyze(null, con, parsedAnalysis);
+    }
     
     /**
      * Analyzes the parsed conversation by using the configuration of the parsed Client. Returns a Future on the results.
@@ -107,6 +119,20 @@ public class AnalysisService {
      * @return the future on the results
      */
     public CompletableFuture<Analysis> analyze(Client client, Conversation con){
+        return analyze(client, con, null);
+    }
+    /**
+     * Analyzes the parsed conversation by using the configuration of the parsed Client. Returns a Future on the results.
+     * If the {@link Analysis} is present a {@link CompletableFuture#completedFuture(Object) completed Future}
+     * is returned.
+     * @param client the client to analyze the conversation for. If <code>null</code> the owner of the conversation 
+     * is used as client
+     * @param con the conversation to be analyzed by using the configuration of its owner
+     * @param parsedAnalysis if an existing analysis should be used to re-build templates and queries or <code>null</code> 
+     * to analyse the parsed conversation
+     * @return the future on the results
+     */
+    public CompletableFuture<Analysis> analyze(Client client, Conversation con, Analysis parsedAnalysis){
         if(con == null || con.getId() == null || con.getOwner() == null){
             throw new BadArgumentException("conversation", "The conversation MUST NOT be NULL and MUST HAVE an 'id' and an 'owner'");
         }
@@ -117,11 +143,15 @@ public class AnalysisService {
             throw new NotFoundException(Client.class, con.getOwner(), "Client for Owner of Conversation[id=" + con.getId() + "] not found!");
         }
         AnalysisKey key = new AnalysisKey(con, getConfig(client, con));
-        Analysis present = getAnalysisIfPresent(key);
-        if(present != null){
-            return CompletableFuture.completedFuture(present);
+        if(parsedAnalysis == null){
+            Analysis present = getAnalysisIfPresent(key);
+            if(present != null){
+                return CompletableFuture.completedFuture(present);
+            } else {
+                return process(key, client, con, null);
+            }
         } else {
-            return process(key, client, con);
+            return process(key, client, con, parsedAnalysis);
         }
     }
     /**
@@ -204,36 +234,47 @@ public class AnalysisService {
         return analysisRepo.findByClientAndConversationAndDate(key.getClient(), key.getConversation(), key.getDate());
     }
 
-    private CompletableFuture<Analysis> process(final AnalysisKey key, Client client, Conversation conversation) {
+    private CompletableFuture<Analysis> process(final AnalysisKey key, Client client, Conversation conversation, Analysis parsedAnalysis) {
         CompletableFuture<Analysis> future;
-        lock.readLock().lock();
-        try { //look for an existing in an read lock
-            future = processing.get(key);
-        } finally {
-            lock.readLock().unlock();
+        if(parsedAnalysis == null){
+            lock.readLock().lock();
+            try { //look for an existing in an read lock
+                future = processing.get(key);
+            } finally {
+                lock.readLock().unlock();
+            }
+            if(future != null){
+                return future; //already processing :)
+            }
+            lock.writeLock().lock();
+        } else {
+            future = null;
         }
-        if(future != null){
-            return future; //already processing :)
-        }
-        lock.writeLock().lock();
         try { //look again for an existing in an write lock
-            future = processing.get(key); //try to find 
+            if(parsedAnalysis != null){
+                future = processing.get(key); //try to find 
+            }
             if(future == null){ //we need a new processing task
                 future = CompletableFuture.supplyAsync(() -> {
                     long start = System.currentTimeMillis();
-                    log.trace("process {}", key);
-                    Analysis analysis = prepareService.prepare(client, conversation, key.getDate());
-                    long processed = System.currentTimeMillis(); 
+                    final Analysis analysis;
+                    if(parsedAnalysis == null){
+                        log.trace("process {}", key);
+                        analysis = prepareService.prepare(client, conversation, key.getDate());
+                    } else {
+                        analysis = parsedAnalysis;
+                    }
+                    final long processed = System.currentTimeMillis();
                     log.trace("build templates for {}", key);
                     templateService.updateTemplates(client, conversation, analysis);
                     long tempatesBuilt = System.currentTimeMillis(); 
                     log.trace("build queries for {}", key);
                     queryBuilderService.buildQueries(client, conversation, analysis);
-                    long queryBuilt = System.currentTimeMillis(); 
-                    log.debug("analysed {} in {}ms (processing: {}ms, templates: {}ms, queries: {}ms)",
-                            key, queryBuilt-start, processed-start, tempatesBuilt-processed, queryBuilt-tempatesBuilt);
-
-                    if (log.isDebugEnabled()) {
+                    long queryBuilt = System.currentTimeMillis();
+                    if(log.isDebugEnabled()){
+                        log.debug("analysed {} in {}ms ({}, templates: {}ms, queries: {}ms)",
+                                key, queryBuilt-start, parsedAnalysis != null ? "no processing" : ("processing: " + (processed - start) + "ms"),
+                                tempatesBuilt-processed, queryBuilt-tempatesBuilt);
                         ConversationUtils.logConversation(log, conversation, analysis);
                     }
                     return analysis;
@@ -251,7 +292,8 @@ public class AnalysisService {
                             //(2) remove from futureMap (regardless of the result)
                             processing.remove(key);
                             //(3) update the in-memory cache (if successful)
-                            if(analysis != null){
+                            if(parsedAnalysis == null && //do not cache results for parsed analysis!!
+                                    analysis != null){
                                 //do not override cached value with an older analysis
                                 Analysis cachedAnalysis = analysisCache.getIfPresent(key.getEntry());
                                 analysisCache.put(key.getEntry(), //always put as expireAfterWrite << expireAfterAccess
