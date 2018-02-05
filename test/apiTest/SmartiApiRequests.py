@@ -1,9 +1,8 @@
-import requests
-import names
 import exrex
-import json
-import random
 import logging
+import names
+import requests
+
 
 # Authentification
 
@@ -48,9 +47,10 @@ class Authentification:
 
 class SmartiRequests:
 
-  GET_SUCCESS = 200
-  POST_SUCCESS = 201
-  DELETE_SUCCESS = 204
+  OK_SUCCESS = 200
+  CREATED = 201
+  ACCEPTED = 202
+  OK_NO_CONTENT = 204
   UPDATE_SUCCESS = 200
 
   PERM_ERROR = 403
@@ -357,7 +357,7 @@ class SmartiRequests:
 
   def postConversationAnalaysis(self, auth, conversationid, analysis, queries):
     if auth.basicAuth():
-      res = requests.post(self.url+'conversation/'+conversationid+'analysis',
+      res = requests.post(self.url+'conversation/'+conversationid+'/analysis',
                           auth=requests.auth.HTTPBasicAuth(
                               auth.username, auth.password),
                           json=analysis,
@@ -365,7 +365,7 @@ class SmartiRequests:
                           )
       return res
     else:
-      res = requests.post(self.url+'conversation/'+conversationid+'analysis',
+      res = requests.post(self.url+'conversation/'+conversationid+'/analysis',
                           headers={'X-Auth-Token': auth.token},
                           json=analysis,
                           params=queries
@@ -404,14 +404,14 @@ class SmartiRequests:
 
   def getConversationAnalysisTemplateResult(self, auth, conversationid, templateIdx, creator, queries):
     if auth.basicAuth():
-      res = requests.get(self.url+'/conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
+      res = requests.get(self.url+'conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
                          auth=requests.auth.HTTPBasicAuth(
                              auth.username, auth.password),
                          params=queries
                          )
       return res
     else:
-      res = requests.get(self.url+'/conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
+      res = requests.get(self.url+'conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
                          headers={'X-Auth-Token': auth.token},
                          params=queries
                          )
@@ -419,7 +419,7 @@ class SmartiRequests:
 
   def postConversationAnalysisTemplateResult(self, auth, conversationid, templateIdx, creator, analysis, queries):
     if auth.basicAuth():
-      res = requests.post(self.url+'/conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
+      res = requests.post(self.url+'conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
                           auth=requests.auth.HTTPBasicAuth(
                               auth.username, auth.password),
                           json=analysis,
@@ -427,7 +427,7 @@ class SmartiRequests:
                           )
       return res
     else:
-      res = requests.post(self.url+'/conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
+      res = requests.post(self.url+'conversation/'+conversationid+'/analysis/template/'+templateIdx+'/result/'+creator,
                           headers={'X-Auth-Token': auth.token},
                           json=analysis,
                           params=queries
@@ -591,7 +591,7 @@ class SmartiRequests:
 
   def postAuthRecovery(self, login, data):
     res = requests.post(self.url+'auth/recover',
-                        params={'login': login},
+                        params={'user': login},
                         json=data
                         )
     return res
@@ -741,19 +741,19 @@ class SmartiRequests:
   def cleanup(self, auth):
     self.logger.info('Cleanup ...')
     cs = self.filterClientIds(self.sendRequest(
-        self.getClient, SmartiRequests.GET_SUCCESS, auth).json())
+        self.getClient, SmartiRequests.OK_SUCCESS, auth).json())
     self.logger.info('Number of clients to clean: ' + str(len(cs)))
     for c in cs:
-      self.sendRequest(self.delClient, SmartiRequests.DELETE_SUCCESS, auth, c)
+      self.sendRequest(self.delClient, SmartiRequests.OK_NO_CONTENT, auth, c)
     usernames = set()
-    data = self.sendRequest(self.getUser, SmartiRequests.GET_SUCCESS, auth, {})
+    data = self.sendRequest(self.getUser, SmartiRequests.OK_SUCCESS, auth, {})
     for i in data.json():
       username = i.get('login')
       if username != 'admin':
         usernames.add(username)
     self.logger.info('Number of Users to clean: ' + str(len(usernames)))
     for i in usernames:
-      self.sendRequest(self.delUser, SmartiRequests.DELETE_SUCCESS, auth, i)
+      self.sendRequest(self.delUser, SmartiRequests.OK_NO_CONTENT, auth, i)
 
   # def prettyPrintJson(content):
   #     print(json.dumps(content, sort_keys=True, indent=2, separators=(',', ': ')))

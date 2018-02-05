@@ -1,9 +1,8 @@
-import names
-import unittest
-import json
-import random
 import argparse
+import json
+import names
 import sys
+import unittest
 
 from SmartiApiRequests import *
 
@@ -61,38 +60,38 @@ class SmartiTests(unittest.TestCase):
         }
     }
 
-    smarti.sendRequest(smarti.getClient, SmartiRequests.GET_SUCCESS, admin)
+    smarti.sendRequest(smarti.getClient, SmartiRequests.OK_SUCCESS, admin)
     clientid = smarti.sendRequest(
-        smarti.postClient, SmartiRequests.POST_SUCCESS, admin, body).json().get('id')
+        smarti.postClient, SmartiRequests.CREATED, admin, body).json().get('id')
     smarti.sendRequest(smarti.getClientSingle,
-                       SmartiRequests.GET_SUCCESS, admin, clientid)
+                       SmartiRequests.OK_SUCCESS, admin, clientid)
 
     smarti.sendRequest(smarti.getClientConfig,
-                       SmartiRequests.GET_SUCCESS, admin, clientid)
+                       SmartiRequests.OK_SUCCESS, admin, clientid)
     smarti.sendRequest(smarti.postClientConfig,
-                       SmartiRequests.POST_SUCCESS, admin, clientid, config)
+                       SmartiRequests.OK_SUCCESS, admin, clientid, config)
 
     smarti.sendRequest(smarti.getClientToken,
-                       SmartiRequests.GET_SUCCESS, admin, clientid)
+                       SmartiRequests.OK_SUCCESS, admin, clientid)
     tokenobj = smarti.sendRequest(
-        smarti.postClientToken, SmartiRequests.POST_SUCCESS, admin, clientid, {})
+        smarti.postClientToken, SmartiRequests.CREATED, admin, clientid, {})
     token = tokenobj.json().get('id')
     smarti.sendRequest(smarti.updateClientToken, SmartiRequests.UPDATE_SUCCESS,
                        admin, clientid, token, tokenobj.json())
 
     smarti.sendRequest(smarti.getClientUser,
-                       SmartiRequests.GET_SUCCESS, admin, clientid)
+                       SmartiRequests.OK_SUCCESS, admin, clientid)
     smarti.sendRequest(smarti.postClientUser,
-                       SmartiRequests.POST_SUCCESS, admin, clientid, user)
+                       SmartiRequests.CREATED, admin, clientid, user)
     smarti.sendRequest(smarti.updateClientUser,
                        SmartiRequests.UPDATE_SUCCESS, admin, clientid, username)
 
     smarti.sendRequest(smarti.delClientUser,
-                       SmartiRequests.DELETE_SUCCESS, admin, clientid, username)
+                       SmartiRequests.OK_NO_CONTENT, admin, clientid, username)
     smarti.sendRequest(smarti.delClientToken,
-                       SmartiRequests.DELETE_SUCCESS, admin, clientid, token)
+                       SmartiRequests.OK_NO_CONTENT, admin, clientid, token)
     smarti.sendRequest(
-        smarti.delClient, SmartiRequests.DELETE_SUCCESS, admin, clientid)
+        smarti.delClient, SmartiRequests.OK_NO_CONTENT, admin, clientid)
 
   def testConversationWebservice(self):
     clientname = str(names.get_last_name()).lower()
@@ -120,45 +119,45 @@ class SmartiTests(unittest.TestCase):
     }
 
     clientid = smarti.sendRequest(
-        smarti.postClient, SmartiRequests.POST_SUCCESS, admin, body).json().get('id')
+        smarti.postClient, SmartiRequests.CREATED, admin, body).json().get('id')
     smarti.logger.info('ClientID for this test: '+clientid)
     smarti.sendRequest(smarti.postClientConfig,
-                       SmartiRequests.POST_SUCCESS, admin, clientid, config)
+                       SmartiRequests.OK_SUCCESS, admin, clientid, config)
     token = smarti.sendRequest(
-        smarti.postClientToken, SmartiRequests.POST_SUCCESS, admin, clientid, {}).json().get('token')
+        smarti.postClientToken, SmartiRequests.CREATED, admin, clientid, {}).json().get('token')
     smarti.logger.info('Token for this test: '+token)
     user = Authentification(token)
 
     smarti.sendRequest(smarti.getConversation,
-                       SmartiRequests.GET_SUCCESS, user, {})
+                       SmartiRequests.OK_SUCCESS, user, {})
     conversationid = smarti.sendRequest(
-        smarti.postConversation, SmartiRequests.POST_SUCCESS, user, {}, {}).json().get('id')
+        smarti.postConversation, SmartiRequests.CREATED, user, {}, {}).json().get('id')
     smarti.logger.info('ConversationID for this test: '+conversationid)
     smarti.sendRequest(smarti.getConversationSearch,
-                       SmartiRequests.GET_SUCCESS, user, {})
+                       SmartiRequests.OK_SUCCESS, user, {})
     smarti.sendRequest(smarti.getConversationSingle,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, {})
     smarti.sendRequest(smarti.getConversationAnalysis,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, {})
     smarti.sendRequest(smarti.postConversationAnalaysis,
-                       SmartiRequests.POST_SUCCESS, user, conversationid, {}, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, {}, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplate,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplateSingle,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, '0', {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, '0', {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplateResult,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, '0', creator, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, '0', creator, {})
     smarti.sendRequest(smarti.postConversationAnalysisTemplateResult,
-                       SmartiRequests.POST_SUCCESS, user, conversationid, '0', creator, analysis, {})
+                       SmartiRequests.CREATED, user, conversationid, '0', creator, analysis, {})
     smarti.sendRequest(smarti.getConversationAnalysisToken,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, {})
     smarti.sendRequest(smarti.getConversationMessage,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, {})
     messageid = smarti.sendRequest(smarti.postConversationMessage,
-                                   SmartiRequests.POST_SUCCESS, user, conversationid, message, {}).json().get('id')
+                                   SmartiRequests.CREATED, user, conversationid, message, {}).json().get('id')
     smarti.logger.info('MessageID for this test: ' + messageid)
     smarti.sendRequest(smarti.getConversationMessageSingle,
-                       SmartiRequests.GET_SUCCESS, user, conversationid, messageid, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, messageid, {})
     smarti.sendRequest(smarti.updateConversationMessage,
                        SmartiRequests.UPDATE_SUCCESS, user, conversationid, messageid, message, {})
     smarti.sendRequest(smarti.updateConversationMessageField, SmartiRequests.UPDATE_SUCCESS,
@@ -166,15 +165,17 @@ class SmartiTests(unittest.TestCase):
     smarti.sendRequest(smarti.updateConversationField, SmartiRequests.UPDATE_SUCCESS,
                        user, conversationid, cfieldname, cfield, {})
     smarti.sendRequest(smarti.delConversationMessage,
-                       SmartiRequests.DELETE_SUCCESS, user, conversationid, messageid, {})
+                       SmartiRequests.OK_NO_CONTENT, user, conversationid, messageid, {})
     smarti.sendRequest(smarti.delConversationField,
-                       SmartiRequests.DELETE_SUCCESS, user, conversationid, cfieldname, {})
+                       SmartiRequests.OK_NO_CONTENT, user, conversationid, cfieldname, {})
 
   def testAllUserRequests(self):
     username = 'TestUser'
+    password = 'password'
     signupUser = {
         "login": username,
-        "roles": []
+        "password": password,
+        "email": username+'@example.com'
     }
     user = {
         "login": username,
@@ -182,33 +183,32 @@ class SmartiTests(unittest.TestCase):
         "clients": [],
         "profile": {
             "name": username,
-            "email": username+'@'+username+'.com'
+            "email": username+'@example.com'
         }
     }
-    password = 'password'
     roles = []
     newPassword = 'newPassword'
 
-    smarti.sendRequest(smarti.getAuth, SmartiRequests.GET_SUCCESS)
+    smarti.sendRequest(smarti.getAuth, SmartiRequests.OK_SUCCESS)
     smarti.sendRequest(smarti.getAuthCheck,
-                       SmartiRequests.GET_SUCCESS, admin_user)
+                       SmartiRequests.OK_SUCCESS, admin_user)
     smarti.sendRequest(smarti.postAuthRecovery,
-                       SmartiRequests.POST_SUCCESS, admin_user, {})
+                       SmartiRequests.ACCEPTED, admin_user, {})
     smarti.sendRequest(smarti.postAuthSignup,
-                       SmartiRequests.POST_SUCCESS, signupUser)
-    smarti.sendRequest(smarti.getUser, SmartiRequests.GET_SUCCESS, admin, {})
+                       SmartiRequests.CREATED, signupUser)
+    smarti.sendRequest(smarti.getUser, SmartiRequests.OK_SUCCESS, admin, {})
     smarti.sendRequest(
-        smarti.postUser, SmartiRequests.POST_SUCCESS, admin, user)
+        smarti.postUser, SmartiRequests.CREATED, admin, user)
     smarti.sendRequest(smarti.getUserSingle,
-                       SmartiRequests.GET_SUCCESS, admin, username)
+                       SmartiRequests.OK_SUCCESS, admin, username)
     smarti.sendRequest(
         smarti.updateUser, SmartiRequests.UPDATE_SUCCESS, admin, username, user)
     smarti.sendRequest(smarti.updateUserPassword, SmartiRequests.UPDATE_SUCCESS,
                        admin, username, {"password": newPassword})
     smarti.sendRequest(smarti.updateUserRoles,
-                       SmartiRequests.UPDATE_SUCCESS, admin, username, {"roles": roles})
+                       SmartiRequests.UPDATE_SUCCESS, admin, username, roles)
     smarti.sendRequest(
-        smarti.delUser, SmartiRequests.DELETE_SUCCESS, admin, username)
+        smarti.delUser, SmartiRequests.OK_NO_CONTENT, admin, username)
 
   def testFull(self):
     messageNum = 3
@@ -247,16 +247,16 @@ class SmartiTests(unittest.TestCase):
     }
 
     clientid = smarti.sendRequest(
-        smarti.postClient, SmartiRequests.POST_SUCCESS, admin, body).json().get('id')
+        smarti.postClient, SmartiRequests.CREATED, admin, body).json().get('id')
     smarti.logger.info('ClientID for this test: '+clientid)
     smarti.sendRequest(smarti.postClientConfig,
-                       SmartiRequests.POST_SUCCESS, admin, clientid, config)
+                       SmartiRequests.OK_SUCCESS, admin, clientid, config)
     token = smarti.sendRequest(
-        smarti.postClientToken, SmartiRequests.POST_SUCCESS, admin, clientid, {}).json().get('token')
+        smarti.postClientToken, SmartiRequests.CREATED, admin, clientid, {}).json().get('token')
     smarti.logger.info('Token for this test: '+token)
     tokenauth = Authentification(token)
     smarti.sendRequest(
-        smarti.postUser, SmartiRequests.POST_SUCCESS, admin, user)
+        smarti.postUser, SmartiRequests.CREATED, admin, user)
     smarti.sendRequest(smarti.updateUserPassword, SmartiRequests.UPDATE_SUCCESS,
                        admin, username, {"password": password})
     smarti.sendRequest(smarti.updateUserRoles,
@@ -268,49 +268,49 @@ class SmartiTests(unittest.TestCase):
 
     # Create Conversation via token
     conversationid1 = smarti.sendRequest(
-        smarti.postConversation, SmartiRequests.POST_SUCCESS, tokenauth, {}, {}).json().get('id')
+        smarti.postConversation, SmartiRequests.CREATED, tokenauth, {}, {}).json().get('id')
     smarti.logger.info(
         'ConversationID for token based authentification in this test: '+conversationid1)
-    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.POST_SUCCESS,
+    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.CREATED,
                        tokenauth, conversationid1, smarti.randomMessage(), {})
-    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.POST_SUCCESS,
+    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.CREATED,
                        tokenauth, conversationid1, smarti.randomMessage(), {})
-    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.POST_SUCCESS,
+    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.CREATED,
                        tokenauth, conversationid1, smarti.randomMessage(), {})
     smarti.sendRequest(smarti.getConversationAnalysis,
-                       SmartiRequests.GET_SUCCESS, tokenauth, conversationid1, {})
+                       SmartiRequests.OK_SUCCESS, tokenauth, conversationid1, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplate,
-                       SmartiRequests.GET_SUCCESS, tokenauth, conversationid1, {})
+                       SmartiRequests.OK_SUCCESS, tokenauth, conversationid1, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplateResult,
-                       SmartiRequests.GET_SUCCESS, tokenauth, conversationid1, '0', creator, {})
+                       SmartiRequests.OK_SUCCESS, tokenauth, conversationid1, '0', creator, {})
 
     # Create Conversation via user
     conversationid2 = smarti.sendRequest(
-        smarti.postConversation, SmartiRequests.POST_SUCCESS, userauth, {}, {}).json().get('id')
+        smarti.postConversation, SmartiRequests.CREATED, userauth, {}, {}).json().get('id')
     smarti.logger.info(
         'ConversationID for user based authentification in this test: '+conversationid2)
-    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.POST_SUCCESS,
+    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.CREATED,
                        userauth, conversationid2, smarti.randomMessage(), {})
-    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.POST_SUCCESS,
+    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.CREATED,
                        userauth, conversationid2, smarti.randomMessage(), {})
-    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.POST_SUCCESS,
+    smarti.sendRequest(smarti.postConversationMessage, SmartiRequests.CREATED,
                        userauth, conversationid2, smarti.randomMessage(), {})
     smarti.sendRequest(smarti.getConversationAnalysis,
-                       SmartiRequests.GET_SUCCESS, userauth, conversationid2, {})
+                       SmartiRequests.OK_SUCCESS, userauth, conversationid2, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplate,
-                       SmartiRequests.GET_SUCCESS, userauth, conversationid2, {})
+                       SmartiRequests.OK_SUCCESS, userauth, conversationid2, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplateResult,
-                       SmartiRequests.GET_SUCCESS, userauth, conversationid2, '0', creator, {})
+                       SmartiRequests.OK_SUCCESS, userauth, conversationid2, '0', creator, {})
 
     # Publish first conversation
     smarti.sendRequest(smarti.updateConversationField, SmartiRequests.UPDATE_SUCCESS,
                        tokenauth, conversationid1, 'meta.status', "Complete", {})
     smarti.sendRequest(smarti.getConversationAnalysis,
-                       SmartiRequests.GET_SUCCESS, tokenauth, conversationid1, {})
+                       SmartiRequests.OK_SUCCESS, tokenauth, conversationid1, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplate,
-                       SmartiRequests.GET_SUCCESS, tokenauth, conversationid1, {})
+                       SmartiRequests.OK_SUCCESS, tokenauth, conversationid1, {})
     smarti.sendRequest(smarti.getConversationAnalysisTemplateResult,
-                       SmartiRequests.GET_SUCCESS, tokenauth, conversationid1, '0', creator, {})
+                       SmartiRequests.OK_SUCCESS, tokenauth, conversationid1, '0', creator, {})
 
     # Edit second conversation
     smarti.sendRequest(smarti.updateConversationField, SmartiRequests.UPDATE_SUCCESS,
@@ -324,20 +324,20 @@ class SmartiTests(unittest.TestCase):
     smarti.sendRequest(smarti.updateConversationField, SmartiRequests.UPDATE_SUCCESS,
                        tokenauth, conversationid2, 'meta.*', "value", {})
 
-    smarti.sendRequest(smarti.delConversationField, SmartiRequests.DELETE_SUCCESS,
+    smarti.sendRequest(smarti.delConversationField, SmartiRequests.OK_SUCCESS,
                        userauth, conversationid2, 'context.domain', {})
-    smarti.sendRequest(smarti.delConversationField, SmartiRequests.DELETE_SUCCESS,
+    smarti.sendRequest(smarti.delConversationField, SmartiRequests.OK_SUCCESS,
                        userauth, conversationid2, 'context.environment.*', {})
-    smarti.sendRequest(smarti.delConversationField, SmartiRequests.DELETE_SUCCESS,
+    smarti.sendRequest(smarti.delConversationField, SmartiRequests.OK_SUCCESS,
                        userauth, conversationid2, 'context.contextType', {})
-    smarti.sendRequest(smarti.delConversationField, SmartiRequests.DELETE_SUCCESS,
+    smarti.sendRequest(smarti.delConversationField, SmartiRequests.INVALID_DATA_ERROR,
                        userauth, conversationid2, 'meta.status', {})
-    smarti.sendRequest(smarti.delConversationField,
-                       SmartiRequests.DELETE_SUCCESS, userauth, conversationid2, 'meta.*', {})
+    smarti.sendRequest(smarti.delConversationField, SmartiRequests.OK_SUCCESS,
+                       userauth, conversationid2, 'meta.*', {})
 
     # Edit first message
     backupMessage = smarti.sendRequest(
-        smarti.getConversationMessage, SmartiRequests.GET_SUCCESS, userauth, conversationid2, {}).json()[0]
+        smarti.getConversationMessage, SmartiRequests.OK_SUCCESS, userauth, conversationid2, {}).json()[0]
     messageid = backupMessage.get('id')
     smarti.logger.info(
         'MessageID of Message to be modified in this test: '+messageid)
@@ -360,9 +360,9 @@ class SmartiTests(unittest.TestCase):
 
     # Delete message
     smarti.sendRequest(smarti.delConversationMessage,
-                       SmartiRequests.DELETE_SUCCESS, userauth, conversationid2, messageid, {})
+                       SmartiRequests.OK_NO_CONTENT, userauth, conversationid2, messageid, {})
     smarti.sendRequest(smarti.getConversationMessage,
-                       SmartiRequests.GET_SUCCESS, userauth, conversationid2, {})
+                       SmartiRequests.OK_SUCCESS, userauth, conversationid2, {})
 
 
 if __name__ == '__main__':
