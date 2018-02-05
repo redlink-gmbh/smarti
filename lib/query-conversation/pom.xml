@@ -34,12 +34,10 @@
         <dependency>
             <groupId>io.redlink.solrlib</groupId>
             <artifactId>solrlib-spring-boot-autoconfigure</artifactId>
-            <version>${solrlib.version}</version>
         </dependency>
         <dependency>
             <groupId>io.redlink.solrlib</groupId>
             <artifactId>solrlib-api</artifactId>
-            <version>${solrlib.version}</version>
         </dependency>
         
         <dependency>

@@ -20,28 +20,38 @@ package io.redlink.smarti.query.conversation;
 import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.SearchResult;
 import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
+import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.TimeUnit;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
-import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.RELATED_CONVERSATION_TYPE;
-import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_KEYWORD;
-import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_TERM;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -65,33 +75,84 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
         return state;
     }
-
+    
+    //This query builder support execution if the solr core is up and running
     @Override
-    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
-        final ConversationResult hassoResult = new ConversationResult(getCreatorName(conf));
+    public final boolean isResultSupported() {
+        if(solrServer != null && conversationCore != null){
+            try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
+                return solr.ping().getStatus() == 0;
+            } catch (SolrServerException | IOException e) {
+                log.warn("Results currently not supported because ping to {} failed ({} - {})", conversationCore, e.getClass().getSimpleName(), e.getMessage());
+                log.debug("STACKTRACE: ", e);
+            }
+        }
+        return false;
+    }
+    
+    @Override
+    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> queryParams) throws IOException {
+        // read default page-size from builder-configuration
+        int pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, DEFAULT_PAGE_SIZE);
+        // if present, a queryParam 'rows' takes precedence.
+        pageSize = toInt(queryParams.getFirst("rows"), pageSize);
+        long offset = toInt(queryParams.getFirst("start"), 0);
 
-        hassoResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
 
-        hassoResult.setContent(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
-        hassoResult.setReplySuggestion(hassoResult.getContent());
+        final QueryRequest solrRequest = buildSolrRequest(conf, template, conversation, analysis, offset, pageSize, queryParams);
+        if (solrRequest == null) {
+            return new SearchResult<ConversationResult>(pageSize);
+        }
 
-        hassoResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
-        hassoResult.setMessageId(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_ID)));
-        hassoResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_IDX))));
+        try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
+            final NamedList<Object> response = solrClient.request(solrRequest);
+            final QueryResponse solrResponse = new QueryResponse(response, solrClient);
+            final SolrDocumentList solrResults = solrResponse.getResults();
 
-        hassoResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
+            final List<ConversationResult> results = new ArrayList<>();
+            for (SolrDocument solrDocument : solrResults) {
+                //get the answers /TODO hacky, should me refactored (at least ordered by rating)
+                SolrQuery query = new SolrQuery("*:*");
+                query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
+                query.add("fq", "message_idx:[1 TO *]");
+                query.setFields("*","score");
+                query.setSort("time", SolrQuery.ORDER.asc);
+                //query.setRows(3);
 
-        hassoResult.setTimestamp((Date) solrDocument.getFieldValue(FIELD_TIME));
-        hassoResult.setUserName((String) solrDocument.getFieldValue(FIELD_USER_NAME));
+                QueryResponse answers = solrClient.query(query);
 
-        return hassoResult;
+                results.add(toConverationResult(conf, solrDocument, answers.getResults(), template.getType()));
+            }
+            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
+        } catch (SolrServerException e) {
+            throw new IOException(e);
+        }
     }
 
-    @Override
-    protected ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
-        ConversationResult result = toHassoResult(conf, question, type);
+    private ConversationResult toConversationResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
+        final ConversationResult conversationResult = new ConversationResult(getCreatorName(conf));
+
+        conversationResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
+
+        conversationResult.setContent(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
+        conversationResult.setReplySuggestion(conversationResult.getContent());
+
+        conversationResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
+        conversationResult.setMessageId(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_ID)));
+        conversationResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_IDX))));
+
+        conversationResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
+
+        conversationResult.setTimestamp((Date) solrDocument.getFieldValue(FIELD_TIME));
+        conversationResult.setUserName((String) solrDocument.getFieldValue(FIELD_USER_NAME));
+
+        return conversationResult;
+    }
+
+    private ConversationResult toConverationResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
+        ConversationResult result = toConversationResult(conf, question, type);
         for(SolrDocument answer : answers) {
-            result.addAnswer(toHassoResult(conf, answer,type));
+            result.addAnswer(toConversationResult(conf, answer,type));
         }
         return result;
     }
@@ -100,15 +161,16 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     protected ConversationMltQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         if (conversation.getMessages().isEmpty()) return null;
 
-        // FIXME: compile mlt-request content
-        final String content = conversation.getMessages().stream().sequential()
-                .map(Message::getContent)
-                .reduce(null, (s, e) -> {
-                    if (s == null) return e;
-                    return s + "\n\n" + e;
-                });
+        //The context is the content of relevant messages (see #getContextStart(..) for more information
+        String context = conversation.getMessages().subList(getContextStart(conversation.getMessages()), conversation.getMessages().size()).stream()
+            .sequential()
+            .map(Message::getContent)
+            .reduce(null, (s, e) -> {
+                if (s == null) return e;
+                return s + "\n\n" + e;
+            });
         
-        if(StringUtils.isBlank(content)){
+        if(StringUtils.isBlank(context)){
             return null; //no content in the conversation to search for releated!
         }
         
@@ -121,11 +183,10 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
                 .setDisplayTitle(displayTitle)
                 .setConfidence(.55f)
                 .setState(State.Suggested)
-                .setContent(content);
+                .setContent(context.toString());
     }
-
-    @Override
-    protected QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
+    
+    private QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
         final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation, analysis);
         if (mltQuery == null) {
             return null;
@@ -143,6 +204,11 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         //since #46 the client field is used to filter for the current user
         addClientFilter(solrQuery, conversation);
+        
+        //since #191
+        if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
+            addCompletedFilter(solrQuery);
+        }
 
         addPropertyFilters(solrQuery, conversation, conf);
 

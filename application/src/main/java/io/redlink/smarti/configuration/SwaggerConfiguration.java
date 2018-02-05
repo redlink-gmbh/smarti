@@ -31,6 +31,8 @@ import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.net.URI;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +77,9 @@ public class SwaggerConfiguration {
                 .securitySchemes(Arrays.asList(authToken(), basicAuth()))
                 .securityContexts(Arrays.asList(publicContext(), defaultContext()))
                 .ignoredParameterTypes(AuthContext.class)
-                .directModelSubstitute(ObjectId.class, String.class);
+                .directModelSubstitute(ObjectId.class, String.class)
+                .directModelSubstitute(URL.class, String.class)
+                .directModelSubstitute(URI.class, String.class);
     }
 
     private SecurityContext publicContext() {

@@ -260,16 +260,13 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     }
 
     private SolrInputDocument toSolrInputDocument(Conversation conversation) {
-        boolean completed = conversation.getMeta().getStatus() == ConversationMeta.Status.Complete;
-        if(!completed){
-            return null; //do not index
-        }
         final SolrInputDocument solrConversation = new SolrInputDocument();
 
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
         //#150 index the current version of the index so that we can detect the need of a
         //full re-index after a software update on startup
         solrConversation.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);
+        solrConversation.setField(FIELD_COMPLETED, conversation.getMeta().getStatus() == ConversationMeta.Status.Complete);
         solrConversation.setField(FIELD_TYPE, TYPE_CONVERSATION);
         solrConversation.setField(FIELD_MODIFIED, conversation.getLastModified());
         
@@ -330,6 +327,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         //#150 index the current version of the index so that we can detect the need of a
         //full re-index after a software update on startup
         solrMsg.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);
+        solrMsg.setField(FIELD_COMPLETED, conversation.getMeta().getStatus() == ConversationMeta.Status.Complete);
         solrMsg.setField(FIELD_TYPE, TYPE_MESSAGE);
         if (message.getUser() != null) {
             solrMsg.setField(FIELD_USER_ID, message.getUser().getId());
