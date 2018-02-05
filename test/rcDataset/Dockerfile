@@ -14,6 +14,6 @@ RUN pip install requests && \
   pip install argparse && \
   pip install loremipsum
 
-ADD RC-SmartiAPITest.py /tmp
+ADD RC-Smarti-API-Dataset.py /tmp
 
-ENTRYPOINT ["python", "/tmp/RC-SmartiAPITest.py"]
+ENTRYPOINT ["python", "/tmp/RC-Smarti-API-Dataset.py"]
