@@ -391,7 +391,7 @@
         </lst>
         <lst name="invariants">
             <str name="df">text</str>
-            <str name="fl">smarti_*,id,room,user,created,text,type,user_username,user_name,user_email</str>
+            <str name="fl">smarti_*,id,room,user,created,text,type,score</str>
             <str name="hl">true</str>
 
             <str name="wt">json</str>
@@ -399,6 +399,7 @@
 
             <str name="echoParams">none</str>
             <str name="debug">false</str>
+            <!--<str name="mm">2</str>-->
         </lst>
     </requestHandler>
 

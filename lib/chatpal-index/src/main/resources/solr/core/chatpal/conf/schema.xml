@@ -29,8 +29,15 @@
   <field name="user_name" type="text_general" indexed="true" stored="true" multiValued="true"/>
   <field name="user_email" type="text_general" indexed="true" stored="true" multiValued="false"/>
 
+  <field name="room_name" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="room_announcement" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="room_description" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="room_topic" type="text_general" indexed="true" stored="true" multiValued="false"/>
+
   <copyField source="text_*" dest="text" />
-  <copyField source="user_*" dest="text" />  
+  <copyField source="user_*" dest="text" /> 
+  <copyField source="room_*" dest="text" />
+  
   <uniqueKey>smarti_id</uniqueKey>
   
   <!-- field types -->
