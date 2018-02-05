@@ -338,7 +338,7 @@ function Smarti(options) {
             failure({code:'sub.new-conversation-result.nosub'});
         });
         ddp.on("changed", (message) => {
-            if(message.id == subId) {
+            if(message.collection == "stream-notify-room") {
                 // subscriotion has changed (message send) -> fetch conversation results
                 console.debug('Smarti widget subscription changed -> get conversation result for message:', message.fields.args[0]);
                 pubsub('smarti.data').publish(message.fields.args[0]);
@@ -1046,7 +1046,7 @@ function SmartiWidget(element, _options) {
 
             innerTabSearchInput.val("");
             searchTerms = [];
-            search(widgetHeaderTabsTemplateData.selectedWidget);
+            //search(widgetHeaderTabsTemplateData.selectedWidget);
     
             sources.slideUp(100).removeClass('open');
             tabs.find('.more').text(Utils.localize({code: 'smarti.sources'}));
