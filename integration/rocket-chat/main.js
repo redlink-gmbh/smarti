@@ -804,7 +804,7 @@ function SmartiWidget(element, _options) {
         <ul>
             <li class="add">+</li>
             {^{for userTokens}}
-            <li>{{:}}</li>
+            <li class="user-tag">{{:}}</li>
             {{/for}}
             {^{for tokens}}
             <li>{{:value}}</li>
@@ -947,7 +947,8 @@ function SmartiWidget(element, _options) {
     let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
     let widgetIrLatchTemplate = $.templates(widgetIrLatchTemplateStr);
 
-    let widgetHeaderTagsTemplateData = {tokens: [], userTokens: []};
+    let storedUserTokens = localStorage.getItem('userTokens_' + localStorage.getItem('Meteor.userId'));
+    let widgetHeaderTagsTemplateData = {tokens: [], userTokens: storedUserTokens ? storedUserTokens.split('|') : []};
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
     let widgetHeaderTabsTemplateData = {widgets: widgets, selectedWidget: 0};
@@ -1258,6 +1259,9 @@ function SmartiWidget(element, _options) {
         search();
     });
 
+    $.observable(widgetHeaderTagsTemplateData).observeAll(() => {
+        localStorage.setItem('userTokens_' + localStorage.getItem('Meteor.userId'), widgetHeaderTagsTemplateData.userTokens.join('|'));
+    });
     
     $.views.helpers({
         // helper method to highlight text
