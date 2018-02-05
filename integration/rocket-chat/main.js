@@ -581,7 +581,7 @@ function SmartiWidget(element, _options) {
                  *
                  */
                 success: (data) => {
-                    tracker.trackEvent(params.query.creator + "",data.response.numFound);
+                    tracker.trackEvent(params.query.creator, data.response.numFound);
 
                     console.log(params.query);
                     console.log(data.response.docs);
@@ -665,6 +665,8 @@ function SmartiWidget(element, _options) {
                 creator: params.query.creator,
                 start: start
             }, (data) => {
+
+                tracker.trackEvent(params.query.creator, data.docs.length);
 
                 if(data.docs && data.docs.length) {
                     data.docs.forEach(d => {
@@ -1089,6 +1091,7 @@ function SmartiWidget(element, _options) {
 
     widgetBody.on('click', '.convMessage.parent .answers', function() {
         $(this).closest('.conversation').children('.responseContainer').toggle(200);
+        tracker.trackEvent("conversation.part.toggle");
     });
 
     function postItems(items) {
@@ -1171,6 +1174,7 @@ function SmartiWidget(element, _options) {
             });
             console.log(selectedItems);
             postItems(selectedItems);
+            tracker.trackEvent("conversation.post");
         }
     });
 
@@ -1182,6 +1186,7 @@ function SmartiWidget(element, _options) {
         selectedItems.push(conv);
         console.log(selectedItems);
         postItems(selectedItems);
+        tracker.trackEvent("conversation.part.post", $.view(parent).index);
     });
 
     let searchTimeout = null;
@@ -1215,11 +1220,13 @@ function SmartiWidget(element, _options) {
         let tokenData = $.view(this).data;
         let tokensArray = typeof tokenData === "string" ? widgetHeaderTagsTemplateData.userTokens : widgetHeaderTagsTemplateData.tokens;
         $.observable(tokensArray).remove(tokenIds);
+        tracker.trackEvent('tag.remove');
     });
 
     tags.on('click', 'li.remove', function() {
         $.observable(widgetHeaderTagsTemplateData.userTokens).refresh([]);
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
+        tracker.trackEvent('tag.remove-all');
     });
 
     tags.on('click', 'li.add', function() {
@@ -1237,6 +1244,7 @@ function SmartiWidget(element, _options) {
                     }
                     tags.find('li.add').html('+').removeClass('active');
                 }
+                tracker.trackEvent('tag.add');
             }
             if(e.which == 13 || e.which == 27) {
                 tags.find('li.add').html('+').removeClass('active');
