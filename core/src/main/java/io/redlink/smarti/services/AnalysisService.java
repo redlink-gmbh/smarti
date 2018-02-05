@@ -246,10 +246,10 @@ public class AnalysisService {
             if(future != null){
                 return future; //already processing :)
             }
-            lock.writeLock().lock();
         } else {
             future = null;
         }
+        lock.writeLock().lock();
         try { //look again for an existing in an write lock
             if(parsedAnalysis != null){
                 future = processing.get(key); //try to find 
