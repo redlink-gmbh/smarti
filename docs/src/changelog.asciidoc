@@ -8,7 +8,7 @@ This document shows the changes that are introduced into Smarti with the release
 == Smarti 0.7.0 Release Notes
 February, X^th^, 2018
 
-Smarti 0.7.0 is a *refecatoring* release, and introduces an improved webservice API.
+Smarti 0.7.0 is a *refactoring* release, and introduces an improved webservice API.
 
 === New in Smarti 0.7.0
 * https://github.com/redlink-gmbh/smarti/issues/86[#86 - New Conversation API]
