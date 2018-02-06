@@ -17,7 +17,6 @@
 package io.redlink.smarti.webservice;
 
 import com.google.common.collect.ImmutableMap;
-
 import io.redlink.smarti.exception.DataException;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.*;
@@ -26,12 +25,10 @@ import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.query.conversation.MessageSearchService;
 import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthenticationService;
-import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.*;
 import io.swagger.annotations.*;
-
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -57,13 +54,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
-
 
 /**
  *
  */
-@SuppressWarnings({"unused", "WeakerAccess"})
+@SuppressWarnings({"unused", "WeakerAccess", "DefaultAnnotationParam"})
 @CrossOrigin
 @RestController
 @RequestMapping(value = "/conversation",
@@ -122,20 +117,18 @@ public class ConversationWebservice {
     private final ConversationSearchService conversationSearchService;
     private final MessageSearchService messageSearchService;
     private final AuthenticationService authenticationService;
-    private final ClientService clientService;
 
 
 
     @Autowired
     public ConversationWebservice(AuthenticationService authenticationService, 
-                                  ClientService clientService, ConversationService conversationService, AnalysisService analysisService,
+                                  ConversationService conversationService, AnalysisService analysisService,
                                   CallbackService callbackExecutor, 
                                   Optional<ConversationSearchService> conversationSearchService,
                                   Optional<MessageSearchService> messageSearchService) {
         this.callbackExecutor = callbackExecutor;
         this.conversationService = conversationService;
         this.analysisService = analysisService;
-        this.clientService = clientService;
         this.conversationSearchService = conversationSearchService.orElse(null);
         this.messageSearchService = messageSearchService.orElse(null);
         this.authenticationService = authenticationService;
@@ -255,8 +248,6 @@ public class ConversationWebservice {
     
     /**
      * Allow conversation-independent search.
-     * @param clientName the client id
-     * @param request the request to get the query params
      */
     @ApiOperation(value = "search for messages", response = SearchResult.class,
             notes = "Search for messages. You can pass in arbitrary solr query parameter (`q` for the query, "
@@ -397,7 +388,7 @@ public class ConversationWebservice {
                         log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }                    
+                    }
                 });
             }
             return ResponseEntity.ok()
@@ -413,7 +404,7 @@ public class ConversationWebservice {
             notes = "Deleting a single property in the Conversation." 
                     + EDITABLE_CONVERSATION_FIELDS + API_ASYNC_NOTE)
     @ApiResponses({
-            @ApiResponse(code = 204, message = "field deleted (sync)", response = Conversation.class)
+            @ApiResponse(code = 200, message = "field deleted (sync)", response = Conversation.class)
     })
     @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.DELETE)
     public ResponseEntity<ConversationData> deleteConversationField(
@@ -452,7 +443,7 @@ public class ConversationWebservice {
                         log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }                    
+                    }
                 });
             }
             return ResponseEntity.ok()
@@ -537,7 +528,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }  
+                }
             });
         }
         URI messageLocation = buildMessageURI(uriBuilder, conversationId, created.getId());
@@ -619,7 +610,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                } 
+                }
             });
         }
         return ResponseEntity.ok()
@@ -667,7 +658,7 @@ public class ConversationWebservice {
                         log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    } 
+                    }
                 });
             }
             return ResponseEntity.noContent()
@@ -724,7 +715,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }                
+                }
             });
         }
         return ResponseEntity.ok()
@@ -1077,7 +1068,7 @@ public class ConversationWebservice {
                         callbackExecutor.execute(callback, CallbackPayload.success(result));
                     } catch(RuntimeException | IOException e1){
                         log.warn("Execution of Query[client: {}, conversation: {}, template: {}, creator: {}] failed sending error callback to {} ({} - {})", 
-                                client.getId(), conversation.getId(), templateIdx, creator, callback, e, e.getMessage());
+                                client!=null?client.getId():null, conversation.getId(), templateIdx, creator, callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e1));
                     }

@@ -105,14 +105,12 @@ class SmartiTests(unittest.TestCase):
     clientid = ''
     token = ''
     conversationid = ''
-    creator = ''
+    creator = 'queryBuilder:conversationmlt:conversationmlt'
     analysis = {}
     message = {}
     messageid = ''
     mfieldname = 'votes'
-    mfield = {
-        'value': 1
-    }
+    mfield = 1
     cfieldname = 'context.domain'
     cfield = {
         'value': 'test'
@@ -148,7 +146,7 @@ class SmartiTests(unittest.TestCase):
     smarti.sendRequest(smarti.getConversationAnalysisTemplateResult,
                        SmartiRequests.OK_SUCCESS, user, conversationid, '0', creator, {})
     smarti.sendRequest(smarti.postConversationAnalysisTemplateResult,
-                       SmartiRequests.CREATED, user, conversationid, '0', creator, analysis, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, '0', creator, analysis, {})
     smarti.sendRequest(smarti.getConversationAnalysisToken,
                        SmartiRequests.OK_SUCCESS, user, conversationid, {})
     smarti.sendRequest(smarti.getConversationMessage,
@@ -167,7 +165,7 @@ class SmartiTests(unittest.TestCase):
     smarti.sendRequest(smarti.delConversationMessage,
                        SmartiRequests.OK_NO_CONTENT, user, conversationid, messageid, {})
     smarti.sendRequest(smarti.delConversationField,
-                       SmartiRequests.OK_NO_CONTENT, user, conversationid, cfieldname, {})
+                       SmartiRequests.OK_SUCCESS, user, conversationid, cfieldname, {})
 
   def testAllUserRequests(self):
     username = 'TestUser'
@@ -178,12 +176,12 @@ class SmartiTests(unittest.TestCase):
         "email": username+'@example.com'
     }
     user = {
-        "login": username,
+        "login": username+'1',
         "roles": [],
         "clients": [],
         "profile": {
-            "name": username,
-            "email": username+'@example.com'
+            "name": username+'1',
+            "email": username+'1@example.com'
         }
     }
     roles = []
