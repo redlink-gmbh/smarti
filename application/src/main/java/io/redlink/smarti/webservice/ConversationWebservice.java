@@ -17,7 +17,6 @@
 package io.redlink.smarti.webservice;
 
 import com.google.common.collect.ImmutableMap;
-
 import io.redlink.smarti.exception.DataException;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.*;
@@ -26,12 +25,10 @@ import io.redlink.smarti.query.conversation.ConversationSearchService;
 import io.redlink.smarti.query.conversation.MessageSearchService;
 import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthenticationService;
-import io.redlink.smarti.services.ClientService;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.*;
 import io.swagger.annotations.*;
-
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -57,16 +54,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
-
 
 /**
  *
  */
-@SuppressWarnings({"unused", "WeakerAccess"})
+@SuppressWarnings({"unused", "WeakerAccess", "DefaultAnnotationParam"})
 @CrossOrigin
 @RestController
-@RequestMapping(value = "conversation",
+@RequestMapping(value = "/conversation",
         produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
 @Api("conversation")
 public class ConversationWebservice {
@@ -83,38 +78,37 @@ public class ConversationWebservice {
     public static final String PARAM_PAGE_SIZE = "size";
     public static final String DEFAULT_PAGE_SIZE = "10";
     public static final String PARAM_PROJECTION = "projection";
-    private static final String API_ASYNC_NOTE = "<p> If a '<code>callback</code>' is provided, the request will trigger an callback with analysis results"
-            + "for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call"
-            + "to '<code>GET /conversation/{id}/analysis</code>' <p>.";
-    private static final String EDITABLE_CONVERSATION_FIELDS = "<p>Supported fields include <ul>"
-            + "<li><code>context.contextType</code>"
-            + "<li><code>context.domain</code>"
-            + "<li><code>context.environment.*</code> and the shortcut <code>environment.*</code>"
-            + "<li><code>meta.status</code> with the shortcut <code>status</code>"
-            + "<li><code>meta.*</code> with the shortcut <code>*</code>: however note that <code>meta.*</code> is required for field names that would be mapped to other services of the conversation service."
-            + "</ul>";
-    private static final String CONVERSATION_FIELD_VALUES = "context.contextType, context.domain, context.environment.*, meta.status, meta.*";
-    private static final String EDITABLE_MESSAGE_FIELDS = "<p>Supported fields include <ul>"
-            + "<li><code>time</code>: value must be a Date, long time or an ISO date/time"
-            + "<li><code>origin</code>: value must be an member of the Orign enumeration"
-            + "<li><code>content</code> value must be a String</code>"
-            + "<li><code>private</code> value is interpreted as boolean</code>"
-            + "<li><code>votes</code> value must be an integer</code>"
-            + "<li><code>metadata.*</code> any metadata field"
-            + "</ul>";
+    private static final String API_ASYNC_NOTE = "\n\nIf a `callback` is provided, the request will trigger an callback with analysis results "
+            + "for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call "
+            + "to `GET /conversation/{id}/analysis`.";
+    private static final String EDITABLE_CONVERSATION_FIELDS = "\n\nSupported fields include:"
+            + "\n* `context.contextType`"
+            + "\n* `context.domain`"
+            + "\n* `context.environment.*` and the shortcut `environment.*`"
+            + "\n* `meta.status` with the shortcut `status`"
+            + "\n* `meta.*` with the shortcut `*`: however note that `meta.*` is required for field names that would be mapped to other services of the conversation service.";
+    private static final String CONVERSATION_FIELD_VALUES = "context.contextType, context.domain, context.environment.*, meta.status, meta.* ";
+    private static final String EDITABLE_MESSAGE_FIELDS = "\n\nSupported fields include <ul> "
+            + "\n* `time`: value must be a Date, long time or an ISO date/time "
+            + "\n* `origin`: value must be an member of the Orign enumeration "
+            + "\n* `content` value must be a String` "
+            + "\n* `private` value is interpreted as boolean` "
+            + "\n* `votes` value must be an integer` "
+            + "\n* `metadata.*` any metadata field ";
     private static final String MESSAGE_FIELD_VALUES = "time, origin, content, private, votes, metadata.*";
 
     private static final String DESCRIPTION_PARAM_CALLBACK = "URI where to POST the Analysis results as soon as they are available (async processing)";
-    private static final String DESCRIPTION_PARAM_ANALYSIS = "If enabled the analysis of the conversation is included in the response. This requires the"
-            + "request to wait for the analysis to be completed. In case a '<code>callback</code>' is supported and provided the analysis results "
+    private static final String DESCRIPTION_PARAM_ANALYSIS_NO_CALLBACK = "If enabled the analysis of the conversation is included in the response. This requires the "
+            + "request to wait for the analysis to be completed.";
+    private static final String DESCRIPTION_PARAM_ANALYSIS = DESCRIPTION_PARAM_ANALYSIS_NO_CALLBACK + " In case a `callback` is supported and provided the analysis results "
             + "will be POST to this URI instead. In any case requests supporting is parameter will start analysis and cache the results for "
-            + "improved response times on subsequent '<code>GET /conversation/{id}/analysis</code>' requests.";
+            + "improved response times on subsequent `GET /conversation/{id}/analysis` requests.";
     private static final String DESCRIPTION_PARAM_PROJECTION = "Not yet implemented! Will allow to select different projections over the returned data";
     private static final String DESCRIPTION_PARAM_CLIENT_ID = "If the authentication (by user or auth-token) allows access to multiple clients "
             + "this parameter allows to  specify the clients to be considered for processing the request (intersection of "
-            + "assigend to the user and parsed). For processing of some requests only a single client is supported in those"
-            + "cases a BAD_REQUST response will be triggered in cases where multiple clients are selected";
-    private static final String DESCRIPTION_PARAM_PAGE = "The page number (NOTE that '<code>0</code>' is the first page - 0-indexed)";
+            + "assigend to the user and parsed). For processing of some requests only a single client is supported in those "
+            + "cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected";
+    private static final String DESCRIPTION_PARAM_PAGE = "The page number (NOTE that `0` is the first page - 0-indexed)";
     private static final String DESCRIPTION_PARAM_PAGE_SIZE = "The number of elements on a single page";
 
     private final CallbackService callbackExecutor;
@@ -123,26 +117,25 @@ public class ConversationWebservice {
     private final ConversationSearchService conversationSearchService;
     private final MessageSearchService messageSearchService;
     private final AuthenticationService authenticationService;
-    private final ClientService clientService;
 
 
 
     @Autowired
     public ConversationWebservice(AuthenticationService authenticationService, 
-                                  ClientService clientService, ConversationService conversationService, AnalysisService analysisService,
+                                  ConversationService conversationService, AnalysisService analysisService,
                                   CallbackService callbackExecutor, 
                                   Optional<ConversationSearchService> conversationSearchService,
                                   Optional<MessageSearchService> messageSearchService) {
         this.callbackExecutor = callbackExecutor;
         this.conversationService = conversationService;
         this.analysisService = analysisService;
-        this.clientService = clientService;
         this.conversationSearchService = conversationSearchService.orElse(null);
         this.messageSearchService = messageSearchService.orElse(null);
         this.authenticationService = authenticationService;
     }
 
-    @ApiOperation(value = "list conversations", response = PagedConversationList.class)
+    @ApiOperation(value = "list conversations", code = 200, response = PagedConversationList.class,
+            notes = "Lists conversations. Supports pagination (default "+DEFAULT_PAGE_SIZE + "conversation per page)")
     @RequestMapping(method = RequestMethod.GET)
     public Page<ConversationData> listConversations(
             AuthContext authContext,
@@ -172,7 +165,8 @@ public class ConversationWebservice {
     public ResponseEntity<ConversationData> createConversation(
             AuthContext authContext,
             @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
-            @RequestBody(required = false) ConversationData parsedConversation,
+            @ApiParam(name= "conversation", value = "Optionally the conversation to create. If not present an empty conversation will be created", required = false) 
+                @RequestBody(required = false) ConversationData parsedConversation,
             @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
@@ -226,7 +220,7 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "search for a conversation", response = ConversationSearchResult.class,
-            notes = "besides simple text-queries, you can pass in arbitrary solr query parameter.")
+            notes = "Search for a conversation. Besides simple text-queries, you can pass in arbitrary solr query parameter.")
     @ApiResponses({
         @ApiResponse(code = 200, message = "The results of the search", response = ConversationSearchResult.class),
         @ApiResponse(code = 503, message = "If conversation search is not supported")
@@ -234,7 +228,7 @@ public class ConversationWebservice {
     @RequestMapping(value = "search", method = RequestMethod.GET)
     public ResponseEntity<?> searchConversations(
             AuthContext authContext,
-            @ApiParam() @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
+            @ApiParam(name=PARAM_CLIENT_ID,allowMultiple=true,required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
             @ApiParam(required=false, value="fulltext search") @RequestParam(value = "text", required = false) String text,
             @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams
     ) {
@@ -254,15 +248,21 @@ public class ConversationWebservice {
     
     /**
      * Allow conversation-independent search.
-     * @param clientName the client id
-     * @param request the request to get the query params
      */
     @ApiOperation(value = "search for messages", response = SearchResult.class,
-            notes = "like solr.")
+            notes = "Search for messages. You can pass in arbitrary solr query parameter (`q` for the query, "
+                    + "`fq` for filters, facets, grouping, highligts, ...). Results represent messages. \n\n "
+                    + "Fields include: \n"
+                    + "* `id`: the id of the conversation \n"
+                    + "* `message_id`: the id of the message \n"
+                    + "* `meta_*`: meta fields set for the conversation ( e.g. `meta_channel_id` for the channel id)\n"
+                    + "* `user_id`: the id of the user that was sending the message\n"
+                    + "* `time`: the time when the message was sent\n"
+                    + "* `message`: the content of the message")
     @RequestMapping(value = "search-message", method = RequestMethod.GET)
     public ResponseEntity<?> searchMessage(
             AuthContext authContext,
-            @ApiParam() @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
+            @ApiParam(name=PARAM_CLIENT_ID,allowMultiple=true,required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) List<ObjectId> owners,
             @ApiParam(hidden = true) @RequestParam MultiValueMap<String, String> queryParams) {
         final Set<ObjectId> clientIds = getClientIds(authContext, owners);
         if (log.isTraceEnabled()) {
@@ -282,19 +282,36 @@ public class ConversationWebservice {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
     }
 
-    @ApiOperation(value = "Retrieve a conversation optionally including analysis results.", response = ConversationData.class)
+    @ApiOperation(value = "Retrieve a conversation", code=200, response = ConversationData.class,
+            notes="Retrieves a conversation based on the `conversationId`. If `"+PARAM_ANALYSIS+"` is enabled the "
+                    + "analysis results will be included in the response")
+    @ApiResponses(value={
+            @ApiResponse(code=404,message="if no conversation with the parsed id is present or not accessible by the authenticated user"),
+            @ApiResponse(code = 400, message = "in case `"+ PARAM_ANALYSIS + "=true` the request requires a single client to be"
+                    + "specified to calculate the analysis for. If the authenticated user is assigend to multiple clients and the"
+                    + "parameter `" + PARAM_CLIENT_ID + "` is not specified a `400 Bad Request` is triggered")
+    })
     @RequestMapping(value = "{conversationId}", method = RequestMethod.GET)
     public ResponseEntity<ConversationData> getConversation(
             AuthContext authContext,
             @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
+            @ApiParam(name=PARAM_ANALYSIS, required=false, defaultValue="false", value=DESCRIPTION_PARAM_ANALYSIS_NO_CALLBACK) @RequestParam(value = PARAM_ANALYSIS, defaultValue = "false") boolean inclAnalysis,
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            if(inclAnalysis){
+                throw e;
+            } else {
+                client = null;
+            }
+        }
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -307,6 +324,9 @@ public class ConversationWebservice {
     }
 
     @ApiOperation(value = "delete a conversation", code = 204)
+    @ApiResponses(value={
+            @ApiResponse(code=404,message="if no conversation with the parsed id is present or not accessible by the authenticated user"),
+    })
     @RequestMapping(value = "{conversationId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteConversation(
             AuthContext authContext,
@@ -345,7 +365,16 @@ public class ConversationWebservice {
         // Check access to the conversation
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            if(inclAnalysis){
+                throw e;
+            } else {
+                client = null;
+            }
+        }
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.updateConversationField(conversationId, field, data);
@@ -359,7 +388,7 @@ public class ConversationWebservice {
                         log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }                    
+                    }
                 });
             }
             return ResponseEntity.ok()
@@ -375,7 +404,7 @@ public class ConversationWebservice {
             notes = "Deleting a single property in the Conversation." 
                     + EDITABLE_CONVERSATION_FIELDS + API_ASYNC_NOTE)
     @ApiResponses({
-            @ApiResponse(code = 204, message = "field deleted (sync)", response = Conversation.class)
+            @ApiResponse(code = 200, message = "field deleted (sync)", response = Conversation.class)
     })
     @RequestMapping(value = "{conversationId}/{field:.*}", method = RequestMethod.DELETE)
     public ResponseEntity<ConversationData> deleteConversationField(
@@ -391,7 +420,16 @@ public class ConversationWebservice {
         // Check access to the conversation
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            if(inclAnalysis) {
+                throw e;
+            } else {
+                client = null;
+            }
+        }
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.deleteConversationField(conversationId, field);
@@ -405,7 +443,7 @@ public class ConversationWebservice {
                         log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }                    
+                    }
                 });
             }
             return ResponseEntity.ok()
@@ -459,7 +497,12 @@ public class ConversationWebservice {
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         //NOTE: ID generation for sub-documents is not supported by Mongo
         if (StringUtils.isBlank(message.getId())) {
@@ -485,7 +528,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }  
+                }
             });
         }
         URI messageLocation = buildMessageURI(uriBuilder, conversationId, created.getId());
@@ -522,10 +565,9 @@ public class ConversationWebservice {
 
     }
 
-    @ApiOperation(value = "update/replace a message", response = Message.class,
+    @ApiOperation(value = "update/replace a message", code = 200, response = Message.class,
             consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
-            notes = "fully replace a message." +
-                    API_ASYNC_NOTE)
+            notes = "fully replace a message." + API_ASYNC_NOTE)
     @ApiResponses({
             @ApiResponse(code = 200, message = "message updated", response = Message.class),
             @ApiResponse(code = 404, message = "conversation or message not found")
@@ -544,7 +586,12 @@ public class ConversationWebservice {
         // Check authentication
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null; //pre-calculate the analysis for the owner
+        }
 
         //make sure the message-id is the addressed one
         message.setId(messageId);
@@ -563,7 +610,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                } 
+                }
             });
         }
         return ResponseEntity.ok()
@@ -592,7 +639,12 @@ public class ConversationWebservice {
         // Check authentication
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         if(conversationService.deleteMessage(conversationId, messageId)){
             Conversation c = conversationService.getConversation(conversationId);
@@ -606,7 +658,7 @@ public class ConversationWebservice {
                         log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    } 
+                    }
                 });
             }
             return ResponseEntity.noContent()
@@ -641,7 +693,12 @@ public class ConversationWebservice {
         // Check authentication
         Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         Conversation c = conversationService.updateMessageField(conversationId, messageId, field, data);
         final Message updated = c.getMessages().stream()
@@ -658,7 +715,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }                
+                }
             });
         }
         return ResponseEntity.ok()
@@ -668,14 +725,18 @@ public class ConversationWebservice {
                 .body(updated);
     }
 
-    @ApiOperation(value = "get the analysis-results of the conversation", response = Analysis.class,
-            notes = "retrieve the analysis for this conversation."
-                    + "<p> If a '<code>callback</code>' is provided, the request will trigger an callback with "
-                    + "analysis results for the parsed conversation soon as those are available.")
+    @ApiOperation(value = "analysis a conversation",
+            notes = "retrieve the analysis results for a conversation referenced by the `conversationId`. The"
+                    + "analysis includes extraceted tokens, templates and query suggestions based on those templates.\n\n"
+                    + "If a `callback` is provided, the request will return immediatly with `202 Accepted` and "
+                    + "the results will be `POST {callback}` as soon as available.")
     @ApiResponses({
-        @ApiResponse(code = 200, message = "the analysis (sync - with no callback)", response = Analysis.class),
-        @ApiResponse(code = 202, message = "accepted with the analysis POST'ed to the callback"),
-        @ApiResponse(code = 404, message = "if the conversation is not found")
+        @ApiResponse(code = 200, message = "the analysis results (if no `callback` uri is provided)", response = Analysis.class),
+        @ApiResponse(code = 202, message = "accepted (no content). The analysis results are POST'ed to the provided `callback`"),
+        @ApiResponse(code = 404, message = "if the conversation is not found or the authenticated user does not have access"),
+        @ApiResponse(code = 400, message = "Analysis results are client specific. So a single client MUST BE selected by the request. "
+                + "If the authenticated user is assigend to multiple clients and the "
+                + "parameter `" + PARAM_CLIENT_ID + "` is not specified a `400 Bad Request` is triggered")
 })
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.GET)
     public ResponseEntity<Analysis> getAnalysis(
@@ -687,7 +748,12 @@ public class ConversationWebservice {
     ) throws InterruptedException, ExecutionException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation);
         if(callback == null){
@@ -715,22 +781,34 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "re-run analysis based on updated tokens/slot-assignments", response = Analysis.class,
             consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
-            notes = "<strong>NOT YET IMPLEMENTED!</strong>" + API_ASYNC_NOTE)
+            notes = "Allows to re-run the extraction of templates and generation of queries based on a parsed "
+                    + "analysis. This allows users to remove, reject, confirm or add new Tokens. Those changes"
+                    + "are considered when updating templates and generating queries. " + API_ASYNC_NOTE)
     @ApiResponses({
-        @ApiResponse(code = 501, message = "not yet implemented")
+        @ApiResponse(code = 200, message = "the analysis results (if no `callback` uri is provided)", response = Analysis.class),
+        @ApiResponse(code = 202, message = "accepted (no content). The analysis results are POST'ed to the provided `callback`"),
+        @ApiResponse(code = 404, message = "if the conversation is not found or the authenticated user does not have access"),
+        @ApiResponse(code = 400, message = "Analysis results are client specific. So a single client MUST BE selected by the request. "
+                + "If the authenticated user is assigend to multiple clients and the "
+                + "parameter `" + PARAM_CLIENT_ID + "` is not specified a `400 Bad Request` is triggered")
     })
     @RequestMapping(value = "{conversationId}/analysis", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> rerunAnalysis(
             AuthContext authContext,
             @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
             @PathVariable("conversationId") ObjectId conversationId,
-            @RequestBody Analysis updatedAnalysis,
+            @RequestBody(required=true) Analysis updatedAnalysis,
             @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) throws InterruptedException, ExecutionException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
         
         /* TODO: Not sure how to implement this:
             
@@ -777,12 +855,12 @@ public class ConversationWebservice {
     }
 
 
-    @ApiOperation(value = "get the extracted tokes in the conversation", response = Token.class, responseContainer = "List",
+    @ApiOperation(value = "get the extracted tokes in the conversation", code = 200, response = TokenList.class,
             notes = "Returns the tokens of the analysis (sync or async - if callback is present)" + API_ASYNC_NOTE)
     @ApiResponses({
-        @ApiResponse(code = 200, message = "The tokens (sync)", response = Token.class, responseContainer = "List"),
+        @ApiResponse(code = 200, message = "The tokens (sync)", response = TokenList.class),
         @ApiResponse(code = 202, message = "Accepted (aync): If a callback is provided, the Tokens are POST'ed to"
-                + "the callback URI instead", response = Token.class, responseContainer = "List")
+                + "the callback URI instead")
     })
     @RequestMapping(value = "{conversationId}/analysis/token", method = RequestMethod.GET)
     public ResponseEntity<List<Token>> getTokens(
@@ -793,7 +871,13 @@ public class ConversationWebservice {
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = getResponseClient(authContext, clientId, conversation);
+
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){
@@ -819,12 +903,11 @@ public class ConversationWebservice {
         }
     }
 
-    @ApiOperation(value = "get the (query-)templates in the conversation", response = Template.class, responseContainer = "List",
+    @ApiOperation(value = "get the (query-)templates in the conversation", code= 200, response = TemplateList.class,
             notes = "Returns the templates of the analysis (sync or async - if callback is present)" + API_ASYNC_NOTE)
     @ApiResponses({
-        @ApiResponse(code = 200, message = "The templates (sync)", response = Template.class, responseContainer = "List"),
-        @ApiResponse(code = 202, message = "Accepted (aync): The Templates are POST'ed to"
-                + "the callback URI instead", response = Template.class, responseContainer = "List")
+        @ApiResponse(code = 200, message = "The templates (sync)", response = TemplateList.class),
+        @ApiResponse(code = 202, message = "Accepted (aync): The Templates are POST'ed to the callback URI instead")
     })
     @RequestMapping(value = "{conversationId}/analysis/template", method = RequestMethod.GET)
     public ResponseEntity<List<Template>> getTemplates(
@@ -835,7 +918,13 @@ public class ConversationWebservice {
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = getResponseClient(authContext, clientId, conversation);
+
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
@@ -877,7 +966,12 @@ public class ConversationWebservice {
             @ApiParam(name=PARAM_CALLBACK, required=false, value=DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = getResponseClient(authContext, clientId, conversation);
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            client = null;
+        }
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
@@ -917,8 +1011,7 @@ public class ConversationWebservice {
 
     }
 
-    @ApiOperation(value = "get inline-results for the selected template and query creator", 
-            response = InlineSearchResult.class)
+    @ApiOperation(nickname="getResultsGET", value = "get inline-results for the selected template and query creator", response = InlineSearchResult.class)
     @ApiResponses({
         @ApiResponse(code = 200, message = "The search results", response = InlineSearchResult.class),
     })
@@ -935,14 +1028,12 @@ public class ConversationWebservice {
         return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null);
     }
 
-    @ApiOperation(value = "get inline-results for the selected template from the query creator", 
+    @ApiOperation(nickname="getResultsPOST", value = "get inline-results for the selected template from the query creator", 
             response = InlineSearchResult.class,
             consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
-            notes = "<strong>Parsing of an Analysis object is NOT IMPLEMENTED</strong>" + API_ASYNC_NOTE)
+            notes = "Gets inline results for the selected template based on the parsed analysis object.")
     @ApiResponses({
-        @ApiResponse(code = 200, message = "The search results", response = InlineSearchResult.class),
-        @ApiResponse(code = 202, message = "Accepted (aync): The results are POST'ed to the callback URI instead", response = Template.class),
-        @ApiResponse(code = 501, message = "If a Analysis is parsed in the request body - <strong>NOT IMPLEMENTED</strong>")
+        @ApiResponse(code = 200, message = "The search results", response = InlineSearchResult.class)
     })
     @RequestMapping(value = "{conversationId}/analysis/template/{templateIdx}/result/{creator}", method = RequestMethod.POST, consumes=MimeTypeUtils.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getResults(
@@ -956,8 +1047,14 @@ public class ConversationWebservice {
             @ApiParam(DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
     ) throws IOException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        final Client client = getResponseClient(authContext, clientId, conversation);
-
+        Client c;
+        try {
+            c = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            c = null;
+        }
+        final Client client = c;
+        
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
@@ -971,7 +1068,7 @@ public class ConversationWebservice {
                         callbackExecutor.execute(callback, CallbackPayload.success(result));
                     } catch(RuntimeException | IOException e1){
                         log.warn("Execution of Query[client: {}, conversation: {}, template: {}, creator: {}] failed sending error callback to {} ({} - {})", 
-                                client.getId(), conversation.getId(), templateIdx, creator, callback, e, e.getMessage());
+                                client!=null?client.getId():null, conversation.getId(), templateIdx, creator, callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e1));
                     }
@@ -1173,6 +1270,14 @@ public class ConversationWebservice {
     @ApiModel
     @SuppressWarnings("WeakerAccess")
     static class ConversationSearchResult extends SearchResult<Conversation> {}
+
+    @ApiModel
+    @SuppressWarnings("WeakerAccess")
+    static abstract class TemplateList implements List<Template> {}
+
+    @ApiModel
+    @SuppressWarnings("WeakerAccess")
+    static abstract class TokenList implements List<Token> {}
 
     /**
      * Used in cases where no clientId was parsed but the authentication context is valid for multiple

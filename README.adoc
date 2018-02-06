@@ -40,4 +40,4 @@ See the link:LICENSE.txt[License] for more details.
 Smarti is lead by http://redlink.co[Redlink] and http://assistify.de[Assistify] and was initiated in 2017.
 
 === Changelog
-The link:docs/src/changelog.adoc[Changelog] provides a complete list of changes in older releases.
+The link:docs/src/changelog.asciidoc[Changelog] provides a complete list of changes in older releases.

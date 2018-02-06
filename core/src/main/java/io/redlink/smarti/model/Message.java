@@ -47,7 +47,7 @@ public class Message {
     private Date time = new Date();
     @ApiModelProperty("origin of the message")
     private Origin origin = Origin.User;
-    @ApiModelProperty(value = "message content", required = true, allowEmptyValue=true)
+    @ApiModelProperty(value = "message content", required = true)
     private String content;
     @ApiModelProperty(notes="The user sending this message")
     private User user = null;
