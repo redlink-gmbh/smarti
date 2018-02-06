@@ -65,10 +65,10 @@ public class Analysis {
     
     //TODO: maybe add additional data for user modified analysis
     
-    @ApiModelProperty(value = "extracted tokens", required=true, allowEmptyValue=true)
+    @ApiModelProperty(value = "extracted tokens", required=true)
     private List<Token> tokens = new ArrayList<>();
 
-    @ApiModelProperty(value = "Templates for possible queries", required=true, allowEmptyValue=true)
+    @ApiModelProperty(value = "Templates for possible queries", required=true)
     private List<Template> templates = new ArrayList<>();
 
     

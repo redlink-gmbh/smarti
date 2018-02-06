@@ -35,13 +35,13 @@ import java.util.List;
 public class Template implements Comparable<Template> {
 
     @JsonProperty("type")
-    @ApiModelProperty(notes = "type of the template that can be build from this template", required = true)
+    @ApiModelProperty(notes = "type of the template that can be build from this template")
     private String type;
     @ApiModelProperty(notes = "probability that this template is the right one [0..1]")
     private float probability;
     @ApiModelProperty(notes = "state of this template. All templates created by Smarti will start as 'Suggested'. User"
             + "interactions with tempaltes should update states to 'Confirmed' or 'Rejected'.", 
-            allowableValues= "Suggested, Confirmed, Rejected", example="Confirmed", required=true, allowEmptyValue=false)
+            allowableValues= "Suggested, Confirmed, Rejected", example="Confirmed")
     private State state = State.Suggested;
 
     @JsonProperty("slots")

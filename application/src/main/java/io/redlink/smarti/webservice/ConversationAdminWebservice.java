@@ -67,7 +67,7 @@ public class ConversationAdminWebservice {
         this.conversationIndexer = conversationIndexer.orElse(null);
     }
 
-    @ApiOperation(value = "list conversations", response = PagedConversationList.class)
+    @ApiOperation(nickname = "adminListConversations", value = "list conversations", response = PagedConversationList.class)
     @RequestMapping(method = RequestMethod.GET)
     public ResponseEntity<?> listConversations(
             AuthContext authContext,
@@ -96,7 +96,7 @@ public class ConversationAdminWebservice {
         }
     }
 
-    @ApiOperation(value = "delete a message", response = Conversation.class)
+    @ApiOperation(nickname="adminDeleteMessage", value = "delete a message", response = Conversation.class)
     @RequestMapping(value = "{conversationId}/message/{messageId}", method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteMessage(
             AuthContext authContext,
@@ -110,7 +110,7 @@ public class ConversationAdminWebservice {
         }
     }
 
-    @ApiOperation(value = "edit/update a message", response = Conversation.class)
+    @ApiOperation(nickname="adminUpdateMessage", value = "edit/update a message", response = Conversation.class)
     @RequestMapping(value = "{conversationId}/message/{messageId}", method = RequestMethod.PUT)
     public ResponseEntity<?> updateMessage(
             AuthContext authContext,
