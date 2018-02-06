@@ -31,12 +31,12 @@ import org.springframework.data.annotation.PersistenceConstructor;
 @ApiModel(description="A slot of a template (e.g. departure <time> of a travel planing template)")
 public class Slot {
 
-    @ApiModelProperty(notes="The role of the slot (e.g. departure time)",required=true, allowEmptyValue=false)
+    @ApiModelProperty(notes="The role of the slot (e.g. departure time)", required=true)
     @JsonProperty("role")
     private String role;
     @ApiModelProperty(notes="The type of tokens that can fill this slot (any if not defined)", 
             allowableValues="Date, Topic, Entity, Place, Organization, Person, Product, Attribute, Term, Keyword, Other",
-            required=false, allowEmptyValue=false)
+            required=false, allowEmptyValue=false, readOnly = false)
     @JsonProperty("tokenType")
     private Token.Type tokenType;
     @ApiModelProperty(notes="If this slot is required for its tempalte to be valid")
@@ -66,6 +66,10 @@ public class Slot {
         this.inquiryMessage = inquiryMessage;
     }
 
+    public void setRole(String role) {
+        this.role = role;
+    }
+    
     public String getRole() {
         return role;
     }

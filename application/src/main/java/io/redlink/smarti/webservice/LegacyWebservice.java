@@ -33,7 +33,7 @@ import java.util.Set;
 @Api
 @CrossOrigin
 @RestController
-@RequestMapping(value = "legacy", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = "/legacy", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LegacyWebservice {
 
     private final AuthenticationService authenticationService;

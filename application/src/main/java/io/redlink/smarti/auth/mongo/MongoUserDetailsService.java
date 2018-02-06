@@ -95,7 +95,7 @@ public class MongoUserDetailsService implements UserDetailsService {
 
     @Override
     public AttributedUserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        login = login.toLowerCase(Locale.ROOT);
+//        login = login.toLowerCase(Locale.ROOT);
 
         final SmartiUser smartiUser = getSmaritUser(login);
 
