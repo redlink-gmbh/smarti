@@ -37,6 +37,7 @@
         <module>db-migrator</module>
 
         <module>integration/rocket-chat</module>
+        <module>integration/solr-docker</module>
 
         <module>dist</module>
 
@@ -516,6 +517,23 @@
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>2.10</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.0.0</version>
+                    <executions>
+                        <execution>
+                            <id>package-solr</id>
+                            <goals><goal>single</goal></goals>
+                            <phase>package</phase>
+                            <configuration>
+                                <descriptors>
+                                    <descriptor>assembly${file.separator}solr.xml</descriptor>
+                                </descriptors>
+                                <attach>true</attach>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.vafer</groupId>

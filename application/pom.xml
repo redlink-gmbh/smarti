@@ -517,6 +517,46 @@
 
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>fetch-solr-core-config</id>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/solr-cores</outputDirectory>
+
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>query-conversation</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>solrcores</classifier>
+                                    <type>zip</type>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>chatpal-index</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>solrcores</classifier>
+                                    <type>zip</type>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archiveBaseDirectory>${project.build.directory}/solr-cores</archiveBaseDirectory>
+                </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
