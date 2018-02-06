@@ -19,6 +19,7 @@ require('./style.scss');
 const md5 = require('js-md5');
 const moment = require('moment');
 const ld_lang = require('lodash/lang');
+const _ = require('lodash');
 require('jsviews');
 
 const DDP = require("ddp.js").default;
@@ -105,6 +106,26 @@ const localize = new Localize({
     "widget.latch.query.remove": {
         "en": "remove",
         "de": "löschen"
+    },
+    "widget.latch.query.pin": {
+        "en": "pin",
+        "de": "anheften"
+    },
+    "widget.latch.query.unpin": {
+        "en": "unpin",
+        "de": "loslösen"
+    },
+    "widget.latch.query.exclude": {
+        "en": "exclude",
+        "de": "exkludieren"
+    },
+    "widget.latch.query.excluded": {
+        "en": "excluded",
+        "de": "exkludiert"
+    },
+    "widget.latch.query.reset": {
+        "en": "reset",
+        "de": "zurücksetzen"
     },
     "widget.latch.query.paging.next":{
         "en": "Next",
@@ -219,6 +240,8 @@ function Smarti(options) {
     //init socket connection
     let ddp  = new DDP(options.DDP);
 
+    let conversationId = null;
+
     let pubsubs = {};
     /**
      * Enabled publication-subscription mechanism
@@ -324,6 +347,7 @@ function Smarti(options) {
                 if(message.result) {
                     // message found for channel -> fetch conversation results
                     console.debug('Smarti widget init -> get last conversation result for message:', message.result);
+                    conversationId = message.result;
                     getConversation(message.result, failure);
                 } else {
                     return failure({code:'smarti.result.no-result-yet'});
@@ -344,6 +368,12 @@ function Smarti(options) {
                 pubsub('smarti.data').publish(message.fields.args[0]);
             }
         });
+    }
+
+    function refresh(failure) {
+        if(conversationId) {
+            getConversation(conversationId, failure);
+        }
     }
 
     /**
@@ -414,12 +444,13 @@ function Smarti(options) {
     }
 
     return {
-        login: login,
-        init: init,
+        login,
+        init,
+        refresh,
         subscribe: (id, func) => pubsub(id).subscribe(func),
         unsubscribe: (id, func) => pubsub(id).unsubscribe(func),
-        query: query,
-        post: post
+        query,
+        post
     };
 }
 
@@ -535,6 +566,8 @@ function SmartiWidget(element, _options) {
 
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
 
+        let lastTks = [];
+
         function refresh() {
             getResults(0);
         }
@@ -543,6 +576,9 @@ function SmartiWidget(element, _options) {
 
             let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
             if(useSearchTerms) tks = tks.concat(searchTerms || []);
+
+            if(equalArrays(lastTks, tks)) return;
+            lastTks = tks;
             tks = tks.join(" ");
 
             let queryParams = {
@@ -659,31 +695,35 @@ function SmartiWidget(element, _options) {
             
             let start = pageSize ? page * pageSize : 0;
 
-            smarti.query({
-                conversationId: params.id,
-                template: params.tempid,
-                creator: params.query.creator,
-                start: start
-            }, (data) => {
-
-                tracker.trackEvent(params.query.creator, data.docs.length);
-
-                if(data.docs && data.docs.length) {
-                    data.docs.forEach(d => {
-                        d.templateType = "related.conversation";
-                        d.answers.forEach(a => {
-                            a.templateType = "related.conversation";
+            if(params.query.creator == "queryBuilder:conversationsearch:expertengesprache") {
+                
+            } else {
+                smarti.query({
+                    conversationId: params.id,
+                    template: params.tempid,
+                    creator: params.query.creator,
+                    start: start,
+                    rows: pageSize
+                }, (data) => {
+    
+                    tracker.trackEvent(params.query.creator, data.docs.length);
+    
+                    if(data.docs && data.docs.length) {
+                        data.docs.forEach(d => {
+                            d.templateType = "related.conversation";
+                            d.answers.forEach(a => {
+                                a.templateType = "related.conversation";
+                            });
                         });
-                    });
-                }
-
-                console.log(data);
-
-                $.observable(params.templateData).setProperty("loading", false);
-                $.observable(params.templateData.results).refresh(data.docs);
-        
-            }, showError
-          );
+                    }
+    
+                    console.log(data);
+    
+                    $.observable(params.templateData).setProperty("loading", false);
+                    $.observable(params.templateData.results).refresh(data.docs);
+            
+                }, showError);
+            }
         }
 
         getResults(0);
@@ -726,7 +766,11 @@ function SmartiWidget(element, _options) {
     }
 
     function refreshWidgets(data) {
-        let tokens = data.tokens.filter(t => t.type != "Attribute").sort((a, b) => {
+        let tokens = data.tokens.filter(t => t.type != "Attribute").filter(t => {
+            return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) == -1;
+        }).filter(t => {
+            return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() == t.value.trim().toLowerCase());
+        }).sort((a, b) => {
             return a.messageIdx - b.messageIdx;
         }).reverse();
         let filteredTokens = {};
@@ -736,6 +780,13 @@ function SmartiWidget(element, _options) {
             return true;
         }).reverse().slice(-7);
         console.log("Filtered tokens:", uniqueTokens);
+        if(widgetHeaderTagsTemplateData.include.length) {
+            console.log("Pinned tokens:", widgetHeaderTagsTemplateData.include);
+            uniqueTokens = widgetHeaderTagsTemplateData.include.map(t => {
+                t.pinned = true;
+                return t;
+            }).concat(uniqueTokens);
+        }
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
 
         if(!initialized) {
@@ -799,18 +850,53 @@ function SmartiWidget(element, _options) {
         tabs.find('.moreSources li').first().click();
     }
 
+    let widgetStorage = {
+        tokens: {
+            userTokens: [],
+            include: [],
+            exclude: []
+        }
+    };
+
+    function readStorage() {
+        let storageStr = localStorage.getItem('widgetStorage_' + localStorage.getItem('Meteor.userId') + '_' + options.channel);
+        if(storageStr) {
+            widgetStorage = JSON.parse(storageStr);
+        } else {
+            writeStorage();
+        }
+    }
+
+    function writeStorage() {
+        widgetStorage.tokens.userTokens = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.userTokens || [];
+        widgetStorage.tokens.include = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.include || [];
+        widgetStorage.tokens.exclude = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.exclude || [];
+        localStorage.setItem('widgetStorage_' + localStorage.getItem('Meteor.userId') + '_' + options.channel, JSON.stringify(widgetStorage));
+    }
+
+    readStorage();
+
     const widgetHeaderTagsTemplateStr = `
         <span>${Utils.localize({code: 'widget.tags.label'})}</span>
         <ul>
-            <li class="add">+</li>
+            <li class="add"><i class="icon-plus"></i></li>
             {^{for userTokens}}
-            <li class="user-tag">{{:}}</li>
+            <li class="user-tag"><div class="title">{{:}}</div><div class="actions"><a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.remove'})}"><i class="icon-trash"></i></a></div></li>
             {{/for}}
+            {^{if userTokens.length}}<li class="remove" title="${Utils.localize({code: 'widget.latch.query.remove.all'})}"><i class="icon-cancel"></i></li>{{/if}}
             {^{for tokens}}
-            <li>{{:value}}</li>
+            <li class="system-tag" data-link="class{merge: pinned toggle='pinned'}">
+                <div class="title">{{:value}}</div>
+                <div class="actions">
+                    <a class="action-pin" data-link="title{: pinned?'${Utils.localize({code: 'widget.latch.query.unpin'})}':'${Utils.localize({code: 'widget.latch.query.pin'})}' }"><i class="icon-pin"></i></a>
+                    <a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.exclude'})}"><i class="icon-trash"></i></a>
+                </div>
+            </li>
             {{/for}}
-            <li class="remove">${Utils.localize({code: 'widget.latch.query.remove.all'})}</li>
         </ul>
+        <div class="excluded">
+        {^{if exclude.length}}<span>{^{:exclude.length}} ${Utils.localize({code: 'widget.latch.query.excluded'})}</span><span class="reset-exclude" title="${Utils.localize({code: 'widget.latch.query.reset'})}"><i class="icon-ccw"></i></span>{{/if}}
+        </div>
     `;
     const widgetHeaderTabsTemplateStr = `
         <div id="tabContainer">
@@ -932,9 +1018,7 @@ function SmartiWidget(element, _options) {
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
     
     widgetTitle.css('marginBottom', '10px');
-    // add a style to translate the remove button of tags!
-    $('#smarti-custom-style').remove();
-    $(`<style id="smarti-custom-style">.smarti #widgetContainer #widgetWrapper #widgetHeader #tags ul li:after {content:"${Utils.localize({code: 'widget.latch.query.remove'})}"}</style>`).appendTo('head');
+
 
     widgetMessage.empty();
     tabs.hide();
@@ -947,8 +1031,12 @@ function SmartiWidget(element, _options) {
     let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
     let widgetIrLatchTemplate = $.templates(widgetIrLatchTemplateStr);
 
-    let storedUserTokens = localStorage.getItem('userTokens_' + localStorage.getItem('Meteor.userId'));
-    let widgetHeaderTagsTemplateData = {tokens: [], userTokens: storedUserTokens ? storedUserTokens.split('|') : []};
+    let widgetHeaderTagsTemplateData = {
+        tokens: [],
+        userTokens: widgetStorage.tokens.userTokens,
+        include: widgetStorage.tokens.include,
+        exclude: widgetStorage.tokens.exclude
+    };
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
     let widgetHeaderTabsTemplateData = {widgets: widgets, selectedWidget: 0};
@@ -1197,9 +1285,11 @@ function SmartiWidget(element, _options) {
         searchTimeout = setTimeout(() => {
             searchTimeout = null;
 
+            /*
             searchTerms = innerTabSearchInput.val();
             searchTerms = searchTerms.trim().toLowerCase().replace(/\s+/g, ' ');
             searchTerms = searchTerms.length ? searchTerms.split(' ') : [];
+            */
 
             widgets.forEach((w, idx) => {
                 if(w && w.params.elem && w.templateType === "ir_latch" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
@@ -1216,18 +1306,56 @@ function SmartiWidget(element, _options) {
         if(e.which == 13) search(widgetHeaderTabsTemplateData.selectedWidget);
     });
 
-    tags.on('click', 'li:not(".add, .remove")', function() {
-        let tokenIds = $.view(this).index;
-        let tokenData = $.view(this).data;
-        let tokensArray = typeof tokenData === "string" ? widgetHeaderTagsTemplateData.userTokens : widgetHeaderTagsTemplateData.tokens;
-        $.observable(tokensArray).remove(tokenIds);
+    tags.on('click', '.action-remove', function() {
+        let $li = $(this).closest('li');
+        let tokenIdx = $.view($li).index;
+        let tokenData = $.view($li).data;
+        if(typeof tokenData === "string") {
+            $.observable(widgetHeaderTagsTemplateData.userTokens).remove(tokenIdx);
+        } else {
+            $.observable(widgetHeaderTagsTemplateData.exclude).insert(tokenData.value.trim().toLowerCase());
+            $.observable(widgetHeaderTagsTemplateData.tokens).remove(tokenIdx);
+            smarti.refresh(showError);
+        }
+        
         tracker.trackEvent('tag.remove');
+    });
+
+    tags.on('click', '.action-pin', function() {
+        let $li = $(this).closest('li');
+        let tokenIdx = $.view($li).index;
+        let tokenData = $.view($li).data;
+
+        if($li.hasClass('pinned')) {
+            let includeIdx = -1;
+            widgetHeaderTagsTemplateData.include.some((t, idx) => {
+                if(t.value == tokenData.value) {
+                    includeIdx = idx;
+                    return true;
+                }
+                return false;
+            });
+            if(includeIdx > -1) $.observable(widgetHeaderTagsTemplateData.include).remove(includeIdx);
+            $(this).attr('title', Utils.localize({code: 'widget.latch.query.pin'}));
+            $li.removeClass('pinned');
+            tracker.trackEvent('tag.unpin');
+        } else {
+            $.observable(widgetHeaderTagsTemplateData.include).insert(tokenData);
+            $(this).attr('title', Utils.localize({code: 'widget.latch.query.unpin'}));
+            $li.addClass('pinned');
+            tracker.trackEvent('tag.pin');
+        }
     });
 
     tags.on('click', 'li.remove', function() {
         $.observable(widgetHeaderTagsTemplateData.userTokens).refresh([]);
-        $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
         tracker.trackEvent('tag.remove-all');
+    });
+
+    tags.on('click', '.reset-exclude', function() {
+        $.observable(widgetHeaderTagsTemplateData.exclude).refresh([]);
+        tracker.trackEvent('tag.reset-exclude');
+        smarti.refresh(showError);
     });
 
     tags.on('click', 'li.add', function() {
@@ -1243,12 +1371,12 @@ function SmartiWidget(element, _options) {
                     if(widgetHeaderTagsTemplateData.tokens.map(t => t.value.toLowerCase()).concat(widgetHeaderTagsTemplateData.userTokens).indexOf(newTag.toLowerCase()) == -1) {
                         $.observable(widgetHeaderTagsTemplateData.userTokens).insert(newTag);
                     }
-                    tags.find('li.add').html('+').removeClass('active');
+                    tags.find('li.add').html('<i class="icon-plus"></i>').removeClass('active');
                 }
                 tracker.trackEvent('tag.add');
             }
             if(e.which == 13 || e.which == 27) {
-                tags.find('li.add').html('+').removeClass('active');
+                tags.find('li.add').html('<i class="icon-plus"></i>').removeClass('active');
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -1256,11 +1384,9 @@ function SmartiWidget(element, _options) {
     });
 
     $.observable(widgetHeaderTagsTemplateData).observeAll(() => {
+        console.log("tagsDataChange:", arguments);
+        writeStorage();
         search();
-    });
-
-    $.observable(widgetHeaderTagsTemplateData).observeAll(() => {
-        localStorage.setItem('userTokens_' + localStorage.getItem('Meteor.userId'), widgetHeaderTagsTemplateData.userTokens.join('|'));
     });
     
     $.views.helpers({
@@ -1292,6 +1418,10 @@ $.views.converters("tls", (val) => {
 
 function escapeRegExp(str) {
     return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+function equalArrays(a, b) {
+    return _.isEqual([...a].sort(), [...b].sort()); 
 }
 
 window.SmartiWidget = SmartiWidget;
