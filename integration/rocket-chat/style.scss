@@ -197,11 +197,19 @@
                         font-size: 14px;
                         padding-top: 5px;
 
-                        .action-pin {
-                            border-right: 1px solid #ababab;
-                            margin-right: 2px;
-                            padding-right: 5px;
+                        .action-remove {
+                            border-left: 1px solid #ababab;
+                            margin-left: 2px;
+                            padding-left: 4px;
+                        }
 
+                        a:only-of-type {
+                            border-left: none;
+                            margin-left: 0;
+                            padding-left: 0;
+                        }
+
+                        .action-pin {
                             i:before {
                                 transform: rotate(-90deg);
                             }
@@ -233,7 +241,7 @@
 
             .excluded {
                 clear: both;
-                
+
                 .reset-exclude {
                     position: relative;
                     background: $grey50;

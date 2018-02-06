@@ -24,6 +24,8 @@ require('jsviews');
 
 const DDP = require("ddp.js").default;
 
+let conversationId = null;
+
 //multi-linguality
 const Localize = require('localize');
 const localize = new Localize({
@@ -62,6 +64,10 @@ const localize = new Localize({
     "get.conversation.params": {
         "de": "Konversations-Parameter konnten nicht geladen werden: $[1]",
         "en": "Cannot load conversation params: $[1]"
+    },
+    "get.query.params": {
+        "de": "Query-Parameter konnten nicht geladen werden: $[1]",
+        "en": "Cannot load query params: $[1]"
     },
     "widget.post": {
         "de": "Posten",
@@ -240,8 +246,6 @@ function Smarti(options) {
     //init socket connection
     let ddp  = new DDP(options.DDP);
 
-    let conversationId = null;
-
     let pubsubs = {};
     /**
      * Enabled publication-subscription mechanism
@@ -419,6 +423,22 @@ function Smarti(options) {
       });
     }
 
+    function search(params, success, failure) {
+        console.debug('search for conversation messages');
+        const msgid = ddp.method("searchConversations",[params]);
+        ddp.on("result", (message) => {
+            if (message.error) return failure({code:"get.query.params", args:[message.error.reason]});
+  
+            if(message.id === msgid) {
+                if(message.result) {
+                    success(message.result);
+                } else {
+                    if(failure) failure({code:'smarti.result.no-result-yet'});
+                }
+            }
+        });
+    }
+
     /**
      * Posts a Smarti result to the message input field of Rocket.Chat
      *
@@ -450,6 +470,7 @@ function Smarti(options) {
         subscribe: (id, func) => pubsub(id).subscribe(func),
         unsubscribe: (id, func) => pubsub(id).unsubscribe(func),
         query,
+        search,
         post
     };
 }
@@ -466,7 +487,6 @@ function Tracker(category, roomId, onEvent) {
         console.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
         if(onEvent) onEvent(category, action, roomId, value);
     };
-
 }
 
 /**
@@ -617,7 +637,7 @@ function SmartiWidget(element, _options) {
                  *
                  */
                 success: (data) => {
-                    tracker.trackEvent(params.query.creator, data.response.numFound);
+                    tracker.trackEvent(params.query.creator, data.response && data.response.numFound || 0);
 
                     console.log(params.query);
                     console.log(data.response.docs);
@@ -667,7 +687,8 @@ function SmartiWidget(element, _options) {
             params,
             refresh,
             getResults,
-            templateType: "ir_latch"
+            templateType: "ir_latch",
+            queryCreator: params.query.creator.split(":").slice(0, 2).join(":")
         };
     }
 
@@ -681,23 +702,71 @@ function SmartiWidget(element, _options) {
     function ConversationWidget(params) {
         widgetConversationTemplate.link(params.elem, params.templateData);
     
+        let lastTks = [];
+        
         function refresh() {
             getResults(0);
         }
 
         //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
 
-        function getResults(page, pageSize) {
+        function getResults(page, useSearchTerms) {
 
             //resultPaging.empty();
-
-            $.observable(params.templateData).setProperty("loading", true);
             
+            let pageSize = params.query.defaults && params.query.defaults.rows || 0;
             let start = pageSize ? page * pageSize : 0;
 
-            if(params.query.creator == "queryBuilder:conversationsearch:expertengesprache") {
-                
-            } else {
+            if(params.query.creator.indexOf("queryBuilder:conversationsearch") > -1) {
+                /*
+                    fl:"id,message_id,meta_channel_id,user_id,time,message,type"
+                    hl:"true"
+                    hl.fl:"message"
+                    rows:3
+                    sort:"time desc"
+                */
+                let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
+                if(useSearchTerms) tks = tks.concat(searchTerms || []);
+    
+                if(equalArrays(lastTks, tks)) return;
+
+                $.observable(params.templateData).setProperty("loading", true);
+
+                lastTks = tks;
+                tks = tks.join(" ");
+
+                let queryParams = {};
+
+                //set default params
+                for(let property in params.query.defaults) {
+                    if (params.query.defaults.hasOwnProperty(property))
+                        queryParams[property] = params.query.defaults[property];
+                }
+                queryParams.fq = params.query.filterQueries;
+                if(conversationId) queryParams.fq.push('-conversation_id:' + conversationId);
+                queryParams.start = start;
+                queryParams.q = tks;
+
+                smarti.search(queryParams, (data) => {
+                    console.log("Conversation serach results:", data);
+
+                    tracker.trackEvent(params.query.creator, data.response && data.response.length || 0);
+
+                    if(data.response && data.response.length) {
+                        data.response.forEach(d => {
+                            d.templateType = "related.conversation";
+                        });
+                    }
+
+                    $.observable(params.templateData.results).refresh(data.response);
+                    $.observable(params.templateData).setProperty("loading", false);
+                }, function(err) {
+                    showError(err);
+                    $.observable(params.templateData).setProperty("loading", false);
+                });
+            } else if(params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
+                $.observable(params.templateData).setProperty("loading", true);
+
                 smarti.query({
                     conversationId: params.id,
                     template: params.tempid,
@@ -705,8 +774,8 @@ function SmartiWidget(element, _options) {
                     start: start,
                     rows: pageSize
                 }, (data) => {
-    
-                    tracker.trackEvent(params.query.creator, data.docs.length);
+
+                    tracker.trackEvent(params.query.creator, data.docs && data.docs.length);
     
                     if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
@@ -719,10 +788,13 @@ function SmartiWidget(element, _options) {
     
                     console.log(data);
     
-                    $.observable(params.templateData).setProperty("loading", false);
                     $.observable(params.templateData.results).refresh(data.docs);
+                    $.observable(params.templateData).setProperty("loading", false);
             
-                }, showError);
+                }, function(err) {
+                    showError(err);
+                    $.observable(params.templateData).setProperty("loading", false);
+                });
             }
         }
 
@@ -732,7 +804,8 @@ function SmartiWidget(element, _options) {
             params,
             refresh,
             getResults,
-            templateType: "related.conversation"
+            templateType: "related.conversation",
+            queryCreator: params.query.creator.split(":").slice(0, 2).join(":")
         };
     }
 
@@ -883,13 +956,13 @@ function SmartiWidget(element, _options) {
             {^{for userTokens}}
             <li class="user-tag"><div class="title">{{:}}</div><div class="actions"><a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.remove'})}"><i class="icon-trash"></i></a></div></li>
             {{/for}}
-            {^{if userTokens.length}}<li class="remove" title="${Utils.localize({code: 'widget.latch.query.remove.all'})}"><i class="icon-cancel"></i></li>{{/if}}
+            {^{if false}}<li class="remove" title="${Utils.localize({code: 'widget.latch.query.remove.all'})}"><i class="icon-cancel"></i></li>{{/if}}
             {^{for tokens}}
             <li class="system-tag" data-link="class{merge: pinned toggle='pinned'}">
                 <div class="title">{{:value}}</div>
                 <div class="actions">
                     <a class="action-pin" data-link="title{: pinned?'${Utils.localize({code: 'widget.latch.query.unpin'})}':'${Utils.localize({code: 'widget.latch.query.pin'})}' }"><i class="icon-pin"></i></a>
-                    <a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.exclude'})}"><i class="icon-trash"></i></a>
+                    {^{if !pinned}}<a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.exclude'})}"><i class="icon-trash"></i></a>{{/if}}
                 </div>
             </li>
             {{/for}}
@@ -927,26 +1000,26 @@ function SmartiWidget(element, _options) {
                     <div class="convMessage" data-link="class{merge: answers toggle='parent'}">
                         <div class="middle">
                             <div class="datetime">
-                                {{tls:timestamp}}
+                                {{tls:timestamp || time}}
                                 {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                                <span class="answers">{{: answers.length}} ${Utils.localize({code: 'widget.answers'})}</span>
+                                {{if answers}}<span class="answers">{{: answers.length}} ${Utils.localize({code: 'widget.answers'})}</span>{{/if}}
                             </div>
                             <div class="title"></div>
-                            <div class="text"><p>{{nl:~hl(content, true)}}</p></div>
-                            <div class="postAction">{^{if answers.length}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
+                            <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
+                            <div class="postAction">{^{if answers && answers.length}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
                             <div class="selectMessage"></div>
                         </div>
                     </div>
-                    {^{if answers.length}}
+                    {^{if answers && answers.length}}
                         <div class="responseContainer">
                             {^{for answers}}
                                 <div class="convMessage">
                                     <div class="middle">
                                         <div class="datetime">
-                                        {{tls:timestamp}}
+                                        {{tls:timestamp || time}}
                                         </div>
                                         <div class="title"></div>
-                                        <div class="text"><p>{{nl:~hl(content, true)}}</p></div>
+                                        <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
                                         <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                         <div class="selectMessage"></div>
                                     </div>
@@ -1199,10 +1272,10 @@ function SmartiWidget(element, _options) {
             let attachment;
             if(conv.parent.templateType === "related.conversation") {
                 attachment = {
-                    text: conv.parent.content,
+                    text: conv.parent.content || conv.parent.message,
                     attachments: [],
                     bot: 'assistify',
-                    ts: conv.parent.timestamp
+                    ts: conv.parent.timestamp || conv.parent.time
                 };
                 $.each(conv.selectedChildIndices, (i, childIdx) => {
                     attachment.attachments.push(buildAttachments({parent: conv.parent.answers[childIdx]}));
@@ -1292,7 +1365,7 @@ function SmartiWidget(element, _options) {
             */
 
             widgets.forEach((w, idx) => {
-                if(w && w.params.elem && w.templateType === "ir_latch" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
+                if(w && w.params.elem && w.queryCreator != "queryBuilder:conversationmlt" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
                     w.getResults(0, idx == widgetHeaderTabsTemplateData.selectedWidget);
                 }
             });
@@ -1327,6 +1400,7 @@ function SmartiWidget(element, _options) {
         let tokenData = $.view($li).data;
 
         if($li.hasClass('pinned')) {
+            $.observable(tokenData).setProperty("pinned", false);
             let includeIdx = -1;
             widgetHeaderTagsTemplateData.include.some((t, idx) => {
                 if(t.value == tokenData.value) {
@@ -1340,6 +1414,7 @@ function SmartiWidget(element, _options) {
             $li.removeClass('pinned');
             tracker.trackEvent('tag.unpin');
         } else {
+            $.observable(tokenData).setProperty("pinned", true);
             $.observable(widgetHeaderTagsTemplateData.include).insert(tokenData);
             $(this).attr('title', Utils.localize({code: 'widget.latch.query.unpin'}));
             $li.addClass('pinned');
@@ -1359,8 +1434,10 @@ function SmartiWidget(element, _options) {
     });
 
     tags.on('click', 'li.add', function() {
-        $(this).addClass('active').html(`<input type="text" id="newTagInput" placeholder="${Utils.localize({code: 'smarti.new-search-term'})}">`);
-        tags.find('#newTagInput').focus();
+        if(!$(this).hasClass('active')) {
+            $(this).addClass('active').html(`<input type="text" id="newTagInput" placeholder="${Utils.localize({code: 'smarti.new-search-term'})}">`);
+            tags.find('#newTagInput').focus();
+        }
     });
 
     $(tags).keydown((e) => {
@@ -1383,11 +1460,14 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    $.observable(widgetHeaderTagsTemplateData).observeAll(() => {
-        console.log("tagsDataChange:", arguments);
+    function onDataChange() {
         writeStorage();
         search();
-    });
+    }
+
+    $.observable(widgetHeaderTagsTemplateData.tokens).observeAll(onDataChange);
+    $.observable(widgetHeaderTagsTemplateData.userTokens).observeAll(onDataChange);
+    $.observable(widgetHeaderTagsTemplateData.exclude).observeAll(onDataChange);
     
     $.views.helpers({
         // helper method to highlight text
