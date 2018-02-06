@@ -1,8 +1,6 @@
 package io.redlink.smarti.webservice;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-
 import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.SmartiUser;
@@ -11,14 +9,10 @@ import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.services.*;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.AuthContext;
-import io.redlink.smarti.webservice.pojo.ConversationData;
 import io.redlink.smarti.webservice.pojo.SmartiUserData;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,7 +94,7 @@ public class ClientWebservice {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
         if(clientService.exists(id)) {
             clientService.delete(clientService.get(id));
-            return ResponseEntity.ok().build();
+            return ResponseEntity.noContent().build();
         } else return ResponseEntities.status(404, "client does not exist");
     }
 

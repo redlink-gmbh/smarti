@@ -374,6 +374,7 @@ public class ConversationService {
             if(!(data instanceof Boolean)){
                 data = Boolean.parseBoolean(data.toString());
             }
+            field = "_private";
         } else if("votes".equals(field)){
             if(!(data instanceof Integer)){
                 try {
