@@ -20,7 +20,7 @@
 
     <property name="logDir" value="./logs" />
 
-    <logger name="io.redlink" level="${log.level:INFO}" />
+    <logger name="io.redlink" level="${log.level:-INFO}" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
