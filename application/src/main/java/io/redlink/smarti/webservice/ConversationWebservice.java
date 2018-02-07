@@ -1195,7 +1195,7 @@ public class ConversationWebservice {
 
     @ApiModel
     @SuppressWarnings("WeakerAccess")
-    static class ConversationSearchResult extends SearchResult<Conversation> {}
+    static class ConversationSearchResult extends SearchResult<ConversationSearchService.ConversationResult> {}
 
     @ApiModel
     @SuppressWarnings("WeakerAccess")
