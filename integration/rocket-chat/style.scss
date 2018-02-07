@@ -25,9 +25,13 @@
  $lightblue: #0075b4;
  $darkblue: #004A78;
  $red : #b8141a;
- $theme-green-1: #29a99d;
- $theme-green-2: #0A8178;
- $theme-pink: #d6195d;
+ $theme-green-1: #79ece0;
+ $theme-green-2: #62b8ae;
+ $theme-green-3: #29a99d;
+ $theme-green-4: #1d8178;
+ $theme-green-5: #136159;
+ $theme-pink-1: #ed1e79;
+ $theme-pink-2: #d5195b;
  $theme-light-blue-1: #cff5f2;
 
  @mixin transition($duration) {
@@ -81,7 +85,7 @@
 
                 li {
                     position: relative;
-                    background: $darkblue;
+                    background: $theme-green-5;
                     color: $white;
                     padding: 6px 10px 6px 10px;
                     border-radius: 3px;
@@ -93,7 +97,7 @@
                     text-align: center;
 
                     &.user-tag {
-                        background: $lightblue;
+                        background: $theme-green-3;
                     }
 
                     &.user-tag, &.system-tag {
@@ -160,7 +164,7 @@
                         }
 
                         &:hover {
-                            background: $lightblue;
+                            background: $theme-pink-2;
                             color: $white;
                         }
                     }
@@ -187,7 +191,7 @@
                         @include transition(0.2s);
                         opacity: 0;
                         position: absolute;
-                        background: $theme-green-2;
+                        background: $theme-green-4;
                         border-radius: 3px;
                         color: $white;
                         left: 0;
@@ -240,10 +244,14 @@
                 }
             }
 
-            .excluded {
+            .tag-actions {
+                display: flex;
+                flex-wrap: wrap;
+                flex-direction: row;
+                justify-content: flex-end;
                 clear: both;
 
-                .reset-exclude {
+                .remove-all {
                     position: relative;
                     background: $grey50;
                     color: $grey75;
@@ -256,7 +264,7 @@
                     text-align: center;
     
                     &:hover {
-                        background: $red;
+                        background: $theme-pink-2;
                         color: $white;
                     }
                 }
@@ -320,10 +328,10 @@
                 }
             }
 
-            ul.moreSources{
+            ul.sources{
                 position:relative;
                 border-bottom:1px solid $grey50;
-                display:none;
+                border-top:1px solid $grey50;
 
                 li{
                     @extend .noselect;
@@ -344,8 +352,10 @@
 
                     &.selected {
                         cursor: default;
-                        opacity: 0.5;
-                    }    
+                        font-weight: bold;
+                        background-color: $theme-pink-2;
+                        color: white;
+                    }
                 }
             }
 
@@ -414,6 +424,10 @@
         padding: 10px 10px 10px 10px;
         overflow-y: auto;
         flex: 1;
+
+        mark {
+            background-color: $theme-green-1;
+        }
 
         .widgetContent {
             position: relative;
@@ -492,8 +506,8 @@
                             cursor: pointer;
 
                             &:hover {
-                            background: $darkblue;
-                            color: $white;
+                                background: $theme-pink-2;
+                                color: $white;
                             }
                         }
                         .selectMessage{
@@ -528,8 +542,8 @@
                     }
 
                     &:hover {
-                        border-left: 3px solid $theme-green-2;
-                        background: $theme-light-blue-1;
+                        border-left: 3px solid $theme-pink-2;
+                        //background: $theme-light-blue-1;
                     }
 
                     &.parent {
@@ -561,7 +575,7 @@
                         margin-top: 5px;
                         border-left: 3px solid $grey50;
                         &:hover {
-                            border-left: 3px solid $theme-green-1;
+                            border-left: 3px solid $theme-pink-2;
                         }
                     }
                 }
@@ -583,8 +597,7 @@
                 }
 
                 &:hover {
-                    border-left: 3px solid $theme-green-2;
-                    background: $theme-light-blue-1;
+                    border-left: 3px solid $theme-pink-2;
                 }
 
                 .middle {
@@ -614,8 +627,8 @@
                         margin-right: 5px;
                         font-size: 10px;
                         font-weight:bold;
-                        background: $grey75;
-                        color: $white;
+                        background: $grey25;
+                        color: $grey75;
                         border-radius: 3px;
                         padding: 2px 7px;
                         top: -1px;
@@ -632,8 +645,8 @@
                         cursor: pointer;
 
                         &:hover {
-                        background: $darkblue;
-                        color: $white;
+                            background: $theme-pink-2;
+                            color: $white;
                         }
                     }
                     .selectMessage{
@@ -672,15 +685,15 @@
 
     #widgetFooter {
         button {
-            &#postSelected{
+            &#postSelected {
                 position:absolute;
                 z-index:10000;
-                background:$darkblue;
+                background:$theme-pink-2;
                 color:$white;
                 left: 0;
                 transform:translateY(200%);
                 &:hover{
-                    background: $lightblue;
+                    background: $theme-pink-1;
                 }
             }
         }

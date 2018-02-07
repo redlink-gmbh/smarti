@@ -665,7 +665,7 @@ function SmartiWidget(element, _options) {
                     noMoreData = !(data.response && data.response.docs && data.response.docs.length);
 
                     console.log(params.query);
-                    console.log(data.response.docs);
+                    console.log(data.response);
 
                     //map to search results
                     let docs = $.map(data.response.docs, (doc) => {
@@ -699,6 +699,8 @@ function SmartiWidget(element, _options) {
                     }
 
                     console.log(docs);
+
+                    if(data.response && data.response.numFound >= 0) $.observable(params.templateData).setProperty("total", data.response.numFound);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(docs);
@@ -825,6 +827,8 @@ function SmartiWidget(element, _options) {
 
                     tracker.trackEvent(params.query.creator, conversations.length);
                     noMoreData = !conversations.length;
+                    
+                    if(data.numFound >= 0) $.observable(params.templateData).setProperty("total", data.numFound);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(conversations);
@@ -983,7 +987,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: [], msg: ""},
+                            templateData: {loading: false, results: [], total: 0, msg: ""},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1019,7 +1023,7 @@ function SmartiWidget(element, _options) {
 
     function initNavTabs() {
         tabs.show();
-        tabs.find('.moreSources li').first().click();
+        tabs.find('.sources li').first().click();
     }
 
     let widgetStorage = {
@@ -1055,29 +1059,35 @@ function SmartiWidget(element, _options) {
             {^{for userTokens}}
             <li class="user-tag"><div class="title">{{:}}</div><div class="actions"><a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.remove'})}"><i class="icon-trash"></i></a></div></li>
             {{/for}}
-            {^{if false}}<li class="remove" title="${Utils.localize({code: 'widget.latch.query.remove.all'})}"><i class="icon-cancel"></i></li>{{/if}}
             {^{for tokens}}
             <li class="system-tag" data-link="class{merge: pinned toggle='pinned'}">
                 <div class="title">{{:value}}</div>
                 <div class="actions">
                     <a class="action-pin" data-link="title{: pinned?'${Utils.localize({code: 'widget.latch.query.unpin'})}':'${Utils.localize({code: 'widget.latch.query.pin'})}' }"><i class="icon-pin"></i></a>
-                    {^{if !pinned}}<a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.exclude'})}"><i class="icon-trash"></i></a>{{/if}}
+                    {^{if !pinned}}<a class="action-remove" title="${Utils.localize({code: 'widget.latch.query.remove'})}"><i class="icon-trash"></i></a>{{/if}}
                 </div>
             </li>
             {{/for}}
         </ul>
-        <div class="excluded">
-        {^{if exclude.length}}<span>{^{:exclude.length}} ${Utils.localize({code: 'widget.latch.query.excluded'})}</span><span class="reset-exclude" title="${Utils.localize({code: 'widget.latch.query.reset'})}"><i class="icon-ccw"></i></span>{{/if}}
+        <div class="tag-actions">
+            {^{if userTokens.length + tokens.length > 0}}<span class="remove-all">${Utils.localize({code: 'widget.latch.query.remove.all'})}</span>{{/if}}
         </div>
+
     `;
-    const widgetHeaderTabsTemplateStr = `
+    /*
+        {^{if exclude.length}}<span>{^{:exclude.length}} ${Utils.localize({code: 'widget.latch.query.excluded'})}</span><span class="reset-exclude" title="${Utils.localize({code: 'widget.latch.query.reset'})}"><i class="icon-ccw"></i></span>{{/if}}
+    */
+
+    /*
         <div id="tabContainer">
             <span class="nav-item current">{^{if widgets.length}}{^{:widgets[selectedWidget].params.query.displayTitle}} ({^{:widgets[selectedWidget].params.templateData.results.length || 0}}){{/if}}</span>
             <span class="nav-item more">${Utils.localize({code: 'smarti.sources'})}</span>
         </div>
-        <ul class="moreSources">
+    */
+    const widgetHeaderTabsTemplateStr = `
+        <ul class="sources">
             {^{for widgets}}
-            <li>{^{:params.query.displayTitle}} ({^{:params.templateData.results.length || 0}})</li>
+            <li>{^{:params.query.displayTitle}}{^{if params.templateData.total}} ({^{:params.templateData.total}}){{/if}}</li>
             {{/for}}
         </ul>
     `;
@@ -1273,7 +1283,8 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    let sources = tabs.find('.moreSources');
+    let sources = tabs.find('.sources');
+    
     tabs.on('click', '.more', function() {
         if (sources.hasClass('open')) {
             sources.slideUp(100).removeClass('open');
@@ -1320,8 +1331,8 @@ function SmartiWidget(element, _options) {
             searchTerms = [];
             //search(widgetHeaderTabsTemplateData.selectedWidget);
     
-            sources.slideUp(100).removeClass('open');
-            tabs.find('.more').text(Utils.localize({code: 'smarti.sources'}));
+            //sources.slideUp(100).removeClass('open');
+            //tabs.find('.more').text(Utils.localize({code: 'smarti.sources'}));
 
             if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
@@ -1532,8 +1543,14 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    tags.on('click', 'li.remove', function() {
+    tags.on('click', '.remove-all', function() {
         $.observable(widgetHeaderTagsTemplateData.userTokens).refresh([]);
+        $.observable(widgetHeaderTagsTemplateData.include).refresh([]);
+        widgetHeaderTagsTemplateData.tokens.forEach(t => {
+            $.observable(widgetHeaderTagsTemplateData.exclude).insert(t.value.trim().toLowerCase());
+        });
+        $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
+        smarti.refresh(showError);
         tracker.trackEvent('tag.remove-all');
     });
 
@@ -1591,6 +1608,9 @@ function SmartiWidget(element, _options) {
     $.observable(widgetHeaderTagsTemplateData.tokens).observeAll(onDataChange);
     $.observable(widgetHeaderTagsTemplateData.userTokens).observeAll(onDataChange);
     $.observable(widgetHeaderTagsTemplateData.exclude).observeAll(onDataChange);
+    $.observable(widgetHeaderTagsTemplateData.include).observeAll(function() {
+        writeStorage();
+    });
     
     $.views.helpers({
         // helper method to highlight text
