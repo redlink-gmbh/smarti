@@ -42,8 +42,8 @@ const localize = new Localize({
         "de": "Anmeldung an den stream 'new-conversation-result' fehlgeschlagen"
     },
     "smarti.result.no-result-yet": {
-        "de": "Noch keine Antworten verfügbar",
-        "en": "No answers yet"
+        "de": "Noch keine Resultate verfügbar",
+        "en": "No results yet"
     },
     "smarti.sources": {
         "de": "Quellen",
@@ -56,6 +56,10 @@ const localize = new Localize({
     "smarti.date-format": {
         "de": "DD.MM.YYYY HH:mm:ss",
         "en": "DD-MM-YYYY HH:mm:ss"
+    },
+    "smarti.source.not-supported": {
+        "de": "Diese Quelle wird nicht unterstützt!",
+        "en": "This source is not supported!"
     },
     "msg.post.failure": {
         "de": "Nachricht konnte nicht gepostet werden",
@@ -84,6 +88,14 @@ const localize = new Localize({
     "widget.answers": {
         "de": "Antworten",
         "en": "answers"
+    },
+    "widget.messages": {
+        "de": "Nachrichten",
+        "en": "messages"
+    },
+    "widget.message": {
+        "de": "Nachricht",
+        "en": "message"
     },
     "widget.tags.label": {
         "de": "Ergebnisse zu:",
@@ -747,7 +759,7 @@ function SmartiWidget(element, _options) {
                 let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
     
-                if(equalArrays(lastTks, tks)) return;
+                if(equalArrays(lastTks, tks) && loadedPage >= page) return;
 
                 if(!append) {
                     page = 0;
@@ -778,21 +790,46 @@ function SmartiWidget(element, _options) {
                 smarti.search(queryParams, (data) => {
                     console.log("Conversation serach results:", data);
 
-                    tracker.trackEvent(params.query.creator, data.response && data.response.length || 0);
-
                     loadedPage = page;
-                    noMoreData = !(data.response && data.response.length);
+                    
+                    let conversations = [];
+                    if(data.docs && data.docs.length) {
+                        data.docs.forEach(d => {
+                            d.results.forEach(r => {
+                                if(r.messages.length) {
+                                    let conversation = r.messages[0];
+                                    conversation.cid = d.id;
+                                    r.messages.slice(1).forEach(m => {
+                                        conversation.content += '\r\n' + m.content;
+                                    });
+                                    conversation.messages = r.after || [];
+                                    //conversation.messagesBefore = r.before || [];
 
-                    if(data.response && data.response.length) {
-                        data.response.forEach(d => {
-                            d.templateType = "related.conversation";
+                                    conversation.messagesCnt = conversation.messages.length;
+
+                                    conversation.templateType = "related.conversation";
+                                    conversation.messages.forEach(m => {
+                                        m.templateType = "related.conversation";
+                                    });
+                                    /*
+                                    conversation.messagesBefore.forEach(m => {
+                                        m.templateType = "related.conversation";
+                                    });
+                                    */
+
+                                    conversations.push(conversation);
+                                }
+                            });
                         });
                     }
 
+                    tracker.trackEvent(params.query.creator, conversations.length);
+                    noMoreData = !conversations.length;
+
                     if(append) {
-                        $.observable(params.templateData.results).insert(data.response);
+                        $.observable(params.templateData.results).insert(conversations);
                     } else {
-                        $.observable(params.templateData.results).refresh(data.response);
+                        $.observable(params.templateData.results).refresh(conversations);
                     }
                     $.observable(params.templateData).setProperty("loading", false);
                 }, function(err) {
@@ -800,6 +837,9 @@ function SmartiWidget(element, _options) {
                     $.observable(params.templateData).setProperty("loading", false);
                 });
             } else if(params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
+
+                $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'smarti.source.not-supported'}));
+                return; // conversationmlt not supported anymore!
 
                 if(!append) {
                     page = 0;
@@ -943,7 +983,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: true, results: []},
+                            templateData: {loading: false, results: [], msg: ""},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1053,29 +1093,29 @@ function SmartiWidget(element, _options) {
     const widgetConversationTemplateStr = `
         {^{for results}}
             <div class="conversation">
-                <div class="convMessage" data-link="class{merge: answers toggle='parent'}">
+                <div class="convMessage" data-link="class{merge: messagesCnt toggle='parent'}">
                     <div class="middle">
                         <div class="datetime">
-                            {{tls:timestamp || time}}
+                            {{tls:time}}
                             {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                            {{if answers}}<span class="answers">{{: answers.length}} ${Utils.localize({code: 'widget.answers'})}</span>{{/if}}
+                            {{if messagesCnt}}<span class="messages">{{: messagesCnt}} {^{: messagesCnt>1?'${Utils.localize({code: 'widget.messages'})}':'${Utils.localize({code: 'widget.message'})}' }}</span>{{/if}}
                         </div>
                         <div class="title"></div>
-                        <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
-                        <div class="postAction">{^{if answers && answers.length}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
+                        <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
+                        <div class="postAction">{^{if messagesCnt}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
                         <div class="selectMessage"></div>
                     </div>
                 </div>
-                {^{if answers && answers.length}}
+                {^{if messages && messages.length}}
                     <div class="responseContainer">
-                        {^{for answers}}
+                        {^{for messages}}
                             <div class="convMessage">
                                 <div class="middle">
                                     <div class="datetime">
-                                    {{tls:timestamp || time}}
+                                    {{tls:time}}
                                     </div>
                                     <div class="title"></div>
-                                    <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
+                                    <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
                                     <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                     <div class="selectMessage"></div>
                                 </div>
@@ -1087,6 +1127,9 @@ function SmartiWidget(element, _options) {
         {{else}}
             {^{if !loading}}
                 <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+            {{/if}}
+            {^{if msg}}
+                <div class="msg">{^{:msg}}</div>
             {{/if}}
         {{/for}}
         {^{if loading}}
@@ -1318,7 +1361,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.convMessage.parent .answers', function() {
+    widgetBody.on('click', '.convMessage.parent .messages', function() {
         $(this).closest('.conversation').children('.responseContainer').toggle(200);
         tracker.trackEvent("conversation.part.toggle");
     });
@@ -1331,7 +1374,7 @@ function SmartiWidget(element, _options) {
                 text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + '): ' + conv.parent.description;
             }
             $.each(conv.selectedChildIndices, (i, childIdx) => {
-                text += createTextMessage('', {parent : conv.parent.answers[childIdx]});
+                text += createTextMessage('', {parent : conv.parent.messages[childIdx]});
             });
             return text;
         }
@@ -1339,13 +1382,13 @@ function SmartiWidget(element, _options) {
             let attachment;
             if(conv.parent.templateType === "related.conversation") {
                 attachment = {
-                    text: conv.parent.content || conv.parent.message,
+                    text: conv.parent.content,
                     attachments: [],
                     bot: 'assistify',
-                    ts: conv.parent.timestamp || conv.parent.time
+                    ts: conv.parent.time
                 };
                 $.each(conv.selectedChildIndices, (i, childIdx) => {
-                    attachment.attachments.push(buildAttachments({parent: conv.parent.answers[childIdx]}));
+                    attachment.attachments.push(buildAttachments({parent: conv.parent.messages[childIdx]}));
                 });
             } else {
                 attachment = {
@@ -1380,7 +1423,7 @@ function SmartiWidget(element, _options) {
         let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
         if(currentWidget && currentWidget.params.elem) {
             let selectedItems = [];
-            currentWidget.params.elem.find('.convMessage, .irl-result').each((idx, item) => {
+            currentWidget.params.elem.find('.conversation>.convMessage, .irl-result').each((idx, item) => {
                 let parentMessageData = $.view(item).data;
                 let parentIsSelected = $(item).hasClass('selected');
                 let conv = {parent: parentMessageData, selectedChildIndices: []};
@@ -1411,7 +1454,7 @@ function SmartiWidget(element, _options) {
         let selectedItems = [];
         let parent = $(this).parent().parent();
         let parentMessageData = $.view(parent).data;
-        let conv = {parent: parentMessageData, selectedChildIndices: parentMessageData.answers ? Array.apply(null, {length: parentMessageData.answers.length}).map(Number.call, Number) : []};
+        let conv = {parent: parentMessageData, selectedChildIndices: parentMessageData.messages ? Array.apply(null, {length: parentMessageData.messages.length}).map(Number.call, Number) : []};
         selectedItems.push(conv);
         console.log(selectedItems);
         postItems(selectedItems);

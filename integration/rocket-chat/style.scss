@@ -28,6 +28,7 @@
  $theme-green-1: #29a99d;
  $theme-green-2: #0A8178;
  $theme-pink: #d6195d;
+ $theme-light-blue-1: #cff5f2;
 
  @mixin transition($duration) {
    -o-transition: $duration;
@@ -428,6 +429,12 @@
                     margin-top: 0;
                 }
 
+                &:nth-of-type(even) {
+                    .convMessage {
+                        background: $grey10;
+                    }
+                }
+
                 .convMessage {
                     position: relative;
                     border-left: 3px solid $grey75;
@@ -456,12 +463,12 @@
                             top: -1px;
                             }
 
-                            .answers {
-                            position: relative;
-                            margin-left: 5px;
-                            font-weight: bold;
-                            font-size: 10px;
-                            cursor:pointer;
+                            .messages {
+                                position: relative;
+                                margin-left: 5px;
+                                font-weight: bold;
+                                font-size: 10px;
+                                cursor:pointer;
                             }
                         }
                         .title {
@@ -520,13 +527,15 @@
                         }
                     }
 
+                    &:hover {
+                        border-left: 3px solid $theme-green-2;
+                        background: $theme-light-blue-1;
+                    }
+
                     &.parent {
                         &:hover {
-                            border-left: 3px solid $darkblue;
-                            background: $grey10;
-
                             .middle {
-                                .answers {
+                                .messages {
                                     position:relative;
                                     background-color:$grey75;
                                     color:$white;
@@ -536,7 +545,7 @@
                                     top:-1px;
 
                                     &:hover{
-                                    background:$darkblue;
+                                        background:$darkblue;
                                     }
                                 }
                             }
@@ -551,6 +560,9 @@
                     .convMessage {
                         margin-top: 5px;
                         border-left: 3px solid $grey50;
+                        &:hover {
+                            border-left: 3px solid $theme-green-1;
+                        }
                     }
                 }
             }
@@ -561,8 +573,18 @@
                 padding: 5px;
                 width: 100%;
                 margin-top: 10px;
+
                 &:first-of-type {
                     margin-top: 0;
+                }
+
+                &:nth-of-type(even) {
+                    background: $grey10;
+                }
+
+                &:hover {
+                    border-left: 3px solid $theme-green-2;
+                    background: $theme-light-blue-1;
                 }
 
                 .middle {
