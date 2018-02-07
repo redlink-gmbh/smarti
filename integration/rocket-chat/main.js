@@ -587,17 +587,27 @@ function SmartiWidget(element, _options) {
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
 
         let lastTks = [];
+        let currentPage = 0;
+        let loadedPage = 0;
+        let noMoreData = false;
 
         function refresh() {
-            getResults(0);
+            getResults(0, false, false);
         }
 
-        function getResults(page, useSearchTerms) {
+        function getResults(page, useSearchTerms, append) {
 
             let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
             if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
-            if(equalArrays(lastTks, tks)) return;
+            if(equalArrays(lastTks, tks) && loadedPage >= page) return;
+
+            if(!append) {
+                page = 0;
+                currentPage = 0;
+                noMoreData = false;
+            }
+
             lastTks = tks;
             tks = tks.join(" ");
 
@@ -637,7 +647,10 @@ function SmartiWidget(element, _options) {
                  *
                  */
                 success: (data) => {
-                    tracker.trackEvent(params.query.creator, data.response && data.response.numFound || 0);
+                    tracker.trackEvent(params.query.creator, data.response && data.response.docs && data.response.docs.length || 0);
+
+                    loadedPage = page;
+                    noMoreData = !(data.response && data.response.docs && data.response.docs.length);
 
                     console.log(params.query);
                     console.log(data.response.docs);
@@ -675,18 +688,28 @@ function SmartiWidget(element, _options) {
 
                     console.log(docs);
 
+                    if(append) {
+                        $.observable(params.templateData.results).insert(docs);
+                    } else {
+                        $.observable(params.templateData.results).refresh(docs);
+                    }
                     $.observable(params.templateData).setProperty("loading", false);
-                    $.observable(params.templateData.results).refresh(docs);
                 }
             });
         }
 
-        getResults(0);
+        getResults(currentPage);
+
+        function loadNextPage() {
+            currentPage++;
+            if(!noMoreData) getResults(currentPage, true, true);
+        }
 
         return {
             params,
             refresh,
             getResults,
+            loadNextPage,
             templateType: "ir_latch",
             queryCreator: params.query.creator.split(":").slice(0, 2).join(":")
         };
@@ -703,19 +726,15 @@ function SmartiWidget(element, _options) {
         widgetConversationTemplate.link(params.elem, params.templateData);
     
         let lastTks = [];
+        let currentPage = 0;
+        let loadedPage = 0;
+        let noMoreData = false;
         
         function refresh() {
-            getResults(0);
+            getResults(0, false, false);
         }
 
-        //let resultPaging = $('<table>').addClass('paging').appendTo(params.elem);
-
-        function getResults(page, useSearchTerms) {
-
-            //resultPaging.empty();
-            
-            let pageSize = params.query.defaults && params.query.defaults.rows || 0;
-            let start = pageSize ? page * pageSize : 0;
+        function getResults(page, useSearchTerms, append) {
 
             if(params.query.creator.indexOf("queryBuilder:conversationsearch") > -1) {
                 /*
@@ -729,6 +748,15 @@ function SmartiWidget(element, _options) {
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
     
                 if(equalArrays(lastTks, tks)) return;
+
+                if(!append) {
+                    page = 0;
+                    currentPage = 0;
+                    noMoreData = false;
+                }
+
+                let pageSize = params.query.defaults && params.query.defaults.rows || 0;
+                let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
 
@@ -752,19 +780,36 @@ function SmartiWidget(element, _options) {
 
                     tracker.trackEvent(params.query.creator, data.response && data.response.length || 0);
 
+                    loadedPage = page;
+                    noMoreData = !(data.response && data.response.length);
+
                     if(data.response && data.response.length) {
                         data.response.forEach(d => {
                             d.templateType = "related.conversation";
                         });
                     }
 
-                    $.observable(params.templateData.results).refresh(data.response);
+                    if(append) {
+                        $.observable(params.templateData.results).insert(data.response);
+                    } else {
+                        $.observable(params.templateData.results).refresh(data.response);
+                    }
                     $.observable(params.templateData).setProperty("loading", false);
                 }, function(err) {
                     showError(err);
                     $.observable(params.templateData).setProperty("loading", false);
                 });
             } else if(params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
+
+                if(!append) {
+                    page = 0;
+                    currentPage = 0;
+                    noMoreData = false;
+                }
+
+                let pageSize = params.query.defaults && params.query.defaults.rows || 0;
+                let start = pageSize ? page * pageSize : 0;
+
                 $.observable(params.templateData).setProperty("loading", true);
 
                 smarti.query({
@@ -776,6 +821,9 @@ function SmartiWidget(element, _options) {
                 }, (data) => {
 
                     tracker.trackEvent(params.query.creator, data.docs && data.docs.length);
+
+                    loadedPage = page;
+                    noMoreData = !(data.docs && data.docs.length);
     
                     if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
@@ -788,7 +836,12 @@ function SmartiWidget(element, _options) {
     
                     console.log(data);
     
-                    $.observable(params.templateData.results).refresh(data.docs);
+                    if(append) {
+                        $.observable(params.templateData.results).insert(data.docs);
+                    } else {
+                        $.observable(params.templateData.results).refresh(data.docs);
+                    }
+                    
                     $.observable(params.templateData).setProperty("loading", false);
             
                 }, function(err) {
@@ -798,12 +851,18 @@ function SmartiWidget(element, _options) {
             }
         }
 
-        getResults(0);
+        getResults(currentPage);
+
+        function loadNextPage() {
+            currentPage++;
+            if(!noMoreData) getResults(currentPage, true, true);
+        }
 
         return {
             params,
             refresh,
             getResults,
+            loadNextPage,
             templateType: "related.conversation",
             queryCreator: params.query.creator.split(":").slice(0, 2).join(":")
         };
@@ -992,72 +1051,74 @@ function SmartiWidget(element, _options) {
         <span><i class="icon-paper-plane"></i> {^{:title}}</span>
     `;
     const widgetConversationTemplateStr = `
-        {^{if loading}}
-            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
-        {{else}}
-            {^{for results}}
-                <div class="conversation">
-                    <div class="convMessage" data-link="class{merge: answers toggle='parent'}">
-                        <div class="middle">
-                            <div class="datetime">
-                                {{tls:timestamp || time}}
-                                {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                                {{if answers}}<span class="answers">{{: answers.length}} ${Utils.localize({code: 'widget.answers'})}</span>{{/if}}
-                            </div>
-                            <div class="title"></div>
-                            <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
-                            <div class="postAction">{^{if answers && answers.length}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
-                            <div class="selectMessage"></div>
-                        </div>
-                    </div>
-                    {^{if answers && answers.length}}
-                        <div class="responseContainer">
-                            {^{for answers}}
-                                <div class="convMessage">
-                                    <div class="middle">
-                                        <div class="datetime">
-                                        {{tls:timestamp || time}}
-                                        </div>
-                                        <div class="title"></div>
-                                        <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
-                                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
-                                        <div class="selectMessage"></div>
-                                    </div>
-                                </div>
-                            {{/for}}
-                        </div>
-                    {{/if}}
-                </div>
-            {{else}}
-                <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
-            {{/for}}
-        {{/if}}
-    `;
-    const widgetIrLatchTemplateStr = `
-        {^{if loading}}
-            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
-        {{else}}
-            {^{for results}}
-                <div class="irl-result">
+        {^{for results}}
+            <div class="conversation">
+                <div class="convMessage" data-link="class{merge: answers toggle='parent'}">
                     <div class="middle">
                         <div class="datetime">
-                            {^{tls:date}}
+                            {{tls:timestamp || time}}
+                            {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
+                            {{if answers}}<span class="answers">{{: answers.length}} ${Utils.localize({code: 'widget.answers'})}</span>{{/if}}
                         </div>
-                        {^{if link}}
-                            <div class="title"><a data-link="href{:link}" target="_blank">{^{:~hl(title)}}</a></div>
-                        {{else}}
-                            <div class="title">{^{:~hl(title)}}</div>
-                        {{/if}}
-                        <div class="text"><p>{^{:~hl(description)}}</p></div>
-                        {^{if source}}<span class="source">{^{:source}}</span>{{/if}}
-                        {^{if type}}<span class="type">{^{:type}}</span>{{/if}} <br />
-                        <div class="postAction">${Utils.localize({code: 'widget.post'})}</div>
+                        <div class="title"></div>
+                        <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
+                        <div class="postAction">{^{if answers && answers.length}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
                         <div class="selectMessage"></div>
                     </div>
                 </div>
-            {{else}}
+                {^{if answers && answers.length}}
+                    <div class="responseContainer">
+                        {^{for answers}}
+                            <div class="convMessage">
+                                <div class="middle">
+                                    <div class="datetime">
+                                    {{tls:timestamp || time}}
+                                    </div>
+                                    <div class="title"></div>
+                                    <div class="text"><p>{{nl:~hl(content || message || '', true)}}</p></div>
+                                    <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
+                                    <div class="selectMessage"></div>
+                                </div>
+                            </div>
+                        {{/for}}
+                    </div>
+                {{/if}}
+            </div>
+        {{else}}
+            {^{if !loading}}
+                <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+            {{/if}}
+        {{/for}}
+        {^{if loading}}
+            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+        {{/if}}
+    `;
+    const widgetIrLatchTemplateStr = `
+        {^{for results}}
+            <div class="irl-result">
+                <div class="middle">
+                    <div class="datetime">
+                        {^{tls:date}}
+                    </div>
+                    {^{if link}}
+                        <div class="title"><a data-link="href{:link}" target="_blank">{^{:~hl(title)}}</a></div>
+                    {{else}}
+                        <div class="title">{^{:~hl(title)}}</div>
+                    {{/if}}
+                    <div class="text"><p>{^{:~hl(description)}}</p></div>
+                    {^{if source}}<span class="source">{^{:source}}</span>{{/if}}
+                    {^{if type}}<span class="type">{^{:type}}</span>{{/if}} <br />
+                    <div class="postAction">${Utils.localize({code: 'widget.post'})}</div>
+                    <div class="selectMessage"></div>
+                </div>
+            </div>
+        {{else}}
+            {^{if !loading}}
                 <div class="no-result">${Utils.localize({code: 'widget.latch.query.no-results'})}</div>
-            {{/for}}
+            {{/if}}
+        {{/for}}
+        {^{if loading}}
+            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
         {{/if}}
     `;
     
@@ -1193,6 +1254,12 @@ function SmartiWidget(element, _options) {
     
             if(currentWidget) currentWidget.params.elem.hide();
             newWidget.params.elem.show();
+
+            // load more
+            if(widgetBody.prop('scrollHeight') == widgetBody.innerHeight() && newWidget.queryCreator != "queryBuilder:conversationmlt") {
+                console.log("LOAD MORE!");
+                newWidget.loadNextPage();
+            }
             
             if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
@@ -1458,6 +1525,19 @@ function SmartiWidget(element, _options) {
                 event.stopPropagation();
             }
         }
+    });
+
+    let scrollTimeout = null;
+    widgetBody.scroll(function() {
+        if(scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            scrollTimeout = null;
+            if(widgetBody.prop('scrollHeight') == widgetBody.innerHeight() + widgetBody.scrollTop()) {
+                console.log("LOAD MORE!");
+                let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
+                if(currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();
+            }
+        }, 500);
     });
 
     function onDataChange() {
