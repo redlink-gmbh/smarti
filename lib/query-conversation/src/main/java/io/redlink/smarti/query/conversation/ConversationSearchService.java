@@ -25,16 +25,12 @@ import io.redlink.smarti.util.SearchUtils;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.Group;
-import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -46,9 +42,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.IOException;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -71,20 +70,20 @@ public class ConversationSearchService {
         this.conversationService = storeService;
     }
 
-    public SearchResult<Conversation> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
+    public SearchResult<ConversationResult> search(Client client, MultiValueMap<String, String> queryParams) throws IOException {
         if (client == null) return search((ObjectId) null, queryParams);
         else return search(client.getId(), queryParams);
     }
-    public SearchResult<Conversation> search(ObjectId client, MultiValueMap<String, String> queryParams) throws IOException {
+    public SearchResult<ConversationResult> search(ObjectId client, MultiValueMap<String, String> queryParams) throws IOException {
         if (client == null) return search((Set<ObjectId>) null, queryParams);
         else return search(Collections.singleton(client), queryParams);
     }
 
-    public SearchResult<Conversation> search(Set<ObjectId> clients, MultiValueMap<String, String> queryParams) throws IOException {
+    public SearchResult<ConversationResult> search(Set<ObjectId> clients, MultiValueMap<String, String> queryParams) throws IOException {
 
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, "text"));
 
-        solrParams.add(CommonParams.FL, "id");
+        solrParams.add(CommonParams.FL, "id","message_id","conversation_id","score");
         if (clients != null) {
             if (clients.isEmpty()) {
               return new SearchResult<>();
@@ -119,14 +118,47 @@ public class ConversationSearchService {
         }
     }
 
-    private Conversation readConversation(Group group) {
+    private ConversationResult readConversation(Group group) {
         Conversation conversation = conversationService.getConversation(new ObjectId(String.valueOf(group.getGroupValue())));
+        ConversationResult cr = new ConversationResult(conversation);
         //clean all messages that does not fit
-        conversation.getMessages().removeIf(
-                m -> group.getResult().stream()
-                        .noneMatch(c -> c.get("id").equals(conversation.getId().toHexString() + "_" + m.getId()))
-        );
-        return conversation;
+        Map<String, SolrDocument> matches = new HashMap<>();
+        group.getResult().stream()
+            .filter(d -> Objects.equals(d.getFieldValue(ConversationIndexConfiguration.FIELD_CONVERSATION_ID),conversation.getId().toHexString()))
+            .forEach(d -> d.getFieldValues(ConversationIndexConfiguration.FIELD_MESSAGE_ID).forEach(mid -> {
+                matches.put(String.valueOf(mid), d);
+            }));
+        
+        MessageResult current = null;
+        for(int i = 0; i < conversation.getMessages().size(); i++){
+            Message m = conversation.getMessages().get(i);
+            if(current != null && matches.containsKey(m.getId())){ //add a merged message or follow-up result
+                current.getMessages().add(m);
+                current.endIdx = i;
+            } else if(matches.containsKey(m.getId())){
+                current = new MessageResult(i, m);
+                SolrDocument sdoc = matches.get(m.getId());
+                Number score = (Number)sdoc.getFirstValue("score");
+                if(score != null){
+                    current.setScore(score.floatValue());
+                }
+                cr.getResults().add(current);
+            } else {
+                current = null;
+            }
+            
+        }
+        //post process context
+        cr.getResults().forEach(mr -> {
+            if(mr.startIdx > 0){
+                mr.getBefore().add(conversation.getMessages().get(mr.startIdx - 1));
+                int ctxEnd = Math.min(mr.endIdx + 3, conversation.getMessages().size());
+                for(int i= mr.endIdx + 1; i < ctxEnd ; i++){
+                    mr.getAfter().add(conversation.getMessages().get(i));
+                }
+            }
+        });
+        return cr;
     }
 
     private static Map<String, String[]> toListOfStringArrays(Map<String, List<String>> in, String... excludes) {
@@ -166,4 +198,71 @@ public class ConversationSearchService {
     }
 
 
+    static class ConversationResult {
+        
+        @JsonIgnore
+        private final Conversation con;
+        
+        private final List<MessageResult> results = new LinkedList<>();
+        
+        ConversationResult(Conversation con){
+            this.con = con;
+        }
+        
+        public List<MessageResult> getResults() {
+            return results;
+        }
+        
+        @JsonAnyGetter
+        protected Map<String,Object> getConversationProperties(){
+            Map<String,Object> props = new HashMap<>();
+            props.put("id", con.getId());
+            props.put("lastModified", con.getLastModified());
+            props.put("context", con.getContext());
+            props.put("meta", con.getMeta());
+            props.put("user", con.getUser());
+            return props;
+        }
+        
+    }
+    
+    static class MessageResult {
+        
+        @JsonIgnore
+        int endIdx;
+        @JsonIgnore
+        final int startIdx;
+
+        private final List<Message> messages = new LinkedList<>();
+        private final List<Message> before = new LinkedList<>();
+        private final List<Message> after = new LinkedList<>();
+        
+        MessageResult(int startIdx, Message m){
+            this.startIdx = startIdx;
+            messages.add(m);
+        }
+        
+        private Float score;
+        
+        public List<Message> getMessages() {
+            return messages;
+        }
+        
+        public List<Message> getAfter() {
+            return after;
+        }
+        
+        public List<Message> getBefore() {
+            return before;
+        }
+        
+        public Float getScore() {
+            return score;
+        }
+        
+        public void setScore(Float score) {
+            this.score = score;
+        }
+    }
+    
 }
