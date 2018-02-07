@@ -149,6 +149,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                     query.setRows(0); //we only need the count
                     if(solr.query(query).getResults().getNumFound()  > 0){
                         log.info("conversation index contains documents indexed with an outdated version - full re-build required");
+                        solr.deleteByQuery("*:*");
+                        solr.commit();
+                        solr.optimize(); //required as some schema changes will cause exceptions without this on reindexing
                     } else { //partial update possible. Search for the last sync date ...
                         query = new SolrQuery("*:*");
                         query.addSort(FIELD_SYNC_DATE, ORDER.desc);
@@ -376,6 +379,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private SolrInputDocument mergeSolrUInputDoc(SolrInputDocument prev, SolrInputDocument current) {
         prev.setField(FIELD_MESSAGE, String.format("%s%n%s", prev.getFieldValue(FIELD_MESSAGE), current.getFieldValue(FIELD_MESSAGE)));
+        prev.addField(FIELD_MESSAGE_ID, current.getFieldValue(FIELD_MESSAGE_ID));
+        prev.addField(FIELD_MESSAGE_IDX, current.getFieldValue(FIELD_MESSAGE_IDX));
         prev.setField(FIELD_VOTE, Integer.parseInt(String.valueOf(prev.getFieldValue(FIELD_VOTE))) + Integer.parseInt(String.valueOf(current.getFieldValue(FIELD_VOTE))));
         return prev;
     }
@@ -502,6 +507,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 if(lastSync == null){
                     log.debug("start full rebuild of Index using {}", cloudSync);
                     syncData = cloudSync.syncAll(ConversationIndexer.this);
+                    try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
+                        solr.optimize(); //optimize after a full rebuild
+                    } catch (IOException | SolrServerException e) {/* ignore*/}
                 } else {
                     if(log.isTraceEnabled()){
                         log.trace("update Index with changes after {}", lastSync == null ? null : lastSync.toInstant());

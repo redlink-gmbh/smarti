@@ -197,23 +197,24 @@ public class ConversationSolrIT {
         query.add("hl", "true");
         query.add("hl.fl", "text");
 
-        SearchResult<Conversation> result = searchService.search(client,query);
+        SearchResult<ConversationSearchService.ConversationResult> result = searchService.search(client,query);
 
         assertEquals(2, result.getNumFound());
-        assertEquals(2, result.getDocs().get(0).getMessages().size());
-        assertEquals(1, result.getDocs().get(1).getMessages().size());
+        assertEquals(1, result.getDocs().get(0).getResults().size()); //one result
+        assertEquals(2, result.getDocs().get(0).getResults().get(0).getMessages().size()); //but with matches in 2 messages
+        assertEquals(1, result.getDocs().get(1).getResults().size());
 
         MultiValueMap <String,String> query2 = new LinkedMultiValueMap<>();
         query2.add("text", "xyz");
 
-        SearchResult<Conversation> result2 = searchService.search(client,query2);
+        SearchResult<ConversationSearchService.ConversationResult> result2 = searchService.search(client,query2);
 
         assertEquals(0, result2.getNumFound());
 
         solrServer.getSolrClient(conversationCore).deleteByQuery("*:*");
         solrServer.getSolrClient(conversationCore).commit();
 
-        SearchResult<Conversation> result3 = searchService.search(client,query);
+        SearchResult<ConversationSearchService.ConversationResult> result3 = searchService.search(client,query);
 
         assertEquals(0, result3.getNumFound());
 
