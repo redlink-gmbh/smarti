@@ -17,13 +17,18 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
 import io.redlink.smarti.model.SearchResult;
+import io.redlink.smarti.model.User;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.smarti.util.SearchUtils;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,6 +48,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -95,7 +101,7 @@ public class ConversationSearchService {
         solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_TYPE, TYPE_MESSAGE));
         solrParams.set(GroupParams.GROUP, "true");
         solrParams.set(GroupParams.GROUP_FIELD, "_root_");
-        solrParams.set("group.ngroups", "true");
+        solrParams.set(GroupParams.GROUP_TOTAL_COUNT, "true");
         if (queryParams.containsKey("text")) {
             List<String> searchTerms = queryParams.get("text");
             String query = SearchUtils.createSearchWordQuery(searchTerms.stream()
@@ -197,12 +203,15 @@ public class ConversationSearchService {
         return searchResult;
     }
 
-
-    static class ConversationResult {
+    @ApiModel(description="A conversation with results for the parsed query. \n\n Includes information about the"
+            + "conversation (`id`, `lastModified`, `context`, `meta`, `user`) and the `results` defining sections"
+            + "in the conversation releated to the query.")
+    public static class ConversationResult {
         
         @JsonIgnore
         private final Conversation con;
         
+        @ApiModelProperty(notes="results within the conversation represent sections related to the query parameter")
         private final List<MessageResult> results = new LinkedList<>();
         
         ConversationResult(Conversation con){
@@ -212,37 +221,63 @@ public class ConversationSearchService {
         public List<MessageResult> getResults() {
             return results;
         }
+
+        @ApiModelProperty(notes="The id of the conversation")
+        @JsonGetter
+        public ObjectId getId(){
+            return con.getId();
+        }
         
-        @JsonAnyGetter
-        protected Map<String,Object> getConversationProperties(){
-            Map<String,Object> props = new HashMap<>();
-            props.put("id", con.getId());
-            props.put("lastModified", con.getLastModified());
-            props.put("context", con.getContext());
-            props.put("meta", con.getMeta());
-            props.put("user", con.getUser());
-            return props;
+        @ApiModelProperty(notes="The last modification date of the conversation (for not completed this indicates the version)")
+        @JsonGetter
+        public Date getLastModified(){
+            return con.getLastModified();
+        }
+        
+        @ApiModelProperty(notes="The context of the conversation")
+        @JsonGetter
+        public Context getContext(){
+            return con.getContext();
+        }
+        
+        @ApiModelProperty(notes="The meta information of the conversation")
+        @JsonGetter
+        public ConversationMeta getMeta(){
+            return con.getMeta();
+        }
+        
+        @ApiModelProperty(notes="The user for the conversation")
+        @JsonGetter
+        public User getUser(){
+            return con.getUser();
         }
         
     }
     
-    static class MessageResult {
+    @ApiModel(description="Represents a section in the conversation releated to the quiery")
+    public static class MessageResult {
         
         @JsonIgnore
         int endIdx;
         @JsonIgnore
         final int startIdx;
 
+        @ApiModelProperty(notes="The messages matching the query. In case of multiple messages the query ")
         private final List<Message> messages = new LinkedList<>();
+        @ApiModelProperty(notes="messages before the matching section provided as context.\n\n the last message in"
+                + "the list is the one immediatly before the matching section")
         private final List<Message> before = new LinkedList<>();
+        @ApiModelProperty(notes="messages after the matching section provided as context.\n\n the first message in"
+                + "the list is the one immediatly after the matching section")
         private final List<Message> after = new LinkedList<>();
+        
+        @ApiModelProperty(notes="the score relative to others")
+        private Float score;
         
         MessageResult(int startIdx, Message m){
             this.startIdx = startIdx;
             messages.add(m);
         }
-        
-        private Float score;
         
         public List<Message> getMessages() {
             return messages;
