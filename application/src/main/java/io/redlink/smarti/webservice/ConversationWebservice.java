@@ -195,23 +195,14 @@ public class ConversationWebservice {
         }
 
         //store the new conversation!
-        Conversation created = conversationService.update(client, conversation);
+        final Conversation created = conversationService.update(client, conversation);
 
         //trigger analysis
         CompletableFuture<Analysis> analysis = analysisService.analyze(client, created);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
-                if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
-                } else {
-                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", created.getId(), callback, e, e.getMessage());
-                    log.debug("STACKTRACE: ",e);
-                    callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }
-            });
+            appendCallbackExecution(callback, created, analysis);
         }
-        URI conversationUri = buildConversationURI(uriBuilder, created.getId());
+        final URI conversationUri = buildConversationURI(uriBuilder, created.getId());
         return ResponseEntity.created(conversationUri)
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", conversationUri))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, created.getId())))
@@ -302,16 +293,7 @@ public class ConversationWebservice {
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         
-        Client client;
-        try {
-            client = getResponseClient(authContext, clientId, conversation);
-        } catch (MultipleClientException e) {
-            if(inclAnalysis){
-                throw e;
-            } else {
-                client = null;
-            }
-        }
+        final Client client = getResponseClient(authContext, clientId, conversation, inclAnalysis);
 
         if (conversation == null) {
             return ResponseEntity.notFound().build();
@@ -363,37 +345,19 @@ public class ConversationWebservice {
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check access to the conversation
-        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
+        final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        Client client;
-        try {
-            client = getResponseClient(authContext, clientId, conversation);
-        } catch (MultipleClientException e) {
-            if(inclAnalysis){
-                throw e;
-            } else {
-                client = null;
-            }
-        }
+        final Client client = getResponseClient(authContext, clientId, conversation, inclAnalysis);
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.updateConversationField(conversationId, field, data);
             CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
             if(callback != null){
-                analysis.whenComplete((a , e) -> {
-                    if(a != null){
-                        log.debug("callback {} with {}", callback, a);
-                        callbackExecutor.execute(callback, CallbackPayload.success(a));
-                    } else {
-                        log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
-                        log.debug("STACKTRACE: ",e);
-                        callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }
-                });
+                appendCallbackExecution(callback, updated, analysis);
             }
             return ResponseEntity.ok()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, updated.getId())))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, updated.getId())))
                     .body(toConversationData(client, updated, analysis, inclAnalysis));
         } else {
             return ResponseEntity.notFound().build();
@@ -418,43 +382,25 @@ public class ConversationWebservice {
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         // Check access to the conversation
-        Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
+        final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        Client client;
-        try {
-            client = getResponseClient(authContext, clientId, conversation);
-        } catch (MultipleClientException e) {
-            if(inclAnalysis) {
-                throw e;
-            } else {
-                client = null;
-            }
-        }
+        final Client client = getResponseClient(authContext, clientId, conversation, inclAnalysis);
 
-        if (conversationService.exists(conversationId)) {
+        if (conversationService.exists(conversation.getId())) {
             Conversation updated = conversationService.deleteConversationField(conversationId, field);
             CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
             if(callback != null){
-                analysis.whenComplete((a , e) -> {
-                    if(a != null){
-                        log.debug("callback {} with {}", callback, a);
-                        callbackExecutor.execute(callback, CallbackPayload.success(a));
-                    } else {
-                        log.warn("Analysis of {} failed sending error callback to {} ({} - {})", updated.getId(), callback, e, e.getMessage());
-                        log.debug("STACKTRACE: ",e);
-                        callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }
-                });
+                appendCallbackExecution(callback, updated, analysis);
             }
             return ResponseEntity.ok()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, updated.getId())))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, updated.getId())))
                     .body(toConversationData(client, updated, analysis, inclAnalysis));
         } else {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     @ApiOperation(value = "list the messages in a conversation", response = Message.class, responseContainer = "List",
             notes = "retrieves all messages in the accessed conversation")
     @RequestMapping(value = "{conversationId}/message", method = RequestMethod.GET)
@@ -496,7 +442,7 @@ public class ConversationWebservice {
             @ApiParam(name=PARAM_PROJECTION, required=false, value=DESCRIPTION_PARAM_PROJECTION) @RequestParam(value = PARAM_PROJECTION, required = false) Projection projection
     ) {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
-        
+
         Client client;
         try {
             client = getResponseClient(authContext, clientId, conversation);
@@ -520,22 +466,13 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
-                if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
-                } else {
-                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
-                    log.debug("STACKTRACE: ",e);
-                    callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }
-            });
+            appendCallbackExecution(callback, c, analysis);
         }
         URI messageLocation = buildMessageURI(uriBuilder, conversationId, created.getId());
         return ResponseEntity.created(messageLocation)
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", messageLocation))
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, c.getId())))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, c.getId())))
                 .body(created);
     }
 
@@ -595,28 +532,19 @@ public class ConversationWebservice {
 
         //make sure the message-id is the addressed one
         message.setId(messageId);
-        final Conversation c = conversationService.updateMessage(conversationId, message);
+        final Conversation c = conversationService.updateMessage(conversation.getId(), message);
         final Message updated = c.getMessages().stream()
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
         CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
-                if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
-                } else {
-                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
-                    log.debug("STACKTRACE: ",e);
-                    callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }
-            });
+            appendCallbackExecution(callback, c, analysis);
         }
         return ResponseEntity.ok()
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, c.getId(), updated.getId())))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, c.getId())))
+                .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, c.getId())))
                 .body(updated);
     }
 
@@ -650,16 +578,7 @@ public class ConversationWebservice {
             Conversation c = conversationService.getConversation(conversationId);
             CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
             if(callback != null){
-                analysis.whenComplete((a , e) -> {
-                    if(a != null){
-                        log.debug("callback {} with {}", callback, a);
-                        callbackExecutor.execute(callback, CallbackPayload.success(a));
-                    } else {
-                        log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
-                        log.debug("STACKTRACE: ",e);
-                        callbackExecutor.execute(callback, CallbackPayload.error(e));
-                    }
-                });
+                appendCallbackExecution(callback, c, analysis);
             }
             return ResponseEntity.noContent()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
@@ -672,7 +591,7 @@ public class ConversationWebservice {
 
     @ApiOperation(value = "update/modify a specific filed of the message", response = Message.class,
             consumes=MimeTypeUtils.APPLICATION_JSON_VALUE,
-            notes = "Sets the property of the Message to the parsed value" 
+            notes = "Sets the property of the Message to the parsed value"
                     + EDITABLE_MESSAGE_FIELDS + API_ASYNC_NOTE)
     @ApiResponses({
             @ApiResponse(code = 200, message = "field updated Message", response = Message.class),
@@ -707,16 +626,7 @@ public class ConversationWebservice {
                         "Updated Message[id: "+messageId+"] not present in " + c));
         CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
-                if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
-                } else {
-                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", c.getId(), callback, e, e.getMessage());
-                    log.debug("STACKTRACE: ",e);
-                    callbackExecutor.execute(callback, CallbackPayload.error(e));
-                }
-            });
+            appendCallbackExecution(callback, c, analysis);
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
@@ -758,23 +668,14 @@ public class ConversationWebservice {
         final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation);
         if(callback == null){
             return ResponseEntity.ok()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildAnalysisURI(uriBuilder, conversation.getId())))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversation.getId())))
                     .body(analysis.get());
         } else {
-            analysis.whenComplete((a , e) -> {
-                if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
-                } else {
-                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
-                    log.debug("STACKTRACE: ",e);
-                    callbackExecutor.execute(callback, CallbackPayload.error(e));
-                } 
-            });
+            appendCallbackExecution(callback, conversation, analysis);
             return ResponseEntity.accepted()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversation.getId())))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversation.getId())))
                     .build();
         }
     }
@@ -803,19 +704,14 @@ public class ConversationWebservice {
     ) throws InterruptedException, ExecutionException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
 
-        Client client;
-        try {
-            client = getResponseClient(authContext, clientId, conversation);
-        } catch (MultipleClientException e) {
-            client = null;
-        }
-        
+        final Client client = getResponseClient(authContext, clientId, conversation, false);
+
         /* TODO: Not sure how to implement this:
-            
+
              But Analysis is not the correct place to store such Feedback
             for several reasons.
-            1. This is about User Feedback! The feedback was provided in a specific state of the 
-               conversation. Later messages might invalidate the feedback. We have no way to 
+            1. This is about User Feedback! The feedback was provided in a specific state of the
+               conversation. Later messages might invalidate the feedback. We have no way to
                represent this kind of feedback at the Moment
             2. As this sends the Analysis only we do not know if the conversation has changed
                in the meantime. When we use the parsed Analysis to update Templates and Queries
@@ -823,30 +719,21 @@ public class ConversationWebservice {
                the conversation AND the analysis. Therefore they might calculate results with an
                Analysis that does not correspond to the state of the conversation
             3. IMO we need to switch to a context like representation as used by Cerbot. Analysis
-               can still be kept, but facts should be moved over to the context. 
+               can still be kept, but facts should be moved over to the context.
                TODO I need to talk with @thomaskurz about this!!
         */
 
         //NOTE: a simple implementation (that ignores above issues) might just take the parsed analysis
         //      and the current state of the Conversation to update Templates and queries.
-        
+
         final CompletableFuture<Analysis> analysis = analysisService.analyze(client, conversation, updatedAnalysis);
         if(callback == null){
             return ResponseEntity.ok()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildAnalysisURI(uriBuilder, conversation.getId())))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversation.getId())))
                     .body(analysis.get());
         } else {
-            analysis.whenComplete((a , e) -> {
-                if(a != null){
-                    log.debug("callback {} with {}", callback, a);
-                    callbackExecutor.execute(callback, CallbackPayload.success(a));
-                } else {
-                    log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
-                    log.debug("STACKTRACE: ",e);
-                    callbackExecutor.execute(callback, CallbackPayload.error(e));
-                } 
-            });
+            appendCallbackExecution(callback, conversation, analysis);
             return ResponseEntity.accepted()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
@@ -889,7 +776,7 @@ public class ConversationWebservice {
                     log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversation.getId(), callback, e, e.getMessage());
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
-                } 
+                }
             });
             return ResponseEntity.accepted()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
@@ -981,7 +868,7 @@ public class ConversationWebservice {
                         log.debug("callback {} with {}", callback, a);
                         callbackExecutor.execute(callback, CallbackPayload.success(a.getTemplates().get(templateIdx)));
                     } else {
-                        log.warn("Template[idx:{}] not present in Analysis of {} containing {} templates. Sending '404 not found' callback to {} ", 
+                        log.warn("Template[idx:{}] not present in Analysis of {} containing {} templates. Sending '404 not found' callback to {} ",
                                 templateIdx, conversation.getId(), a.getTemplates().size(), callback);
                         callbackExecutor.execute(callback, CallbackPayload.error(new NotFoundException(Template.class, templateIdx)));
                     }
@@ -1028,7 +915,7 @@ public class ConversationWebservice {
         return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null);
     }
 
-    @ApiOperation(nickname="getResultsPOST", value = "get inline-results for the selected template from the query creator", 
+    @ApiOperation(nickname="getResultsPOST", value = "get inline-results for the selected template from the query creator",
             response = InlineSearchResult.class,
             consumes = MimeTypeUtils.APPLICATION_JSON_VALUE,
             notes = "Gets inline results for the selected template based on the parsed analysis object.")
@@ -1054,7 +941,7 @@ public class ConversationWebservice {
             c = null;
         }
         final Client client = c;
-        
+
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
@@ -1067,7 +954,7 @@ public class ConversationWebservice {
                         log.debug("callback {} with {}", callback, result);
                         callbackExecutor.execute(callback, CallbackPayload.success(result));
                     } catch(RuntimeException | IOException e1){
-                        log.warn("Execution of Query[client: {}, conversation: {}, template: {}, creator: {}] failed sending error callback to {} ({} - {})", 
+                        log.warn("Execution of Query[client: {}, conversation: {}, template: {}, creator: {}] failed sending error callback to {} ({} - {})",
                                 client!=null?client.getId():null, conversation.getId(), templateIdx, creator, callback, e, e.getMessage());
                         log.debug("STACKTRACE: ",e);
                         callbackExecutor.execute(callback, CallbackPayload.error(e1));
@@ -1126,7 +1013,46 @@ public class ConversationWebservice {
         }
         return authenticationService.assertClient(authContext, clientId);
     }
-    
+
+    /**
+     * This method determines the client based on the parsed autContext an explicitly parsed clientId and
+     * optional the conversation as context of the request.
+     * If the client cannot be determined and {@code failOnMultiClient == false}, {@code null} is returned
+     *
+     * @param authContext the authContext (required)
+     * @param clientId the explicitly parsed client id (optional)
+     * @param conversation the conversation as context of the request (optional)
+     * @param failOnMultiClient if {@code false} return {@code null} instead of throwing a {@link MultipleClientException}.
+     * @return the client or {@code null}
+     */
+    private Client getResponseClient(AuthContext authContext, ObjectId clientId, Conversation conversation, boolean failOnMultiClient) {
+        Client client;
+        try {
+            client = getResponseClient(authContext, clientId, conversation);
+        } catch (MultipleClientException e) {
+            if(failOnMultiClient) {
+                throw e;
+            } else {
+                client = null;
+            }
+        }
+        return client;
+    }
+
+    private void appendCallbackExecution(URI callback, Conversation conversation, CompletableFuture<Analysis> analysis) {
+        final ObjectId conversationId = conversation.getId();
+        analysis.whenComplete((a , e) -> {
+            if(a != null){
+                log.debug("callback {} with {}", callback, a);
+                callbackExecutor.execute(callback, CallbackPayload.success(a));
+            } else {
+                log.warn("Analysis of {} failed sending error callback to {} ({} - {})", conversationId, callback, e, e.getMessage());
+                log.debug("STACKTRACE: ",e);
+                callbackExecutor.execute(callback, CallbackPayload.error(e));
+            }
+        });
+    }
+
     private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis, int templateIdx, String creator) throws IOException {
         if (templateIdx < analysis.getTemplates().size()) {
             return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator);
