@@ -44,6 +44,10 @@ const localize = new Localize({
         "de": "Noch keine Resultate verfügbar",
         "en": "No results yet"
     },
+    "smarti.no-widgets": {
+        "de": "Keine Widgets verfügbar!",
+        "en": "No widgets found!"
+    },
     "smarti.sources": {
         "de": "Quellen",
         "en": "Sources"
@@ -981,7 +985,11 @@ function SmartiWidget(element, _options) {
                     }
 
                     
-                    if(constructor && (!options.widget[query.creator] || !options.widget[query.creator].disabled)) {
+                    if(
+                        constructor && 
+                        (!options.widget[query.creator] || !options.widget[query.creator].disabled) && 
+                        query.creator.indexOf("queryBuilder:conversationmlt") == -1
+                    ) {
                         let elem = $('<div class="smarti-widget">').hide().appendTo(widgetContent);
 
                         let params = {
@@ -1007,7 +1015,7 @@ function SmartiWidget(element, _options) {
                 initNavTabs();
                 initialized = true;
             } else {
-                showError({code:'smarti.result.no-result-yet'});
+                showError({code:'smarti.no-widgets'});
             }
         } else {
             $.each(widgets, (i, wgt) => {
