@@ -354,18 +354,18 @@ function Smarti(options) {
     function init(failure) {
 
         // fetch last Smarti results when the wiget gets initialized (channel entered)
-        console.debug('Smarti widget init -> try get last Smarti result for channel', options.channel);
+        console.debug('Smarti widget init -> get conversation ID for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
             if (message.error) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === lastConvCallId) {
                 if(message.result) {
-                    // message found for channel -> fetch conversation results
-                    console.debug('Smarti widget init -> get last conversation result for message:', message.result);
+                    // conversation ID found for channel -> fetch conversation results
                     conversationId = message.result;
                     getConversation(message.result, failure);
                 } else {
+                    console.debug('Smarti widget init -> conversation ID not found for channel:', options.channel);
                     return failure({code:'smarti.result.no-result-yet'});
                 }
             }
@@ -399,8 +399,7 @@ function Smarti(options) {
      * @param failure - a function called on any errors to display a message
      */
     function getConversation(conversationId, failure) {
-
-        console.debug('fetch results for conversation with Id:', conversationId);
+        console.debug('Fetch results for conversation with ID:', conversationId);
         const msgid = ddp.method("getConversation",[conversationId]);
         ddp.on("result", (message) => {
 
@@ -408,9 +407,9 @@ function Smarti(options) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === msgid) {
                 if(message.result) {
-                    // why don't call query() from here instead using a subscrition?
                     pubsub('smarti.data').publish(message.result);
                 } else {
+                    console.debug('No conversation found for ID:', conversationId);
                     if(failure) failure({code:'smarti.result.no-result-yet'});
                 }
             }
@@ -422,16 +421,11 @@ function Smarti(options) {
       console.debug('get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
       const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
       ddp.on("result", (message) => {
-
           if (message.error) return failure({code:"get.query.params",args:[message.error.reason]});
 
           if(message.id === msgid) {
-              if(message.result) {
-                  success(message.result);
-              } else {
-                  if(failure) failure({code:'smarti.result.no-result-yet'});
+            success(message.result || {});
               }
-          }
       });
     }
 
@@ -442,11 +436,7 @@ function Smarti(options) {
             if (message.error) return failure({code:"get.query.params", args:[message.error.reason]});
   
             if(message.id === msgid) {
-                if(message.result) {
-                    success(message.result);
-                } else {
-                    if(failure) failure({code:'smarti.result.no-result-yet'});
-                }
+                success(message.result || {});
             }
         });
     }
@@ -668,7 +658,7 @@ function SmartiWidget(element, _options) {
                     console.log(data.response);
 
                     //map to search results
-                    let docs = $.map(data.response.docs, (doc) => {
+                    let docs = $.map(data.response && data.response.docs || [], (doc) => {
                         let newDoc = {};
                         Object.keys(params.query.resultConfig.mappings).forEach(k => {
                             let v = params.query.resultConfig.mappings[k];
@@ -700,7 +690,7 @@ function SmartiWidget(element, _options) {
 
                     console.log(docs);
 
-                    if(data.response && data.response.numFound >= 0) $.observable(params.templateData).setProperty("total", data.response.numFound);
+                    $.observable(params.templateData).setProperty("total", data.response && data.response.numFound || 0);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(docs);
@@ -828,7 +818,7 @@ function SmartiWidget(element, _options) {
                     tracker.trackEvent(params.query.creator, conversations.length);
                     noMoreData = !conversations.length;
                     
-                    if(data.numFound >= 0) $.observable(params.templateData).setProperty("total", data.numFound);
+                    $.observable(params.templateData).setProperty("total", data.numFound || 0);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(conversations);
