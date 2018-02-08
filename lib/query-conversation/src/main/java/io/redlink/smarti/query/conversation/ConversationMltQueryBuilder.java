@@ -46,8 +46,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.TimeUnit;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
@@ -138,8 +136,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         conversationResult.setReplySuggestion(conversationResult.getContent());
 
         conversationResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
-        conversationResult.setMessageId(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_ID)));
-        conversationResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_MESSAGE_IDX))));
+        conversationResult.setMessageId(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_ID)));
+        conversationResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_IDX))));
 
         conversationResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
 
@@ -173,11 +171,9 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if(StringUtils.isBlank(context)){
             return null; //no content in the conversation to search for releated!
         }
-        
-        String displayTitle = "Ähnliche Conversationen/Threads";
-        if (StringUtils.isNotBlank(conversation.getContext().getDomain())) {
-            displayTitle += " (" + conversation.getContext().getDomain() + ")";
-        }
+
+        final String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
+
         return new ConversationMltQuery(getCreatorName(conf))
                 .setInlineResultSupport(isResultSupported())
                 .setDisplayTitle(displayTitle)
