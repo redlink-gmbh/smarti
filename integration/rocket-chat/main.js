@@ -19,7 +19,6 @@ require('./style.scss');
 const md5 = require('js-md5');
 const moment = require('moment');
 const ld_lang = require('lodash/lang');
-const _ = require('lodash');
 require('jsviews');
 
 const DDP = require("ddp.js").default;
@@ -1644,7 +1643,7 @@ function escapeRegExp(str) {
 }
 
 function equalArrays(a, b) {
-    return _.isEqual([...a].sort(), [...b].sort()); 
+    return ld_lang.isEqual([...a].sort(), [...b].sort()); 
 }
 
 function getSolrQuery(queryArray) {
