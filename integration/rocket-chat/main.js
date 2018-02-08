@@ -1094,7 +1094,7 @@ function SmartiWidget(element, _options) {
     const widgetHeaderTabsTemplateStr = `
         <ul class="sources">
             {^{for widgets}}
-            <li>{^{:params.query.displayTitle}}{^{if params.templateData.total}} ({^{:params.templateData.total}}){{/if}}</li>
+            <li>{^{:params.query.displayTitle}} ({^{:params.templateData.total}})</li>
             {{/for}}
         </ul>
     `;
