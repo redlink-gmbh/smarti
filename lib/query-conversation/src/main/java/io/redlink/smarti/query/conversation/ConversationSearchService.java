@@ -47,10 +47,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.IOException;
 import java.util.*;
@@ -62,7 +60,17 @@ import static io.redlink.smarti.query.conversation.ConversationIndexConfiguratio
 @Service
 public class ConversationSearchService {
 
+
     private final Logger log = LoggerFactory.getLogger(getClass());
+    
+    public static final String PARAM_FULL_TEXT_QUERY = "text";
+    public static final String PARAM_CONTEXT_BEFORE = "ctx.before";
+    public static final int DEFAULT_CONTEXT_BEFORE = 1;
+    public static final String PARAM_CONTEXT_AFTER = "ctx.after";
+    public static final int DEFAULT_CONTEXT_AFTER = 2;
+    
+    private static final String[] PARAM_EXCLUDES = new String[]{PARAM_FULL_TEXT_QUERY,PARAM_CONTEXT_BEFORE,PARAM_CONTEXT_AFTER};
+
     
     private final SolrCoreContainer solrServer;
     private final SolrCoreDescriptor conversationCore;
@@ -87,7 +95,7 @@ public class ConversationSearchService {
 
     public SearchResult<ConversationResult> search(Set<ObjectId> clients, MultiValueMap<String, String> queryParams) throws IOException {
 
-        final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, "text"));
+        final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, PARAM_EXCLUDES));
 
         solrParams.add(CommonParams.FL, "id","message_id","conversation_id","score");
         if (clients != null) {
@@ -102,8 +110,8 @@ public class ConversationSearchService {
         solrParams.set(GroupParams.GROUP, "true");
         solrParams.set(GroupParams.GROUP_FIELD, "_root_");
         solrParams.set(GroupParams.GROUP_TOTAL_COUNT, "true");
-        if (queryParams.containsKey("text")) {
-            List<String> searchTerms = queryParams.get("text");
+        if (queryParams.containsKey(PARAM_FULL_TEXT_QUERY)) {
+            List<String> searchTerms = queryParams.get(PARAM_FULL_TEXT_QUERY);
             String query = SearchUtils.createSearchWordQuery(searchTerms.stream()
                     .filter(StringUtils::isNotBlank).collect(Collectors.joining(" ")));
             if(query != null){
@@ -111,20 +119,37 @@ public class ConversationSearchService {
             }
         }
         log.trace("SolrParams: {}", solrParams);
+        final int ctxBefore = getIntParam(queryParams, PARAM_CONTEXT_BEFORE, DEFAULT_CONTEXT_BEFORE, 0);
+        log.trace("Context Before: {}", ctxBefore);
+        final int ctxAfter = getIntParam(queryParams, PARAM_CONTEXT_AFTER, DEFAULT_CONTEXT_AFTER, 0);
+        log.trace("Context After: {}", ctxAfter);
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
 
             final QueryResponse queryResponse = solrClient.query(solrParams);
 
 
-            return fromQueryResponse(queryResponse, this::readConversation);
+            return fromQueryResponse(queryResponse, (g) -> readConversation(g, ctxBefore, ctxAfter));
 
         } catch (SolrServerException e) {
             throw new IllegalStateException("Cannot query non-initialized core", e);
         }
     }
 
-    private ConversationResult readConversation(Group group) {
+    private int getIntParam(MultiValueMap<String, String> queryParams, String param, int defaultValue, int minValue) {
+        if(queryParams.containsKey(PARAM_CONTEXT_BEFORE)){
+            try {
+                return Math.max(minValue,Integer.parseInt(queryParams.getFirst(param)));
+            } catch (NumberFormatException | NullPointerException e) {
+                log.debug("Unable to parse {} from {} (using defualt: {})", param, queryParams.getFirst(param), defaultValue);
+                return defaultValue;
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    private ConversationResult readConversation(Group group, int ctxBefore, int ctxAfter) {
         Conversation conversation = conversationService.getConversation(new ObjectId(String.valueOf(group.getGroupValue())));
         ConversationResult cr = new ConversationResult(conversation);
         //clean all messages that does not fit
@@ -157,9 +182,12 @@ public class ConversationSearchService {
         //post process context
         cr.getResults().forEach(mr -> {
             if(mr.startIdx > 0){
-                mr.getBefore().add(conversation.getMessages().get(mr.startIdx - 1));
-                int ctxEnd = Math.min(mr.endIdx + 3, conversation.getMessages().size());
-                for(int i= mr.endIdx + 1; i < ctxEnd ; i++){
+                int ctxStart = Math.max(0, mr.startIdx - ctxBefore);
+                for(int i = ctxStart; i < mr.startIdx; i++){
+                    mr.getBefore().add(conversation.getMessages().get(i));
+                }
+                int ctxEnd = Math.min(mr.endIdx + ctxAfter + 1, conversation.getMessages().size());
+                for(int i = mr.endIdx + 1; i < ctxEnd ; i++){
                     mr.getAfter().add(conversation.getMessages().get(i));
                 }
             }

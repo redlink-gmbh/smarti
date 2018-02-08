@@ -36,6 +36,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
+import static io.redlink.smarti.query.conversation.ConversationSearchService.DEFAULT_CONTEXT_AFTER;
+import static io.redlink.smarti.query.conversation.ConversationSearchService.DEFAULT_CONTEXT_BEFORE;
+import static io.redlink.smarti.query.conversation.ConversationSearchService.PARAM_CONTEXT_AFTER;
+import static io.redlink.smarti.query.conversation.ConversationSearchService.PARAM_CONTEXT_BEFORE;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 
 /**
@@ -171,17 +175,18 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
             cc = new ComponentConfiguration();
         }
         Map<String,Object> defaults = new HashMap<>();
-        defaults.put("sort", "time desc");
-        defaults.put("hl", "true");
-        defaults.put("hl.fl", "message");
-        cc.setConfiguration(CONFIG_KEY_DEFAULTS, defaults.entrySet().stream()
-                .map(e -> {
-                    Map<String,Object> map = new HashMap<>(2);
-                    map.put("key", e.getKey());
-                    map.put("value", e.getValue());
-                    return map;
-                })
-                .collect(Collectors.toList()));
+        defaults.put(PARAM_CONTEXT_BEFORE, DEFAULT_CONTEXT_BEFORE);
+        defaults.put(PARAM_CONTEXT_AFTER, DEFAULT_CONTEXT_AFTER);
+        cc.setConfiguration(CONFIG_KEY_DEFAULTS, defaults);
+// alternative format also supported by this implementation
+//        cc.setConfiguration(CONFIG_KEY_DEFAULTS, defaults.entrySet().stream()
+//                .map(e -> {
+//                    Map<String,Object> map = new HashMap<>(2);
+//                    map.put("key", e.getKey());
+//                    map.put("value", e.getValue());
+//                    return map;
+//                })
+//                .collect(Collectors.toList()));
         return cc;
     }
     
