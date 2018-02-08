@@ -165,7 +165,7 @@ public class ConversationSearchService {
             Message m = conversation.getMessages().get(i);
             if(current != null && matches.containsKey(m.getId())){ //add a merged message or follow-up result
                 current.getMessages().add(m);
-                current.endIdx = i;
+                current.endIdx = i + 1;
             } else if(matches.containsKey(m.getId())){
                 current = new MessageResult(i, m);
                 SolrDocument sdoc = matches.get(m.getId());
@@ -181,15 +181,11 @@ public class ConversationSearchService {
         }
         //post process context
         cr.getResults().forEach(mr -> {
-            if(mr.startIdx > 0){
-                int ctxStart = Math.max(0, mr.startIdx - ctxBefore);
-                for(int i = ctxStart; i < mr.startIdx; i++){
-                    mr.getBefore().add(conversation.getMessages().get(i));
-                }
-                int ctxEnd = Math.min(mr.endIdx + ctxAfter + 1, conversation.getMessages().size());
-                for(int i = mr.endIdx + 1; i < ctxEnd ; i++){
-                    mr.getAfter().add(conversation.getMessages().get(i));
-                }
+            if(ctxBefore > 0 && mr.startIdx > 0){
+                mr.getBefore().addAll(conversation.getMessages().subList(Math.max(0, mr.startIdx - ctxBefore), mr.startIdx));
+            }
+            if(ctxAfter > 0 && mr.endIdx < conversation.getMessages().size()){
+                mr.getAfter().addAll(conversation.getMessages().subList(mr.endIdx,Math.min(mr.endIdx + ctxAfter, conversation.getMessages().size())));
             }
         });
         return cr;
@@ -304,6 +300,7 @@ public class ConversationSearchService {
         
         MessageResult(int startIdx, Message m){
             this.startIdx = startIdx;
+            this.endIdx = startIdx + 1;
             messages.add(m);
         }
         
