@@ -611,7 +611,7 @@ function SmartiWidget(element, _options) {
             }
 
             lastTks = tks;
-            tks = tks.join(" ");
+            tks = getSolrQuery(tks);
 
             let queryParams = {
                 'wt': 'json',
@@ -765,7 +765,7 @@ function SmartiWidget(element, _options) {
                 $.observable(params.templateData).setProperty("loading", true);
 
                 lastTks = tks;
-                tks = tks.join(" ");
+                tks = getSolrQuery(tks);
 
                 let queryParams = {};
 
@@ -1635,6 +1635,10 @@ function escapeRegExp(str) {
 
 function equalArrays(a, b) {
     return _.isEqual([...a].sort(), [...b].sort()); 
+}
+
+function getSolrQuery(queryArray) {
+    return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
 }
 
 window.SmartiWidget = SmartiWidget;
