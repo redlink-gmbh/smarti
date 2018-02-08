@@ -932,20 +932,25 @@ function SmartiWidget(element, _options) {
     }
 
     function refreshWidgets(data) {
-        let tokens = data.tokens.filter(t => t.type != "Attribute").filter(t => {
-            return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) == -1;
-        }).filter(t => {
-            return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() == t.value.trim().toLowerCase());
-        }).sort((a, b) => {
+        let tokens = data.tokens.filter(t => t.type != "Attribute").sort((a, b) => {
             return a.messageIdx - b.messageIdx;
         }).reverse();
+
         let filteredTokens = {};
         let uniqueTokens = tokens.filter((t) => {
             if (filteredTokens[t.value]) return false;
             filteredTokens[t.value] = true;
             return true;
         }).reverse().slice(-7);
+
+        uniqueTokens = uniqueTokens.filter(t => {
+            return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) == -1;
+        }).filter(t => {
+            return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() == t.value.trim().toLowerCase());
+        });
+        
         console.log("Filtered tokens:", uniqueTokens);
+
         if(widgetHeaderTagsTemplateData.include.length) {
             console.log("Pinned tokens:", widgetHeaderTagsTemplateData.include);
             uniqueTokens = widgetHeaderTagsTemplateData.include.map(t => {
@@ -953,6 +958,7 @@ function SmartiWidget(element, _options) {
                 return t;
             }).concat(uniqueTokens);
         }
+
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
 
         if(!initialized) {
