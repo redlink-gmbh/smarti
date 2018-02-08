@@ -97,6 +97,10 @@ const localize = new Localize({
         "de": "Nachricht",
         "en": "message"
     },
+    "widget.context": {
+        "de": "Kontext",
+        "en": "Context"
+    },
     "widget.tags.label": {
         "de": "Ergebnisse zu:",
         "en": "Results for:"
@@ -948,7 +952,7 @@ function SmartiWidget(element, _options) {
         }).filter(t => {
             return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() == t.value.trim().toLowerCase());
         });
-        
+
         console.log("Filtered tokens:", uniqueTokens);
 
         if(widgetHeaderTagsTemplateData.include.length) {
@@ -1104,7 +1108,7 @@ function SmartiWidget(element, _options) {
                         <div class="datetime">
                             {{tls:time}}
                             {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                            {{if messagesCnt}}<span class="messages">{{: messagesCnt}} {^{: messagesCnt>1?'${Utils.localize({code: 'widget.messages'})}':'${Utils.localize({code: 'widget.message'})}' }}</span>{{/if}}
+                            {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.context'})}</span>{{/if}}
                         </div>
                         <div class="title"></div>
                         <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
@@ -1368,7 +1372,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.convMessage.parent .messages', function() {
+    widgetBody.on('click', '.convMessage.parent .context', function() {
         $(this).closest('.conversation').children('.responseContainer').toggle(200);
         tracker.trackEvent("conversation.part.toggle");
     });

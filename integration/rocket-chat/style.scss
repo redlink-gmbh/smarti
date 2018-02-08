@@ -477,7 +477,7 @@
                             top: -1px;
                             }
 
-                            .messages {
+                            .context {
                                 position: relative;
                                 margin-left: 5px;
                                 font-weight: bold;
@@ -549,7 +549,7 @@
                     &.parent {
                         &:hover {
                             .middle {
-                                .messages {
+                                .context {
                                     position:relative;
                                     background-color:$grey75;
                                     color:$white;
@@ -559,7 +559,7 @@
                                     top:-1px;
 
                                     &:hover{
-                                        background:$darkblue;
+                                        background:$theme-pink-2;
                                     }
                                 }
                             }
