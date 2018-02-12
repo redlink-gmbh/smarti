@@ -938,13 +938,18 @@ function SmartiWidget(element, _options) {
     }
 
     function refreshWidgets(data) {
-        let tokens = data.tokens.filter(t => t.type != "Attribute").sort((a, b) => {
+        let urls = data.tokens.filter(t => t.hints && t.hints.indexOf("entity.type.url") > -1).map(t => t.value.toLowerCase());
+        let tokens = data.tokens
+                    .filter(t => t.type != "Attribute")
+                    .filter(t => !t.hints || t.hints.indexOf("entity.type.url") == -1)
+                    .filter(t => urls.indexOf(t.value.toLowerCase()) == -1)
+                    .sort((a, b) => {
             return a.messageIdx - b.messageIdx;
         }).reverse();
 
         let filteredTokens = {};
         let uniqueTokens = tokens.filter((t) => {
-            if (filteredTokens[t.value]) return false;
+            if(filteredTokens[t.value]) return false;
             filteredTokens[t.value] = true;
             return true;
         }).reverse().slice(-7);
