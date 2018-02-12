@@ -782,7 +782,6 @@ function SmartiWidget(element, _options) {
                         queryParams[property] = params.query.defaults[property];
                 }
                 queryParams.fq = params.query.filterQueries;
-                if(conversationId) queryParams.fq.push('-conversation_id:' + conversationId);
                 queryParams.start = start;
                 queryParams.q = tks;
 
