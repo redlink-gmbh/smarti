@@ -63,6 +63,14 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      */
     public static final boolean DEFAULT_COMPLETED_ONLY = false;
 
+    /**
+     * If the current conversation should be excluded from related conversation results
+     */
+    public static final String CONFIG_KEY_EXCLUDE_CURRENT = "exclCurrentConv";
+    
+    public static final boolean DEFAULT_EXCLUDE_CURRENT = true;
+    
+    
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 

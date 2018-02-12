@@ -31,8 +31,12 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
@@ -114,19 +118,10 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     @Override
     protected ConversationSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         List<Token> keywords = getTokens(ROLE_KEYWORD, intent, analysis);
+        List<Token> terms = getTokens(ROLE_TERM, intent, analysis);
         int contextStart = getContextStart(conversation.getMessages());
-        if(contextStart > 0){
-            keywords = keywords.stream()
-                .filter(t -> t.getMessageIdx() >= contextStart)
-                .collect(Collectors.toList());
-        }
-        if (keywords == null || keywords.isEmpty()) return null;
 
         final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName(conf));
-        final List<String> strs = keywords.stream()
-                .map(Token::getValue)
-                .map(String::valueOf)
-                .collect(Collectors.toList());
 
         final String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
 
@@ -135,7 +130,24 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 .setConfidence(.6f)
                 .setDisplayTitle(displayTitle);
         
-        query.setKeywords(strs);
+        //relative uri to the conversation search service
+        query.setUrl("/conversation/search");
+        
+        keywords.stream()
+                .filter(t -> t.getMessageIdx() >= contextStart)
+                .map(Token::getValue)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .filter(StringUtils::isNotEmpty)
+                .collect(Collectors.toCollection(() -> query.getKeywords()));
+        
+        terms.stream()
+                .filter(t -> t.getMessageIdx() >= contextStart)
+                .map(Token::getValue)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .filter(StringUtils::isNotEmpty)
+                .collect(Collectors.toCollection(() -> query.getTerms()));
         
         //apply the defaults from the configuration
         Object value = conf.getConfiguration(CONFIG_KEY_DEFAULTS);
@@ -159,6 +171,9 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
             query.addFilterQuery(FIELD_COMPLETED + ":true");
         }
+        if(conf.getConfiguration(CONFIG_KEY_EXCLUDE_CURRENT, DEFAULT_EXCLUDE_CURRENT)){
+            query.addFilterQuery('-' + FIELD_CONVERSATION_ID + ':' + conversation.getId().toHexString());
+        }
         //add config specific filter queries
         SolrQuery sq = new SolrQuery();
         addPropertyFilters(sq, conversation, conf);
@@ -174,6 +189,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         if(cc == null){
             cc = new ComponentConfiguration();
         }
+        cc.setConfiguration(CONFIG_KEY_EXCLUDE_CURRENT, DEFAULT_EXCLUDE_CURRENT);
+        //add defaults
         Map<String,Object> defaults = new HashMap<>();
         defaults.put(PARAM_CONTEXT_BEFORE, DEFAULT_CONTEXT_BEFORE);
         defaults.put(PARAM_CONTEXT_AFTER, DEFAULT_CONTEXT_AFTER);

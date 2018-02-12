@@ -149,6 +149,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
             .flatMap(c -> c.stream()) //faltten query parameter lsits
             .filter(Objects::nonNull) //filter null query parameters
             .collect(Collectors.toList()); //collect all valid query parameters
+        
         if(queryTerms.isEmpty()){ //no terms to build a query for
             return null;
         }
