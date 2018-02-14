@@ -76,12 +76,13 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state =  IR_LATCH.equals(template.getType()) && 
-                template.getSlots().stream() //at least a single filled slot
-                    .filter(s -> s.getTokenIndex() >= 0)
-                    .findAny().isPresent();
-        log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
-        return state; //with #200 queries should be build even if no slot is set
+        boolean state =  IR_LATCH.equals(template.getType()); //&& 
+        //with #200 queries should be build even if no slot is set
+//                template.getSlots().stream() //at least a single filled slot
+//                    .filter(s -> s.getTokenIndex() >= 0)
+//                    .findAny().isPresent();
+        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
+        return state;
     }
 
     @Override
@@ -150,9 +151,10 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
             .filter(Objects::nonNull) //filter null query parameters
             .collect(Collectors.toList()); //collect all valid query parameters
         
-        if(queryTerms.isEmpty()){ //no terms to build a query for
-            return null;
-        }
+        //#200: we want queries to be present even if we do not have any terms
+        //if(queryTerms.isEmpty()){ //no terms to build a query for
+        //    return null;
+        //}
         query.setQueryParams(queryTerms);
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
