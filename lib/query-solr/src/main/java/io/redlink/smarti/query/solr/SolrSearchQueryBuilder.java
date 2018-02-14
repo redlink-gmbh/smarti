@@ -81,7 +81,7 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
                     .filter(s -> s.getTokenIndex() >= 0)
                     .findAny().isPresent();
         log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
-        return state;
+        return state; //with #200 queries should be build even if no slot is set
     }
 
     @Override

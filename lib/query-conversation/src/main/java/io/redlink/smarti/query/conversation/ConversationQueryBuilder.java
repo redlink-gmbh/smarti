@@ -82,12 +82,13 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) &&
-                template.getSlots().stream() //at least a single filled slot
-                    .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
-                    .anyMatch(s -> s.getTokenIndex() >= 0);
-        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
-        return state;
+//        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) &&
+//                template.getSlots().stream() //at least a single filled slot
+//                    .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
+//                    .anyMatch(s -> s.getTokenIndex() >= 0);
+//        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
+//        return state;
+        return true; //with #200 queries should be build even if no slot is set
     }
 
     @Override
