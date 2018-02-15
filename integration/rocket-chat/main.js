@@ -942,7 +942,7 @@ function SmartiWidget(element, _options) {
             .filter(t => t.hints && t.hints.indexOf("entity.type.url") > -1)
             .map(t => t.value.toLowerCase());
         let tokens = data.tokens
-            .filter(t => t.type !== "Attribute")
+            // #206 - show all tokens .filter(t => t.type !== "Attribute")
             .filter(t => !t.hints || t.hints.indexOf("entity.type.url") === -1)
             .filter(t => urls.indexOf(t.value.toLowerCase()) === -1)
             .sort((a, b) => {
