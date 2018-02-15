@@ -19,7 +19,10 @@ package io.redlink.smarti.webservice.pojo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.redlink.smarti.model.SmartiUser;
+import io.redlink.smarti.services.AuthenticationService;
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 import org.bson.types.ObjectId;
 
 import java.util.*;
@@ -27,9 +30,13 @@ import java.util.stream.Collectors;
 
 @ApiModel
 public class SmartiUserData {
+    @ApiModelProperty(example="user1", notes="the name for the user used to log in")
     private final String login;
+    @ApiModelProperty(required=false, notes="The roles for the user (e.g. " + AuthenticationService.ADMIN + ")")
     private Set<String> roles = new HashSet<>();
+    @ApiModelProperty(required=true, allowEmptyValue=false, notes="The ids of clients this user is assigned to")
     private Set<String> clients = new HashSet<>();
+    @ApiModelProperty(hidden=true)
     private Map<String, String> profile = new HashMap<>();
 
     @JsonCreator

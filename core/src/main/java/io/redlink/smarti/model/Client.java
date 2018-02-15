@@ -18,18 +18,23 @@ import java.util.Date;
 public class Client {
 
     @Id
-    @ApiModelProperty(position = 0)
+    @ApiModelProperty(notes="the id of the client", readOnly=true)
     @Indexed
     @JsonSerialize(using = ToStringSerializer.class)
     private ObjectId id;
 
+    @ApiModelProperty(notes="The name of the client", required=true, allowEmptyValue=false, example="demo-client")
     @Indexed(unique=true)
     private String name;
 
+    @ApiModelProperty(notes="An optional  description for the client", required=false,
+            example="Dieser Client wird nur für die Demo verwendet.")
     private String description;
 
+    @ApiModelProperty(notes="the date/time of the last update", readOnly=true)
     private Date lastUpdate;
 
+    @ApiModelProperty(notes="allows to mark this client as the default", hidden=true)
     private boolean defaultClient;
 
     public ObjectId getId() {

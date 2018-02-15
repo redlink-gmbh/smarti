@@ -37,16 +37,21 @@ public class RelatedConversationTemplateBuilder extends TemplateBuilder {
     }
 
     @Override
-    protected Set<Integer> updateTemplate(Template template, Conversation conversation, int startMsgIdx) {
+    protected Set<Integer> updateTemplate(Template template, Conversation conversation, Analysis analysis) {
         if(template.getState() == State.Confirmed || template.getState() == State.Rejected){
             return null; //do not update this template
         }
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int startMsgIdx = 0;
+        
         Set<Integer> usedTokenIdxs = template.getSlots().stream()
                 .filter(s -> s.getTokenIndex() >= 0)
                 .map(Slot::getTokenIndex).collect(Collectors.toSet());
         Set<Integer> updatedIdxs = new HashSet<>();
-        for(int i=0;i<conversation.getTokens().size();i++){
-            Token t = conversation.getTokens().get(i);
+        for(int i=0;i<analysis.getTokens().size();i++){
+            Token t = analysis.getTokens().get(i);
             if(t.getMessageIdx() >= startMsgIdx && !usedTokenIdxs.contains(i)){
                 Slot slot = null;
                 if(t.getType() == Type.Keyword){

@@ -76,17 +76,18 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state =  IR_LATCH.equals(template.getType()) && 
-                template.getSlots().stream() //at least a single filled slot
-                    .filter(s -> s.getTokenIndex() >= 0)
-                    .findAny().isPresent();
-        log.trace("{} does {}accept {}", this, state ? "" : "not ", template);
+        boolean state =  IR_LATCH.equals(template.getType()); //&& 
+        //with #200 queries should be build even if no slot is set
+//                template.getSlots().stream() //at least a single filled slot
+//                    .filter(s -> s.getTokenIndex() >= 0)
+//                    .findAny().isPresent();
+        log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
         return state;
     }
 
     @Override
-    protected final void doBuildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation) {
-        final SolrSearchQuery query = buildQuery(config, template, conversation);
+    protected final void doBuildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation, Analysis analysis) {
+        final SolrSearchQuery query = buildQuery(config, template, conversation, analysis);
         if (query != null) {
             template.getQueries().add(query);
         }
@@ -98,20 +99,20 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
     }
 
     @Override
-    public final SearchResult<? extends Result> execute(SolrEndpointConfiguration conf, Template template, Conversation conversation, MultiValueMap<String, String> params) throws IOException {
+    public final SearchResult<? extends Result> execute(SolrEndpointConfiguration conf, Template template, Conversation conversation, Analysis analysis, MultiValueMap<String, String> params) throws IOException {
         throw new UnsupportedOperationException("This QueryBuilder does not support inline results");
     }
     
-    protected final SolrSearchQuery buildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation){
+    protected final SolrSearchQuery buildQuery(SolrEndpointConfiguration config, Template template, Conversation conversation, Analysis analysis){
         SolrSearchQuery query = new SolrSearchQuery(getCreatorName(config),config.getResult(),config.getDefaults());
         SolrQuery solrQuery = new SolrQuery();
         //apply the default params parsed with the configuration to the query
         addDefaultParams(solrQuery, config);
 
         List<String> queryTerms = template.getSlots().stream()
-            .filter(s -> validateSlot(s,conversation, MIN_TOKEN_CONF))
-            .filter(s -> acceptSlot(s, conversation))
-            .map(s -> new ImmutablePair<Slot,Token>(s, conversation.getTokens().get(s.getTokenIndex())))
+            .filter(s -> validateSlot(s,analysis, MIN_TOKEN_CONF))
+            .filter(s -> acceptSlot(s, analysis))
+            .map(s -> new ImmutablePair<Slot,Token>(s, analysis.getTokens().get(s.getTokenIndex())))
             .sorted((e1,e2) -> Float.compare(e2.getValue().getConfidence(),e1.getValue().getConfidence())) //sort by confidence
             .map(e -> {
                 final Slot s = e.getKey();
@@ -149,9 +150,11 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
             .flatMap(c -> c.stream()) //faltten query parameter lsits
             .filter(Objects::nonNull) //filter null query parameters
             .collect(Collectors.toList()); //collect all valid query parameters
-        if(queryTerms.isEmpty()){ //no terms to build a query for
-            return null;
-        }
+        
+        //#200: we want queries to be present even if we do not have any terms
+        //if(queryTerms.isEmpty()){ //no terms to build a query for
+        //    return null;
+        //}
         query.setQueryParams(queryTerms);
         solrQuery.setQuery(StringUtils.join(queryTerms, " OR "));
        
@@ -212,10 +215,10 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
     /**
      * Allows sub-classes to filter slots based on custom rules. The default implementation returns <code>true</code>
      * @param slot a slot of the template that is already validated (meaning a valid slot refering a valid token)
-     * @param conversation the conversation of the slot
+     * @param analysis the conversation of the slot
      * @return this base implementation returns <code>true</code>
      */
-    protected boolean acceptSlot(Slot slot, Conversation conversation){
+    protected boolean acceptSlot(Slot slot, Analysis analysis){
         return true;
     }
     
@@ -223,12 +226,12 @@ public final class SolrSearchQueryBuilder extends QueryBuilder<SolrEndpointConfi
      * Base implementation that checks that the slot is valid, and refers a valid {@link Token} with an
      * high enough confidence and an none empty value
      * @param slot the slot to validate
-     * @param conversation the conversation of the parsed SLot
+     * @param analysis the analysis of the parsed SLot
      * @return <code>true</code> if the slot can be accepted for building the query
      */
-    private boolean validateSlot(Slot slot, Conversation conversation, Float minConf){
-        if(slot.getTokenIndex() >= 0 && slot.getTokenIndex() < conversation.getTokens().size()){
-            Token token = conversation.getTokens().get(slot.getTokenIndex());
+    private boolean validateSlot(Slot slot, Analysis analysis, Float minConf){
+        if(slot.getTokenIndex() >= 0 && slot.getTokenIndex() < analysis.getTokens().size()){
+            Token token = analysis.getTokens().get(slot.getTokenIndex());
             return token != null && token.getValue() != null && (minConf == null || token.getConfidence() >= minConf);
         } else {
             return false;

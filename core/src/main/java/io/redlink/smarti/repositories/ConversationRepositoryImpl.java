@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.WriteResult;
-
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
@@ -37,15 +36,12 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.index.Index;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -65,6 +61,16 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     public ConversationRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+
+        /* see #findLegacyConversation */
+        mongoTemplate.indexOps(Conversation.class)
+                .ensureIndex(new Index()
+                        .named("legacyLookup")
+                        .on("owner", Direction.ASC)
+                        .on("meta.properties.channel_id", Direction.ASC)
+                        .on("context.contextType", Direction.ASC)
+                        .sparse()
+                );
     }
 
     @Override
@@ -175,16 +181,6 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
     }
 
     @Override
-    public Conversation completeConversation(ObjectId conversationId) {
-        final Query query = new Query(Criteria.where("_id").is(conversationId));
-        final Update update = new Update().set("meta.status", ConversationMeta.Status.Complete);
-
-        mongoTemplate.updateFirst(query, update, Conversation.class);
-
-        return mongoTemplate.findOne(query, Conversation.class);
-    }
-
-    @Override
     public Conversation adjustMessageVotes(ObjectId conversationId, String messageId, int delta) {
         final Query query = new Query(Criteria.where("_id").is(conversationId))
                 .addCriteria(Criteria.where("messages._id").is(messageId));
@@ -198,12 +194,31 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
     @Override
     public Conversation updateConversationStatus(ObjectId conversationId, ConversationMeta.Status status) {
+        return updateConversationField(conversationId, "meta.status", status);
+    }
+
+    @Override
+    public Conversation updateConversationField(ObjectId conversationId, String field, Object data) {
         final Query query = new Query(Criteria.where("_id").is(conversationId));
         final Update update = new Update()
-                .set("meta.status", status)
+                .set(field, data)
                 .currentDate("lastModified");
 
-        mongoTemplate.updateFirst(query, update, Conversation.class);
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+    
+    @Override
+    public Conversation deleteConversationField(ObjectId conversationId, String field) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId));
+        final Update update = new Update()
+                .unset(field)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
 
         return mongoTemplate.findById(conversationId, Conversation.class);
     }
@@ -217,6 +232,52 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
 
         final WriteResult result = mongoTemplate.updateFirst(query, update, Conversation.class);
         return result.getN() == 1;
+    }
+
+    @Override
+    public Conversation updateMessageField(ObjectId conversationId, String messageId, String field, Object data) {
+        final Query query = new Query(Criteria.where("_id").is(conversationId))
+                .addCriteria(Criteria.where("messages._id").is(messageId));
+        final Update update = new Update()
+                .set("messages.$." + field, data)
+                .currentDate("lastModified");
+
+        final WriteResult writeResult = mongoTemplate.updateFirst(query, update, Conversation.class);
+        if (writeResult.getN() < 1) return null;
+
+        return mongoTemplate.findById(conversationId, Conversation.class);
+    }
+
+    @Override
+    public Message findMessage(ObjectId conversationId, String messageId) {
+        // TODO: with mongo 3.4 you could do this with aggregation
+        /*
+        final TypedAggregation aggregation = newAggregation(Conversation.class,
+                Aggregation.match(Criteria.where("_id").is(conversationId)),
+                Aggregation.project("messages"),
+                Aggregation.unwind("messages"),
+                Aggregation.replaceRoot("messages"),
+                Aggregation.match(Criteria.where("_id").is(messageId))
+        );
+        return mongoTemplate.aggregate(aggregation, Message.class).getUniqueMappedResult();
+        */
+
+        final Conversation conversation = mongoTemplate.findById(conversationId, Conversation.class);
+        if (conversation == null) {
+            return null;
+        } else {
+            return conversation.getMessages().stream()
+                    .filter(m -> messageId.equals(m.getId()))
+                    .findFirst().orElse(null);
+        }
+    }
+
+    @Override
+    public boolean exists(ObjectId conversationId, String messageId) {
+        final Query query = Query.query(Criteria
+                .where("_id").is(conversationId)
+                .and("messages._id").is(messageId));
+        return mongoTemplate.exists(query, Conversation.class);
     }
 
     @Override
@@ -266,7 +327,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
             .max("lastModified").as("lastModified");
     
     @Override
-    public UpdatedConversationIds updatedSince(Date date) {
+    public UpdatedIds<ObjectId> updatedSince(Date date) {
         //IMPLEMENTATION NOTES (Rupert Westenthaler, 2017-07-19):
         // * we need to use $gte as we might get additional updates in the same ms ...
         // * Instead of $max: modified we would like to use the current Server time of the
@@ -281,23 +342,32 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                     //else return all updates
                     Aggregation.newAggregation(ID_MODIFIED_PROJECTION, GROUP_MODIFIED);
         log.trace("UpdatedSince Aggregation: {}", agg);
-        AggregationResults<UpdatedConversationIds> aggResult = mongoTemplate.aggregate(agg,Conversation.class, 
-                UpdatedConversationIds.class);
+        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(agg,Conversation.class, 
+                UpdatedIds.class);
         if(log.isTraceEnabled()){
             log.trace("updated Conversations : {}", aggResult.getMappedResults());
         }
         if(aggResult.getUniqueMappedResult() == null){
-            return new UpdatedConversationIds(date, Collections.emptyList());
+            return new UpdatedIds<ObjectId>(date, Collections.emptyList());
         } else {
-            UpdatedConversationIds updates = aggResult.getUniqueMappedResult();
+            UpdatedIds<ObjectId> updates = aggResult.getUniqueMappedResult();
             //NOTE: workaround for SERVER-23656 (see above impl. notes)
             if(date != null && date.equals(updates.getLastModified())) { //no update since the last request
                 //increase the time by 1 ms to avoid re-indexing the last update
-                return new UpdatedConversationIds(new Date(date.getTime()+1), updates.ids());
+                return new UpdatedIds<ObjectId>(new Date(date.getTime()+1), updates.ids());
             } else {
                 return updates;
             }    
         }
     }
 
+    @Override
+    public Conversation findLegacyConversation(ObjectId ownerId, String contextType, String channelId) {
+        Query query = new Query();
+        query.addCriteria(where("owner").is(ownerId));
+        query.addCriteria(where("meta.properties.channel_id").is(channelId));
+        query.addCriteria(where("context.contextType").is(contextType));
+
+        return mongoTemplate.findOne(query, Conversation.class);
+    }
 }

@@ -15,6 +15,15 @@ docker run --rm smarti:apiTest [options]
 
 _Mandatory arguments to long options are mandatory for short options too_
 
-* `--user`: _admin-user_ for Smarti, default is `admin`
-* `--pwd`: _admin_password_ for Smarti, default ist `admin`
-* `--url`: _base-url_ for Smarti, default ist `http://localhost:8080/`
+* `--username`: _admin-user_ for Smarti, default is `admin`
+* `--password`: _admin_password_ for Smarti, default is `admin`
+* `--url`: _base-url_ for Smarti, default is `http://localhost:8080/`
+* `--loglevel`: _loglevel_ for Requests, default is `error`
+
+### Troubleshooting
+
+#### Linux
+To make the Docker-Container connect to your lokal Smarti, you need to start it with the --net=host option.
+
+#### Mac
+To make the Docker-Container connect to your lokal Smarti, use the following url: http://docker.for.mac.host.internal:<port>/

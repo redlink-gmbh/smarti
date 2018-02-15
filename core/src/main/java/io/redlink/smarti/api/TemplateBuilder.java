@@ -44,41 +44,39 @@ public abstract class TemplateBuilder {
      * Updates an existing template based on the current state of the conversation
      * @param template the template to update
      * @param conversation the conversation
-     * @param startMsgIdx the template MUST only consider Tokens with {@link Token.Origin#System} that are
-     * extracted from messages with a &gt;= index as the parsed value. NOTE: that for {@link Token.Origin#Agent}
-     * origin Tokens the index will be <code>-1</code>. Those tokens should also be considered.
-     * @return the Integer token index of tokens used to update the template or <code>null</code> if an update was
-     * not possible. 
+     * @param analysis the analysis results
+     * @return the tokens used to fill slots of the template or <code>null</code> if the template was not updated
      */
-    protected abstract Set<Integer> updateTemplate(Template template, Conversation conversation, int startMsgIdx);
+    protected abstract Set<Integer> updateTemplate(Template template, Conversation conversation, Analysis analysis);
 
-    protected abstract void initializeTemplate(Template queryTemplate);
+    protected abstract void initializeTemplate(Template template);
 
     /**
      * Builds and updates templates for the parsed conversation based on
      * tokens extracted starting from the parsed message index
      * @param conversation the conversation
      */
-    public final void updateTemplate(Conversation conversation, int startMsgIdx) {
-        //first check if we can update an existing query templates
-        for(Template template : conversation.getTemplates()){
-            if(getDefinition().getType().equals(template.getType())){// &&
-                    //TODO: Maybe we would like to update valid templates
-                    //!getDefinition().isValid(template, conversation.getTokens())){
-                Set<Integer> addedTokens = updateTemplate(template, conversation,startMsgIdx);
-                //TODO: check if this assumption is correct
-                if(addedTokens != null){
-                    return; //updated existing template ... do not build a new one (of the same type)
-                }
-            } //else not matching or already valid template
-        }
+    public final void updateTemplate(Conversation conversation, Analysis analysis) {
+//NOTE: Basically dead code as Analysis is now created from strech on any update of the conversation
+//        //first check if we can update an existing query templates
+//        for(Template template : analysis.getTemplates()){
+//            if(getDefinition().getType().equals(template.getType())){// &&
+//                    //TODO: Maybe we would like to update valid templates
+//                    //!getDefinition().isValid(template, conversation.getTokens())){
+//                Set<Integer> addedTokens = updateTemplate(template, conversation, analysis);
+//                //TODO: check if this assumption is correct
+//                if(addedTokens != null){
+//                    return; //updated existing template ... do not build a new one (of the same type)
+//                }
+//            } //else not matching or already valid template
+//        }
 
         //try to create a new Template
         final Template template = new Template(getDefinition().getType(), new HashSet<>());
         initializeTemplate(template);
-        Set<Integer> addedTokensIdxs = updateTemplate(template, conversation, startMsgIdx);
+        Set<Integer> addedTokensIdxs = updateTemplate(template, conversation, analysis);
         if(addedTokensIdxs != null){
-            conversation.getTemplates().add(template);
+            analysis.getTemplates().add(template);
         } //else do not create empty Templates
 
     }

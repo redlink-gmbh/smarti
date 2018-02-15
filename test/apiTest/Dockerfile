@@ -5,7 +5,6 @@ RUN apt-get update -qq \
     && apt-get install -qq -y --no-install-recommends \
     python \
     python-pip \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install requests && \
@@ -15,6 +14,7 @@ RUN pip install requests && \
     pip install exrex && \
     pip install names
 
-ADD SmartiApiTest.py /tmp
+ADD SmartiApiRequests.py /tmp
+ADD SmartiApiTests.py /tmp
 
-ENTRYPOINT ["python", "/tmp/SmartiApiTest.py"]
+ENTRYPOINT ["python", "/tmp/SmartiApiTests.py"]

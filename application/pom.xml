@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.6.1</version>
+        <version>0.7.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>smarti-application</artifactId>
@@ -80,7 +80,10 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
@@ -119,6 +122,11 @@
             <version>${solrlib.version}</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-analyzers-common</artifactId>
+            <version>${solr.version}</version>
+        </dependency>
 
         <dependency> <!-- This only defines abstract processors for actual vocabularies -->
             <groupId>io.redlink.nlp</groupId>
@@ -144,6 +152,12 @@
             <artifactId>rocket-chat</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
+        </dependency>
+        
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>chatpal-index</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- Analysis -->
@@ -312,6 +326,11 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.redlink.ext.logback</groupId>
@@ -472,6 +491,10 @@
                             <groupId>io.redlink.smarti</groupId>
                             <artifactId>query-conversation</artifactId>
                         </dependency>
+                        <dependency> <!-- for the chatpal solr config -->
+                            <groupId>io.redlink.smarti</groupId>
+                            <artifactId>chatpal-index</artifactId>
+                        </dependency>
                     </requiresUnpack>
                     <!-- GPL licensed, needs to be installed manually -->
                     <excludes>
@@ -494,7 +517,82 @@
 
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>fetch-solr-core-config</id>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/solr-cores</outputDirectory>
+
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>query-conversation</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>solrcores</classifier>
+                                    <type>zip</type>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>chatpal-index</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>solrcores</classifier>
+                                    <type>zip</type>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archiveBaseDirectory>${project.build.directory}/solr-cores</archiveBaseDirectory>
+                </configuration>
+            </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            com.github.kongchen
+                                        </groupId>
+                                        <artifactId>
+                                            swagger-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [3.1.5,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>generate</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore />
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <profiles>

@@ -32,6 +32,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -84,7 +85,7 @@ public class UserWebservice {
                 password = data.get("password"),
                 mail = data.get("email");
         if ( StringUtils.isNoneBlank(login, password, mail) && emailValidator.isValid(mail)) {
-            return ResponseEntity.ok(UserDetailsResponse.wrap(accountService.createAccount(login, mail, password)));
+            return ResponseEntity.status(HttpStatus.CREATED).body(UserDetailsResponse.wrap(accountService.createAccount(login, mail, password)));
         } else {
             return ResponseEntity.badRequest().build();
         }
@@ -141,8 +142,11 @@ public class UserWebservice {
         if (StringUtils.isBlank(user.getLogin())) {
             return ResponseEntity.unprocessableEntity().build();
         }
+        if (userService.existsUsername(user.getLogin())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
 
-        return ResponseEntity.ok(SmartiUserData.fromModel(userService.createUser(user.toModel())));
+        return ResponseEntity.status(HttpStatus.CREATED).body(SmartiUserData.fromModel(userService.createUser(user.toModel())));
     }
 
     @RequestMapping(value = "/user/{login}", method = RequestMethod.GET)

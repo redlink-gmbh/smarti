@@ -19,6 +19,7 @@ package io.redlink.smarti.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
 import java.util.*;
 
@@ -28,8 +29,11 @@ import java.util.*;
 @ApiModel(description = "conversation context")
 public class Context {
 
+    @ApiModelProperty(notes="the context type")
     private String contextType; // = "ApplicationHelp"
+    @ApiModelProperty(notes="the environment type")
     private String environmentType; // = "SAP_Application"
+    @ApiModelProperty(notes="the domain of the conversation")
     private String domain;
     private Map<String,List<String>> environment = new HashMap<>();
 

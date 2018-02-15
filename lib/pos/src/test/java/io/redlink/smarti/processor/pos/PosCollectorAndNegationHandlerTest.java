@@ -28,9 +28,10 @@ import io.redlink.nlp.opennlp.pos.OpenNlpPosProcessor;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.Message.Origin;
 import io.redlink.smarti.model.Token.Hint;
-import io.redlink.smarti.processing.ProcessingData;
+import io.redlink.smarti.processing.AnalysisData;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
+import org.bson.types.ObjectId;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,7 +47,7 @@ import java.util.*;
  * This test two {@link QueryPreparator}s<ol>
  * <li> {@link PosCollector}: that creates tokens for {@link PosSet#ADJECTIVES}
  * <li> {@link NegatedTokenMarker}: that adds the {@link Hint#negated} to all Tokens
- * that are within a section marked as {@link ProcessingData#NEGATION_ANNOTATION}
+ * that are within a section marked as {@link AnalysisData#NEGATION_ANNOTATION}
  * </ol>
  */
 public class PosCollectorAndNegationHandlerTest {
@@ -84,17 +85,15 @@ public class PosCollectorAndNegationHandlerTest {
     }
     
     private static final Conversation initConversation(int index) {
-        Conversation c = new Conversation();
+        Conversation c = new Conversation(new ObjectId(), new ObjectId());
+        c.setLastModified(new Date());
         c.setMeta(new ConversationMeta());
-        c.getMeta().setLastMessageAnalyzed(-1);
         c.getMeta().setStatus(ConversationMeta.Status.New);
-        List<Message> messages = new ArrayList<>();
         log.trace("Conversation: ");
         for(MsgData md : CONTENTS.get(index).getLeft()){
             log.trace("    {}", md);
-            messages.add(md.toMessage());
+            c.getMessages().add(md.toMessage());
         }
-        c.setMessages(messages);
         c.setUser(new User());
         c.getUser().setDisplayName("Test Dummy");
         c.getUser().setPhoneNumber("+43210123456");
@@ -107,7 +106,7 @@ public class PosCollectorAndNegationHandlerTest {
         negatedTokenMarker = new NegatedTokenMarker();
     }
     
-    private static final void preprocessConversation(ProcessingData pd) throws ProcessingException{
+    private static final void preprocessConversation(AnalysisData pd) throws ProcessingException{
         for(Processor processor : REQUIRED_PREPERATORS){
             processor.process(pd);
         }
@@ -117,12 +116,12 @@ public class PosCollectorAndNegationHandlerTest {
     @Test
     public void testAll() throws ProcessingException{
         for(int idx = 0 ; idx < CONTENTS.size(); idx++){
-            ProcessingData processingData = processConversation(ProcessingData.create(initConversation(idx)));
+            AnalysisData processingData = processConversation(AnalysisData.create(initConversation(idx), new Client()));
             assertPosProcessingResults(processingData, CONTENTS.get(idx).getMiddle(),CONTENTS.get(idx).getRight());
         }
     }
 
-    ProcessingData processConversation(ProcessingData processingData) throws ProcessingException {
+    AnalysisData processConversation(AnalysisData processingData) throws ProcessingException {
         //NOTE: we statically set the lanugage to "de" here as we do not have a language detection processor in this test
         processingData.getConfiguration().put(Configuration.LANGUAGE, "de");
         log.trace(" - preprocess conversation {}", processingData.getConversation());
@@ -136,14 +135,15 @@ public class PosCollectorAndNegationHandlerTest {
     }
 
     
-    private void assertPosProcessingResults(ProcessingData processingData, String[] expected, Hint[] hints) {
+    private void assertPosProcessingResults(AnalysisData processingData, String[] expected, Hint[] hints) {
         Set<String> expectedSet = new HashSet<>(Arrays.asList(expected)); 
         Conversation conv = processingData.getConversation();
-        Assert.assertFalse(conv.getTokens().isEmpty());
-        for(Token token : conv.getTokens()){
+        Analysis analysis = processingData.getAnalysis();
+        Assert.assertNotNull(analysis);
+        Assert.assertFalse(analysis.getTokens().isEmpty());
+        for(Token token : analysis.getTokens()){
             log.debug("Token(idx: {}, span[{},{}], type: {}): {}", token.getMessageIdx(), token.getStart(), token.getEnd(), token.getType(), token.getValue());
             Assert.assertNotNull(token.getType());
-            Assert.assertTrue(conv.getMeta().getLastMessageAnalyzed() < token.getMessageIdx());
             Assert.assertTrue(conv.getMessages().size() > token.getMessageIdx());
             Message message = conv.getMessages().get(token.getMessageIdx());
             Assert.assertTrue(message.getOrigin() == Origin.User);

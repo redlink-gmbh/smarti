@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<schema name="cyo-search" version="1.5">
+  
+  <field name="_version_" type="long" indexed="true" stored="true"/>
+  
+  <!-- smarti specific -->
+  <field name="smarti_id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="smarti_client" type="string" indexed="true" stored="true" required="true" multiValued="false"/> 
+  <field name="smarti_sync_date" type="tdate" indexed="true" stored="true" multiValued="false"/><!-- required for cloud sync -->
+  <field name="smarti_index_version" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  
+  <!-- generic -->
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+  <field name="type" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+
+  <field name="room" type="string" indexed="true" stored="true" multiValued="false"/>
+  <field name="text" type="text_general" indexed="true" stored="true" multiValued="true"/>
+  <field name="user" type="string" indexed="true" stored="true" multiValued="false"/>
+  <!-- TODO extend to username -->
+  <field name="created" type="tdate" indexed="true" stored="true" multiValued="false"/>
+  <field name="updated" type="tdate" indexed="true" stored="true" multiValued="false"/>
+
+  <field name="text_none" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="text_de" type="text_de" indexed="true" stored="true" multiValued="false"/>
+  <field name="text_en" type="text_en" indexed="true" stored="true" multiValued="false"/>
+
+  <field name="user_username" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="user_name" type="text_general" indexed="true" stored="true" multiValued="true"/>
+  <field name="user_email" type="text_general" indexed="true" stored="true" multiValued="false"/>
+
+  <field name="room_name" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="room_announcement" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="room_description" type="text_general" indexed="true" stored="true" multiValued="false"/>
+  <field name="room_topic" type="text_general" indexed="true" stored="true" multiValued="false"/>
+
+  <copyField source="text_*" dest="text" />
+  <copyField source="user_*" dest="text" /> 
+  <copyField source="room_*" dest="text" />
+  
+  <uniqueKey>smarti_id</uniqueKey>
+  
+  <!-- field types -->
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="bool" class="solr.BoolField" sortMissingLast="true" omitNorms="true" />
+  <fieldType name="tdate" class="solr.TrieDateField" precisionStep="6" positionIncrementGap="0"/>
+  <fieldType name="latlon" class="solr.LatLonPointSpatialField"/>
+
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory"
+              generateWordParts="1" generateNumberParts="1"
+              splitOnCaseChange="1" splitOnNumerics="1"
+              catenateWords="1" catenateNumbers="1" catenateAll="1"
+              stemEnglishPossessive="1"
+              preserveOriginal="1"
+              />
+      <!-- charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/ -->
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" /> <!-- generic stopwords -->
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.ASCIIFoldingFilterFactory"/>
+    </analyzer>
+    <analyzer>
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory"
+                generateWordParts="1" generateNumberParts="1"
+                splitOnCaseChange="0" splitOnNumerics="0"
+                catenateWords="0" catenateNumbers="1" catenateAll="0"
+                stemEnglishPossessive="1"
+                preserveOriginal="0"
+                />
+        <!-- charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/ -->
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" /> <!-- generic stopwords -->
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <fieldType name="text_ws_lower" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <!-- charFilter class="solr.PatternReplaceCharFilterFactory" pattern="-" replacement=""/ -->
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.ASCIIFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  
+  <!-- German -->
+  <fieldType name="text_de" class="solr.TextField" positionIncrementGap="100">
+    <analyzer type="index">
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory"
+              generateWordParts="1" generateNumberParts="1"
+              splitOnCaseChange="1" splitOnNumerics="1"
+              catenateWords="1" catenateNumbers="1" catenateAll="1"
+              stemEnglishPossessive="0"
+              preserveOriginal="1"
+              />
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de_2.txt" format="snowball" />
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.GermanLightStemFilterFactory"/>
+      <filter class="solr.GermanNormalizationFilterFactory"/>
+      <filter class="solr.ASCIIFoldingFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory"
+                generateWordParts="1" generateNumberParts="1"
+                splitOnCaseChange="0" splitOnNumerics="0"
+                catenateWords="0" catenateNumbers="0" catenateAll="0"
+                stemEnglishPossessive="0"
+                preserveOriginal="0"
+                />
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de_2.txt" format="snowball" />
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.GermanLightStemFilterFactory"/>
+        <filter class="solr.GermanNormalizationFilterFactory"/>
+        <filter class="solr.ASCIIFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <!-- English -->
+  <fieldType name="text_en" class="solr.TextField" positionIncrementGap="100">
+    <analyzer type="index">
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      <filter class="solr.WordDelimiterGraphFilterFactory"
+              generateWordParts="1" generateNumberParts="1"
+              splitOnCaseChange="1" splitOnNumerics="1"
+              catenateWords="1" catenateNumbers="1" catenateAll="1"
+              stemEnglishPossessive="1"
+              preserveOriginal="1"
+              />
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_en_2.txt" />
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.EnglishPossessiveFilterFactory"/>
+      <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.WordDelimiterGraphFilterFactory"
+                generateWordParts="1" generateNumberParts="1"
+                splitOnCaseChange="0" splitOnNumerics="0"
+                catenateWords="0" catenateNumbers="0" catenateAll="0"
+                stemEnglishPossessive="1"
+                preserveOriginal="0"
+                />
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="false"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_en_2.txt" />
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.EnglishPossessiveFilterFactory"/>
+        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <fieldType name="text_wslc" class="solr.TextField">
+    <analyzer type="index">
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+
+    <analyzer type="query">
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+</fieldType>
+</schema>

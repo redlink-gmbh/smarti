@@ -24,15 +24,19 @@ import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.Chunk;
 import io.redlink.nlp.model.Section;
 import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Token;
 import io.redlink.smarti.model.Token.Hint;
+import io.redlink.smarti.processing.SmartiAnnotations;
+
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.redlink.nlp.model.NlpAnnotations.NEGATION_ANNOTATION;
+import static io.redlink.smarti.processing.SmartiAnnotations.ANALYSIS_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.MESSAGE_IDX_ANNOTATION;
 
@@ -61,18 +65,22 @@ public class NegatedTokenMarker extends Processor {
             return; //nothing to do
         }
         AnalyzedText at = ato.get();
-        Conversation conv = processingData.getAnnotation(CONVERSATION_ANNOTATION);
-        if(conv == null){
-            log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
+        Analysis analysis = processingData.getAnnotation(ANALYSIS_ANNOTATION);
+        if(analysis == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, ANALYSIS_ANNOTATION);
             return;
         }
-        int startIdx = conv.getMeta().getLastMessageAnalyzed() + 1;
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int startIdx = 0;
+
         Iterator<Section> sections = at.getSections();
         while(sections.hasNext()){
             Section section = sections.next();
             Integer msgIdx = section.getAnnotation(MESSAGE_IDX_ANNOTATION);
             if(msgIdx != null && msgIdx >= startIdx ){
-                List<Token> msgTokens = conv.getTokens().stream()
+                List<Token> msgTokens = analysis.getTokens().stream()
                         .filter(t -> t.getMessageIdx() == msgIdx)
                         .collect(Collectors.toList());
                 if(!msgTokens.isEmpty()){

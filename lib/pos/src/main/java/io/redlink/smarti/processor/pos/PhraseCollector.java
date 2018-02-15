@@ -25,6 +25,7 @@ import io.redlink.nlp.model.Span.SpanTypeEnum;
 import io.redlink.nlp.model.phrase.PhraseCategory;
 import io.redlink.nlp.model.phrase.PhraseTag;
 import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.Message;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static io.redlink.smarti.processing.SmartiAnnotations.ANALYSIS_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.MESSAGE_IDX_ANNOTATION;
 
@@ -85,8 +87,16 @@ public class PhraseCollector extends Processor {
             log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
             return;
         }
+        Analysis analysis = processingData.getAnnotation(ANALYSIS_ANNOTATION);
+        if(analysis == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, ANALYSIS_ANNOTATION);
+            return;
+        }
         List<Message> messages = conv.getMessages();
-        int lastAnalyzed = conv.getMeta().getLastMessageAnalyzed();
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int lastAnalyzed = -1;
         Iterator<Section> sections = at.getSections();
         while(sections.hasNext()){
             Section section = sections.next();
@@ -95,7 +105,7 @@ public class PhraseCollector extends Processor {
                 if(msgIdx > lastAnalyzed && msgIdx < messages.size()){
                     Message message = messages.get(msgIdx);
                     if(Origin.User == message.getOrigin()){
-                        conv.getTokens().addAll(createPhraseTokens(section, msgIdx, message));
+                        analysis.getTokens().addAll(createPhraseTokens(section, msgIdx, message));
                     }
                 }
             } else { //invalid section

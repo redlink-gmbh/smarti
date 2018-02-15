@@ -21,7 +21,7 @@
 
     <groupId>io.redlink.smarti</groupId>
     <artifactId>smarti</artifactId>
-    <version>0.6.1</version>
+    <version>0.7.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>smarti</name>
@@ -37,6 +37,7 @@
         <module>db-migrator</module>
 
         <module>integration/rocket-chat</module>
+        <module>integration/solr-docker</module>
 
         <module>dist</module>
 
@@ -93,12 +94,11 @@
         <spring.data.version>1.10.6.RELEASE</spring.data.version>
         <spring.version>4.3.10.RELEASE</spring.version>
 
-        <solr.version>6.2.1</solr.version>
+        <solr.version>6.6.2</solr.version>
         <!-- solr-text-tagger version needs to be in sync with solr.version
              (see: https://github.com/OpenSextant/SolrTextTagger/blob/master/CHANGES.md) -->
-        <solr.text.tagger.version>2.3</solr.text.tagger.version>
-        <solrlib.version>0.4.0-SNAPSHOT</solrlib.version>
-        <solr.version>6.2.1</solr.version>
+        <solr.text.tagger.version>2.4</solr.text.tagger.version>
+        <solrlib.version>0.5.0-SNAPSHOT</solrlib.version>
         <redlinknlp.version>2.0.0-SNAPSHOT</redlinknlp.version>
 
         <springfox.version>2.7.0</springfox.version>
@@ -115,7 +115,7 @@
         <connection>scm:git:https://github.com/redlink-gmbh/smarti.git</connection>
         <developerConnection>scm:git:git@github.com:redlink-gmbh/smarti.git</developerConnection>
         <url>https://github.com/redlink-gmbh/smarti/src</url>
-        <tag>smarti-0.6.1</tag>
+        <tag>HEAD</tag>
     </scm>
     <issueManagement>
         <system>github</system>
@@ -269,6 +269,17 @@
                 <version>${solr.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.redlink.solrlib</groupId>
+                <artifactId>solrlib-spring-boot-autoconfigure</artifactId>
+                <version>${solrlib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.redlink.solrlib</groupId>
+                <artifactId>solrlib-api</artifactId>
+                <version>${solrlib.version}</version>
+            </dependency>
+            
+            <dependency>
                 <groupId>org.opensextant</groupId>
                 <artifactId>solr-text-tagger</artifactId>
                 <version>${solr.text.tagger.version}</version>
@@ -309,6 +320,10 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
         </plugins>
         <pluginManagement>
@@ -502,6 +517,23 @@
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>2.10</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>3.0.0</version>
+                    <executions>
+                        <execution>
+                            <id>package-solr</id>
+                            <goals><goal>single</goal></goals>
+                            <phase>package</phase>
+                            <configuration>
+                                <descriptors>
+                                    <descriptor>assembly${file.separator}solr.xml</descriptor>
+                                </descriptors>
+                                <attach>true</attach>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.vafer</groupId>

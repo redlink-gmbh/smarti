@@ -8,13 +8,15 @@ Whenever new features will be released for Smarti, the first step is to develop 
 This means that before developing any Apps or other graphical user interfaces, the API already exists: No feature without an API.
 This makes it very easy to integrate Smarti into third party applications.
 
-Snarti's web services are basically divided into the following five components:
+Smarti's web services are basically divided into the following five components:
 
 . <<index.adoc#_conversational_web_service, Conversational Analyzing>>
 . <<index.adoc#_conversation_admin_web_service, Conversation Administration>>
-. <<index.adoc#_chat_adapter_web_service, Chat Adapter>>
 . <<index.adoc#_client_configuration_web_service, Client Configuration>>
 . <<index.adoc#_user_management_web_service, User Management>>
+
+NOTE: the <<index.adoc#_chat_adapter_web_service, Chat Adapter>> was removed with `v0.7.0`. Most of its functionality was integrated in the <<index.adoc#_conversational_web_service, Conversational Analyzing>> Webservice.
+
 
 In the following sections each web service is introduced briefly.
 
@@ -45,26 +47,45 @@ Alternatively Smarti provides a Swagger user interface to browse the API without
 . Preconditions
 .. Setup Smarti
 .. Create a client
-.. Create a configuration
-.. Create a client token
+.. Create a client configuration
+.. Create a client auth token
 . Chat Integration
-.. Store the token
+.. Store the auth token
 .. Authenticate each request
 .. Adapt Smarti into Chat (onMessage, callback, onClose)
 .. Implement a backend for the integration widget/bot
 . User Interface
 .. Implement a widget
 
-
 === RESTful-Integration Sequence
 
-image::chat-sequence-REST.png[RESTful-Integration Sequence]
-. Send messages to Smarti
-. Wait for Smarti magic
-. Handle callback
-. Get the conversation analyze results
-. Retrieve Query results
-. Publish a conversation
+The `/conversation` service supports CRUD functionality for Conversation. In Smarti Conversational data are represented by Conversations that contain messages. Data of the chat server need to mapped to this model.
+
+The simplest model is to map a channel/room of the chat to a single conversation in Smarti. All messages in that channel/room can be added as messages to the conversation. However integrators may also choose different mappings. In any way, the mapping between channel/rooms and conversations in in the responsibility of the integrator. While it is possible to store channel/room IDs with the conversation it is the responsibility of the integrator to provide this mapping.
+
+
+image::chat-sequence-REST-sync.png[RESTful-Integration Sequence]
+
+. Create a Conversation: The payload for this operation is optional. If no payload is present Smarti will create an empty conversation and assign an unique ID to it. If a payload is present the provided data are stored. The provided conversation can contain any data (such as existing messages). The ID is always assigned by Smarti.
+. Append a Message: Messages are assigned to conversations therefore all CRUD operations on Messages are in the context of an existing conversation. Smarti allows to set IDs of messages (assumed to be unique within the conversation). Integrators can therefore use message IDs of their chat system. If no message IDs is provided Smarti will assign an unique ID.
+. Analysis results for the current state of the conversation. This is an expensive operation. So expect longer response times (possible in the seconds). To mitigate this Smarti per-processes analysis on changes to conversations. So retrieving an analysis for a conversation that has not changed recently is typically fast. When called immediately after an update pre-processing will not have finished and response times will be longer. The following section provides more information retrieving analysis results asynchronous via a callback.
+. Update conversation fields: Smarti allows to store meta infomation for conversation and messages. Those can be updated and deleted. The key of the field is part of the request path. The value is represented by the JSON playload. A similar possibility exists for messages.
+. Complete Conversation: by setting the `meta.staus` field to `"completed"`. Completion of a Conversation does NOT prevent from future modifications, but as an indicator that the conversation is in a state so that it can be used as an information source. Several components allow to exclude none completed conversations from results and suggestions.
+
+As the analysis of conversation is an expensive opertation the `/conversation` service supports asynchronous callbacks for analysis results. This mode is activated by including the `callback` parameter in requests to the conversation service. All CRUD operations that result in modifications of the conversation do support this parameter (see the Swagger documentation for details).
+
+The callback needs to be a valid URL supporting POST requests with a `application/json` payload with the `Analysis` results.
+
+The following figure shows how this works. 
+
+image::chat-sequence-REST-async.png[RESTful-Integration Sequence]
+
+. Create a Conversation: As described above the conversation is created assigned an unique ID and returned to the caller (sync). If a `callback` is given the results of the analysis is `POST` to this URL as soon as it is available.
+.. The callback receives an `Analysis` object that referes the conversation (by `id`) and the analysed version of the conversation (by `modified` date).
+. Append a Message: As with the sync workflow the added message is sent back synchronously. The analysis results of the updated conversation are `POST` to the provided callback when processing finishes. 
+.. The callback receives an `Analysis` object that referes the conversation (by `id`) and the analysed version of the conversation (by `modified` date).
+. On Analysis requests providing a `callback` the request is confrimed by a `202 Accepted`. The actual analysis is sent to the callback URL (even if it is already pre-processed and available)
+
 
 include::{webservicesdir}/conversation-api.adoc[]
 

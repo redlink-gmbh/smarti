@@ -20,11 +20,14 @@ package io.redlink.smarti.model;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +35,10 @@ import java.util.Map;
 /**
  * Useful metadata about a conversation
  */
-@ApiModel(description = "conversation metadata")
+@ApiModel(description = "conversation metadata. Supports strings and array of strings as values. Well known keys"
+        + "include: '" + ConversationMeta.PROP_SUPPORT_AREA + "', '" + ConversationMeta.PROP_TOKEN
+        + "', '" + ConversationMeta.PROP_CHANNEL_ID + "', '" + ConversationMeta.PROP_CHANNEL_NAME
+        + "', '" + ConversationMeta.PROP_TAGS + "'")
 public class ConversationMeta {
 
     /**
@@ -66,12 +72,11 @@ public class ConversationMeta {
         Complete
     }
 
-    @ApiModelProperty("conversation status")
+    @ApiModelProperty(notes="the status of the conversation", allowableValues="New,Ongoing,Complete",example="New")
     private Status status = Status.New;
 
-    @ApiModelProperty(value = "message offset", notes = "offset for the next analysis iteration")
-    private int lastMessageAnalyzed = -1;
-
+    @ApiModelProperty(hidden=true) //not actually serialized (see @JsonAnyGetter and @JsonAnySetter)
+    @JsonIgnore
     private Map<String,List<String>> properties = new HashMap<>();
 
     public Status getStatus() {
@@ -80,14 +85,6 @@ public class ConversationMeta {
 
     public void setStatus(Status status) {
         this.status = status;
-    }
-
-    public int getLastMessageAnalyzed() {
-        return lastMessageAnalyzed;
-    }
-
-    public void setLastMessageAnalyzed(int lastMessageAnalyzed) {
-        this.lastMessageAnalyzed = lastMessageAnalyzed;
     }
 
     @JsonAnyGetter

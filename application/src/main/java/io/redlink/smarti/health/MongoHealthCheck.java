@@ -36,10 +36,10 @@ import java.util.*;
 @Component
 public class MongoHealthCheck extends AbstractHealthIndicator {
 
-    private static final int EXPECTED_DB_VERSION = 4;
+    public static final int EXPECTED_DB_VERSION = 5;
 
-    private static final String SMARTI_DB_VERSION_ID = "db-version";
-    private static final String COLLECTION_NAME = "smarti";
+    public static final String SMARTI_DB_VERSION_ID = "db-version";
+    public static final String COLLECTION_NAME = "smarti";
 
     private final Logger log = LoggerFactory.getLogger(MongoHealthCheck.DbVersion.class);
     private final MongoTemplate mongoTemplate;
@@ -105,7 +105,7 @@ public class MongoHealthCheck extends AbstractHealthIndicator {
     }
 
 
-    private static class DbVersion {
+    public static class DbVersion {
         @Id
         private final String id;
         private int version = 0;
@@ -114,7 +114,7 @@ public class MongoHealthCheck extends AbstractHealthIndicator {
         private Map<String,Object> backup;
 
         @PersistenceConstructor
-        private DbVersion(String id) {
+        public DbVersion(String id) {
             this.id = id;
         }
 

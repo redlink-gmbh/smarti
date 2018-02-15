@@ -21,20 +21,29 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+
 import org.springframework.data.annotation.PersistenceConstructor;
 
 /**
  * A slot represents an {@link Token} with a Role in the context of an {@link Template}.
  */
-@ApiModel
+@ApiModel(description="A slot of a template (e.g. departure <time> of a travel planing template)")
 public class Slot {
 
+    @ApiModelProperty(notes="The role of the slot (e.g. departure time)", required=true)
     @JsonProperty("role")
     private String role;
+    @ApiModelProperty(notes="The type of tokens that can fill this slot (any if not defined)", 
+            allowableValues="Date, Topic, Entity, Place, Organization, Person, Product, Attribute, Term, Keyword, Other",
+            required=false, allowEmptyValue=false, readOnly = false)
     @JsonProperty("tokenType")
     private Token.Type tokenType;
+    @ApiModelProperty(notes="If this slot is required for its tempalte to be valid")
     private boolean required = false;
+    @ApiModelProperty(notes="The index of the token assigned to this template or '-1' if not token is assigned", required=true)
     private int tokenIndex = -1;
+    @ApiModelProperty(notes="The message to be sent to the user to ask for the value of this slot", required=false)
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private String inquiryMessage;
 
@@ -57,6 +66,10 @@ public class Slot {
         this.inquiryMessage = inquiryMessage;
     }
 
+    public void setRole(String role) {
+        this.role = role;
+    }
+    
     public String getRole() {
         return role;
     }

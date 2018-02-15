@@ -42,12 +42,11 @@ public class DebugEndpoint {
 
     private final ObjectMapper om;
 
-    public DebugEndpoint() {
-        om = new ObjectMapper();
-        om.enable(SerializationFeature.INDENT_OUTPUT);
+    public DebugEndpoint(ObjectMapper objectMapper) {
+        om = objectMapper;
     }
 
-    @RequestMapping(value = "{path}", method = RequestMethod.POST)
+    @RequestMapping(value = "{path:.*}", method = RequestMethod.POST)
     public ResponseEntity<?> debugRocketEvent(@PathVariable("path") String path,
                                               @RequestBody Map<String, Object> payload) {
         // Public access

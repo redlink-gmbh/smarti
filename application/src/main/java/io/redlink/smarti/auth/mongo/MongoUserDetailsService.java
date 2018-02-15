@@ -73,7 +73,7 @@ public class MongoUserDetailsService implements UserDetailsService {
                 adminUser = String.format("admin%d", ++i);
             }
             if (StringUtils.isNotBlank(securityConfigurationProperties.getMongo().getAdminPassword())) {
-                log.error("Created new Admin-User '{}' with password passed as 'security.config.mongo.admin-password'", adminUser);
+                log.info("Created new Admin-User '{}' with password passed as 'security.config.mongo.admin-password'", adminUser);
             } else {
                 log.error("Created new Admin-User '{}' with password '{}'", adminUser, password);
             }
@@ -95,7 +95,7 @@ public class MongoUserDetailsService implements UserDetailsService {
 
     @Override
     public AttributedUserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        login = login.toLowerCase(Locale.ROOT);
+//        login = login.toLowerCase(Locale.ROOT);
 
         final SmartiUser smartiUser = getSmaritUser(login);
 

@@ -16,6 +16,7 @@ Conversations in Samrti are based on the following JSON model
     "channel_id": [
       "lp3aiunsij2664ft"
     ]
+    /* any meta fields */
   },
   "user": {
     "id": "be4df619-f273-4d15-b3fb-6fa91b08a71a",
@@ -39,14 +40,18 @@ Conversations in Samrti are based on the following JSON model
   "context": {
     "contextType": "rocket.chat",
     "domain": "loadtest",
-    "environment": {}
+    "environment": {
+      /* any environment variable */
+    }
   },
   "lastModified": 1511261254233
 }
 ----
 
 * `id`: Each conversation has an `id` that is assigned by Smarti
-* `meta`: meta information about the message. *NOTE* this element will change in future versions
+* `meta`: meta information about the message.
+** Smarti allows for any meta fields to be added.
+** the `channel_id` was used up to `v0.6.*` to store the ID of the channel. While the mapping of conversation to channel is no longer managed by Smarti starting with version `0.7.0` this field SHOULD still be used in case an integrator wants to store such mappings within Smarti.
 * `user`: The user that started this conversation.
 ** only the `id` is required
 * `messages`: The messages of the conversation in the order as sent
@@ -59,8 +64,8 @@ Conversations in Samrti are based on the following JSON model
 ** `votes`: allows to set the votes for this message
 ** `metadata`: allows for additional metadata to be stored with this message
 ** `private`: if `true` this is a private message. Private messages will not be available for Conversation Search in Smarti.
-* `context`: Contextual information about the message. *NOTE* this element will change in future versions
-* * `environment`: allows for additional contextual information about the environment
+* `context`: Contextual information about the message.
+** `environment`: allows for additional contextual information about the environment
 * `lastModified`: managed by Smarti this field holds the last modification date of this Conversation in Smarti
 
 
@@ -165,22 +170,34 @@ Common fields supported by all queries include:
 * The `displayTitle` is intended to be used for provide a human readable representation of this query.
 * If `inlineResultSupport` is `true` the creator supports server-side execution of the query.
 * The `state` can be used for user feedback. Every query will start with `Suggested`. Users can `Confirmed` and `Rejected` queries.
-* The `url` representing this query. If server side execution is supported this might be not present.
+* The `url` representing this query. If server side execution is supported this might not be present.
 * The `confidence` specifies how well the service is suited to search for information of the template
   (e.g. bahn.de is very suitable for a travel planing template so a query for Bahn.de would get a high confidence.
   One could also create a Google Query for travel planing, but results would be less precise so this query should get a lower confidence).
 
 In addition to those fields queries can provide additional information. Those are specific to the `creator` of the query.
 
-==== Working with Smarti processing results
+==== Working with Smarti Analysis
 
-Smarti processes ongoing Conversations. Those processing results are available via
+Smarti processes ongoing Conversations. Those analysis results are available via
 
-- abstract: `http(s)://${smarti-host}:${smarti-port}/conversation/{conversationId}/template`
-- specific: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template`
+- abstract: `http(s)://${smarti-host}:${smarti-port}/conversation/{conversationId}/analysis`
+- specific: `https://localhost:8080/conversation/59ed91d9de10751739a82358/analysis`
 
-This call returns processing results for a Conversation. This results includes the token and tempalte arrays as described above.
+or when providing a callback URI asynchronously on most CRUD requests for conversations and messages.
 
+[source,json]
+----
+
+{
+  "conversation" : "5a7befcb27c2da49d629dcab",
+  "date" : 1518082127519,
+  "tokens" : [ /* Tokens */ ],
+  "templates" : [ /* Templates and Queries for Templates */]
+}
+----
+* `conversation`: The id of the analysed conversation
+* `date`: the modification date of the conversation - the version of the conversation used for the analysis
 * `tokens`: Information extracted form the conversation. Important as `template.slots` refer to token indexes
 * `templates`: Templates represent a structured view onto the extracted information.
   The `type` of the template defines the slots it supports and also what queries one can expect for the tempalte.
@@ -192,16 +209,200 @@ NOTE: Queries are NOT executed during processing of the conversation. The client
 
 When `inlineResultSupport` is `true` a query can be executed by Smarti. In such cases the `url` is often not defined - meaning that the query can only be executed by Smarti. To execute a query via smarti the following service has to be used:
 
-- abstract: `http(s)://${smarti-host}:${smarti-port}/conversation/{conversationId}/template/{templateIndex}/{creatorName}`
-- specific: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template/0/queryBuilder%3Aconversationmlt%3Arelated-conversations`
+- abstract: `http(s)://${smarti-host}:${smarti-port}/conversation/{conversationId}/template/{templateIndex}/result/{creatorName}`
+- specific: `https://localhost:8080/conversation/59ed91d9de10751739a82358/template/0/result/queryBuilder%3Aconversationmlt%3Arelated-conversations`
 
 where:
 
 - `{templateIndex}` - is the index of the "template" array returned by the `/conversation/{conversationId}/template` request (e.g. `0` for the first template in the original response)
 - `{creatorName}` - the value of the `creator` attribute of the executed query (e.g. the value of `template[0].queries[0].creator` when executing the first query of the first template)
 
+
+NOTE: In a future version it is planed to change referencing of Messages, Tokens and Templates from an index to an ID based model. This will have affects to this webservice.
+
 The response format is not normalised and fully specific for the query type. Server side execution is e.g. used for the related conversation queries.
 
 For queries where `inlineResultSupport` is `false` the client needs to execute the query.
 Typically this can be done by using the `url` attribute.
 However specific queries might provide the information for query execution in additional fields.
+
+==== Common Templates and Query Provider
+
+===== Related Conversation
+
+The related conversation template allows to find conversation similar to the current one.
+Two query provider do use this template:
+
+1. **Similar Conversation:** This searches for similar conversation based on the textual content of the current conversation. It does NOT use extracted tokens but rather uses the content of the messages to search for similar conversations. Starting with `v0.7.0` only the content of recent messages is used as context. Up to `v0.6.*` the content of all messages in the conversation was used.
+2. **Related Conversation Search:** This uses extracted Keywords and Terms to search for related conversations. The search for related conversations uses the  `conversation/search` service (part of the conversation API).
+
+The following listing shows the structure use by this template and queries
+
+[source,json]
+----
+{
+    "type" : "related.conversation",
+    "slots" : [ {
+      "role" : "Keyword",
+      "tokenType" : "Keyword",
+      "required" : false,
+      "tokenIndex" : {token-idx}
+    }, {
+      "role" : "Term",
+      "tokenType" : null,
+      "required" : false,
+      "tokenIndex" : {token-idx}
+    } ],
+    "state" : "Suggested",
+    "queries" : [ {
+      "_class" : "io.redlink.smarti.query.conversation.ConversationMltQuery",
+      "displayTitle" : "conversationmlt",
+      "confidence" : 0.55,
+      "url" : null,
+      "creator" : "queryBuilder:conversationmlt:conversationmlt",
+      "inlineResultSupport" : true,
+      "created" : 1518423401234,
+      "state" : "Suggested",
+      "content" : "{textual-context}"
+    }, {
+      "_class" : "io.redlink.smarti.query.conversation.ConversationSearchQuery",
+      "creator" : "queryBuilder:conversationsearch:conversationsearch",
+      "displayTitle" : "conversationsearch",
+      "confidence" : 0.6,
+      "url" : "/conversation/search",
+      "inlineResultSupport" : false,
+      "created" : 1518423401234,
+      "state" : "Suggested",
+      "defaults" : {
+        "ctx.before" : 1,
+        "rows" : 3,
+        "ctx.after" : 2,
+        "fl" : "id,message_id,meta_channel_id,user_id,time,message,type"
+      },
+      "keywords" : [ "{keyword-1}", "{keyword-1}", ".." ],
+      "terms" : [ "{term-1}", "{term-2}", ".." ],
+      "queryParams" : [ ],
+      "filterQueries" : [ "completed:true", "-conversation_id:5a7befcb27c2da49d629dcab", "-meta_support_area:*" ]
+    } ]
+  }
+----
+
+Related Conversation Template: 
+
+* The `related.conversation` template has two roles - `Keyword` and `Term`. Both allow for multiple assignments. 
+** `{token-idx}` is the index of the token referenced by the slot of the template. `-1` indicates an unassigend slot.
+** the `tokenType` defines the required type of the token. For slots with the role `Keyword` the token type will be `Keyword`. For role `Term` slots this will be `null`. The actual type of the token needs to be obtained from the referenced Token itself.
+
+Similar Conversation Query:
+
+* Similar Conversation are provided by the `ConversationMltQuery` query provider
+* The `{textual-context}` is the context used to search for similar conversations
+* The `url` is `null` as this query is server executed. This means that the `GET conversation/{conversationId}/template/{templateIndex}/result/{creator}` service needs to be used to obtain results. 
+
+Related Conversation Search Query:
+
+* Related Conversation are provided by the `ConversationSearchQuery` query provider
+* The `url` is the to `/conversation/search` the path the the conversation search service part of the conversation webservice API
+* The `keywords` and `terms` are suggested search parameters for the conversation search
+** they can  be parsed by using the `text` parameter. In this case prefix and infix searches will be used to the exact match (with different boosts)
+** optionally thy can also be parsed via the Solr `q` parameter. This allows for more control over the actual search. See Solr Documentation for more information and options
+** the `defaults` are additional parameter to be parsed to the conversation search service. Those are based on the clients conviguration and should be included unchanged when calling the conversation search service.
+** `filterQueries` are expected to be parsed as is via the Solr `fq` parameter. They are also calculated based on the clients configuration and expected to be included unchanged on calles to the conversation search service. **NOTE:** that skipping those filter does NOT allow users to retrieve information they do not have acces to as all security relevant restrictions are applied by the conversation search service based on  the authentication information of the call. So removing some/all of those filter does only affect the quality of results.
+
+
+==== LATCH Information Retrieval
+
+LATCH stands for Location, Alphabet, Time, Category and Hierarchy and represents a well established model for information retrieval.
+
+The LATCH templates collects information extracted from the conversation and assigns them to the the different dimensions of the Template (e.g. extracted tokens with the type `Time` will be assigned to the `time` dimension; extracted tokens with the type `Place` will be assigned to the `location` dimension ...).
+
+Based on this template a generic query builder for Apache Solr endpoints is implemented. This query builder can be configured for Solr search endpoints so that information related to the current conversation can be suggested to the user.
+
+[source,json]
+----
+{
+    "type" : "ir_latch",
+    "slots" : [ {
+      "role" : "{role}",
+      "tokenType" : {type},
+      "required" : false,
+      "tokenIndex" : {token-idx}
+    } ],
+    "probability" : 0.0,
+    "state" : "Suggested",
+    "queries" : [ {
+      "_class" : "io.redlink.smarti.query.solr.SolrSearchQuery",
+      "creator" : "queryBuilder:solrsearch:config-name-1",
+      "resultConfig" : {
+        "mappings" : {
+          "source" : "source_field",
+          "title" : "title_field",
+          "description" : "desc_field",
+          "type" : "type_field",
+          "doctype" : null,
+          "link" : "link_field",
+          "date" : "date_field",
+          "thumb" : "thumb_field"
+        },
+        "numOfRows" : 10
+      },
+      "defaults" : { },
+      "displayTitle" : "config-title-1",
+      "confidence" : 0.8,
+      "url" : "https://search.host-1.org/query?{solr-query-parameter}",
+      "inlineResultSupport" : false,
+      "created" : 1518433563606,
+      "state" : "Suggested",
+      "queryParams" : [ "address_cityplz_de:\"Salzburg\"^0.8478922", "context_de:\"Tätowieren\"^0.39709732", "title_de_sv:\"Tätowieren\"^1.1912919" ],
+      "filterQueries" : [ ]
+    }, {
+      "_class" : "io.redlink.smarti.query.solr.SolrSearchQuery",
+      "creator" : "queryBuilder:solrsearch:config-name-2",
+      "resultConfig" : {
+        "mappings" : {
+          "source" : null,
+          "title" : "title",
+          "description" : "description",
+          "type" : "type",
+          "doctype" : null,
+          "link" : null,
+          "date" : "release_date",
+          "thumb" : null
+        },
+        "numOfRows" : 5
+      },
+      "defaults" : {
+        "fq" : "structure:(type_1 OR type_2)"
+      },
+      "displayTitle" : "Stadt Salzburg",
+      "confidence" : 0.8,
+      "url" : "https://www.host-2.com/search/select?fq=structure%3A(type_1%20OR%20type_2)&{solr-query-parameter}",
+      "inlineResultSupport" : false,
+      "created" : 1518433563606,
+      "state" : "Suggested",
+      "queryParams" : [ "content:\"Tätowieren\"^0.39709732", "title:\"Tätowieren\"^1.1912919" ],
+      "filterQueries" : [ ]
+    } ]
+  }
+----
+
+LATCH Information Retrieval
+
+* the type of this template is `ir_latch`
+* it supports the following roles: `location`, `alphabet`, `time`, `category` and `hierarchy` 
+** all roles are optional and allow for multiple assignments.
+** some Roles require specific types: `location` -> `Place`, `time` -> `Date`, `category` -> `Topic`
+
+Solr Search Query
+
+* generic query provider that can be configured for a specific Solr Endpont
+* the `resultConfig` is copied from the configuration and defines the Solr field names to be used for the visualisation of results. The `numOfRows` is the number of results per page.
+* the `url` represents the Solr request representing the data provided by the query provider. If the client wants to modify the query it needs to strip the query part from the URL and create the query parameter to reflect the intended modifications
+* `defaults` are query parameters to be included in the request. They originate form the client configuration.
+** the second example shows how a `fq` (filter query) is configuerd in the defaults. NOTE that this is also present as query paramter in the `url`
+* the `queryParams` represent parts of the Solr query (`q` parameter) generated for the extracted tokens and the solr fields as defined by the configuration.
+** in the first example the `config-name-1` has mappings for locations and full text search. Because of that the extracted token `Salzburg` with the type `Place` is used as query parameter for the location name field `address_cityplz_de`. The token `Tätowieren` with the type `Keyword` is used for full text search. First in the title field `title_de_sv` with a boost of `1.1912919` and second in the full text field `context_de` with a lower boost of `0.39709732`
+** the second example `config-name-2` hos no field to search for locations. Because of this only `Tätowieren` is included in the query parameters
+* `filterQueries` are additional filters set by the query provider based on the conversation (e.g. based on detected categories). Values need to be parsed as `fq` parameters in the Solr query.
+
+

@@ -3,7 +3,7 @@
 Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[configuration options] including:
 
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-command-line-args[Command line Properties]:* defining properties as arguments (e.g. `--server.port=8080`)
-* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files[Application Properteis]:* a Java properties file with the name `application.properties`
+* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files[Application Properties]:* a Java properties file with the name `application.properties`
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-profile-specific-properties[Profile specific configurations]:* requires to
     1. activate the profile by setting `spring.profiles.active`
     2. provide a `application-{profile}.properties` file

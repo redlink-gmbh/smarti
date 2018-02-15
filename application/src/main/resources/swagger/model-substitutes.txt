@@ -1,1 +1,2 @@
 org.bson.types.ObjectId:java.lang.String
+java.net.URI:java.lang.String

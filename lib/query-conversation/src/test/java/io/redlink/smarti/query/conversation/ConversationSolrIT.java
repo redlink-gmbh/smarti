@@ -17,9 +17,9 @@
 
 package io.redlink.smarti.query.conversation;
 
-import io.redlink.smarti.api.StoreService;
 import io.redlink.smarti.model.*;
-import io.redlink.smarti.services.InMemoryStoreService;
+import io.redlink.smarti.repositories.ConversationRepository;
+import io.redlink.smarti.services.ConversationService;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 import io.redlink.solrlib.spring.boot.autoconfigure.SolrLibEmbeddedAutoconfiguration;
@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.bson.types.ObjectId;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -45,6 +46,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -71,7 +73,8 @@ import static org.mockito.Mockito.when;
 @EnableAutoConfiguration
 @ContextConfiguration(classes = {
         ConversationSolrIT.EmbeddedSolrConfiguration.class, SolrLibEmbeddedAutoconfiguration.class,
-        InMemoryStoreService.class, ConversationIndexer.class, ConversationSearchService.class})
+        ConversationService.class, ConversationIndexer.class, ConversationSearchService.class})
+@EnableMongoRepositories(basePackageClasses={ConversationRepository.class})
 public class ConversationSolrIT {
 
     @ClassRule
@@ -85,7 +88,10 @@ public class ConversationSolrIT {
     private SolrCoreContainer solrServer;
 
     @Autowired
-    private StoreService storeService;
+    private ConversationRepository conversationRepository;
+    
+    @Autowired
+    private ConversationService conversationService;
 
     @Autowired
     private ConversationSearchService searchService;
@@ -93,8 +99,14 @@ public class ConversationSolrIT {
     @Autowired
     private ConversationIndexer conversationIndexer;
     
+    private Client client;
+    
     @Before
     public void cleanSolr() throws Exception {
+        client = new Client();
+        client.setId(new ObjectId());
+        client.setName("Test Client");
+        client.setDescription("A Client created for testing");
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
             solrClient.deleteByQuery("*:*");
             solrClient.commit();
@@ -102,19 +114,24 @@ public class ConversationSolrIT {
         }
     }
 
+    @After
+    public void cleanConversationRepo() {
+        conversationRepository.deleteAll();
+    }
+    
     @Test
     public void testEventPropagation() throws Exception {
         long docCount = countDocs();
 
-        final Conversation conversation = buildConversation(new ObjectId(),"Servus Hasso, wie geht's denn so?");
+        final Conversation conversation = buildConversation(client,"Servus Hasso, wie geht's denn so?");
 
-        storeService.store(conversation);
+        conversationService.update(client, conversation);
         Thread.sleep(2 * conversationIndexer.getCommitWithin());
 
         assertThat(countDocs(), Matchers.equalTo(docCount));
 
         conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
-        storeService.store(conversation);
+        conversationService.update(client, conversation);
         Thread.sleep(2 * conversationIndexer.getCommitWithin());
         assertThat(countDocs(), Matchers.greaterThan(docCount));
     }
@@ -124,16 +141,16 @@ public class ConversationSolrIT {
 
         ObjectId owner = new ObjectId();
 
-        final Conversation conversation1 = buildConversation(owner,"Das ist ein test");
-        final Conversation conversation2 = buildConversation(owner,"Was anderes");
+        final Conversation conversation1 = buildConversation(client,"Das ist ein test");
+        final Conversation conversation2 = buildConversation(client,"Was anderes");
 
         conversation1.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversation2.getMeta().setStatus(ConversationMeta.Status.Complete);
 
-        final Conversation conversation3 = buildConversation(owner,"Das ist ein test");
+        final Conversation conversation3 = buildConversation(client,"Das ist ein test");
 
-        storeService.store(conversation1);
-        storeService.store(conversation2);
+        conversationService.update(client, conversation1);
+        conversationService.update(client, conversation2);
 
         Thread.sleep(2 * conversationIndexer.getCommitWithin());
 
@@ -148,29 +165,28 @@ public class ConversationSolrIT {
 
     @Test
     public void testSearch() throws InterruptedException, IOException, SolrServerException {
-        ObjectId owner = new ObjectId();
-        ObjectId owner2 = new ObjectId();
 
-        Client client = mock(Client.class);
-        when(client.getId()).thenReturn(owner);
+        Client client2 = new Client();
+        client2.setId(new ObjectId());
+        client2.setName("Test Client 2");
 
-        final Conversation conversation1 = buildConversation(owner,"Das ist ein test", "Nochmal ein test", "Was anderes");
-        final Conversation conversation2 = buildConversation(owner,"Was anderes");
-        final Conversation conversation3 = buildConversation(owner,"test hallo");
-        final Conversation conversation4 = buildConversation(owner2,"test hallo");
+        final Conversation conversation1 = buildConversation(client,"Das ist ein test", "Nochmal ein test", "Was anderes");
+        final Conversation conversation2 = buildConversation(client,"Was anderes");
+        final Conversation conversation3 = buildConversation(client,"test hallo");
+        final Conversation conversation4 = buildConversation(client2,"test hallo");
 
         conversation1.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversation2.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversation3.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversation4.getMeta().setStatus(ConversationMeta.Status.Complete);
 
-        final Conversation conversation5 = buildConversation(owner,"Das ist ein test");
+        final Conversation conversation5 = buildConversation(client,"Das ist ein test");
 
-        storeService.store(conversation1);
-        storeService.store(conversation2);
-        storeService.store(conversation3);
-        storeService.store(conversation4);
-        storeService.store(conversation5);
+        conversationService.update(client, conversation1);
+        conversationService.update(client, conversation2);
+        conversationService.update(client, conversation3);
+        conversationService.update(client2, conversation4);
+        conversationService.update(client, conversation5);
 
         solrServer.getSolrClient(conversationCore).commit();
 
@@ -181,23 +197,24 @@ public class ConversationSolrIT {
         query.add("hl", "true");
         query.add("hl.fl", "text");
 
-        SearchResult<Conversation> result = searchService.search(client,query);
+        SearchResult<ConversationSearchService.ConversationResult> result = searchService.search(client,query);
 
         assertEquals(2, result.getNumFound());
-        assertEquals(2, result.getDocs().get(0).getMessages().size());
-        assertEquals(1, result.getDocs().get(1).getMessages().size());
+        assertEquals(1, result.getDocs().get(0).getResults().size()); //one result
+        assertEquals(2, result.getDocs().get(0).getResults().get(0).getMessages().size()); //but with matches in 2 messages
+        assertEquals(1, result.getDocs().get(1).getResults().size());
 
         MultiValueMap <String,String> query2 = new LinkedMultiValueMap<>();
         query2.add("text", "xyz");
 
-        SearchResult<Conversation> result2 = searchService.search(client,query2);
+        SearchResult<ConversationSearchService.ConversationResult> result2 = searchService.search(client,query2);
 
         assertEquals(0, result2.getNumFound());
 
         solrServer.getSolrClient(conversationCore).deleteByQuery("*:*");
         solrServer.getSolrClient(conversationCore).commit();
 
-        SearchResult<Conversation> result3 = searchService.search(client,query);
+        SearchResult<ConversationSearchService.ConversationResult> result3 = searchService.search(client,query);
 
         assertEquals(0, result3.getNumFound());
 
@@ -210,9 +227,9 @@ public class ConversationSolrIT {
         }
     }
 
-    private Conversation buildConversation(ObjectId ownerId, String ... content) {
+    private Conversation buildConversation(Client client, String ... content) {
         final Conversation conversation = new Conversation();
-        conversation.setOwner(ownerId);
+        conversation.setOwner(client.getId());
         for(int i = 0; i < content.length; i++) {
             final Message m = new Message();
             m.setId(UUID.randomUUID().toString());

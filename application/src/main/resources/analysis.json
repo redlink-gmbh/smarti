@@ -1,0 +1,111 @@
+{
+  "conversation" : "5a4354d98c5e9c82a4da6541",
+  "date" : 1514362073531,
+  "tokens" : [ {
+    "messageIdx" : 0,
+    "start" : 14,
+    "end" : 26,
+    "origin" : "System",
+    "state" : "Suggested",
+    "value" : "Peter Tester",
+    "type" : "Person",
+    "hints" : [ "entity.type.pers" ],
+    "confidence" : 0.84794664
+  }, {
+    "messageIdx" : 0,
+    "start" : 31,
+    "end" : 38,
+    "origin" : "System",
+    "state" : "Suggested",
+    "value" : "München",
+    "type" : "Place",
+    "hints" : [ "entity.type.loc" ],
+    "confidence" : 0.8487954
+  }, {
+    "messageIdx" : 0,
+    "start" : 44,
+    "end" : 50,
+    "origin" : "System",
+    "state" : "Suggested",
+    "value" : "Berlin",
+    "type" : "Place",
+    "hints" : [ "entity.type.loc" ],
+    "confidence" : 0.84876066
+  } ],
+  "templates" : [ {
+    "type" : "related.conversation",
+    "slots" : [ {
+      "role" : "Term",
+      "tokenType" : null,
+      "required" : false,
+      "tokenIndex" : 0
+    }, {
+      "role" : "Term",
+      "tokenType" : null,
+      "required" : false,
+      "tokenIndex" : 2
+    }, {
+      "role" : "Term",
+      "tokenType" : null,
+      "required" : false,
+      "tokenIndex" : 1
+    } ],
+    "probability" : 0.0,
+    "state" : "Suggested",
+    "queries" : [ {
+      "_class" : "io.redlink.smarti.query.conversation.ConversationMltQuery",
+      "displayTitle" : "Ähnliche Conversationen/Threads (test-domain)",
+      "confidence" : 0.55,
+      "url" : null,
+      "creator" : "queryBuilder:conversationmlt:conversationmlt",
+      "inlineResultSupport" : true,
+      "state" : "Suggested",
+      "content" : "Ich fahre mit Peter Tester von München nach Berlin"
+    } ]
+  }, {
+    "type" : "ir_latch",
+    "slots" : [ {
+      "role" : "location",
+      "tokenType" : "Place",
+      "required" : false,
+      "tokenIndex" : 1
+    }, {
+      "role" : "location",
+      "tokenType" : "Place",
+      "required" : false,
+      "tokenIndex" : 2
+    }, {
+      "role" : "alphabet",
+      "tokenType" : null,
+      "required" : false,
+      "tokenIndex" : 0
+    } ],
+    "probability" : 0.0,
+    "state" : "Suggested",
+    "queries" : [ {
+      "_class" : "io.redlink.smarti.query.solr.SolrSearchQuery",
+      "displayTitle" : "solrsearch",
+      "confidence" : 0.8,
+      "url" : "http://search.db.de/change/me?q=%22M%C3%BCnchen%22%5E0.8487954+OR+%22Berlin%22%5E0.84876066+OR+%22Peter%5C+Tester%22%5E0.84794664",
+      "creator" : "queryBuilder:solrsearch:solrsearch",
+      "inlineResultSupport" : false,
+      "state" : "Suggested",
+      "resultConfig" : {
+        "mappings" : {
+          "source" : null,
+          "title" : null,
+          "description" : null,
+          "type" : null,
+          "doctype" : null,
+          "link" : null,
+          "date" : null,
+          "thumb" : null
+        },
+        "numOfRows" : 10
+      },
+      "defaults" : { },
+      "queryParams" : [ "\"München\"^0.8487954", "\"Berlin\"^0.84876066", "\"Peter\\ Tester\"^0.84794664" ],
+      "filterQueries" : [ ]
+    } ]
+  } ]
+}

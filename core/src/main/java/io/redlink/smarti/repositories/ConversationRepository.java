@@ -27,6 +27,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Conversation Repository
@@ -35,7 +36,11 @@ import java.util.List;
  */
 public interface ConversationRepository extends PagingAndSortingRepository<Conversation, ObjectId>, ConversationRepositoryCustom {
 
+    Conversation findByOwnerAndId(ObjectId owner, ObjectId id);
+    
     Page<Conversation> findByOwner(ObjectId owner, Pageable paging);
 
     List<Conversation> findByOwner(ObjectId owner);
+
+    Page<Conversation> findByOwnerIn(Set<ObjectId> clientIDs, Pageable paging);
 }

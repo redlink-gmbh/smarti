@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.redlink.smarti.processing.SmartiAnnotations.ANALYSIS_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 
 /**
@@ -82,11 +83,18 @@ public class TokenProcessor extends Processor {
             log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
             return;
         }
+        Analysis analysis = processingData.getAnnotation(ANALYSIS_ANNOTATION);
+        if(analysis == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, ANALYSIS_ANNOTATION);
+            return;
+        }
         final List<Message> messages = conv.getMessages();
-        final List<Token> tokens = conv.getTokens();
+        final List<Token> tokens = analysis.getTokens();
 
-        //(2) get the messages we want to process
-        int lastAnalyzed = conv.getMeta().getLastMessageAnalyzed();
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int lastAnalyzed = -1;
         for(int i = lastAnalyzed + 1; i < messages.size(); i++){
             final int mIdx = i;
             final Message message = messages.get(mIdx);

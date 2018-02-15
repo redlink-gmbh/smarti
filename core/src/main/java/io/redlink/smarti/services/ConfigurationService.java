@@ -72,11 +72,11 @@ public class ConfigurationService {
     }
     
     public Configuration getClientConfiguration(Client client){
-        return client == null ? null : configRepo.findByClient(client.getId());
+        return client == null ? null : getClientConfiguration(client.getId());
     }
     
     public boolean isConfiguration(Client client){
-        return client == null ? false : configRepo.existsByClient(client.getId());
+        return client == null || client.getId() == null ? false : configRepo.existsByClient(client.getId());
     }
 
     /**
@@ -107,6 +107,9 @@ public class ConfigurationService {
         configuration.setConfig(config);
         configuration.setCreated(new Date());
         configuration.setModified(configuration.getCreated());
+        if(configRepo.existsByClient(client.getId())){
+            throw new BadArgumentException("client", client, "Unable to create configuration for this client as such a configuration already exists!");
+        }
         return configRepo.save(configuration);
     }
     

@@ -22,9 +22,12 @@ import io.redlink.nlp.model.NlpAnnotations;
 import io.redlink.nlp.model.Section;
 import io.redlink.nlp.model.util.NlpUtils;
 import io.redlink.nlp.regex.ner.RegexNerProcessor;
+import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
-import io.redlink.smarti.processing.ProcessingData;
+import io.redlink.smarti.processing.AnalysisData;
+
+import org.bson.types.ObjectId;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -49,11 +52,12 @@ public class SapKeywordsVocabTest {
 
     @Test
     public void testExtraction() throws ProcessingException {
-        Conversation c = new Conversation();
+        Conversation c = new Conversation(new ObjectId(), new ObjectId());
+        c.setLastModified(new Date());
         final Message m = new Message();
         m.setContent("Was ist der tCode für GIS?");
         c.getMessages().add(m);
-        ProcessingData data = ProcessingData.create(c);
+        AnalysisData data = AnalysisData.create(c, new Client());
         data.getConfiguration().put(LANGUAGE,"de"); //this test does not have a language detector
         extractor.process(data);
         

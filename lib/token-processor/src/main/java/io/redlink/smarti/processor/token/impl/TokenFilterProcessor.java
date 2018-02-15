@@ -19,6 +19,7 @@ package io.redlink.smarti.processor.token.impl;
 
 import io.redlink.nlp.api.ProcessingData;
 import io.redlink.nlp.api.Processor;
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Token;
 import io.redlink.smarti.processor.token.TokenFilter;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static io.redlink.smarti.processing.SmartiAnnotations.ANALYSIS_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.CONVERSATION_ANNOTATION;
 
 /**
@@ -72,12 +74,21 @@ public class TokenFilterProcessor extends Processor {
             log.warn("parsed {} does not have a '{}' annotation", processingData, CONVERSATION_ANNOTATION);
             return;
         }
+        Analysis analysis = processingData.getAnnotation(ANALYSIS_ANNOTATION);
+        if(analysis == null){
+            log.warn("parsed {} does not have a '{}' annotation", processingData, ANALYSIS_ANNOTATION);
+            return;
+        }
         String lang = processingData.getLanguage();
-        //(1) we need to find the first token created by this analysis step
-        int lastAnalyzed = c.getMeta().getLastMessageAnalyzed();
+
+        //NOTE: startMsgIdx was used in the old API to tell TemplateBuilders where to start. As this might get (re)-
+        //      added in the future (however in a different form) we set it to the default 0 (start from the beginning)
+        //      to keep the code for now
+        int lastAnalyzed = -1;
+        
         final List<Token> newTokens;
         if(lastAnalyzed >= 0){ //we need to find the first new token
-            List<Token> tokens = c.getTokens();
+            List<Token> tokens = analysis.getTokens();
             int firstNewTokenIdx = 0;
             for(int i = tokens.size() - 1; i >= 0; i--){
                 Token token = tokens.get(i);
@@ -88,7 +99,7 @@ public class TokenFilterProcessor extends Processor {
             }
             newTokens = tokens.subList(firstNewTokenIdx, tokens.size());
         } else { //all tokens are new
-            newTokens = c.getTokens();
+            newTokens = analysis.getTokens();
         }
         //filter the tokens
         for(Iterator<Token> it = newTokens.iterator();it.hasNext();){

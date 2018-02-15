@@ -5,6 +5,36 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.0 Release Notes
+February, X^th^, 2018
+
+Smarti 0.7.0 is a *refactoring* release, and introduces an improved webservice API.
+
+=== New in Smarti 0.7.0
+* https://github.com/redlink-gmbh/smarti/issues/86[#86 - New Conversation API]
+* https://github.com/redlink-gmbh/smarti/issues/148[#148 - Improved Smarti-Widget]
+* https://github.com/redlink-gmbh/smarti/issues/183[#183 - Chatpal-Search support]
+* https://github.com/redlink-gmbh/smarti/issues/184[#184 - Admin UI - Default configuration is not loaded]
+* https://github.com/redlink-gmbh/smarti/issues/185[#185 - Admin UI - Change Client deletion dialog]
+* https://github.com/redlink-gmbh/smarti/issues/189[#189 - Token based Related Conversation]
+* https://github.com/redlink-gmbh/smarti/issues/191[#191 - Support indexing/search of ongoing Conversations]
+* https://github.com/redlink-gmbh/smarti/issues/192[#192 - Conversation MLT-Query-Builder should only use recent messages]
+* https://github.com/redlink-gmbh/smarti/issues/193[#193 - Special characters in configuration keys cause MongoDB-Exceptions]
+* https://github.com/redlink-gmbh/smarti/issues/196[#196 - Admin UI - Rename button "Clone" to "Clone Configuration"]
+
+=== Upgrading
+
+With `0.7.0`, the datamodel has changed so data from older installations
+must be migrated to the new model.
+
+A migration script is available and must be applied manually:
+
+.migrate-05_0.6-to-0.7.js
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-05_0.6-to-0.7.js[lines=112..-1]
+-----------------------------------------------
+
 
 == Smarti 0.6.1 Release Notes
 January 8^th^, 2018

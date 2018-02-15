@@ -19,35 +19,58 @@ package io.redlink.smarti.query.conversation;
 import io.redlink.smarti.api.QueryBuilder;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
-import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.NamedList;
-import org.springframework.util.MultiValueMap;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
-import static org.apache.commons.lang3.math.NumberUtils.toInt;
 
 /**
  */
 public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentConfiguration> {
 
-    public static final String CONFIG_KEY_PAGE_SIZE = "pageSize";
-    public static final String CONFIG_KEY_FILTER = "filter";
+    //#192: We target more as 100 chars are context
+    protected static final int MIN_CONTEXT_LENGTH = 100;
+    protected static final int CONTEXT_LENGTH = 300;
+    //#192: Include at least the last two messages 
+    protected static final int MIN_INCL_MSGS = 2;
+    protected static final int MAX_INCL_MSGS = 10;
+    //#192: Include at least all messages of the last 5 minutes
+    protected static final long MIN_AGE = TimeUnit.MINUTES.toMillis(5);
+    //#192: Include at least all messages of the last 5 minutes
+    protected static final long MAX_AGE = TimeUnit.DAYS.toMillis(1);
 
+    
+    public static final String CONFIG_KEY_PAGE_SIZE = "pageSize";
+    public static final int DEFAULT_PAGE_SIZE = 3;
+
+    public static final String CONFIG_KEY_FILTER = "filter";
+    /**
+     * Option that allows to configure the ConversationQueryBuilder to suggest only completed conversations
+     */ //since #91
+    public static final String CONFIG_KEY_COMPLETED_ONLY = "completedOnly";
+    /**
+     * {@link #CONFIG_KEY_COMPLETED_ONLY} is deactivated by default
+     */
+    public static final boolean DEFAULT_COMPLETED_ONLY = false;
+
+    /**
+     * If the current conversation should be excluded from related conversation results
+     */
+    public static final String CONFIG_KEY_EXCLUDE_CURRENT = "exclCurrentConv";
+    
+    public static final boolean DEFAULT_EXCLUDE_CURRENT = true;
+    
+    
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 
@@ -59,72 +82,51 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
 
     @Override
     public boolean acceptTemplate(Template template) {
-        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()) &&
-                template.getSlots().stream() //at least a single filled slot
-                    .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
-                    .anyMatch(s -> s.getTokenIndex() >= 0);
+        boolean state = RELATED_CONVERSATION_TYPE.equals(template.getType()); // &&
+        //with #200 queries should be build even if no slot is set
+//                template.getSlots().stream() //at least a single filled slot
+//                    .filter(s -> s.getRole().equals(ROLE_KEYWORD) || s.getRole().equals(ROLE_TERM))
+//                    .anyMatch(s -> s.getTokenIndex() >= 0);
         log.trace("{} does {} accept {}", this, state ? "" : "not ", template);
         return state;
     }
 
     @Override
-    protected void doBuildQuery(ComponentConfiguration config, Template template, Conversation conversation) {
-        final Query query = buildQuery(config, template, conversation);
+    protected void doBuildQuery(ComponentConfiguration config, Template template, Conversation conversation, Analysis analysis) {
+        final Query query = buildQuery(config, template, conversation, analysis);
         if (query != null) {
             template.getQueries().add(query);
         }
     }
 
-    @Override
-    public boolean isResultSupported() {
-        if(solrServer != null && conversationCore != null){
-            try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-                return solr.ping().getStatus() == 0;
-            } catch (SolrServerException | IOException e) {
-                log.warn("Results currently not supported because ping to {} failed ({} - {})", conversationCore, e.getClass().getSimpleName(), e.getMessage());
-                log.debug("STACKTRACE: ", e);
+
+    protected int getContextStart(List<Message> messages){
+        if(messages.isEmpty()){
+            return 0;
+        }
+        int inclMsgs = 0;
+        Date contextDate = null;
+        int contextSize = 0;
+        for(ListIterator<Message> it = messages.listIterator(messages.size()); 
+                it.hasPrevious();){
+            int index = it.previousIndex();
+            Message msg = it.previous();
+            if(contextDate == null){
+                contextDate = msg.getTime();
+            }
+            if(contextSize < MIN_CONTEXT_LENGTH || //force inclusion
+                    inclMsgs < MIN_INCL_MSGS || 
+                    msg.getTime().getTime() > contextDate.getTime() - MIN_AGE){
+                contextSize = contextSize + msg.getContent().length();
+            } else if(contextSize < CONTEXT_LENGTH && //allow include if more context is allowed
+                    inclMsgs < MAX_INCL_MSGS && 
+                    msg.getTime().getTime() > contextDate.getTime() - MAX_AGE){
+                contextSize = contextSize + msg.getContent().length();
+            } else {
+                return index; //we have enough content ... ignore previous messages
             }
         }
-        return false;
-    }
-
-    @Override
-    public SearchResult<? extends Result> execute(ComponentConfiguration conf, Template intent, Conversation conversation, MultiValueMap<String, String> queryParams) throws IOException {
-        // read default page-size from builder-configuration
-        int pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
-        // if present, a queryParam 'rows' takes precedence.
-        pageSize = toInt(queryParams.getFirst("rows"), pageSize);
-        long offset = toInt(queryParams.getFirst("start"), 0);
-
-
-        final QueryRequest solrRequest = buildSolrRequest(conf, intent, conversation, offset, pageSize, queryParams);
-        if (solrRequest == null) {
-            return new SearchResult<ConversationResult>(pageSize);
-        }
-
-        try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
-            final NamedList<Object> response = solrClient.request(solrRequest);
-            final QueryResponse solrResponse = new QueryResponse(response, solrClient);
-            final SolrDocumentList solrResults = solrResponse.getResults();
-
-            final List<ConversationResult> results = new ArrayList<>();
-            for (SolrDocument solrDocument : solrResults) {
-                //get the answers /TODO hacky, should me refactored (at least ordered by rating)
-                SolrQuery query = new SolrQuery("*:*");
-                query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
-                query.add("fq", "message_idx:[1 TO *]");
-                query.setFields("*","score");
-                query.setSort("time", SolrQuery.ORDER.asc);
-                //query.setRows(3);
-
-                QueryResponse answers = solrClient.query(query);
-
-                results.add(toHassoResult(conf, solrDocument, answers.getResults(), intent.getType()));
-            }
-            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
-        } catch (SolrServerException e) {
-            throw new IOException(e);
-        }
+        return 0;
     }
     
     @Override
@@ -138,20 +140,20 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         final ComponentConfiguration defaultConfig = new ComponentConfiguration();
 
         // #39 - make default page-size configurable
-        defaultConfig.setConfiguration(CONFIG_KEY_PAGE_SIZE, 3);
+        defaultConfig.setConfiguration(CONFIG_KEY_PAGE_SIZE, DEFAULT_PAGE_SIZE);
         // with #87 we restrict results to the same support-area
         defaultConfig.setConfiguration(CONFIG_KEY_FILTER, Collections.singletonList(ConversationMeta.PROP_SUPPORT_AREA));
-
+        //#191 support none completed conversations
+        defaultConfig.setConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY);
+        
         return defaultConfig;
     }
 
-    protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
+    //protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answersResults, String type);
 
-    protected abstract QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, long offset, int pageSize, MultiValueMap<String, String> queryParams);
+    //protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
 
-    protected abstract ConversationResult toHassoResult(ComponentConfiguration conf, SolrDocument solrDocument, String type);
-
-    protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation);
+    protected abstract Query buildQuery(ComponentConfiguration config, Template intent, Conversation conversation, Analysis analysis);
     
     /**
      * Adds a FilterQuery that ensures that only conversations with the same <code>owner</code> as
@@ -163,6 +165,10 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
 
+    protected final void addCompletedFilter(final SolrQuery solrQuery){
+        solrQuery.addFilterQuery(FIELD_COMPLETED + ":true");
+    }
+    
     protected void addPropertyFilters(SolrQuery solrQuery, Conversation conversation, ComponentConfiguration conf) {
         final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
         filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
@@ -174,15 +180,16 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
      * @param fieldValues the field values
      */
     protected void addPropertyFilter(SolrQuery solrQuery, String fieldName, List<String> fieldValues) {
-        if (fieldValues == null || fieldValues.isEmpty()) {
+        if (fieldValues == null || !fieldValues.stream().anyMatch(StringUtils::isNotBlank)) {
             solrQuery.addFilterQuery("-" + getMetaField(fieldName) + ":*");
         } else {
-            final String filterVal = fieldValues.stream()
+            fieldValues.stream()
+                    .filter(StringUtils::isNotBlank)
                     .map(ClientUtils::escapeQueryChars)
                     .reduce((a, b) -> a + " OR " + b)
-                    .orElse("");
-            solrQuery.addFilterQuery(
-                    getMetaField(fieldName) + ":(" + filterVal + ")");
+                    .ifPresent(filterVal ->
+                            solrQuery.addFilterQuery(getMetaField(fieldName) + ":(" + filterVal + ")")
+                    );
         }
     }
 }

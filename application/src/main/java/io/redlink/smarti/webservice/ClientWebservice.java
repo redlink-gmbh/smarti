@@ -1,6 +1,6 @@
 package io.redlink.smarti.webservice;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.SmartiUser;
@@ -12,14 +12,17 @@ import io.redlink.smarti.webservice.pojo.AuthContext;
 import io.redlink.smarti.webservice.pojo.SmartiUserData;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,8 +40,6 @@ public class ClientWebservice {
 
     private final UserService userService;
 
-    private final ObjectMapper objectMapper;
-
     private final ConfigurationService configService;
 
     private final AuthTokenService authTokenService;
@@ -46,10 +47,9 @@ public class ClientWebservice {
     private final AuthenticationService authenticationService;
 
     @Autowired
-    public ClientWebservice(ClientService clientService, UserService userService, ObjectMapper objectMapper, ConfigurationService configService, AuthTokenService authTokenService, AuthenticationService authenticationService) {
+    public ClientWebservice(ClientService clientService, UserService userService, ConfigurationService configService, AuthTokenService authTokenService, AuthenticationService authenticationService) {
         this.clientService = clientService;
         this.userService = userService;
-        this.objectMapper = objectMapper;
         this.configService = configService;
         this.authTokenService = authTokenService;
         this.authenticationService = authenticationService;
@@ -61,19 +61,24 @@ public class ClientWebservice {
         if (authenticationService.hasRole(authContext.getAuthentication(), AuthenticationService.ADMIN)) {
             return clientService.list();
         } else {
-            return clientService.list(authenticationService.getClients(authContext));
+            return authenticationService.getClients(authContext);
         }
     }
 
     @ApiOperation(value = "creates/updates a client", response = Client.class)
     @RequestMapping(method = RequestMethod.POST)
-    public Client storeClient(AuthContext authContext, @RequestBody Client client) throws IOException {
+    public ResponseEntity<Client> storeClient(
+            AuthContext authContext, 
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
+            @RequestBody Client client) throws IOException {
         if (client.getId() == null) { // create, only admin
             authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
         } else {
             authenticationService.assertClient(authContext, client.getId());
         }
-        return clientService.save(client);
+        Client created = clientService.save(client);
+        return ResponseEntity.created(buildClientURI(uriBuilder, created.getId()))
+                .body(created);
     }
 
     @ApiOperation(value = "get a client", response = Client.class)
@@ -89,7 +94,7 @@ public class ClientWebservice {
         authenticationService.assertRole(authContext, AuthenticationService.ADMIN);
         if(clientService.exists(id)) {
             clientService.delete(clientService.get(id));
-            return ResponseEntity.ok().build();
+            return ResponseEntity.noContent().build();
         } else return ResponseEntities.status(404, "client does not exist");
     }
 
@@ -166,7 +171,7 @@ public class ClientWebservice {
         }
     }
 
-    @ApiOperation(value = "list users", notes = "retrieve users assigned to the given client")
+    @ApiOperation(value = "list users", notes = "retrieve users assigned to the given client", httpMethod = "GET")
     @RequestMapping("{id}/user")
     public ResponseEntity<List<SmartiUserData>> listClientUsers(AuthContext authContext,
                                                                 @PathVariable("id") ObjectId id) {
@@ -179,17 +184,20 @@ public class ClientWebservice {
 
     @ApiOperation(value = "create user", notes = "create a new user and assign it to the client")
     @RequestMapping(value = "{id}/user", method = RequestMethod.POST)
-    public ResponseEntity<SmartiUserData> createClientUser(AuthContext authContext,
-                                                           @PathVariable("id") ObjectId id,
-                                                           @RequestBody SmartiUserData user) {
+    public ResponseEntity<SmartiUserData> createClientUser(
+            AuthContext authContext,
+            @ApiParam(hidden = true) UriComponentsBuilder uriBuilder,
+            @PathVariable("id") ObjectId id,
+            @RequestBody SmartiUserData user) {
         final Client client = authenticationService.assertClient(authContext, id);
 
         if (StringUtils.isBlank(user.getLogin())) {
             return ResponseEntity.unprocessableEntity().build();
         }
         user.getClients().clear();
-
-        return ResponseEntity.ok(SmartiUserData.fromModel(userService.createUserForClient(user.toModel(), client)));
+        SmartiUser created = userService.createUserForClient(user.toModel(), client);
+        return ResponseEntity.created(buildUserURI(uriBuilder, id, created.getLogin()))
+                .body(SmartiUserData.fromModel(created));
     }
 
     @ApiOperation(value = "assign user", notes = "assign an existing user with the client")
@@ -219,5 +227,22 @@ public class ClientWebservice {
         return ResponseEntity.noContent().build();
     }
 
+    private URI buildClientURI(UriComponentsBuilder builder, ObjectId clientId) {
+        return builder.cloneBuilder()
+                .pathSegment("client", "{clientId}")
+                .buildAndExpand(ImmutableMap.of(
+                        "clientId", clientId
+                ))
+                .toUri();
+    }
+    private URI buildUserURI(UriComponentsBuilder builder, ObjectId clientId, String name) {
+        return builder.cloneBuilder()
+                .pathSegment("client", "{clientId}","user","{name}")
+                .buildAndExpand(ImmutableMap.of(
+                        "clientId", clientId,
+                        "name", name
+                ))
+                .toUri();
+    }
 
 }
