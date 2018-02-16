@@ -938,27 +938,35 @@ function SmartiWidget(element, _options) {
     }
 
     function refreshWidgets(data) {
-        let urls = data.tokens.filter(t => t.hints && t.hints.indexOf("entity.type.url") > -1).map(t => t.value.toLowerCase());
+        let urls = data.tokens
+            .filter(t => t.hints && t.hints.indexOf("entity.type.url") > -1)
+            .map(t => t.value.toLowerCase());
         let tokens = data.tokens
-                    .filter(t => t.type != "Attribute")
-                    .filter(t => !t.hints || t.hints.indexOf("entity.type.url") == -1)
-                    .filter(t => urls.indexOf(t.value.toLowerCase()) == -1)
-                    .sort((a, b) => {
-            return a.messageIdx - b.messageIdx;
-        }).reverse();
+            // #206 - show all tokens .filter(t => t.type !== "Attribute")
+            .filter(t => !t.hints || t.hints.indexOf("entity.type.url") === -1)
+            .filter(t => urls.indexOf(t.value.toLowerCase()) === -1)
+            .sort((a, b) => {
+                return a.messageIdx - b.messageIdx;
+            })
+            .reverse();
 
         let filteredTokens = {};
-        let uniqueTokens = tokens.filter((t) => {
-            if(filteredTokens[t.value]) return false;
-            filteredTokens[t.value] = true;
-            return true;
-        }).reverse().slice(-7);
+        let uniqueTokens = tokens
+            .filter((t) => {
+                if(filteredTokens[t.value]) return false;
+                filteredTokens[t.value] = true;
+                return true;
+            })
+            .reverse()
+            .slice(-7);
 
-        uniqueTokens = uniqueTokens.filter(t => {
-            return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) == -1;
-        }).filter(t => {
-            return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() == t.value.trim().toLowerCase());
-        });
+        uniqueTokens = uniqueTokens
+            .filter(t => {
+                return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) === -1;
+            })
+            .filter(t => {
+                return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() === t.value.trim().toLowerCase());
+            });
 
         console.log("Filtered tokens:", uniqueTokens);
 
