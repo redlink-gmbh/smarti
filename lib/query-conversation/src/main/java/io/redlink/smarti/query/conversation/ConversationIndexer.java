@@ -325,8 +325,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 .append(StringUtils.isNoneBlank(message.getId()) ? message.getId() : String.valueOf(i)).toString();
         solrMsg.setField(FIELD_ID, id);
         solrMsg.setField(FIELD_CONVERSATION_ID, conversation.getId());
-        solrMsg.setField(FIELD_MESSAGE_ID, message.getId());
-        solrMsg.setField(FIELD_MESSAGE_IDX, i);
+        solrMsg.setField(FIELD_MESSAGE_IDS, message.getId());
+        solrMsg.setField(FIELD_MESSAGE_IDXS, i);
         //#150 index the current version of the index so that we can detect the need of a
         //full re-index after a software update on startup
         solrMsg.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);
@@ -379,8 +379,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private SolrInputDocument mergeSolrUInputDoc(SolrInputDocument prev, SolrInputDocument current) {
         prev.setField(FIELD_MESSAGE, String.format("%s%n%s", prev.getFieldValue(FIELD_MESSAGE), current.getFieldValue(FIELD_MESSAGE)));
-        prev.addField(FIELD_MESSAGE_ID, current.getFieldValue(FIELD_MESSAGE_ID));
-        prev.addField(FIELD_MESSAGE_IDX, current.getFieldValue(FIELD_MESSAGE_IDX));
+        prev.addField(FIELD_MESSAGE_IDS, current.getFieldValue(FIELD_MESSAGE_IDS));
+        prev.addField(FIELD_MESSAGE_IDXS, current.getFieldValue(FIELD_MESSAGE_IDXS));
         prev.setField(FIELD_VOTE, Integer.parseInt(String.valueOf(prev.getFieldValue(FIELD_VOTE))) + Integer.parseInt(String.valueOf(current.getFieldValue(FIELD_VOTE))));
         return prev;
     }

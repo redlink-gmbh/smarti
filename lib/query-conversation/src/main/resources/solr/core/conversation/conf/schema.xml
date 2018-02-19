@@ -57,8 +57,8 @@
 
     <!-- message -->
     <field name="conversation_id"       type="string"         indexed="true"  stored="true"  multiValued="false"/>
-    <field name="message_id"            type="string"         indexed="true"  stored="true"  multiValued="true"/>
-    <field name="message_idx"           type="long"           indexed="true"  stored="true"  multiValued="true"/>
+    <field name="message_ids"            type="string"        indexed="true"  stored="true"  multiValued="true"/>
+    <field name="message_idxs"           type="long"          indexed="true"  stored="true"  multiValued="true"/>
     <!-- used by messages to store the content -->
     <field name="message"               type="text_de"        indexed="true"  stored="true"  multiValued="false"/>
     <!-- used by the conversation to store all messages (e.g. for highlighting) -->
