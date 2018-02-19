@@ -97,7 +97,7 @@ public class ConversationSearchService {
 
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, PARAM_EXCLUDES));
 
-        solrParams.add(CommonParams.FL, "id","message_id","conversation_id","score");
+        solrParams.add(CommonParams.FL, FIELD_ID,FIELD_MESSAGE_IDS,FIELD_CONVERSATION_ID,"score");
         if (clients != null) {
             if (clients.isEmpty()) {
               return new SearchResult<>();
@@ -156,7 +156,7 @@ public class ConversationSearchService {
         Map<String, SolrDocument> matches = new HashMap<>();
         group.getResult().stream()
             .filter(d -> Objects.equals(d.getFieldValue(ConversationIndexConfiguration.FIELD_CONVERSATION_ID),conversation.getId().toHexString()))
-            .forEach(d -> d.getFieldValues(ConversationIndexConfiguration.FIELD_MESSAGE_ID).forEach(mid -> {
+            .forEach(d -> d.getFieldValues(ConversationIndexConfiguration.FIELD_MESSAGE_IDS).forEach(mid -> {
                 matches.put(String.valueOf(mid), d);
             }));
         
