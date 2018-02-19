@@ -164,7 +164,7 @@ public class NamedEntityCollector extends Processor {
                     }
                 } else if(NlpUtils.hasAlphaNumeric(word)){ //no POS Tags?
                     if(!loggedNoPosTagsWarning){
-                        log.warn("{} contains alpha numeric spans without POS tags. Will mark all NER annotations as valid");
+                        log.warn("{} contains alpha numeric spans without POS tags. Will mark all NER annotations as valid", word);
                         loggedNoPosTagsWarning = true;
                     }
                     //mark all Tokens that cover this word as an interesting named entity

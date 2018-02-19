@@ -126,16 +126,21 @@ WARNING: For now Analysis configurations are global. No Client specific configur
 NOTE: Client specific analysis configurations are planed for a future release. They will use the <<index.adoc#_client_configuration_web_service, client configuration web service>>.
 
 
-===== Analysis Workflow
+===== Analysis Configuration
 
-The analysis workflow used to process conversations can be configured by the following properties
+Allows to configure the analysis in Smarti
 
-* `smarti.analysis.required = ` comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
-* `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
+The analysis pipeline used to process conversations can be configured by the following properties
+
+* `smarti.analysis.pipeline.required = ` comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
+* `smarti.analysis.pipeline.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
-===== Analysis Threads
+In additiona the `smarti.analysis.language` allows to set the lanugage of conversation. If set this language will be used for conversations. If not present or empty the language will be detected based on the content.
+
+
+===== Processing Configuration
 
 * `smarti.processing.numThreads =`: The number of analysis threads can be configured by  the default value is `2`. For every thread one should preserve `~500MByte` additional Java Heap space. For the best usage of CPU power the number of threads should be the same as the number of cores.
 

@@ -22,6 +22,8 @@ import io.redlink.nlp.api.model.Annotation;
 import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.AnalyzedText.AnalyzedTextBuilder;
 import io.redlink.nlp.model.Section;
+import io.redlink.nlp.model.section.SectionTag;
+import io.redlink.nlp.model.section.SectionType;
 import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.Conversation;
@@ -35,6 +37,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.StringUtils;
 
+import static io.redlink.nlp.model.NlpAnnotations.SECTION_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.*;
 
 public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
@@ -62,6 +65,7 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
                 Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
                 section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
                 section.addAnnotation(MESSAGE_ANNOTATION, message);
+                section.addAnnotation(SECTION_ANNOTATION, new SectionTag(SectionType.paragraph, "message"));
                 first = false;
             } //else ignore blank messages for analysis
         }
