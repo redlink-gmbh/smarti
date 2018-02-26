@@ -623,7 +623,7 @@ function SmartiWidget(element, _options) {
             let queryParams = {
                 'wt': 'json',
                 'fl': '*,score',
-                'rows': page == 0 ? 6 : numOfRows,
+                'rows': page == 0 && numOfRows < 6 ? 6 : numOfRows,
                 'q':  tks
             };
 
@@ -766,7 +766,8 @@ function SmartiWidget(element, _options) {
                     noMoreData = false;
                 }
 
-                let pageSize = page == 0 ? 6 : params.query.defaults && params.query.defaults.rows || 0;
+                let pageSize = params.query.defaults && params.query.defaults.rows || 0;
+                pageSize = page == 0 && pageSize < 6 ? 6 : pageSize;
                 let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
