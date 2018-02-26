@@ -47,6 +47,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.CHATPAL_INDEX;
 import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_CLIENT;
+import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_ID;
 
 import java.io.IOException;
 import java.net.URI;
@@ -145,7 +146,9 @@ public class ChatpalWebservice {
             SolrQuery query = new SolrQuery();
             params.entrySet().stream().forEach(e -> query.add(e.getKey(), e.getValue().toArray(new String[0])));
             query.set("qt","/chatpal/search"); //select the correct request handler config
-            query.addField(ChatpalIndexConfiguration.FIELD_ID); //and make sure we have the internal ID field
+            //#209: filter for the authenticated client
+            query.addFilterQuery(String.format("%s:%s", FIELD_CLIENT, client.toHexString()));
+            query.addField(FIELD_ID); //and make sure we have the internal ID field
             QueryResponse result = solr.query(query);
             log.trace("results: {}", result.getResponse());
             result.getResponse().remove("immutableCopy");
