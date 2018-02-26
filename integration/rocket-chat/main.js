@@ -623,7 +623,7 @@ function SmartiWidget(element, _options) {
             let queryParams = {
                 'wt': 'json',
                 'fl': '*,score',
-                'rows': numOfRows,
+                'rows': page == 0 ? 6 : numOfRows,
                 'q':  tks
             };
 
@@ -766,7 +766,7 @@ function SmartiWidget(element, _options) {
                     noMoreData = false;
                 }
 
-                let pageSize = params.query.defaults && params.query.defaults.rows || 0;
+                let pageSize = page == 0 ? 6 : params.query.defaults && params.query.defaults.rows || 0;
                 let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
@@ -1329,7 +1329,7 @@ function SmartiWidget(element, _options) {
             newWidget.params.elem.show();
 
             // load more
-            if(widgetBody.prop('scrollHeight') == widgetBody.innerHeight() && newWidget.queryCreator != "queryBuilder:conversationmlt") {
+            if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight()) && newWidget.queryCreator != "queryBuilder:conversationmlt") {
                 console.log("LOAD MORE!");
                 newWidget.loadNextPage();
             }
@@ -1611,7 +1611,7 @@ function SmartiWidget(element, _options) {
         if(scrollTimeout) clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             scrollTimeout = null;
-            if(widgetBody.prop('scrollHeight') == widgetBody.innerHeight() + widgetBody.scrollTop()) {
+            if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
                 console.log("LOAD MORE!");
                 let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
                 if(currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();
