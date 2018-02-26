@@ -150,7 +150,7 @@ public class PrepareService {
         Analysis analysis = new Analysis(client.getId(), conversation.getId(), date);
         //TODO: get pipeline and processor configuration for the parsed client
         log.debug("Preparing query for {}", conversation);
-        AnalysisData pd = AnalysisData.create(conversation, analysis);
+        AnalysisData pd = AnalysisData.create(conversation, analysis, analysisConfig.getConextSize());
         
         //The configuration allows to define the language of the conversation
         String conversationLanguage = null;

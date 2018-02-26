@@ -36,11 +36,15 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.redlink.nlp.model.NlpAnnotations.SECTION_ANNOTATION;
 import static io.redlink.smarti.processing.SmartiAnnotations.*;
 
 public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
+    
+    private static final Logger log = LoggerFactory.getLogger(AnalysisData.class);
     
     protected AnalysisData(Conversation conversation, Analysis analysis, AnalyzedText at) {
         super(new StringContent(at.getText()), null);
@@ -52,14 +56,22 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
     }
     
     public static AnalysisData create(Conversation conversation, Client client){
-        return create(conversation, new Analysis(client.getId(), conversation.getId(),conversation.getLastModified()));
+        return create(conversation, client, -1);
+    }
+    public static AnalysisData create(Conversation conversation, Client client, int contextSize){
+        return create(conversation, new Analysis(client.getId(), conversation.getId(),conversation.getLastModified()), contextSize);
     }
     
     public static AnalysisData create(Conversation conversation, Analysis analysis){
+        return create(conversation, analysis,-1);
+    }
+    public static AnalysisData create(Conversation conversation, Analysis analysis, int contextSize){
         AnalyzedTextBuilder atb = AnalyzedText.build();
         int numMessages = conversation.getMessages().size();
         boolean first = true;
-        for(int i=0;i < numMessages; i++){
+        int startIdx = contextSize <= 0 ? 0 : Math.max(0, numMessages - contextSize);
+        log.trace("analysisContext: [{}..{}](size: {})", startIdx, numMessages-1, contextSize);
+        for(int i=startIdx; i < numMessages; i++){
             Message message = conversation.getMessages().get(i);
             if(StringUtils.isNoneBlank(message.getContent())){
                 Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
