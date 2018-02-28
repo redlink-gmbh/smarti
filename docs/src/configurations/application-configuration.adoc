@@ -3,7 +3,7 @@
 Spring Boot supports a wide range of https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html[configuration options] including:
 
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-command-line-args[Command line Properties]:* defining properties as arguments (e.g. `--server.port=8080`)
-* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files[Application Properteis]:* a Java properties file with the name `application.properties`
+* *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-application-property-files[Application Properties]:* a Java properties file with the name `application.properties`
 * *https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html#boot-features-external-config-profile-specific-properties[Profile specific configurations]:* requires to
     1. activate the profile by setting `spring.profiles.active`
     2. provide a `application-{profile}.properties` file
@@ -117,6 +117,12 @@ Conversation are indexed in Solr managed by SolrLib
 * `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
 * `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 
+==== Processing Configuration
+
+Configures the amount of system resources used by Smarti to do processing (mainly analysis)
+
+* `smarti.processing.numThreads =`: The number of analysis threads can be configured by  the default value is `2`. For every thread one should preserve `~500MByte` additional Java Heap space. For the best usage of CPU power the number of threads should be the same as the number of cores.
+
 ==== Analysis Configuration
 
 This section describes the configuration of the analysis workflow and the <<index.adoc#_analysis_components, Analysis Components>>
@@ -126,18 +132,24 @@ WARNING: For now Analysis configurations are global. No Client specific configur
 NOTE: Client specific analysis configurations are planed for a future release. They will use the <<index.adoc#_client_configuration_web_service, client configuration web service>>.
 
 
-===== Analysis Workflow
+===== Basic Configuration
 
-The analysis workflow used to process conversations can be configured by the following properties
+* `smarti.analysis.language`: The language of conversations. If present language detection will be deactivated and the configured language is assumed for all conversations. NOTE: This configuration can be overruled by a client specific configuration set by the configuration service
+* `smarti.analysis.conextSize`: The size of the context (in number of messages) used for analysis. If a conversation includes more as `conextSize` messeages only the last `conextSize` will be used for analysis. If a value `<= 0` is configured all messages will be analysed.
 
-* `smarti.analysis.required = ` comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
-* `smarti.analysis.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
+NOTE: A higer `conextSize` results in longer processing times and slightly higher memory requirements. A small `conextSize` may result in lower quality of analysis results. Currently the minimum size of the context is `3`.
+
+===== Analysis Pipeline
+
+The analysis pipeline used to process conversations can be configured by the following properties
+
+* `smarti.analysis.pipeline.required = ` comma separated list of required analysis component (empty if none are required). If required components are missing the Analysis Service will not start
+* `smarti.analysis.pipeline.optional = *,!keyword.interestingterms.conversation`: comma separated list of optional analysis component.
 ** comma separated list of names to explicitly define the processors to be used
 ** `*` to include all. If activated `!{name}` can be used to exclude specific analysis components.
 
-===== Analysis Threads
+In additiona the `smarti.analysis.language` allows to set the lanugage of conversation. If set this language will be used for conversations. If not present or empty the language will be detected based on the content.
 
-* `smarti.processing.numThreads =`: The number of analysis threads can be configured by  the default value is `2`. For every thread one should preserve `~500MByte` additional Java Heap space. For the best usage of CPU power the number of threads should be the same as the number of cores.
 
 ===== Stanford NLP
 

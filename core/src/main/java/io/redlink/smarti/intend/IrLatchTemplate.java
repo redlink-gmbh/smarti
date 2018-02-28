@@ -85,8 +85,9 @@ public class IrLatchTemplate extends TemplateDefinition {
 
     @Override
     protected boolean validate(Collection<Slot> slots, List<Token> tokens) {
-        return slots.stream()
-                .filter(s -> s.getTokenIndex() >= 0).findAny().isPresent();
+        return true; //#200: with do now want templates without slots to be valid so that queries are included
+//        return slots.stream()
+//                .filter(s -> s.getTokenIndex() >= 0).findAny().isPresent();
     }
 
 }

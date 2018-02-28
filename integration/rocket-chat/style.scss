@@ -188,7 +188,6 @@
                     }
 
                     .actions {
-                        @include transition(0.2s);
                         opacity: 0;
                         position: absolute;
                         background: $theme-green-4;
@@ -235,9 +234,18 @@
                     }
 
                     &.pinned {
-                        .action-pin {
-                            i:before {
-                                transform: rotate(0);
+                        padding-left: 25px;
+                        text-align: right;
+
+                        .actions {
+                            opacity: 1;
+                            background: none;
+                            width: 25px;
+
+                            .action-pin {
+                                i:before {
+                                    transform: rotate(-45deg);
+                                }
                             }
                         }
                     }

@@ -24,7 +24,11 @@ angular.module('smartiApp')
       var deferred = $q.defer();
 
       $http.get(ENV.serviceBaseUrl + '/client/' + id).then(function(data){
-        deferred.resolve(new Client(data.data,copy));
+        var newClient = new Client(data.data,copy);
+        if (copy) {
+          newClient.data.defaultClient = false;
+        }
+        deferred.resolve(newClient);
       });
 
       return deferred.promise;

@@ -36,7 +36,9 @@ public class ConversationSearchQuery extends Query {
     @JsonProperty("defaults")
     private final Map<String,Object> defaults = new HashMap<>();
     @JsonProperty("keywords")
-    private final Set<String> keywords = new LinkedHashSet<>();
+    private final Collection<String> keywords = new LinkedHashSet<>();
+    @JsonProperty("terms")
+    private final Collection<String> terms = new LinkedHashSet<>();
     @JsonProperty("queryParams")
     private final Set<String> queryParams = new LinkedHashSet<>();
     @JsonProperty("filterQueries")
@@ -72,15 +74,26 @@ public class ConversationSearchQuery extends Query {
         }
     }
 
-    public void setKeywords(List<String> strs) {
+    public void setKeywords(Collection<String> strs) {
         keywords.clear();
         if(strs != null){
             keywords.addAll(strs);
         }
     }
     
-    public Set<String> getKeywords() {
+    public Collection<String> getKeywords() {
         return keywords;
     }
+
+    public void setTerms(Collection<String> strs) {
+        terms.clear();
+        if(strs != null){
+            terms.addAll(strs);
+        }
+    }
     
+    public Collection<String> getTerms() {
+        return terms;
+    }
+
 }

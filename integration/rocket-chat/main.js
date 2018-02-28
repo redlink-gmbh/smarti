@@ -623,7 +623,7 @@ function SmartiWidget(element, _options) {
             let queryParams = {
                 'wt': 'json',
                 'fl': '*,score',
-                'rows': numOfRows,
+                'rows': page == 0 && numOfRows < 6 ? 6 : numOfRows,
                 'q':  tks
             };
 
@@ -767,6 +767,7 @@ function SmartiWidget(element, _options) {
                 }
 
                 let pageSize = params.query.defaults && params.query.defaults.rows || 0;
+                pageSize = page == 0 && pageSize < 6 ? 6 : pageSize;
                 let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
@@ -782,7 +783,6 @@ function SmartiWidget(element, _options) {
                         queryParams[property] = params.query.defaults[property];
                 }
                 queryParams.fq = params.query.filterQueries;
-                if(conversationId) queryParams.fq.push('-conversation_id:' + conversationId);
                 queryParams.start = start;
                 queryParams.q = tks;
 
@@ -939,22 +939,35 @@ function SmartiWidget(element, _options) {
     }
 
     function refreshWidgets(data) {
-        let tokens = data.tokens.filter(t => t.type != "Attribute").sort((a, b) => {
-            return a.messageIdx - b.messageIdx;
-        }).reverse();
+        let urls = data.tokens
+            .filter(t => t.hints && t.hints.indexOf("entity.type.url") > -1)
+            .map(t => t.value.toLowerCase());
+        let tokens = data.tokens
+            // #206 - show all tokens .filter(t => t.type !== "Attribute")
+            .filter(t => !t.hints || t.hints.indexOf("entity.type.url") === -1)
+            .filter(t => urls.indexOf(t.value.toLowerCase()) === -1)
+            .sort((a, b) => {
+                return a.messageIdx - b.messageIdx;
+            })
+            .reverse();
 
         let filteredTokens = {};
-        let uniqueTokens = tokens.filter((t) => {
-            if (filteredTokens[t.value]) return false;
-            filteredTokens[t.value] = true;
-            return true;
-        }).reverse().slice(-7);
+        let uniqueTokens = tokens
+            .filter((t) => {
+                if(filteredTokens[t.value]) return false;
+                filteredTokens[t.value] = true;
+                return true;
+            })
+            .reverse()
+            .slice(-7);
 
-        uniqueTokens = uniqueTokens.filter(t => {
-            return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) == -1;
-        }).filter(t => {
-            return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() == t.value.trim().toLowerCase());
-        });
+        uniqueTokens = uniqueTokens
+            .filter(t => {
+                return widgetHeaderTagsTemplateData.exclude.indexOf(t.value.trim().toLowerCase()) === -1;
+            })
+            .filter(t => {
+                return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() === t.value.trim().toLowerCase());
+            });
 
         console.log("Filtered tokens:", uniqueTokens);
 
@@ -1317,7 +1330,7 @@ function SmartiWidget(element, _options) {
             newWidget.params.elem.show();
 
             // load more
-            if(widgetBody.prop('scrollHeight') == widgetBody.innerHeight() && newWidget.queryCreator != "queryBuilder:conversationmlt") {
+            if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight()) && newWidget.queryCreator != "queryBuilder:conversationmlt") {
                 console.log("LOAD MORE!");
                 newWidget.loadNextPage();
             }
@@ -1599,7 +1612,7 @@ function SmartiWidget(element, _options) {
         if(scrollTimeout) clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             scrollTimeout = null;
-            if(widgetBody.prop('scrollHeight') == widgetBody.innerHeight() + widgetBody.scrollTop()) {
+            if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
                 console.log("LOAD MORE!");
                 let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
                 if(currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();

@@ -23,7 +23,7 @@ public class UrlFactory extends RegexNamedEntityFactory {
     private static final NerTag URL_TAG = new NerTag(URL, NerTag.NAMED_ENTITY_MISC);
 
     //url pattern taken from https://mathiasbynens.be/demo/url-regex @stephenhay (38 chars)
-    private static final Pattern URL_PATTERN = Pattern.compile("^(https?|ftp)://(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern URL_PATTERN = Pattern.compile("\\b(?:https?|ftp)://(?:-\\.)?(?:[^\\s/?\\.#-]+\\.?)+(?:/[^\\s]*)?", Pattern.CASE_INSENSITIVE);
 
     @Override
     protected RegexNerProcessor.NamedEntity createNamedEntity(String pattern_name, MatchResult matchResult) {

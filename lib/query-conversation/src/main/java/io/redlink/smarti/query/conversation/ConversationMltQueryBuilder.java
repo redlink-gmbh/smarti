@@ -111,8 +111,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
             for (SolrDocument solrDocument : solrResults) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
-                query.add("fq",String.format("conversation_id:\"%s\"",solrDocument.get("conversation_id")));
-                query.add("fq", "message_idx:[1 TO *]");
+                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID,solrDocument.get(FIELD_CONVERSATION_ID)));
+                query.add("fq", FIELD_MESSAGE_IDXS + ":[1 TO *]");
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
                 //query.setRows(3);
@@ -136,8 +136,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         conversationResult.setReplySuggestion(conversationResult.getContent());
 
         conversationResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
-        conversationResult.setMessageId(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_ID)));
-        conversationResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_IDX))));
+        conversationResult.setMessageId(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_IDS)));
+        conversationResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_IDXS))));
 
         conversationResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
 
@@ -191,7 +191,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         final SolrQuery solrQuery = new SolrQuery();
         solrQuery.addField("*").addField("score");
         solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
-        solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDX));
+        solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDXS));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
 
         // #39 - paging
