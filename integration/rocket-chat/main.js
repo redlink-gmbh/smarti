@@ -911,6 +911,7 @@ function SmartiWidget(element, _options) {
 
     function showError(err) {
         widgetMessage.empty().append($('<p>').text(Utils.localize(err)));
+        widgetContent.empty();
     }
 
     function drawLogin() {
