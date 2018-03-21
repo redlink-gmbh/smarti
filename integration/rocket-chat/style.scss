@@ -441,6 +441,10 @@
             position: relative;
             margin-bottom: 10px;
 
+            .loading-animation {
+                position: relative;
+            }
+
             .conversation {
                 margin-top: 10px;
                 &:first-of-type {
