@@ -623,7 +623,7 @@ function SmartiWidget(element, _options) {
             let queryParams = {
                 'wt': 'json',
                 'fl': '*,score',
-                'rows': page == 0 && numOfRows < 6 ? 6 : numOfRows,
+                'rows': numOfRows,
                 'q':  tks
             };
 
@@ -659,7 +659,10 @@ function SmartiWidget(element, _options) {
                     tracker.trackEvent(params.query.creator, data.response && data.response.docs && data.response.docs.length || 0);
 
                     loadedPage = page;
-                    noMoreData = !(data.response && data.response.docs && data.response.docs.length);
+                    noMoreData =    !data.response || 
+                                    !data.response.docs || 
+                                    !data.response.docs.length || 
+                                    (params.templateData.results.length + data.response.docs.length) == data.response.numFound;
 
                     console.log(params.query);
                     console.log(data.response);
@@ -705,16 +708,21 @@ function SmartiWidget(element, _options) {
                         $.observable(params.templateData.results).refresh(docs);
                     }
                     $.observable(params.templateData).setProperty("loading", false);
+
+                    if(params.elem.height() <= widgetBody.innerHeight()) loadNextPage();
                 }
             });
         }
 
-        getResults(currentPage);
-
         function loadNextPage() {
-            currentPage++;
-            if(!noMoreData) getResults(currentPage, true, true);
+            if(!noMoreData) {
+                console.log("LOAD MORE!");
+                currentPage++;
+                getResults(currentPage, true, true);
+            }
         }
+
+        getResults(currentPage);
 
         return {
             params,
@@ -767,7 +775,6 @@ function SmartiWidget(element, _options) {
                 }
 
                 let pageSize = params.query.defaults && params.query.defaults.rows || 0;
-                pageSize = page == 0 && pageSize < 6 ? 6 : pageSize;
                 let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
@@ -787,7 +794,7 @@ function SmartiWidget(element, _options) {
                 queryParams.q = tks;
 
                 smarti.search(queryParams, (data) => {
-                    console.log("Conversation serach results:", data);
+                    console.log("Conversation search results:", data);
 
                     loadedPage = page;
                     
@@ -823,7 +830,7 @@ function SmartiWidget(element, _options) {
                     }
 
                     tracker.trackEvent(params.query.creator, conversations.length);
-                    noMoreData = !conversations.length;
+                    noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
                     
                     $.observable(params.templateData).setProperty("total", data.numFound || 0);
 
@@ -833,6 +840,8 @@ function SmartiWidget(element, _options) {
                         $.observable(params.templateData.results).refresh(conversations);
                     }
                     $.observable(params.templateData).setProperty("loading", false);
+
+                    if(params.elem.height() <= widgetBody.innerHeight()) loadNextPage();
                 }, function(err) {
                     showError(err);
                     $.observable(params.templateData).setProperty("loading", false);
@@ -864,7 +873,7 @@ function SmartiWidget(element, _options) {
                     tracker.trackEvent(params.query.creator, data.docs && data.docs.length);
 
                     loadedPage = page;
-                    noMoreData = !(data.docs && data.docs.length);
+                    noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
     
                     if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
@@ -892,12 +901,15 @@ function SmartiWidget(element, _options) {
             }
         }
 
-        getResults(currentPage);
-
         function loadNextPage() {
-            currentPage++;
-            if(!noMoreData) getResults(currentPage, true, true);
+            if(!noMoreData) {
+                console.log("LOAD MORE!");
+                currentPage++;
+                getResults(currentPage, true, true);
+            }
         }
+
+        getResults(currentPage);
 
         return {
             params,
@@ -1330,11 +1342,6 @@ function SmartiWidget(element, _options) {
             if(currentWidget) currentWidget.params.elem.hide();
             newWidget.params.elem.show();
 
-            // load more
-            if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight()) && newWidget.queryCreator != "queryBuilder:conversationmlt") {
-                console.log("LOAD MORE!");
-                newWidget.loadNextPage();
-            }
             
             if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
@@ -1614,7 +1621,6 @@ function SmartiWidget(element, _options) {
         scrollTimeout = setTimeout(() => {
             scrollTimeout = null;
             if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
-                console.log("LOAD MORE!");
                 let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
                 if(currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();
             }
