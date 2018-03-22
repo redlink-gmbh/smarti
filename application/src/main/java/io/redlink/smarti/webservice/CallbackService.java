@@ -1,17 +1,16 @@
 package io.redlink.smarti.webservice;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.redlink.smarti.properties.HttpCallbackProperties;
+import io.redlink.smarti.properties.MavenCoordinatesProperties;
+import io.redlink.smarti.webservice.pojo.CallbackPayload;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ConnectionBackoffStrategy;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -22,11 +21,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.redlink.smarti.properties.HttpCallbackProperties;
-import io.redlink.smarti.properties.MavenCoordinatesProperties;
-import io.redlink.smarti.webservice.pojo.CallbackPayload;
+import java.io.IOException;
+import java.net.URI;
 
 @Service
 @EnableConfigurationProperties(value={MavenCoordinatesProperties.class,HttpCallbackProperties.class})
@@ -46,6 +42,10 @@ public class CallbackService {
 
 
         this.httpClientBuilder = HttpClientBuilder.create()
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setCookieSpec(CookieSpecs.STANDARD)
+                        .build()
+                )
                 .setRetryHandler((exception, executionCount, context) -> executionCount < httpCallbackProperties.getRetryCount())
                 .setConnectionBackoffStrategy(new ConnectionBackoffStrategy() {
                     @Override
