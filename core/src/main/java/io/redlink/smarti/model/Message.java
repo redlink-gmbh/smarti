@@ -34,6 +34,14 @@ import java.util.Map;
  */
 @ApiModel
 public class Message {
+    
+    public static interface Metadata {
+        
+        /**
+         * Boolean switch that allows to deactivate processing of the message content
+         */
+        String SKIP_ANALYSIS = "skipAnalysis";
+    }
 
     public enum Origin {
         User,
