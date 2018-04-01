@@ -30,6 +30,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -73,7 +74,10 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
         log.trace("analysisContext: [{}..{}](size: {})", startIdx, numMessages-1, contextSize);
         for(int i=startIdx; i < numMessages; i++){
             Message message = conversation.getMessages().get(i);
-            if(StringUtils.isNoneBlank(message.getContent())){
+            //#203: if the skipAnalysis attribute is set we do not analyse the content of this message
+            boolean skipAnalysis = Boolean.parseBoolean(
+                    Objects.toString(message.getMetadata().get(Message.Metadata.SKIP_ANALYSIS), "false"));
+            if(!skipAnalysis && StringUtils.isNoneBlank(message.getContent())){
                 Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
                 section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
                 section.addAnnotation(MESSAGE_ANNOTATION, message);
