@@ -169,17 +169,14 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
             query.getDefaults().put("fl", "id,message_id,meta_channel_id,user_id,time,message,type");
         }
         if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
-            query.addFilterQuery(FIELD_COMPLETED + ":true");
+            query.addFilter(getCompletedFilter());
         }
         if(conf.getConfiguration(CONFIG_KEY_EXCLUDE_CURRENT, DEFAULT_EXCLUDE_CURRENT)){
-            query.addFilterQuery('-' + FIELD_CONVERSATION_ID + ':' + conversation.getId().toHexString());
+            query.addFilter(new Filter("filter.excludeCurrentConversation", 
+                    '-' + FIELD_CONVERSATION_ID + ':' + conversation.getId().toHexString()));
         }
         //add config specific filter queries
-        SolrQuery sq = new SolrQuery();
-        addPropertyFilters(sq, conversation, conf);
-        if(sq.getFilterQueries() != null){
-            Arrays.stream(sq.getFilterQueries()).forEach(query::addFilterQuery);
-        }
+        query.getFilters().addAll(getPropertyFilters(conversation, conf));
         return query;
     }
     
