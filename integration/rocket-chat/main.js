@@ -1315,6 +1315,7 @@ function SmartiWidget(element, _options) {
     widgetMessage.empty();
     tabs.hide();
     innerTabSearch.hide();
+    innerTabFilter.hide();
     
     let widgetHeaderTagsTemplate = $.templates(widgetHeaderTagsTemplateStr);
     let widgetHeaderTabsTemplate = $.templates(widgetHeaderTabsTemplateStr);
