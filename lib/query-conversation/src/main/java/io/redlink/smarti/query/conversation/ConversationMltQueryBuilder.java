@@ -160,7 +160,10 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if (conversation.getMessages().isEmpty()) return null;
 
         //The context is the content of relevant messages (see #getContextStart(..) for more information
-        String context = conversation.getMessages().subList(getContextStart(conversation.getMessages()), conversation.getMessages().size()).stream()
+        String context = conversation.getMessages().subList(
+                ConversationContextUtils.getContextStart(conversation.getMessages(),
+                    MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE), 
+                conversation.getMessages().size()).stream()
             .sequential()
             .map(Message::getContent)
             .reduce(null, (s, e) -> {

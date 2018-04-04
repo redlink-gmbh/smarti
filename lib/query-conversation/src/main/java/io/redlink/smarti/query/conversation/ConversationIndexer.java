@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -92,6 +93,27 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     //TODO: make configurable
     private static final Set<String> NOT_INDEXED_ENVIRONMENT_FIELDS = Collections.emptySet();
+    
+    /*
+     * Constants defining the context for messages
+     */
+    //We target more as 100 chars are context
+    protected static final int MIN_CONTEXT_LENGTH = 100;
+    //We try to optimize for about 300 chars of context
+    protected static final int CONTEXT_LENGTH = 300;
+    //Include at least the last two messages (the current and an other)
+    protected static final int MIN_INCL_MSGS = 2;
+    //Include a maximum of 10 messages
+    protected static final int MAX_INCL_MSGS = 10;
+    //include at least one message before the current one
+    protected static final int MIN_INCL_BEFORE = 1;
+    //include at least one message after the current one
+    protected static final int MIN_INCL_AFTER = 1;
+    //Include at least all messages of the last 3 minutes
+    protected static final long MIN_AGE = TimeUnit.MINUTES.toMillis(3);
+    //Include no messages older as a day (except for MIN_INCL_BEFORE and MIN_INCL_AFTER)
+    protected static final long MAX_AGE = TimeUnit.DAYS.toMillis(1);
+
 
     @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
     private int commitWithin = DEFAULT_COMMIT_WITHIN; 
@@ -307,8 +329,12 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
                 }
             }
-            //we want the content of the messages also stored with the conversation (e.g. for highlighting)
-            messages.forEach(m -> solrConversation.addField(FIELD_MESSAGES, m.getFieldValues(FIELD_MESSAGE)));
+            messages.forEach(m -> {
+                //we want the content of the messages also stored with the conversation (e.g. for highlighting)
+                solrConversation.addField(FIELD_MESSAGES, m.getFieldValues(FIELD_MESSAGE));
+                //in addition store the content of the conversation also in the Solr MLT field
+                solrConversation.addField(FIELD_MLT_CONTEXT, m.getFieldValues(FIELD_MESSAGE));
+            });
             solrConversation.addChildDocuments(messages);
         }
 
@@ -345,6 +371,18 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         solrMsg.setField(FIELD_TIME, message.getTime());
         solrMsg.setField(FIELD_VOTE, message.getVotes());
 
+        //message context (for context based similarity search)
+        int[] context = ConversationContextUtils.getMessageContext(conversation.getMessages(), i, 
+                MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_INCL_BEFORE, MIN_INCL_AFTER, 
+                MIN_AGE, MAX_AGE);
+        solrMsg.setField(FIELD_MESSAGE_CONTEXT_START, context[0]);
+        solrMsg.setField(FIELD_MESSAGE_CONTEXT_END, context[1]);
+        for(Message ctxMsg : conversation.getMessages().subList(context[0], context[1])){
+            if(!ctxMsg.isPrivate()){
+                solrMsg.addField(FIELD_MLT_CONTEXT, ctxMsg.getContent());
+            } //else do not use private messages - not even as context!
+        }
+        
         // TODO: Add keywords, links, ...
 
         return solrMsg;
