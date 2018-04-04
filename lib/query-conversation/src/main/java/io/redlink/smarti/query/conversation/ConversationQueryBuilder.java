@@ -30,6 +30,8 @@ import org.apache.solr.common.SolrDocumentList;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
@@ -165,13 +167,47 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
 
+    protected final Filter getCompletedFilter(){
+        return new Filter("filter.completedOnly", FIELD_COMPLETED + ":true");
+    }
     protected final void addCompletedFilter(final SolrQuery solrQuery){
         solrQuery.addFilterQuery(FIELD_COMPLETED + ":true");
     }
     
+    protected Collection<Filter> getPropertyFilters(Conversation conversation, ComponentConfiguration conf){
+        final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
+        return filters.stream()
+                .map(f -> addPropertyFilter(f, conversation.getMeta().getProperty(f)))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
     protected void addPropertyFilters(SolrQuery solrQuery, Conversation conversation, ComponentConfiguration conf) {
         final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
         filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
+    }
+    /**
+     * Creates {@link Filter} for client side execution
+     * @param fieldName the name of the field
+     * @param fieldValues the values of the Field (typically of {@link Conversation#getMeta()}
+     * @return the filter or <code>null</code> if none
+     */
+    private Filter addPropertyFilter(String fieldName, List<String> fieldValues){
+        String filterName = "filter.property."+fieldName;
+        if (fieldValues == null || !fieldValues.stream().anyMatch(StringUtils::isNotBlank)) {
+            return new Filter(filterName, "-" + getMetaField(fieldName) + ":*")
+                    .setOptional(true).setEnabled(false) //this is an optional filter that is disabled by default
+                    .setDisplayValue("keine");
+        } else {
+            return fieldValues.stream()
+                    .filter(StringUtils::isNotBlank)
+                    .map(ClientUtils::escapeQueryChars)
+                    .reduce((a, b) -> a + " OR " + b)
+                    .map(fs -> new Filter(filterName, getMetaField(fieldName) + ":(" + fs + ")")
+                            .setOptional(true).setEnabled(true)
+                            .setDisplayValue(fs.replaceAll(" OR ", " | ")))
+                    .orElse(null);
+        }
+        
     }
     /**
      * Adds a filter based on a {@link ConversationMeta#getProperty(String)}

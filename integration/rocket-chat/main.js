@@ -108,6 +108,10 @@ const localize = new Localize({
         "de": "Ergebnisse zu:",
         "en": "Results for:"
     },
+    "widget.filters.label": {
+        "de": "Filter:",
+        "en": "Filters:"
+    },
     "widget.latch.query.failed":{
         "de": "Widget $[1] hat Probleme bei der Anfrage: $[2]",
         "en": "Widget $[1] has problems while quering: $[2]"
@@ -191,6 +195,10 @@ const localize = new Localize({
     "widget.conversation.post-selected-all": {
         "de": "$[1] selektierte Nachrichten posten",
         "en": "Post $[1] selected messages"
+    },
+    "filter.property.support_area": {
+        "de": "Thema",
+        "en": "Topic"
     }
 }, undefined, 'xx');
 
@@ -709,7 +717,12 @@ function SmartiWidget(element, _options) {
                     }
                     $.observable(params.templateData).setProperty("loading", false);
 
-                    if(params.elem.height() <= widgetBody.innerHeight()) loadNextPage();
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                        loadNextPage();
+                    } else {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                    }
                 }
             });
         }
@@ -743,8 +756,10 @@ function SmartiWidget(element, _options) {
      */
     function ConversationWidget(params) {
         widgetConversationTemplate.link(params.elem, params.templateData);
+        $.observable(params.templateData.filters).observeAll(onDataChange);
     
         let lastTks = [];
+        let lastFilters = [];
         let currentPage = 0;
         let loadedPage = 0;
         let noMoreData = false;
@@ -765,8 +780,21 @@ function SmartiWidget(element, _options) {
                 */
                 let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
+
+                currentFilters = [];
+                params.query.filterQueries.forEach(fq => {
+                    if(!fq.optional) {
+                        currentFilters.push(fq.filter);
+                    } else {
+                        let enabled = widgetStorage.widgetOptions && widgetStorage.widgetOptions[params.query.creator] && widgetStorage.widgetOptions[params.query.creator].filters[fq.filter];
+                        if(typeof enabled == "undefined") enabled = fq.enabled;
+                        if(enabled) {
+                            currentFilters.push(fq.filter);
+                        }
+                    }
+                });
     
-                if(equalArrays(lastTks, tks) && loadedPage >= page) return;
+                if(equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
 
                 if(!append) {
                     page = 0;
@@ -789,7 +817,8 @@ function SmartiWidget(element, _options) {
                     if (params.query.defaults.hasOwnProperty(property))
                         queryParams[property] = params.query.defaults[property];
                 }
-                queryParams.fq = params.query.filterQueries;
+
+                queryParams.fq = lastFilters = currentFilters;
                 queryParams.start = start;
                 queryParams.q = tks;
 
@@ -841,7 +870,12 @@ function SmartiWidget(element, _options) {
                     }
                     $.observable(params.templateData).setProperty("loading", false);
 
-                    if(params.elem.height() <= widgetBody.innerHeight()) loadNextPage();
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                        loadNextPage();
+                    } else {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                    }
                 }, function(err) {
                     showError(err);
                     $.observable(params.templateData).setProperty("loading", false);
@@ -1029,6 +1063,23 @@ function SmartiWidget(element, _options) {
                             query: query
                         };
 
+                        if(template.type == "related.conversation") {
+                            params.templateData.filters = query.filterQueries.filter(fq => {
+                                return fq.optional;
+                            });
+                            params.templateData.filters.forEach(fq => {
+                                let enabled = widgetStorage.widgetOptions && widgetStorage.widgetOptions[params.query.creator] && widgetStorage.widgetOptions[params.query.creator].filters[fq.filter];
+                                fq.enabled = typeof enabled == "undefined" ? fq.enabled : enabled;
+                                try {
+                                    fq.label = Utils.localize({code: fq.name});
+                                } catch(e) {
+                                    let nameParts = fq.name.split(".");
+                                    fq.label = nameParts[nameParts.length - 1];
+                                }
+                                fq.label += ": " + (fq.displayValue || fq.filter);
+                            });
+                        }
+
                         let config = options.widget[query.creator] || {};
 
                         $.observable(widgets).insert(new constructor(params, config));
@@ -1064,7 +1115,8 @@ function SmartiWidget(element, _options) {
             userTokens: [],
             include: [],
             exclude: []
-        }
+        },
+        widgetOptions: {}
     };
 
     function readStorage() {
@@ -1080,6 +1132,17 @@ function SmartiWidget(element, _options) {
         widgetStorage.tokens.userTokens = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.userTokens || [];
         widgetStorage.tokens.include = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.include || [];
         widgetStorage.tokens.exclude = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.exclude || [];
+        if(!widgetStorage.widgetOptions) widgetStorage.widgetOptions = {};
+        widgets.forEach((w) => {
+            if(w && w.params.elem && w.queryCreator == "queryBuilder:conversationsearch") {
+                widgetStorage.widgetOptions[w.params.query.creator] = {filters: {}};
+                w.params.templateData.filters.forEach(fq => {
+                    let enabled = widgetStorage.widgetOptions[w.params.query.creator] && widgetStorage.widgetOptions[w.params.query.creator].filters[fq.filter];
+                    if(typeof enabled == "undefined") enabled = fq.enabled;
+                    widgetStorage.widgetOptions[w.params.query.creator].filters[fq.filter] = enabled;
+                });
+            }
+        });
         localStorage.setItem('widgetStorage_' + localStorage.getItem('Meteor.userId') + '_' + options.channel, JSON.stringify(widgetStorage));
     }
 
@@ -1129,6 +1192,14 @@ function SmartiWidget(element, _options) {
         <div id="innerTabSearchSubmit">
             <div class="submit-icon"></div>
         </div>
+    `;
+    const widgetHeaderInnerTabFilterTemplateStr = `
+        <span>${Utils.localize({code: 'widget.filters.label'})}</span>
+        <ul>
+            {^{for filters}}
+            <li class="filter" data-link="class{merge: enabled toggle='enabled'}"><div class="title">{{:label}}</div></li>
+            {{/for}}
+        </ul>
     `;
     const widgetFooterPostButtonTemplateStr = `
         <span><i class="icon-paper-plane"></i> {^{:title}}</span>
@@ -1232,6 +1303,7 @@ function SmartiWidget(element, _options) {
     let tags = $('<div id="tags">').appendTo(widgetHeaderWrapper);
     let tabs = $('<nav id="tabs">').appendTo(widgetHeader);
     let innerTabSearch = $('<div id="innerTabSearch">').appendTo(widgetHeader);
+    let innerTabFilter = $('<div id="innerTabFilter">').appendTo(widgetHeader);
     
     let widgetContent = $('<div class="widgetContent"><div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div></div>').appendTo(widgetBody);
 
@@ -1243,10 +1315,12 @@ function SmartiWidget(element, _options) {
     widgetMessage.empty();
     tabs.hide();
     innerTabSearch.hide();
+    innerTabFilter.hide();
     
     let widgetHeaderTagsTemplate = $.templates(widgetHeaderTagsTemplateStr);
     let widgetHeaderTabsTemplate = $.templates(widgetHeaderTabsTemplateStr);
     let widgetHeaderInnerTabSearchTemplate = $.templates(widgetHeaderInnerTabSearchTemplateStr);
+    let widgetHeaderInnerTabFilterTemplate = $.templates(widgetHeaderInnerTabFilterTemplateStr);
     let widgetFooterPostButtonTemplate = $.templates(widgetFooterPostButtonTemplateStr);
     let widgetConversationTemplate = $.templates(widgetConversationTemplateStr);
     let widgetIrLatchTemplate = $.templates(widgetIrLatchTemplateStr);
@@ -1306,13 +1380,21 @@ function SmartiWidget(element, _options) {
 
     widgetBody.scroll((event) => {
         if (widgetBody.scrollTop() > 1) {
-            widgetTitle.slideUp(250);
-            if(innerTabSearch.hasClass('active')) innerTabSearch.slideUp(100);
-            tabs.addClass('shadow');
+            widgetTitle.slideUp(200);
+            if(innerTabSearch.hasClass('active')) innerTabSearch.slideUp(200);
+            if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
+            widgetHeader.addClass('shadow');
         } else {
             widgetTitle.slideDown(200);
-            if(innerTabSearch.hasClass('active')) innerTabSearch.slideDown(100);
-            tabs.removeClass('shadow');
+            if(innerTabSearch.hasClass('active')) innerTabSearch.slideDown(200);
+            if(innerTabFilter.hasClass('active')) innerTabFilter.slideDown(200);
+            widgetHeader.removeClass('shadow');
+        }
+
+        if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
+            widgetFooter.removeClass('shadow');
+        } else {
+            widgetFooter.addClass('shadow');
         }
     });
 
@@ -1346,6 +1428,20 @@ function SmartiWidget(element, _options) {
             if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
+
+                if(newWidget.params.templateData.filters.length) {
+                    let widgetHeaderInnerTabFilterTemplateData = {filters: newWidget.params.templateData.filters};
+                    widgetHeaderInnerTabFilterTemplate.link(innerTabFilter, widgetHeaderInnerTabFilterTemplateData);
+
+                    innerTabFilter.addClass('active');
+                    if(widgetBody.scrollTop() > 1) {
+                        innerTabFilter.slideUp(100);
+                    } else {
+                        innerTabFilter.slideDown(100);
+                    }
+                } else {
+                    innerTabFilter.slideUp(100);
+                }
             } else {
                 //innerTabSearch.addClass('active');
                 if(widgetBody.scrollTop() > 1) {
@@ -1353,6 +1449,9 @@ function SmartiWidget(element, _options) {
                 } else {
                     //innerTabSearch.slideDown(100);
                 }
+
+                innerTabFilter.removeClass('active');
+                innerTabFilter.slideUp(100);
             }
 
             innerTabSearchInput.val("");
@@ -1365,8 +1464,16 @@ function SmartiWidget(element, _options) {
             if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
             footerPostButton.css('transform', 'translateY(200%)');
-    
-            let newTitle = newTab.text();
+
+            if(newWidget.params.elem.height() <= widgetBody.innerHeight()) {
+                widgetFooter.removeClass("shadow");
+            } else {
+                if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
+                    widgetFooter.removeClass("shadow");
+                } else {
+                    widgetFooter.addClass("shadow");
+                }
+            }
     
             $.observable(widgetHeaderTabsTemplateData).setProperty("selectedWidget", $.view(newTab).index);
             $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", newWidget.params.query.displayTitle);
@@ -1612,6 +1719,15 @@ function SmartiWidget(element, _options) {
                 event.preventDefault();
                 event.stopPropagation();
             }
+        }
+    });
+
+    innerTabFilter.on('click', '.filter', function() {
+        let filterData = $.view($(this)).data;
+        if($(this).hasClass('enabled')) {
+            $.observable(filterData).setProperty("enabled", false);
+        } else {
+            $.observable(filterData).setProperty("enabled", true);
         }
     });
 

@@ -116,7 +116,7 @@ public class PosCollectorAndNegationHandlerTest {
     @Test
     public void testAll() throws ProcessingException{
         for(int idx = 0 ; idx < CONTENTS.size(); idx++){
-            AnalysisData processingData = processConversation(AnalysisData.create(initConversation(idx), new Client()));
+            AnalysisData processingData = processConversation(AnalysisData.create(initConversation(idx), new Client(), null));
             assertPosProcessingResults(processingData, CONTENTS.get(idx).getMiddle(),CONTENTS.get(idx).getRight());
         }
     }
