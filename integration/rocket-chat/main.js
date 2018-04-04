@@ -778,7 +778,7 @@ function SmartiWidget(element, _options) {
                     rows:3
                     sort:"time desc"
                 */
-                let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
+                let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
                 currentFilters = [];
@@ -808,7 +808,6 @@ function SmartiWidget(element, _options) {
                 $.observable(params.templateData).setProperty("loading", true);
 
                 lastTks = tks;
-                tks = getSolrQuery(tks);
 
                 let queryParams = {};
 
@@ -820,7 +819,8 @@ function SmartiWidget(element, _options) {
 
                 queryParams.fq = lastFilters = currentFilters;
                 queryParams.start = start;
-                queryParams.q = tks;
+                queryParams.q = getSolrQuery(tks);
+                if(params.query.similarityQuery) queryParams["q.alt"] = params.query.similarityQuery;
 
                 smarti.search(queryParams, (data) => {
                     console.log("Conversation search results:", data);
