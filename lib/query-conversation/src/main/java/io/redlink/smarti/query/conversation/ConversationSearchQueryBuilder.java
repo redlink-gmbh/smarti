@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -267,14 +268,15 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 return StreamSupport.stream(interestingTermList.spliterator(), false)
                     .sorted((a,b) -> Double.compare(((Number)b.getValue()).doubleValue(), ((Number)a.getValue()).doubleValue()))
                     .map(e -> {
+                        String term = ClientUtils.escapeQueryChars(e.getKey());
                         if(norm.doubleValue() < 0) {
                             norm.set(1d/((Number)e.getValue()).doubleValue());
-                            return e.getKey();
+                            return term;
                         } else {
-                            return e.getKey() + '^' + (((Number)e.getValue()).floatValue() * norm.floatValue());
+                            return term + '^' + (((Number)e.getValue()).floatValue() * norm.floatValue());
                         }
                     })
-                    .collect(Collectors.joining(" OR ", "(", ")"));
+                    .collect(Collectors.joining(" OR "));
             }
         }
     }
