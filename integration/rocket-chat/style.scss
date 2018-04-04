@@ -366,12 +366,6 @@
                     }
                 }
             }
-
-            &.shadow{
-                -webkit-box-shadow: 0px 3px 3px 0px rgba(0,0,0,0.13);
-                -moz-box-shadow: 0px 3px 3px 0px rgba(0,0,0,0.13);
-                box-shadow: 0px 3px 3px 0px rgba(0,0,0,0.13);
-            }
         }
         #innerTabSearch {
             position: relative;
@@ -423,6 +417,55 @@
                 }
             }
         }
+        #innerTabFilter {
+            @extend .noselect;
+
+            position: relative;
+            width: 100%;
+            padding: 0 15px 5px 15px;
+            background: $grey25;
+            border-bottom: 1px solid $grey50;
+
+            span {
+                position: relative;
+                display:inline;
+            }
+
+            ul {
+                position: relative;
+                display:inline;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+                margin-left: 5px;
+
+                li {
+                    position: relative;
+                    background: $grey75;
+                    color: $white;
+                    padding: 6px 10px 6px 10px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    margin:5px 5px 0 0;
+                    display:inline-block;
+                    text-align: center;
+
+                    &.enabled {
+                        background: $theme-green-5;
+                    }
+                }
+            }
+
+        }
+
+        &.shadow {
+            position: relative;
+            -webkit-box-shadow: 0px 3px 3px 0px rgba(0,0,0,0.13);
+            -moz-box-shadow: 0px 3px 3px 0px rgba(0,0,0,0.13);
+            box-shadow: 0px 3px 3px 0px rgba(0,0,0,0.13);
+            z-index: 1;
+        }
     }
 
     #widgetBody {
@@ -432,6 +475,21 @@
         padding: 10px 10px 10px 10px;
         overflow-y: auto;
         flex: 1;
+
+        &.shadow:before {
+            content: "";
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            right: 0px;
+            bottom: 0px;
+
+            -webkit-box-shadow: inset 0px 3px 3px 0px rgba(0,0,0,0.13);
+            -moz-box-shadow: inset 0px 3px 3px 0px rgba(0,0,0,0.13);
+            box-shadow: inset 0px 3px 3px 0px rgba(0,0,0,0.13);
+
+            pointer-events: none;
+        }
 
         mark {
             background-color: $theme-green-1;
@@ -704,6 +762,13 @@
                     background: $theme-pink-1;
                 }
             }
+        }
+        &.shadow {
+          position: relative;
+          -webkit-box-shadow: 0px -3px 3px 0px rgba(0,0,0,0.13);
+          -moz-box-shadow: 0px -3px 3px 0px rgba(0,0,0,0.13);
+          box-shadow: 0px -3px 3px 0px rgba(0,0,0,0.13);
+          z-index: 1;
         }
     }
     }
