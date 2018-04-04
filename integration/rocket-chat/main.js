@@ -1076,7 +1076,7 @@ function SmartiWidget(element, _options) {
                                     let nameParts = fq.name.split(".");
                                     fq.label = nameParts[nameParts.length - 1];
                                 }
-                                fq.label += ": " + fq.displayValue;
+                                fq.label += ": " + (fq.displayValue || fq.filter);
                             });
                         }
 
