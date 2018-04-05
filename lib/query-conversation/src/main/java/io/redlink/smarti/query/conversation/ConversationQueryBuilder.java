@@ -25,12 +25,9 @@ import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
@@ -46,8 +43,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     //#192: Include at least the last two messages 
     protected static final int MIN_INCL_MSGS = 2;
     protected static final int MAX_INCL_MSGS = 10;
-    //#192: Include at least all messages of the last 5 minutes
-    protected static final long MIN_AGE = TimeUnit.MINUTES.toMillis(5);
+    //#192: Include at least all messages of the last 3 minutes
+    protected static final long MIN_AGE = TimeUnit.MINUTES.toMillis(3);
     //#192: Include at least all messages of the last 5 minutes
     protected static final long MAX_AGE = TimeUnit.DAYS.toMillis(1);
 
@@ -102,35 +99,6 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
 
-    protected int getContextStart(List<Message> messages){
-        if(messages.isEmpty()){
-            return 0;
-        }
-        int inclMsgs = 0;
-        Date contextDate = null;
-        int contextSize = 0;
-        for(ListIterator<Message> it = messages.listIterator(messages.size()); 
-                it.hasPrevious();){
-            int index = it.previousIndex();
-            Message msg = it.previous();
-            if(contextDate == null){
-                contextDate = msg.getTime();
-            }
-            if(contextSize < MIN_CONTEXT_LENGTH || //force inclusion
-                    inclMsgs < MIN_INCL_MSGS || 
-                    msg.getTime().getTime() > contextDate.getTime() - MIN_AGE){
-                contextSize = contextSize + msg.getContent().length();
-            } else if(contextSize < CONTEXT_LENGTH && //allow include if more context is allowed
-                    inclMsgs < MAX_INCL_MSGS && 
-                    msg.getTime().getTime() > contextDate.getTime() - MAX_AGE){
-                contextSize = contextSize + msg.getContent().length();
-            } else {
-                return index; //we have enough content ... ignore previous messages
-            }
-        }
-        return 0;
-    }
-    
     @Override
     public boolean validate(ComponentConfiguration configuration, Set<String> missing,
             Map<String, String> conflicting) {

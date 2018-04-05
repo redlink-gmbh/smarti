@@ -27,180 +27,8 @@ let conversationId = null;
 
 //multi-linguality
 const Localize = require('localize');
-const localize = new Localize({
-    "login.no-auth-token": {
-        "en": "No auth-token or token expired",
-        "de": "Kein auth-token oder token abgelaufen."
-    },
-    "login.failed": {
-        "de":"Anmeldung fehlgeschlagen: $[1]",
-        "en":"Login failed: $[1]"
-    },
-    "sub.new-conversation-result.nosub": {
-        "en": "Subscription to stream 'new-conversation-result' failed",
-        "de": "Anmeldung an den stream 'new-conversation-result' fehlgeschlagen"
-    },
-    "smarti.result.no-result-yet": {
-        "de": "Noch keine Resultate verfügbar",
-        "en": "No results yet"
-    },
-    "smarti.no-widgets": {
-        "de": "Keine Widgets verfügbar!",
-        "en": "No widgets found!"
-    },
-    "smarti.sources": {
-        "de": "Quellen",
-        "en": "Sources"
-    },
-    "smarti.new-search-term": {
-        "de": "Neuer Suchterm",
-        "en": "New search term"
-    },
-    "smarti.date-format": {
-        "de": "DD.MM.YYYY HH:mm:ss",
-        "en": "DD-MM-YYYY HH:mm:ss"
-    },
-    "smarti.source.not-supported": {
-        "de": "Diese Quelle wird nicht unterstützt!",
-        "en": "This source is not supported!"
-    },
-    "msg.post.failure": {
-        "de": "Nachricht konnte nicht gepostet werden",
-        "en": "Posting message failed"
-    },
-    "get.conversation.params": {
-        "de": "Konversations-Parameter konnten nicht geladen werden: $[1]",
-        "en": "Cannot load conversation params: $[1]"
-    },
-    "get.query.params": {
-        "de": "Query-Parameter konnten nicht geladen werden: $[1]",
-        "en": "Cannot load query params: $[1]"
-    },
-    "widget.post": {
-        "de": "Posten",
-        "en": "Post"
-    },
-    "widget.post-message": {
-        "de": "Nachricht posten",
-        "en": "Post message"
-    },
-    "widget.post-conversation": {
-        "de": "Konversation posten",
-        "en": "Post conversation"
-    },
-    "widget.answers": {
-        "de": "Antworten",
-        "en": "answers"
-    },
-    "widget.messages": {
-        "de": "Nachrichten",
-        "en": "messages"
-    },
-    "widget.message": {
-        "de": "Nachricht",
-        "en": "message"
-    },
-    "widget.context": {
-        "de": "Kontext",
-        "en": "Context"
-    },
-    "widget.tags.label": {
-        "de": "Ergebnisse zu:",
-        "en": "Results for:"
-    },
-    "widget.filters.label": {
-        "de": "Filter:",
-        "en": "Filters:"
-    },
-    "widget.latch.query.failed":{
-        "de": "Widget $[1] hat Probleme bei der Anfrage: $[2]",
-        "en": "Widget $[1] has problems while quering: $[2]"
-    },
-    "widget.latch.query.no-results":{
-        "de":"Keine Ergebnisse",
-        "en":"No results"
-    },
-    "widget.latch.query.header":{
-        "en": "$[1] results",
-        "de": "$[1] Ergebnisse"
-    },
-    "widget.latch.query.header.paged":{
-        "en": "Page $[1] of $[2] results",
-        "de": "Seite $[1] von $[2] Ergebnissens"
-    },
-    "widget.latch.query.remove.all": {
-        "en": "Clear all",
-        "de": "Alle löschen"
-    },
-    "widget.latch.query.remove": {
-        "en": "remove",
-        "de": "löschen"
-    },
-    "widget.latch.query.pin": {
-        "en": "pin",
-        "de": "anheften"
-    },
-    "widget.latch.query.unpin": {
-        "en": "unpin",
-        "de": "loslösen"
-    },
-    "widget.latch.query.exclude": {
-        "en": "exclude",
-        "de": "exkludieren"
-    },
-    "widget.latch.query.excluded": {
-        "en": "excluded",
-        "de": "exkludiert"
-    },
-    "widget.latch.query.reset": {
-        "en": "reset",
-        "de": "zurücksetzen"
-    },
-    "widget.latch.query.paging.next":{
-        "en": "Next",
-        "de": "Nächste"
-    },
-    "widget.latch.query.paging.prev":{
-        "en": "Previous",
-        "de": "Vorherige"
-    },
-    "widget.latch.answer.title":{
-        "de": "Das hab ich dazu in $[1] gefunden:",
-        "en": "Here is what I found in $[1]:"
-    },
-    "widget.conversation.title":{
-        "en":"Related Conversation",
-        "de":"Ähnliche Konversationen"
-    },
-    "widget.conversation.no-results":{
-        "en":"No related Conversation",
-        "de":"Keine ähnlichen Konversationen"
-    },
-    "widget.conversation.answer.title": {
-        "de":"Ich habe eine passende Konversation gefunden:",
-        "en":"I found a similar conversation:"
-    },
-    "widget.conversation.answer.title_msg": {
-        "de":"Ich habe eine passende Nachricht gefunden:",
-        "en":"I found a related message:"
-    },
-    "widget.conversation.post-all": {
-        "de":"Alle $[1] Nachrichten posten",
-        "en":"Post all $[1] messages"
-    },
-    "widget.conversation.post-selected": {
-        "de": "Selektierte Nachricht posten",
-        "en": "Post selected message"
-    },
-    "widget.conversation.post-selected-all": {
-        "de": "$[1] selektierte Nachrichten posten",
-        "en": "Post $[1] selected messages"
-    },
-    "filter.property.support_area": {
-        "de": "Thema",
-        "en": "Topic"
-    }
-}, undefined, 'xx');
+const i18n = require('./i18n.json');
+const localize = new Localize(i18n, undefined, 'xx');
 
 const Utils = {
     getAvatarUrl : (id) => {
@@ -778,7 +606,7 @@ function SmartiWidget(element, _options) {
                     rows:3
                     sort:"time desc"
                 */
-                let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
+                let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
                 currentFilters = [];
@@ -808,7 +636,6 @@ function SmartiWidget(element, _options) {
                 $.observable(params.templateData).setProperty("loading", true);
 
                 lastTks = tks;
-                tks = getSolrQuery(tks);
 
                 let queryParams = {};
 
@@ -820,7 +647,8 @@ function SmartiWidget(element, _options) {
 
                 queryParams.fq = lastFilters = currentFilters;
                 queryParams.start = start;
-                queryParams.q = tks;
+                queryParams.q = getSolrQuery(tks);
+                if(params.query.similarityQuery) queryParams["q.alt"] = params.query.similarityQuery;
 
                 smarti.search(queryParams, (data) => {
                     console.log("Conversation search results:", data);

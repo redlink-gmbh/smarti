@@ -23,7 +23,6 @@ import io.redlink.smarti.model.Query;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +42,8 @@ public class ConversationSearchQuery extends Query {
     private final Set<String> queryParams = new LinkedHashSet<>();
     @JsonProperty("filterQueries")
     private final Set<Filter> filters = new LinkedHashSet<>();
+    @JsonProperty("similarityQuery")
+    private String similarityQuery;
 
     public ConversationSearchQuery(@JsonProperty("creator") String creator) {
         super(creator);
@@ -95,5 +96,12 @@ public class ConversationSearchQuery extends Query {
     public Collection<String> getTerms() {
         return terms;
     }
+
+    public void setSimilarityQuery(String similarityQuery) {
+        this.similarityQuery = similarityQuery;
+    }
     
+    public String getSimilarityQuery() {
+        return similarityQuery;
+    }
 }

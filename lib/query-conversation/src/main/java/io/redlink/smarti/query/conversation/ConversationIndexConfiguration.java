@@ -33,7 +33,7 @@ public class ConversationIndexConfiguration {
      * The current conversation index version. Needs to be increased on schema.xml
      * or software updates that do require a full re-index
      */
-    public static final int CONVERSATION_INDEX_VERSION = 5; //v5 to fix #207
+    public static final int CONVERSATION_INDEX_VERSION = 6; //v6 for #217
     
     public static final String FIELD_ID = "id";
     /**
@@ -57,6 +57,8 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_CONVERSATION_ID = "conversation_id";
     public static final String FIELD_MESSAGE_IDS = "message_ids";
     public static final String FIELD_MESSAGE_IDXS = "message_idxs";
+    public static final String FIELD_MESSAGE_CONTEXT_START = "message_mlt_context_start_idx";
+    public static final String FIELD_MESSAGE_CONTEXT_END = "message_mlt_context_end_idx";
     
     public static final String FIELD_SYNC_DATE = "sync_date";
     /**
@@ -89,6 +91,7 @@ public class ConversationIndexConfiguration {
         return META_FIELD_PREFIX + key;
     }
     
+    public static final String FIELD_MLT_CONTEXT = "mlt_context";
     
     @Bean(name=CONVERSATION_INDEX)
     protected SolrCoreDescriptor getConversationCoreDescriptor() throws IOException {
