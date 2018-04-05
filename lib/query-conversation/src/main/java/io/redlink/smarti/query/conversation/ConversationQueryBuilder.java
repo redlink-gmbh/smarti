@@ -168,9 +168,9 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         } else {
             return fieldValues.stream()
                     .filter(StringUtils::isNotBlank)
-                    .map(ClientUtils::escapeQueryChars)
                     .reduce((a, b) -> a + " OR " + b)
-                    .map(fs -> new Filter(filterName, getMetaField(fieldName) + ":(" + fs + ")")
+                    .map(fs -> new Filter(filterName, getMetaField(fieldName) 
+                            + ":(" + ClientUtils.escapeQueryChars(fs) + ")")
                             .setOptional(true).setEnabled(true)
                             .setDisplayValue(fs.replaceAll(" OR ", " | ")))
                     .orElse(null);
