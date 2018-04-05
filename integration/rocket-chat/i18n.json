@@ -11,9 +11,13 @@
     "en": "Subscription to stream 'new-conversation-result' failed",
     "de": "Anmeldung an den stream 'new-conversation-result' fehlgeschlagen"
   },
-  "smarti.result.no-result-yet": {
-    "de": "Noch keine Resultate verfügbar",
-    "en": "No results yet"
+  "smarti.result.no-result": {
+    "de": "Dieser Raum ist im Wissensbasis nicht verfügbar!",
+    "en": "This room is not available in the knowledgebase!"
+  },
+  "smarti.result.error": {
+    "de": "Serverseitiger Fehler: $[1]",
+    "en": "Server-side error: $[1]"
   },
   "smarti.no-widgets": {
     "de": "Keine Widgets verfügbar!",
@@ -36,8 +40,8 @@
     "en": "This source is not supported!"
   },
   "msg.post.failure": {
-    "de": "Nachricht konnte nicht gepostet werden",
-    "en": "Posting message failed"
+    "de": "Nachricht konnte nicht gepostet werden.",
+    "en": "Posting message failed."
   },
   "get.conversation.params": {
     "de": "Konversations-Parameter konnten nicht geladen werden: $[1]",
@@ -88,8 +92,12 @@
     "en": "Widget $[1] has problems while quering: $[2]"
   },
   "widget.latch.query.no-results":{
-    "de":"Keine Ergebnisse",
-    "en":"No results"
+    "de":"Keine Ergebnisse.",
+    "en":"No results."
+  },
+  "widget.latch.query.no-tags":{
+    "de":"Um Ergebnisse zu finden, fügen Sie bitte einen Suchterm hinzu.",
+    "en":"Please add a search term to find results."
   },
   "widget.latch.query.header":{
     "en": "$[1] results",
@@ -144,8 +152,8 @@
     "de":"Ähnliche Konversationen"
   },
   "widget.conversation.no-results":{
-    "en":"No related Conversation",
-    "de":"Keine ähnlichen Konversationen"
+    "en":"No related conversations found.",
+    "de":"Keine ähnlichen Konversationen gefunden."
   },
   "widget.conversation.answer.title": {
     "de":"Ich habe eine passende Konversation gefunden:",

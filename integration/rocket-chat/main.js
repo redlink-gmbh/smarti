@@ -209,7 +209,7 @@ function Smarti(options) {
                     getConversation(message.result, failure);
                 } else {
                     console.debug('Smarti widget init -> conversation ID not found for channel:', options.channel);
-                    return failure({code:'smarti.result.no-result-yet'});
+                    return failure({code:'smarti.result.no-result'});
                 }
             }
         });
@@ -250,10 +250,15 @@ function Smarti(options) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === msgid) {
                 if(message.result) {
-                    pubsub('smarti.data').publish(message.result);
+                    if(message.result.errorCode) {
+                        console.debug('Server-side error:', message.result.errorCode);
+                        if(failure) failure({code:'smarti.result.error', args:[message.result.errorCode]});
+                    } else {
+                        pubsub('smarti.data').publish(message.result);
+                    }
                 } else {
                     console.debug('No conversation found for ID:', conversationId);
-                    if(failure) failure({code:'smarti.result.no-result-yet'});
+                    if(failure) failure({code:'smarti.result.no-result'});
                 }
             }
         });
@@ -277,7 +282,7 @@ function Smarti(options) {
         const msgid = ddp.method("searchConversations",[params]);
         ddp.on("result", (message) => {
             if (message.error) return failure({code:"get.query.params", args:[message.error.reason]});
-  
+
             if(message.id === msgid) {
                 success(message.result || {});
             }
@@ -445,6 +450,8 @@ function SmartiWidget(element, _options) {
             let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
             if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
+            $.observable(params.templateData).setProperty("noTags", !tks.length);
+
             if(equalArrays(lastTks, tks) && loadedPage >= page) return;
 
             if(!append) {
@@ -454,13 +461,12 @@ function SmartiWidget(element, _options) {
             }
 
             lastTks = tks;
-            tks = getSolrQuery(tks);
 
             let queryParams = {
                 'wt': 'json',
                 'fl': '*,score',
                 'rows': numOfRows,
-                'q':  tks
+                'q':  getSolrQuery(tks)
             };
 
             params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
@@ -495,9 +501,9 @@ function SmartiWidget(element, _options) {
                     tracker.trackEvent(params.query.creator, data.response && data.response.docs && data.response.docs.length || 0);
 
                     loadedPage = page;
-                    noMoreData =    !data.response || 
-                                    !data.response.docs || 
-                                    !data.response.docs.length || 
+                    noMoreData =    !data.response ||
+                                    !data.response.docs ||
+                                    !data.response.docs.length ||
                                     (params.templateData.results.length + data.response.docs.length) == data.response.numFound;
 
                     console.log(params.query);
@@ -585,13 +591,13 @@ function SmartiWidget(element, _options) {
     function ConversationWidget(params) {
         widgetConversationTemplate.link(params.elem, params.templateData);
         $.observable(params.templateData.filters).observeAll(onDataChange);
-    
+
         let lastTks = [];
         let lastFilters = [];
         let currentPage = 0;
         let loadedPage = 0;
         let noMoreData = false;
-        
+
         function refresh() {
             getResults(0, false, false);
         }
@@ -621,7 +627,7 @@ function SmartiWidget(element, _options) {
                         }
                     }
                 });
-    
+
                 if(equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
 
                 if(!append) {
@@ -654,7 +660,7 @@ function SmartiWidget(element, _options) {
                     console.log("Conversation search results:", data);
 
                     loadedPage = page;
-                    
+
                     let conversations = [];
                     if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
@@ -688,7 +694,7 @@ function SmartiWidget(element, _options) {
 
                     tracker.trackEvent(params.query.creator, conversations.length);
                     noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
-                    
+
                     $.observable(params.templateData).setProperty("total", data.numFound || 0);
 
                     if(append) {
@@ -736,7 +742,7 @@ function SmartiWidget(element, _options) {
 
                     loadedPage = page;
                     noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
-    
+
                     if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
                             d.templateType = "related.conversation";
@@ -745,17 +751,17 @@ function SmartiWidget(element, _options) {
                             });
                         });
                     }
-    
+
                     console.log(data);
-    
+
                     if(append) {
                         $.observable(params.templateData.results).insert(data.docs);
                     } else {
                         $.observable(params.templateData.results).refresh(data.docs);
                     }
-                    
+
                     $.observable(params.templateData).setProperty("loading", false);
-            
+
                 }, function(err) {
                     showError(err);
                     $.observable(params.templateData).setProperty("loading", false);
@@ -872,10 +878,10 @@ function SmartiWidget(element, _options) {
                             constructor = ConversationWidget;break;
                     }
 
-                    
+
                     if(
-                        constructor && 
-                        (!options.widget[query.creator] || !options.widget[query.creator].disabled) && 
+                        constructor &&
+                        (!options.widget[query.creator] || !options.widget[query.creator].disabled) &&
                         query.creator.indexOf("queryBuilder:conversationmlt") == -1
                     ) {
                         let elem = $('<div class="smarti-widget">').hide().appendTo(widgetContent);
@@ -1099,14 +1105,14 @@ function SmartiWidget(element, _options) {
             </div>
         {{else}}
             {^{if !loading}}
-                <div class="no-result">${Utils.localize({code: 'widget.latch.query.no-results'})}</div>
+                <div class="no-result">{^{if noTags}}${Utils.localize({code: 'widget.latch.query.no-tags'})}{{else}}${Utils.localize({code: 'widget.latch.query.no-results'})}{{/if}}</div>
             {{/if}}
         {{/for}}
         {^{if loading}}
             <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
         {{/if}}
     `;
-    
+
     //Main layout
     element = $(element);
 
@@ -1132,11 +1138,11 @@ function SmartiWidget(element, _options) {
     let tabs = $('<nav id="tabs">').appendTo(widgetHeader);
     let innerTabSearch = $('<div id="innerTabSearch">').appendTo(widgetHeader);
     let innerTabFilter = $('<div id="innerTabFilter">').appendTo(widgetHeader);
-    
+
     let widgetContent = $('<div class="widgetContent"><div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div></div>').appendTo(widgetBody);
 
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
-    
+
     widgetTitle.css('marginBottom', '10px');
 
 
@@ -1144,7 +1150,7 @@ function SmartiWidget(element, _options) {
     tabs.hide();
     innerTabSearch.hide();
     innerTabFilter.hide();
-    
+
     let widgetHeaderTagsTemplate = $.templates(widgetHeaderTagsTemplateStr);
     let widgetHeaderTabsTemplate = $.templates(widgetHeaderTabsTemplateStr);
     let widgetHeaderInnerTabSearchTemplate = $.templates(widgetHeaderInnerTabSearchTemplateStr);
@@ -1227,7 +1233,7 @@ function SmartiWidget(element, _options) {
     });
 
     let sources = tabs.find('.sources');
-    
+
     tabs.on('click', '.more', function() {
         if (sources.hasClass('open')) {
             sources.slideUp(100).removeClass('open');
@@ -1245,14 +1251,14 @@ function SmartiWidget(element, _options) {
         if(!newTab.hasClass('selected')) {
             currentTab.removeClass('selected');
             newTab.addClass('selected');
-    
+
             let currentWidget = currentTab.get(0) && $.view(currentTab).data;
             let newWidget = $.view(newTab).data;
-    
+
             if(currentWidget) currentWidget.params.elem.hide();
             newWidget.params.elem.show();
 
-            
+
             if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
@@ -1285,7 +1291,7 @@ function SmartiWidget(element, _options) {
             innerTabSearchInput.val("");
             searchTerms = [];
             //search(widgetHeaderTabsTemplateData.selectedWidget);
-    
+
             //sources.slideUp(100).removeClass('open');
             //tabs.find('.more').text(Utils.localize({code: 'smarti.sources'}));
 
@@ -1302,7 +1308,7 @@ function SmartiWidget(element, _options) {
                     widgetFooter.addClass("shadow");
                 }
             }
-    
+
             $.observable(widgetHeaderTabsTemplateData).setProperty("selectedWidget", $.view(newTab).index);
             $.observable(widgetHeaderInnerTabSearchTemplateData).setProperty("containerTitle", newWidget.params.query.displayTitle);
         }
@@ -1416,7 +1422,7 @@ function SmartiWidget(element, _options) {
                         }
                     });
                 }
-                
+
             });
             console.log(selectedItems);
             postItems(selectedItems);
@@ -1474,7 +1480,7 @@ function SmartiWidget(element, _options) {
             $.observable(widgetHeaderTagsTemplateData.tokens).remove(tokenIdx);
             smarti.refresh(showError);
         }
-        
+
         tracker.trackEvent('tag.remove');
     });
 
@@ -1582,7 +1588,7 @@ function SmartiWidget(element, _options) {
     $.observable(widgetHeaderTagsTemplateData.include).observeAll(function() {
         writeStorage();
     });
-    
+
     $.views.helpers({
         // helper method to highlight text
         hl: (text, noSearchTerms) => {
@@ -1615,7 +1621,7 @@ function escapeRegExp(str) {
 }
 
 function equalArrays(a, b) {
-    return ld_lang.isEqual([...a].sort(), [...b].sort()); 
+    return ld_lang.isEqual([...a].sort(), [...b].sort());
 }
 
 function getSolrQuery(queryArray) {
