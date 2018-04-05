@@ -268,7 +268,16 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 return StreamSupport.stream(interestingTermList.spliterator(), false)
                     .sorted((a,b) -> Double.compare(((Number)b.getValue()).doubleValue(), ((Number)a.getValue()).doubleValue()))
                     .map(e -> {
-                        String term = ClientUtils.escapeQueryChars(e.getKey());
+                        //NOTE: we need to query escape the value of the term as the returned
+                        // interesting terms are not!
+                        final String term;
+                        int fieldSepIdx = e.getKey().indexOf(':'); //check if their 
+                        if(fieldSepIdx >= 0){
+                            term = e.getKey().substring(0, fieldSepIdx + 1) + 
+                                    ClientUtils.escapeQueryChars(e.getKey().substring(fieldSepIdx + 1));
+                        } else {
+                            term = ClientUtils.escapeQueryChars(e.getKey());
+                        }
                         if(norm.doubleValue() < 0) {
                             norm.set(1d/((Number)e.getValue()).doubleValue());
                             return term;
