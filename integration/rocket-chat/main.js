@@ -98,8 +98,6 @@ function Smarti(options) {
         tracker: new Tracker()
     }, options);
 
-    localize = new Localize(options.i18n, undefined, 'xx');
-
     //init socket connection
     let ddp  = new DDP(options.DDP);
 
@@ -393,6 +391,7 @@ function SmartiWidget(element, _options) {
 
     console.debug('init smarti widget:\n', JSON.stringify(options,null,2));
 
+    localize = new Localize(options.i18n, undefined, 'xx');
     localize.setLocale(options.lang);
 
     let tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
@@ -1200,8 +1199,7 @@ function SmartiWidget(element, _options) {
         endpoint: options.socketEndpoint
       },
       tracker: tracker,
-      channel: options.channel,
-      i18n: options.i18n
+      channel: options.channel
     });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', (data) => {
