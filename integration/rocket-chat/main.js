@@ -28,7 +28,7 @@ let conversationId = null;
 //multi-linguality
 const Localize = require('localize');
 const i18n = require('./i18n.json');
-const localize = new Localize(i18n, undefined, 'xx');
+let localize = new Localize(i18n, undefined, 'xx');
 
 const Utils = {
     getAvatarUrl : (id) => {
@@ -91,12 +91,14 @@ const Utils = {
  */
 function Smarti(options) {
 
-    options = $.extend(true,{
-        DDP:{
+    options = $.extend(true, {
+        DDP: {
             SocketConstructor: WebSocket
         },
         tracker: new Tracker()
-    },options);
+    }, options);
+
+    localize = new Localize(options.i18n, undefined, 'xx');
 
     //init socket connection
     let ddp  = new DDP(options.DDP);
@@ -383,7 +385,8 @@ function SmartiWidget(element, _options) {
                 textreplacemode: 'middle'
             }
         },
-        lang: 'de'
+        lang: 'de',
+        i18n: i18n
     };
 
     $.extend(true,options,_options);
@@ -1197,7 +1200,8 @@ function SmartiWidget(element, _options) {
         endpoint: options.socketEndpoint
       },
       tracker: tracker,
-      channel: options.channel
+      channel: options.channel,
+      i18n: options.i18n
     });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', (data) => {
