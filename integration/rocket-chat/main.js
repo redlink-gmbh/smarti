@@ -673,20 +673,19 @@ function SmartiWidget(element, _options) {
                                     r.messages.slice(1).forEach(m => {
                                         conversation.content += '\r\n' + m.content;
                                     });
-                                    conversation.messages = r.after || [];
-                                    //conversation.messagesBefore = r.before || [];
+                                    conversation.messagesAfter = r.after || [];
+                                    conversation.messagesBefore = r.before || [];
 
-                                    conversation.messagesCnt = conversation.messages.length;
+                                    conversation.messagesCnt = conversation.messagesBefore.length + conversation.messagesAfter.length;
 
                                     conversation.templateType = "related.conversation";
-                                    conversation.messages.forEach(m => {
+                                    conversation.messagesAfter.forEach(m => {
                                         m.templateType = "related.conversation";
                                     });
-                                    /*
                                     conversation.messagesBefore.forEach(m => {
                                         m.templateType = "related.conversation";
                                     });
-                                    */
+
 
                                     conversations.push(conversation);
                                 }
@@ -1043,6 +1042,23 @@ function SmartiWidget(element, _options) {
     const widgetConversationTemplateStr = `
         {^{for results}}
             <div class="conversation">
+                {^{if messagesBefore && messagesBefore.length}}
+                    <div class="beforeContextContainer">
+                        {^{for messagesBefore}}
+                            <div class="convMessage">
+                                <div class="middle">
+                                    <div class="datetime">
+                                    {{tls:time}}
+                                    </div>
+                                    <div class="title"></div>
+                                    <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
+                                    <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
+                                    <div class="selectMessage"></div>
+                                </div>
+                            </div>
+                        {{/for}}
+                    </div>
+                {{/if}}
                 <div class="convMessage" data-link="class{merge: messagesCnt toggle='parent'}">
                     <div class="middle">
                         <div class="datetime">
@@ -1056,9 +1072,9 @@ function SmartiWidget(element, _options) {
                         <div class="selectMessage"></div>
                     </div>
                 </div>
-                {^{if messages && messages.length}}
-                    <div class="responseContainer">
-                        {^{for messages}}
+                {^{if messagesAfter && messagesAfter.length}}
+                    <div class="afterContextContainer">
+                        {^{for messagesAfter}}
                             <div class="convMessage">
                                 <div class="middle">
                                     <div class="datetime">
@@ -1345,9 +1361,9 @@ function SmartiWidget(element, _options) {
         if (
             parent.hasClass('parent') &&
             parent.hasClass('selected') &&
-            !$(this).closest('.conversation').children('.responseContainer').is(':visible')
+            !$(this).closest('.conversation').children('.afterContextContainer').is(':visible')
         ) {
-            $(this).closest('.conversation').children('.responseContainer').toggle(200);
+            toggleConversation($(this).closest('.conversation'));
         }
 
         if(selectionCount === 0) {
@@ -1367,9 +1383,23 @@ function SmartiWidget(element, _options) {
     });
 
     widgetBody.on('click', '.convMessage.parent .context', function() {
-        $(this).closest('.conversation').children('.responseContainer').toggle(200);
-        tracker.trackEvent("conversation.part.toggle");
+        $conversation = $(this).closest('.conversation');
+        toggleConversation($conversation);
     });
+
+    function toggleConversation($conversation) {
+        if($conversation.hasClass('expanded')) {
+            $conversation.children('.beforeContextContainer').toggle(200);
+            $conversation.children('.afterContextContainer').toggle(200, function() {
+                $conversation.removeClass('expanded');
+            });
+        } else {
+            $conversation.addClass('expanded');
+            $conversation.children('.beforeContextContainer').toggle(200);
+            $conversation.children('.afterContextContainer').toggle(200);
+        }
+        tracker.trackEvent("conversation.part.toggle");
+    }
 
     function postItems(items) {
         function createTextMessage(text, conv) {
@@ -1378,8 +1408,11 @@ function SmartiWidget(element, _options) {
             } else {
                 text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + '): ' + conv.parent.description;
             }
-            $.each(conv.selectedChildIndices, (i, childIdx) => {
-                text += createTextMessage('', {parent : conv.parent.messages[childIdx]});
+            $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
+                text += createTextMessage('', {parent : conv.parent.messagesBefore[childIdx]});
+            });
+            $.each(conv.selectedChildIndicesAfter, (i, childIdx) => {
+                text += createTextMessage('', {parent : conv.parent.messagesAfter[childIdx]});
             });
             return text;
         }
@@ -1392,8 +1425,11 @@ function SmartiWidget(element, _options) {
                     bot: 'assistify',
                     ts: conv.parent.time
                 };
-                $.each(conv.selectedChildIndices, (i, childIdx) => {
-                    attachment.attachments.push(buildAttachments({parent: conv.parent.messages[childIdx]}));
+                $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
+                    attachment.attachments.push(buildAttachments({parent: conv.parent.messagesBefore[childIdx]}));
+                });
+                $.each(conv.selectedChildIndicesAfter, (i, childIdx) => {
+                    attachment.attachments.push(buildAttachments({parent: conv.parent.messagesAfter[childIdx]}));
                 });
             } else {
                 attachment = {
@@ -1409,7 +1445,7 @@ function SmartiWidget(element, _options) {
         items.forEach(conv => {
             let text;
             if(conv.parent.templateType === "related.conversation") {
-                text = Utils.localize({code:'widget.conversation.answer.title' + (conv.selectedChildIndices.length ? '' : '_msg')});
+                text = Utils.localize({code:'widget.conversation.answer.title' + (conv.selectedChildIndicesBefore.length || conv.selectedChildIndicesAfter.length ? '' : '_msg')});
             } else {
                 text = Utils.localize({code:"widget.latch.answer.title", args:[widgets[widgetHeaderTabsTemplateData.selectedWidget].params.query.displayTitle]});
             }
@@ -1431,18 +1467,34 @@ function SmartiWidget(element, _options) {
             currentWidget.params.elem.find('.conversation>.convMessage, .irl-result').each((idx, item) => {
                 let parentMessageData = $.view(item).data;
                 let parentIsSelected = $(item).hasClass('selected');
-                let conv = {parent: parentMessageData, selectedChildIndices: []};
+                let conv = {parent: parentMessageData, selectedChildIndicesBefore: [], selectedChildIndicesAfter: []};
                 if(parentIsSelected) selectedItems.push(conv);
-                let responseContainer = $(item).closest('.conversation').children('.responseContainer');
-                if(responseContainer.length) {
-                    responseContainer.find('.convMessage').each((idx, item) => {
+
+                let beforeContextContainer = $(item).closest('.conversation').children('.beforeContextContainer');
+                if(beforeContextContainer.length) {
+                    beforeContextContainer.find('.convMessage').each((idx, item) => {
                         let childData = $.view(item).data;
                         let childIndex = $.view(item).index;
                         if($(item).hasClass('selected')) {
                             if(parentIsSelected) {
-                                conv.selectedChildIndices.push(childIndex);
+                                conv.selectedChildIndicesBefore.push(childIndex);
                             } else {
-                                selectedItems.push({parent: childData, selectedChildIndices: []});
+                                selectedItems.push({parent: childData, selectedChildIndicesBefore: [], selectedChildIndicesAfter: []});
+                            }
+                        }
+                    });
+                }
+
+                let afterContextContainer = $(item).closest('.conversation').children('.afterContextContainer');
+                if(afterContextContainer.length) {
+                    afterContextContainer.find('.convMessage').each((idx, item) => {
+                        let childData = $.view(item).data;
+                        let childIndex = $.view(item).index;
+                        if($(item).hasClass('selected')) {
+                            if(parentIsSelected) {
+                                conv.selectedChildIndicesAfter.push(childIndex);
+                            } else {
+                                selectedItems.push({parent: childData, selectedChildIndicesBefore: [], selectedChildIndicesAfter: []});
                             }
                         }
                     });
@@ -1459,7 +1511,11 @@ function SmartiWidget(element, _options) {
         let selectedItems = [];
         let parent = $(this).parent().parent();
         let parentMessageData = $.view(parent).data;
-        let conv = {parent: parentMessageData, selectedChildIndices: parentMessageData.messages ? Array.apply(null, {length: parentMessageData.messages.length}).map(Number.call, Number) : []};
+        let conv = {
+            parent: parentMessageData,
+            selectedChildIndicesBefore: parentMessageData.messagesBefore.length ? Array.apply(null, {length: parentMessageData.messagesBefore.length}).map(Number.call, Number) : [],
+            selectedChildIndicesAfter: parentMessageData.messagesAfter.length ? Array.apply(null, {length: parentMessageData.messagesAfter.length}).map(Number.call, Number) : []
+        };
         selectedItems.push(conv);
         console.log(selectedItems);
         postItems(selectedItems);

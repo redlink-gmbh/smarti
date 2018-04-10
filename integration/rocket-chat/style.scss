@@ -544,6 +544,8 @@
                             }
 
                             .context {
+                                @extend .noselect;
+
                                 position: relative;
                                 margin-left: 5px;
                                 font-weight: bold;
@@ -561,6 +563,8 @@
                             line-height: 1.3em;
                         }
                         .postAction {
+                            @extend .noselect;
+
                             position: relative;
                             font-size: 12px;
                             background: $grey50;
@@ -632,7 +636,20 @@
                         }
                     }
                 }
-                .responseContainer {
+                .beforeContextContainer {
+                    padding-left: 30px;
+                    display: none;
+                    margin-top: 20px;
+
+                    .convMessage {
+                        margin-bottom: 5px;
+                        border-left: 3px solid $grey50;
+                        &:hover {
+                            border-left: 3px solid $theme-pink-2;
+                        }
+                    }
+                }
+                .afterContextContainer {
                     padding-left: 30px;
                     display: none;
                     margin-bottom: 20px;
@@ -643,6 +660,16 @@
                         &:hover {
                             border-left: 3px solid $theme-pink-2;
                         }
+                    }
+                }
+
+                &.expanded {
+                    border-left: 3px solid $grey75;
+                    .convMessage.parent {
+                        border-left: none;
+                    }
+                    &:hover {
+                        border-left: 3px solid $theme-pink-2;
                     }
                 }
             }
@@ -700,6 +727,8 @@
                         top: -1px;
                     }
                     .postAction {
+                        @extend .noselect;
+
                         position: relative;
                         font-size: 12px;
                         background: $grey50;
