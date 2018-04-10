@@ -1122,17 +1122,8 @@ function SmartiWidget(element, _options) {
     let widgetBody = element.find('#widgetBody');
     let widgetMessage = widgetBody.find('.widgetMessage');
     let widgetFooter = element.find('#widgetFooter');
-    let noChatCloseBtn = false;
+    let noChatCloseBtn = !$('#widgetFooter .help-request-actions').length;
 
-    /*
-    const MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-    let footerObserver = new MutationObserver((mutationRecords) => {
-        console.log("Footer Observer:", mutationRecords);
-        noChatCloseBtn = widgetFooter.children().length === 1;
-        if(noChatCloseBtn && footerPostButton) footerPostButton.css('position', 'relative');
-    });
-    footerObserver.observe(widgetFooter.get(0), {childList: true});
-    */
 
     let tags = $('<div id="tags">').appendTo(widgetHeaderWrapper);
     let tabs = $('<nav id="tabs">').appendTo(widgetHeader);
@@ -1144,7 +1135,6 @@ function SmartiWidget(element, _options) {
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
 
     widgetTitle.css('marginBottom', '10px');
-
 
     widgetMessage.empty();
     tabs.hide();
@@ -1173,11 +1163,32 @@ function SmartiWidget(element, _options) {
     let widgetHeaderInnerTabSearchTemplateData = {containerTitle: ""};
     widgetHeaderInnerTabSearchTemplate.link(innerTabSearch, widgetHeaderInnerTabSearchTemplateData);
 
-    let widgetFooterPostButtonTemplateData = {title: ""};
+    let widgetFooterPostButtonTemplateData = {title: Utils.localize({code:'widget.conversation.post-selected', args:[0]})};
     widgetFooterPostButtonTemplate.link(footerPostButton, widgetFooterPostButtonTemplateData);
 
     let innerTabSearchInput = innerTabSearch.find('input');
     let innerTabSearchSubmit = innerTabSearch.find('#innerTabSearchSubmit');
+
+    function adjustFooter() {
+        if(noChatCloseBtn) {
+            widgetFooter.hide();
+            footerPostButton.css('position', 'relative');
+        } else {
+            footerPostButton.css('position', 'absolute');
+            footerPostButton.css('transform', 'translateY(200%)');
+            widgetFooter.show();
+        }
+    }
+
+    const MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+    let footerObserver = new MutationObserver((mutationRecords) => {
+        //console.log("Footer Observer:", mutationRecords);
+        noChatCloseBtn = !$('#widgetFooter .help-request-actions').length;
+        adjustFooter();
+    });
+    footerObserver.observe(widgetFooter.get(0), {childList: true});
+
+    adjustFooter();
 
     //Smarti
 
@@ -1297,7 +1308,11 @@ function SmartiWidget(element, _options) {
 
             if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
-            footerPostButton.css('transform', 'translateY(200%)');
+            if(noChatCloseBtn) {
+                widgetFooter.slideUp(200);
+            } else {
+                footerPostButton.css('transform', 'translateY(200%)');
+            }
 
             if(newWidget.params.elem.height() <= widgetBody.innerHeight()) {
                 widgetFooter.removeClass("shadow");
@@ -1334,10 +1349,18 @@ function SmartiWidget(element, _options) {
         }
 
         if(selectionCount === 0) {
-            footerPostButton.css('transform', 'translateY(200%)');
+            if(noChatCloseBtn) {
+                widgetFooter.slideUp(200);
+            } else {
+                footerPostButton.css('transform', 'translateY(200%)');
+            }
         } else {
             $.observable(widgetFooterPostButtonTemplateData).setProperty("title", Utils.localize({code:'widget.conversation.post-selected' + (selectionCount == 1 ? '' : '-all'), args:[selectionCount]}));
-            footerPostButton.css('transform', 'translateY(0)');
+            if(noChatCloseBtn) {
+                widgetFooter.slideDown(200);
+            } else {
+                footerPostButton.css('transform', 'translateY(0)');
+            }
         }
     });
 

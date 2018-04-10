@@ -41,7 +41,7 @@
    -webkit-transition: $duration;
    transition: $duration;
  }
- 
+
  .clearfix:after {
    content: ".";
    clear: both;
@@ -49,7 +49,7 @@
    visibility: hidden;
    height: 0px;
  }
- 
+
  .noselect {
    -webkit-touch-callout: none; /* iOS Safari */
    -webkit-user-select: none; /* Safari */
@@ -270,7 +270,7 @@
                     margin:5px 5px 0 0;
                     display:inline-block;
                     text-align: center;
-    
+
                     &:hover {
                         background: $theme-pink-2;
                         color: $white;
@@ -757,7 +757,6 @@
                 background:$theme-pink-2;
                 color:$white;
                 left: 0;
-                transform:translateY(200%);
                 &:hover{
                     background: $theme-pink-1;
                 }
