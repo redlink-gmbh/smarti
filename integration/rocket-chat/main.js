@@ -1243,13 +1243,15 @@ function SmartiWidget(element, _options) {
 
     widgetBody.scroll((event) => {
         if (widgetBody.scrollTop() > 1) {
-            widgetTitle.slideUp(200);
-            if(innerTabSearch.hasClass('active')) innerTabSearch.slideUp(200);
-            if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
+            // Hide title and filters only when the gained height is less than the overflowing height,
+            // otherwise there will be no scrolling and the UI will reset right away!
+            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height()) {
+                widgetTitle.slideUp(200);
+                if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
+            }
             widgetHeader.addClass('shadow');
         } else {
             widgetTitle.slideDown(200);
-            if(innerTabSearch.hasClass('active')) innerTabSearch.slideDown(200);
             if(innerTabFilter.hasClass('active')) innerTabFilter.slideDown(200);
             widgetHeader.removeClass('shadow');
         }
