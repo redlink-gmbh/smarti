@@ -596,6 +596,7 @@ function SmartiWidget(element, _options) {
 
         let lastTks = [];
         let lastFilters = [];
+        let currentFilters = [];
         let currentPage = 0;
         let loadedPage = 0;
         let noMoreData = false;
