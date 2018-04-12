@@ -96,7 +96,7 @@ public class ConversationSearchService {
     public SearchResult<ConversationResult> search(Set<ObjectId> clients, MultiValueMap<String, String> queryParams) throws IOException {
 
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, PARAM_EXCLUDES));
-
+        solrParams.set(CommonParams.QT, "/query");
         solrParams.add(CommonParams.FL, FIELD_ID,FIELD_MESSAGE_IDS,FIELD_CONVERSATION_ID,"score");
         if (clients != null) {
             if (clients.isEmpty()) {
@@ -118,6 +118,7 @@ public class ConversationSearchService {
                 solrParams.set(CommonParams.Q, query);
             }
         }
+        
         log.trace("SolrParams: {}", solrParams);
         final int ctxBefore = getIntParam(queryParams, PARAM_CONTEXT_BEFORE, DEFAULT_CONTEXT_BEFORE, 0);
         log.trace("Context Before: {}", ctxBefore);

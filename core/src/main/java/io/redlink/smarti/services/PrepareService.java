@@ -28,6 +28,7 @@ import io.redlink.smarti.model.config.Configuration;
 import io.redlink.smarti.processing.AnalysisConfiguration;
 import io.redlink.smarti.processing.AnalysisData;
 import io.redlink.smarti.processing.AnalysisLanguageConfiguration;
+import io.redlink.smarti.processing.MessageContentProcessor;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -68,14 +69,18 @@ public class PrepareService {
     
     private final List<Processor> pipeline = new ArrayList<>();
     
+    private final MessageContentProcessor messageContentProvider;
+    
 
     public PrepareService(AnalysisConfiguration analysisConfig, 
             AnalysisLanguageConfiguration analysisLanguageConfig,
             Optional<ConfigurationService> configService, 
-            Optional<List<Processor>> processors) {
+            Optional<List<Processor>> processors,
+            Optional<MessageContentProcessor> messageContentProvider) {
         this.analysisConfig = analysisConfig;
         this.confService = configService.orElse(null);
         this.analysisLanguageConfig = analysisLanguageConfig;
+        this.messageContentProvider = messageContentProvider.orElse(null);
         log.debug("available processors: {}", processors);
         this._processors = processors.orElse(Collections.emptyList());
 
@@ -150,7 +155,7 @@ public class PrepareService {
         Analysis analysis = new Analysis(client.getId(), conversation.getId(), date);
         //TODO: get pipeline and processor configuration for the parsed client
         log.debug("Preparing query for {}", conversation);
-        AnalysisData pd = AnalysisData.create(conversation, analysis, analysisConfig.getConextSize());
+        AnalysisData pd = AnalysisData.create(conversation, analysis, messageContentProvider, analysisConfig.getConextSize());
         
         //The configuration allows to define the language of the conversation
         String conversationLanguage = null;

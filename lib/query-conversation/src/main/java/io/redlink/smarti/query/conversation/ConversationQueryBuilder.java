@@ -25,11 +25,10 @@ import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
@@ -44,8 +43,8 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     //#192: Include at least the last two messages 
     protected static final int MIN_INCL_MSGS = 2;
     protected static final int MAX_INCL_MSGS = 10;
-    //#192: Include at least all messages of the last 5 minutes
-    protected static final long MIN_AGE = TimeUnit.MINUTES.toMillis(5);
+    //#192: Include at least all messages of the last 3 minutes
+    protected static final long MIN_AGE = TimeUnit.MINUTES.toMillis(3);
     //#192: Include at least all messages of the last 5 minutes
     protected static final long MAX_AGE = TimeUnit.DAYS.toMillis(1);
 
@@ -100,35 +99,6 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     }
 
 
-    protected int getContextStart(List<Message> messages){
-        if(messages.isEmpty()){
-            return 0;
-        }
-        int inclMsgs = 0;
-        Date contextDate = null;
-        int contextSize = 0;
-        for(ListIterator<Message> it = messages.listIterator(messages.size()); 
-                it.hasPrevious();){
-            int index = it.previousIndex();
-            Message msg = it.previous();
-            if(contextDate == null){
-                contextDate = msg.getTime();
-            }
-            if(contextSize < MIN_CONTEXT_LENGTH || //force inclusion
-                    inclMsgs < MIN_INCL_MSGS || 
-                    msg.getTime().getTime() > contextDate.getTime() - MIN_AGE){
-                contextSize = contextSize + msg.getContent().length();
-            } else if(contextSize < CONTEXT_LENGTH && //allow include if more context is allowed
-                    inclMsgs < MAX_INCL_MSGS && 
-                    msg.getTime().getTime() > contextDate.getTime() - MAX_AGE){
-                contextSize = contextSize + msg.getContent().length();
-            } else {
-                return index; //we have enough content ... ignore previous messages
-            }
-        }
-        return 0;
-    }
-    
     @Override
     public boolean validate(ComponentConfiguration configuration, Set<String> missing,
             Map<String, String> conflicting) {
@@ -165,13 +135,47 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
         solrQuery.addFilterQuery(FIELD_OWNER + ':' + conversation.getOwner().toHexString());
     }
 
+    protected final Filter getCompletedFilter(){
+        return new Filter("filter.completedOnly", FIELD_COMPLETED + ":true");
+    }
     protected final void addCompletedFilter(final SolrQuery solrQuery){
         solrQuery.addFilterQuery(FIELD_COMPLETED + ":true");
     }
     
+    protected Collection<Filter> getPropertyFilters(Conversation conversation, ComponentConfiguration conf){
+        final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
+        return filters.stream()
+                .map(f -> addPropertyFilter(f, conversation.getMeta().getProperty(f)))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
     protected void addPropertyFilters(SolrQuery solrQuery, Conversation conversation, ComponentConfiguration conf) {
         final List<String> filters = conf.getConfiguration(CONFIG_KEY_FILTER, Collections.emptyList());
         filters.forEach(f -> addPropertyFilter(solrQuery, f, conversation.getMeta().getProperty(f)));
+    }
+    /**
+     * Creates {@link Filter} for client side execution
+     * @param fieldName the name of the field
+     * @param fieldValues the values of the Field (typically of {@link Conversation#getMeta()}
+     * @return the filter or <code>null</code> if none
+     */
+    private Filter addPropertyFilter(String fieldName, List<String> fieldValues){
+        String filterName = "filter.property."+fieldName;
+        if (fieldValues == null || !fieldValues.stream().anyMatch(StringUtils::isNotBlank)) {
+            return new Filter(filterName, "-" + getMetaField(fieldName) + ":*")
+                    .setOptional(true).setEnabled(false) //this is an optional filter that is disabled by default
+                    .setDisplayValue("keine");
+        } else {
+            return fieldValues.stream()
+                    .filter(StringUtils::isNotBlank)
+                    .reduce((a, b) -> a + " OR " + b)
+                    .map(fs -> new Filter(filterName, getMetaField(fieldName) 
+                            + ":(" + ClientUtils.escapeQueryChars(fs) + ")")
+                            .setOptional(true).setEnabled(true)
+                            .setDisplayValue(fs.replaceAll(" OR ", " | ")))
+                    .orElse(null);
+        }
+        
     }
     /**
      * Adds a filter based on a {@link ConversationMeta#getProperty(String)}

@@ -30,6 +30,7 @@ import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
@@ -55,17 +56,17 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
         }
     }
     
-    public static AnalysisData create(Conversation conversation, Client client){
-        return create(conversation, client, -1);
+    public static AnalysisData create(Conversation conversation, Client client, MessageContentProcessor mcp){
+        return create(conversation, client, mcp, -1);
     }
-    public static AnalysisData create(Conversation conversation, Client client, int contextSize){
-        return create(conversation, new Analysis(client.getId(), conversation.getId(),conversation.getLastModified()), contextSize);
+    public static AnalysisData create(Conversation conversation, Client client, MessageContentProcessor mcp, int contextSize){
+        return create(conversation, new Analysis(client.getId(), conversation.getId(),conversation.getLastModified()), mcp, contextSize);
     }
     
-    public static AnalysisData create(Conversation conversation, Analysis analysis){
-        return create(conversation, analysis,-1);
+    public static AnalysisData create(Conversation conversation, Analysis analysis, MessageContentProcessor mcp){
+        return create(conversation, analysis, mcp,-1);
     }
-    public static AnalysisData create(Conversation conversation, Analysis analysis, int contextSize){
+    public static AnalysisData create(Conversation conversation, Analysis analysis, MessageContentProcessor mcp, int contextSize){
         AnalyzedTextBuilder atb = AnalyzedText.build();
         int numMessages = conversation.getMessages().size();
         boolean first = true;
@@ -73,12 +74,18 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
         log.trace("analysisContext: [{}..{}](size: {})", startIdx, numMessages-1, contextSize);
         for(int i=startIdx; i < numMessages; i++){
             Message message = conversation.getMessages().get(i);
-            if(StringUtils.isNoneBlank(message.getContent())){
-                Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
-                section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
-                section.addAnnotation(MESSAGE_ANNOTATION, message);
-                section.addAnnotation(SECTION_ANNOTATION, new SectionTag(SectionType.paragraph, "message"));
-                first = false;
+            //#203: if the skipAnalysis attribute is set we do not analyse the content of this message
+            boolean skipAnalysis = Boolean.parseBoolean(
+                    Objects.toString(message.getMetadata().get(Message.Metadata.SKIP_ANALYSIS), "false"));
+            if(!skipAnalysis){
+                String content = mcp == null ? message.getContent() : mcp.processMessageContent(analysis.getClient(), conversation, message);
+                if(StringUtils.isNotBlank(content)){
+                    Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
+                    section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
+                    section.addAnnotation(MESSAGE_ANNOTATION, message);
+                    section.addAnnotation(SECTION_ANNOTATION, new SectionTag(SectionType.paragraph, "message"));
+                    first = false;
+                } //else ignore empty content
             } //else ignore blank messages for analysis
         }
         return new AnalysisData(conversation, analysis, atb.create());

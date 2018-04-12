@@ -57,7 +57,7 @@ public class SapKeywordsVocabTest {
         final Message m = new Message();
         m.setContent("Was ist der tCode für GIS?");
         c.getMessages().add(m);
-        AnalysisData data = AnalysisData.create(c, new Client());
+        AnalysisData data = AnalysisData.create(c, new Client(), null);
         data.getConfiguration().put(LANGUAGE,"de"); //this test does not have a language detector
         extractor.process(data);
         

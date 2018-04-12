@@ -23,7 +23,6 @@ import io.redlink.smarti.model.Query;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,7 +41,9 @@ public class ConversationSearchQuery extends Query {
     @JsonProperty("queryParams")
     private final Set<String> queryParams = new LinkedHashSet<>();
     @JsonProperty("filterQueries")
-    private final Set<String> filterQueries = new LinkedHashSet<>();
+    private final Set<Filter> filters = new LinkedHashSet<>();
+    @JsonProperty("similarityQuery")
+    private String similarityQuery;
 
     public ConversationSearchQuery(@JsonProperty("creator") String creator) {
         super(creator);
@@ -59,18 +60,18 @@ public class ConversationSearchQuery extends Query {
         }
     }
     
-    public void addFilterQuery(String filter){
-        filterQueries.add(filter);
+    public void addFilter(Filter filter){
+        this.filters.add(filter);
     }
     
-    public Collection<String> getFilterQueries() {
-        return filterQueries;
+    public Collection<Filter> getFilters() {
+        return filters;
     }
     
-    public void setFilters(Collection<String> filtersQueries) {
-        this.filterQueries.clear();
-        if(filtersQueries != null){
-            this.filterQueries.addAll(filtersQueries);
+    public void setFilters(Collection<Filter> filters) {
+        this.filters.clear();
+        if(filters != null){
+            this.filters.addAll(filters);
         }
     }
 
@@ -96,4 +97,11 @@ public class ConversationSearchQuery extends Query {
         return terms;
     }
 
+    public void setSimilarityQuery(String similarityQuery) {
+        this.similarityQuery = similarityQuery;
+    }
+    
+    public String getSimilarityQuery() {
+        return similarityQuery;
+    }
 }

@@ -50,6 +50,8 @@
     <field name="end_time"              type="date"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="message_count"         type="long"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="modified"              type="date"           indexed="true"  stored="true"  multiValued="false"/>
+    <!-- used by the conversation to store all messages (e.g. for highlighting) -->
+    <field name="messages"              type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
     
 
     <field name="related_conversation"  type="string"         indexed="true"  stored="true"  multiValued="true"/>
@@ -57,18 +59,27 @@
 
     <!-- message -->
     <field name="conversation_id"       type="string"         indexed="true"  stored="true"  multiValued="false"/>
-    <field name="message_ids"            type="string"        indexed="true"  stored="true"  multiValued="true"/>
-    <field name="message_idxs"           type="long"          indexed="true"  stored="true"  multiValued="true"/>
+    <field name="message_ids"           type="string"         indexed="true"  stored="true"  multiValued="true"/>
+    <field name="message_idxs"          type="long"           indexed="true"  stored="true"  multiValued="true"/>
     <!-- used by messages to store the content -->
     <field name="message"               type="text_de"        indexed="true"  stored="true"  multiValued="false"/>
-    <!-- used by the conversation to store all messages (e.g. for highlighting) -->
-    <field name="messages"              type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
+
     <field name="time"                  type="date"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="vote"                  type="long"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="link"                  type="string"         indexed="true"  stored="true"  multiValued="true"/>
     <field name="keyword"               type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
     <field name="keyword_synonyms"      type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
     <field name="keyword_homonyms"      type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
+
+    <!-- 
+      Similarity search:
+        * for Conversations this holds the whole content of the conversation
+        * for Messages the context (the content of some messages before/after incl. the content of the current message)
+    -->
+    <field name="mlt_context"           type="text_de"        indexed="true"  stored="false"  multiValued="true" termVectors="true"/>
+    <!-- used to store start/end msg indexes of the mlt_context for messages -->
+    <field name="message_mlt_context_start_idx" type="int"    indexed="false" stored="true"   multiValued="false" />
+    <field name="message_mlt_context_end_idx"   type="int"    indexed="false" stored="true"   multiValued="false" />
 
     <copyField source="env_*" dest="env_txt_*"/>
     <copyField source="meta_*" dest="meta_txt_*"/>
@@ -95,6 +106,7 @@
             <filter class="solr.LowerCaseFilterFactory"/>
             <filter class="solr.StopFilterFactory" format="snowball" words="lang/stopwords_de.txt" ignoreCase="true"/>
             <filter class="solr.SnowballPorterFilterFactory" language="German2" />
+            <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
         </analyzer>
     </fieldType>
     
@@ -109,8 +121,10 @@
               stemEnglishPossessive="1"
               preserveOriginal="1"
               />
+            <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
             <filter class="solr.LowerCaseFilterFactory"/>
             <filter class="solr.ASCIIFoldingFilterFactory"/>
+            <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
         </analyzer>
         <analyzer type="query">
             <charFilter class="solr.HTMLStripCharFilterFactory"/>
@@ -120,48 +134,54 @@
                 splitOnCaseChange="0" splitOnNumerics="0"
                 catenateWords="0" catenateNumbers="1" catenateAll="0"
                 stemEnglishPossessive="1"
-                preserveOriginal="0"
+                preserveOriginal="1"
                 />
+            <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
             <filter class="solr.LowerCaseFilterFactory"/>
             <filter class="solr.ASCIIFoldingFilterFactory"/>
+            <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
         </analyzer>
     </fieldType>
     
      <!-- German -->
-	<fieldType name="text_de" class="solr.TextField" positionIncrementGap="100">
-		<analyzer type="index">
-		  <charFilter class="solr.HTMLStripCharFilterFactory"/>
-		  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-		  <filter class="solr.WordDelimiterGraphFilterFactory"
-		          generateWordParts="1" generateNumberParts="1"
-		          splitOnCaseChange="1" splitOnNumerics="1"
-		          catenateWords="1" catenateNumbers="1" catenateAll="1"
-		          stemEnglishPossessive="0"
-		          preserveOriginal="1"
-		          />
-		  <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
-		  <filter class="solr.LowerCaseFilterFactory"/>
-		  <filter class="solr.GermanLightStemFilterFactory"/>
-		  <filter class="solr.GermanNormalizationFilterFactory"/>
-		  <filter class="solr.ASCIIFoldingFilterFactory"/>
-		</analyzer>
-		<analyzer type="query">
-		    <charFilter class="solr.HTMLStripCharFilterFactory"/>
-		    <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-		    <filter class="solr.WordDelimiterGraphFilterFactory"
-		            generateWordParts="1" generateNumberParts="1"
-		            splitOnCaseChange="0" splitOnNumerics="0"
-		            catenateWords="0" catenateNumbers="0" catenateAll="0"
-		            stemEnglishPossessive="0"
-		            preserveOriginal="0"
-		            />
-		    <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
-		    <filter class="solr.LowerCaseFilterFactory"/>
-		    <filter class="solr.GermanLightStemFilterFactory"/>
-		    <filter class="solr.GermanNormalizationFilterFactory"/>
-		    <filter class="solr.ASCIIFoldingFilterFactory"/>
-		</analyzer>
-	</fieldType>
+    <fieldType name="text_de" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+          <charFilter class="solr.HTMLStripCharFilterFactory"/>
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.WordDelimiterGraphFilterFactory"
+                  generateWordParts="1" generateNumberParts="1"
+                  splitOnCaseChange="1" splitOnNumerics="1"
+                  catenateWords="1" catenateNumbers="1" catenateAll="1"
+                  stemEnglishPossessive="0"
+                  preserveOriginal="1"
+                  />
+          <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
+          <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.GermanLightStemFilterFactory"/>
+          <filter class="solr.GermanNormalizationFilterFactory"/>
+          <filter class="solr.ASCIIFoldingFilterFactory"/>
+          <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <charFilter class="solr.HTMLStripCharFilterFactory"/>
+            <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+            <filter class="solr.WordDelimiterGraphFilterFactory"
+                    generateWordParts="1" generateNumberParts="1"
+                    splitOnCaseChange="0" splitOnNumerics="0"
+                    catenateWords="0" catenateNumbers="0" catenateAll="0"
+                    stemEnglishPossessive="0"
+                    preserveOriginal="1"
+                    />
+            <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
+            <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.GermanLightStemFilterFactory"/>
+            <filter class="solr.GermanNormalizationFilterFactory"/>
+            <filter class="solr.ASCIIFoldingFilterFactory"/>
+            <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+        </analyzer>
+    </fieldType>
 
     <fieldType name="type" class="solr.EnumField" enumsConfig="enums.xml" enumName="type"/>
 

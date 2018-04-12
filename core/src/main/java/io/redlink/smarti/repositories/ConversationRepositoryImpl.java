@@ -185,7 +185,8 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         final Query query = new Query(Criteria.where("_id").is(conversationId))
                 .addCriteria(Criteria.where("messages._id").is(messageId));
         final Update update = new Update()
-                .inc("messages.$.votes", delta);
+                .inc("messages.$.votes", delta)
+                .currentDate("lastModified");
 
         mongoTemplate.updateFirst(query, update, Conversation.class);
 

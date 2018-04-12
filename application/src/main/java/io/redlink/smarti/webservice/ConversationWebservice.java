@@ -388,6 +388,10 @@ public class ConversationWebservice {
 
         if (conversationService.exists(conversation.getId())) {
             Conversation updated = conversationService.deleteConversationField(conversationId, field);
+            if(updated == null){//#similar issue as reported by #232
+                return ResponseEntity.notFound().build();
+            }
+
             CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
             if(callback != null){
                 appendCallbackExecution(callback, updated, analysis);
@@ -533,6 +537,9 @@ public class ConversationWebservice {
         //make sure the message-id is the addressed one
         message.setId(messageId);
         final Conversation c = conversationService.updateMessage(conversation.getId(), message);
+        if(c == null){ //fix for #232 (#updateMessage(..) returns null of no message was updated)
+            return ResponseEntity.notFound().build();
+        }
         final Message updated = c.getMessages().stream()
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
@@ -620,6 +627,9 @@ public class ConversationWebservice {
         }
 
         Conversation c = conversationService.updateMessageField(conversationId, messageId, field, data);
+        if(c == null){//#similar issue as reported by #232
+            return ResponseEntity.notFound().build();
+        }
         final Message updated = c.getMessages().stream()
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(

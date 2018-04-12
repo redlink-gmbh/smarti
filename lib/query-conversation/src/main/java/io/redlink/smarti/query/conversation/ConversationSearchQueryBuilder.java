@@ -23,21 +23,26 @@ import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.params.MoreLikeThisParams;
+import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import com.google.common.util.concurrent.AtomicDouble;
+
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.ConversationSearchService.DEFAULT_CONTEXT_AFTER;
@@ -119,7 +124,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     protected ConversationSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         List<Token> keywords = getTokens(ROLE_KEYWORD, intent, analysis);
         List<Token> terms = getTokens(ROLE_TERM, intent, analysis);
-        int contextStart = getContextStart(conversation.getMessages());
+        int contextStart = ConversationContextUtils.getContextStart(conversation.getMessages(),
+                MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE);
 
         final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName(conf));
 
@@ -169,16 +175,24 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
             query.getDefaults().put("fl", "id,message_id,meta_channel_id,user_id,time,message,type");
         }
         if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
-            query.addFilterQuery(FIELD_COMPLETED + ":true");
+            query.addFilter(getCompletedFilter());
         }
         if(conf.getConfiguration(CONFIG_KEY_EXCLUDE_CURRENT, DEFAULT_EXCLUDE_CURRENT)){
-            query.addFilterQuery('-' + FIELD_CONVERSATION_ID + ':' + conversation.getId().toHexString());
+            query.addFilter(new Filter("filter.excludeCurrentConversation", 
+                    '-' + FIELD_CONVERSATION_ID + ':' + conversation.getId().toHexString()));
         }
         //add config specific filter queries
-        SolrQuery sq = new SolrQuery();
-        addPropertyFilters(sq, conversation, conf);
-        if(sq.getFilterQueries() != null){
-            Arrays.stream(sq.getFilterQueries()).forEach(query::addFilterQuery);
+        query.getFilters().addAll(getPropertyFilters(conversation, conf));
+        
+        try {
+            query.setSimilarityQuery(buildContextQuery(conversation,conf));
+            log.trace("similarityQuery: {}", query.getSimilarityQuery());
+        } catch (IOException | SolrServerException e) {
+            if(log.isDebugEnabled()){
+                log.warn("Unable to build SimilarityQuery for {}",conversation, e);
+            } else {
+                log.warn("Unable to build SimilarityQuery for {} ({} - {})", conversation, e.getClass().getSimpleName(), e.getMessage());
+            }
         }
         return query;
     }
@@ -206,5 +220,75 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
 //                .collect(Collectors.toList()));
         return cc;
     }
+    
+    private String buildContextQuery(Conversation conv, ComponentConfiguration conf) throws IOException, SolrServerException{
+        String context = conv.getMessages().subList(
+                ConversationContextUtils.getContextStart(conv.getMessages(), 
+                MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE),
+                conv.getMessages().size()).stream()
+            .map(Message::getContent)
+            .reduce(null, (s, e) -> {
+                if (s == null) return e;
+                return s + "\n\n" + e;
+            });
+        log.trace("SimilarityContext: {}", context);
+
+        //we make a MLT query to get the interesting terms
+        final SolrQuery solrQuery = new SolrQuery();
+        //search interesting terms in the conversations (as those do not have overlapping
+        //contexts as messages)
+        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_CONVERSATION));
+        //respect client filters
+        addClientFilter(solrQuery, conv);
+        //and also property related filters
+        addPropertyFilters(solrQuery, conv, conf);
+        //and completed query
+        if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
+            addCompletedFilter(solrQuery);
+        }
+        //we do not want any results
+        solrQuery.setRows(0);
+        //we search for interesting terms in the MLT Context field
+        solrQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS, FIELD_MLT_CONTEXT);
+        solrQuery.add(MoreLikeThisParams.BOOST,String.valueOf(true));
+        solrQuery.add(MoreLikeThisParams.INTERESTING_TERMS,"details");
+        solrQuery.add(MoreLikeThisParams.MAX_QUERY_TERMS, String.valueOf(10));
+        solrQuery.add(MoreLikeThisParams.MIN_WORD_LEN, String.valueOf(3));
+        
+        log.trace("InterestingTerms QueryParams: {}", solrQuery);
+        
+        try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
+            NamedList<Object> response = solrClient.request(new ConversationMltRequest(solrQuery, context));
+            NamedList<Object> interestingTermList = (NamedList<Object>)response.get("interestingTerms");
+            if(interestingTermList == null || interestingTermList.size() < 1) { //no interesting terms
+                return null;
+            } else {
+                //Do make it easier to combine context params with other ensure that the maximum boost is 1.0
+                AtomicDouble norm = new AtomicDouble(-1);
+                return StreamSupport.stream(interestingTermList.spliterator(), false)
+                    .sorted((a,b) -> Double.compare(((Number)b.getValue()).doubleValue(), ((Number)a.getValue()).doubleValue()))
+                    .map(e -> {
+                        //NOTE: we need to query escape the value of the term as the returned
+                        // interesting terms are not!
+                        final String term;
+                        int fieldSepIdx = e.getKey().indexOf(':'); //check if their 
+                        if(fieldSepIdx >= 0){
+                            term = e.getKey().substring(0, fieldSepIdx + 1) + 
+                                    ClientUtils.escapeQueryChars(e.getKey().substring(fieldSepIdx + 1));
+                        } else {
+                            term = ClientUtils.escapeQueryChars(e.getKey());
+                        }
+                        if(norm.doubleValue() < 0) {
+                            norm.set(1d/((Number)e.getValue()).doubleValue());
+                            return term;
+                        } else {
+                            return term + '^' + (((Number)e.getValue()).floatValue() * norm.floatValue());
+                        }
+                    })
+                    .collect(Collectors.joining(" OR "));
+            }
+        }
+    }
+
     
 }
