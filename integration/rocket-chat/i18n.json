@@ -79,6 +79,14 @@
     "de": "Kontext",
     "en": "Context"
   },
+  "widget.show_details": {
+    "de": "Details anzeigen",
+    "en": "Show details"
+  },
+  "widget.hide_details": {
+    "de": "Details ausblenden",
+    "en": "Hide details"
+  },
   "widget.tags.label": {
     "de": "Ergebnisse zu:",
     "en": "Results for:"

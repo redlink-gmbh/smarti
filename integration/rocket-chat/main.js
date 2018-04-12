@@ -1065,7 +1065,7 @@ function SmartiWidget(element, _options) {
                         <div class="datetime">
                             {{tls:time}}
                             {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                            {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.context'})}</span>{{/if}}
+                            {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.show_details'})}</span>{{/if}}
                         </div>
                         <div class="title"></div>
                         <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
@@ -1391,15 +1391,24 @@ function SmartiWidget(element, _options) {
     });
 
     function toggleConversation($conversation) {
+        function afterCollapse() {
+            console.log('after collapse');
+            $conversation.removeClass('expanded');
+            $conversation.find('.context').text(Utils.localize({code: 'widget.show_details'}));
+        }
+        function afterExpand() {
+            console.log('after expand');
+            $conversation.find('.context').text(Utils.localize({code: 'widget.hide_details'}));
+        }
         if($conversation.hasClass('expanded')) {
-            $conversation.children('.beforeContextContainer').toggle(200);
-            $conversation.children('.afterContextContainer').toggle(200, function() {
-                $conversation.removeClass('expanded');
-            });
+
+            $conversation.children('.beforeContextContainer').toggle(200, afterCollapse);
+            $conversation.children('.afterContextContainer').toggle(200, afterCollapse);
+
         } else {
             $conversation.addClass('expanded');
-            $conversation.children('.beforeContextContainer').toggle(200);
-            $conversation.children('.afterContextContainer').toggle(200);
+            $conversation.children('.beforeContextContainer').toggle(200, afterExpand);
+            $conversation.children('.afterContextContainer').toggle(200, afterExpand);
         }
         tracker.trackEvent("conversation.part.toggle");
     }
