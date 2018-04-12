@@ -80,7 +80,7 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
             if(!skipAnalysis){
                 String content = mcp == null ? message.getContent() : mcp.processMessageContent(analysis.getClient(), conversation, message);
                 if(StringUtils.isNotBlank(content)){
-                    Section section = atb.appendSection(first ? null : "\n", message.getContent(), "\n");
+                    Section section = atb.appendSection(first ? null : "\n", content, "\n");
                     section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
                     section.addAnnotation(MESSAGE_ANNOTATION, message);
                     section.addAnnotation(SECTION_ANNOTATION, new SectionTag(SectionType.paragraph, "message"));
