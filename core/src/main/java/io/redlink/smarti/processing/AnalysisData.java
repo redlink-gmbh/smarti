@@ -74,11 +74,20 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
         log.trace("analysisContext: [{}..{}](size: {})", startIdx, numMessages-1, contextSize);
         for(int i=startIdx; i < numMessages; i++){
             Message message = conversation.getMessages().get(i);
+            log.trace("message idx: {}", i);
             //#203: if the skipAnalysis attribute is set we do not analyse the content of this message
             boolean skipAnalysis = Boolean.parseBoolean(
                     Objects.toString(message.getMetadata().get(Message.Metadata.SKIP_ANALYSIS), "false"));
+            log.trace("skip analysis: {}", skipAnalysis);
             if(!skipAnalysis){
-                String content = mcp == null ? message.getContent() : mcp.processMessageContent(analysis.getClient(), conversation, message);
+                log.trace("message Content: {}", message.getContent());
+                final String content;
+                if(mcp == null){
+                    content = message.getContent();
+                } else {
+                    content = mcp.processMessageContent(analysis.getClient(), conversation, message);
+                    log.trace(" processed Content: {}", content);
+                }
                 if(StringUtils.isNotBlank(content)){
                     Section section = atb.appendSection(first ? null : "\n", content, "\n");
                     section.addAnnotation(MESSAGE_IDX_ANNOTATION, i);
