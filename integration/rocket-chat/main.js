@@ -1418,7 +1418,7 @@ function SmartiWidget(element, _options) {
             if(conv.parent.templateType === "related.conversation") {
                 text = text + '\n' + conv.parent.content.replace(/\n/g, " ");
             } else {
-                text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + '): ' + conv.parent.description;
+                text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + ')' + (conv.parent.description ? ': ' + conv.parent.description : '');
             }
             $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
                 text += createTextMessage('', {parent : conv.parent.messagesBefore[childIdx]});
