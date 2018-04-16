@@ -1386,7 +1386,7 @@ function SmartiWidget(element, _options) {
     });
 
     widgetBody.on('click', '.convMessage.parent .context', function() {
-        $conversation = $(this).closest('.conversation');
+        const $conversation = $(this).closest('.conversation');
         toggleConversation($conversation);
     });
 
