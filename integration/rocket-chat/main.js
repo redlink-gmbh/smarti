@@ -1525,8 +1525,8 @@ function SmartiWidget(element, _options) {
         let parentMessageData = $.view(parent).data;
         let conv = {
             parent: parentMessageData,
-            selectedChildIndicesBefore: parentMessageData.messagesBefore.length ? Array.apply(null, {length: parentMessageData.messagesBefore.length}).map(Number.call, Number) : [],
-            selectedChildIndicesAfter: parentMessageData.messagesAfter.length ? Array.apply(null, {length: parentMessageData.messagesAfter.length}).map(Number.call, Number) : []
+            selectedChildIndicesBefore: parentMessageData.messagesBefore && parentMessageData.messagesBefore.length ? Array.apply(null, {length: parentMessageData.messagesBefore.length}).map(Number.call, Number) : [],
+            selectedChildIndicesAfter: parentMessageData.messagesAfter && parentMessageData.messagesAfter.length ? Array.apply(null, {length: parentMessageData.messagesAfter.length}).map(Number.call, Number) : []
         };
         selectedItems.push(conv);
         console.log(selectedItems);
