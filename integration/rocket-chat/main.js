@@ -1069,7 +1069,7 @@ function SmartiWidget(element, _options) {
                         </div>
                         <div class="title"></div>
                         <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
-                        <div class="postAction">{^{if messagesCnt}}${Utils.localize({code: 'widget.post-conversation'})}{{else}}${Utils.localize({code: 'widget.post-message'})}{{/if}}</div>
+                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                         <div class="selectMessage"></div>
                     </div>
                 </div>
@@ -1525,8 +1525,10 @@ function SmartiWidget(element, _options) {
         let parentMessageData = $.view(parent).data;
         let conv = {
             parent: parentMessageData,
-            selectedChildIndicesBefore: parentMessageData.messagesBefore && parentMessageData.messagesBefore.length ? Array.apply(null, {length: parentMessageData.messagesBefore.length}).map(Number.call, Number) : [],
-            selectedChildIndicesAfter: parentMessageData.messagesAfter && parentMessageData.messagesAfter.length ? Array.apply(null, {length: parentMessageData.messagesAfter.length}).map(Number.call, Number) : []
+            selectedChildIndicesBefore: [],
+            selectedChildIndicesAfter: []
+            //selectedChildIndicesBefore: parentMessageData.messagesBefore && parentMessageData.messagesBefore.length ? Array.apply(null, {length: parentMessageData.messagesBefore.length}).map(Number.call, Number) : [],
+            //selectedChildIndicesAfter: parentMessageData.messagesAfter && parentMessageData.messagesAfter.length ? Array.apply(null, {length: parentMessageData.messagesAfter.length}).map(Number.call, Number) : []
         };
         selectedItems.push(conv);
         console.log(selectedItems);
