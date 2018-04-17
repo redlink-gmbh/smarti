@@ -1361,6 +1361,7 @@ function SmartiWidget(element, _options) {
             selectionCount++;
         }
 
+        /*
         if (
             parent.hasClass('parent') &&
             parent.hasClass('selected') &&
@@ -1368,6 +1369,7 @@ function SmartiWidget(element, _options) {
         ) {
             toggleConversation($(this).closest('.conversation'));
         }
+        */
 
         if(selectionCount === 0) {
             if(noChatCloseBtn) {
