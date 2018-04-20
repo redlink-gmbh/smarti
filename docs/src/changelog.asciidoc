@@ -5,8 +5,47 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.1 Release Notes
+April 20^th^, 2018
+
+Smarti `0.7.1` is contains several *improvements for analysis quality* and some bugfixes.
+
+=== New in Smarti 0.7.1
+
+* https://github.com/redlink-gmbh/smarti/issues/203[#203 - Preamble of posted conversation / message must not be analyzed]
+* https://github.com/redlink-gmbh/smarti/issues/208[#208 - Ignore code-blocks in analysis]
+* https://github.com/redlink-gmbh/smarti/issues/217[#217 - Indicate for Queries that they are not valid without user added tokens]
+* https://github.com/redlink-gmbh/smarti/issues/227[#227 - Make i18n messages (preamble of posted conversation) configurable]
+* https://github.com/redlink-gmbh/smarti/issues/228[#228 - Allow to disable Filters for related Conversations]
+* https://github.com/redlink-gmbh/smarti/issues/236[#236 - "Context" does not provide enough context]
+* https://github.com/redlink-gmbh/smarti/issues/220[#220 - Improve UI message, if no results are found]
+* https://github.com/redlink-gmbh/smarti/issues/230[#230 - Improve toggle conversation context in the Smarti widget]
+* https://github.com/redlink-gmbh/smarti/issues/239[#239 - Posting a result from the Smarti-Widget]
+* https://github.com/redlink-gmbh/smarti/issues/242[#242 - Clicking the include Message checkbox expands the Result]
+* https://github.com/redlink-gmbh/smarti/issues/243[#243 - Change "Konversation Posten" to "Nachricht Posten"]
+* https://github.com/redlink-gmbh/smarti/issues/225[#225 - Automatic reloading of results does not work as expected]
+* https://github.com/redlink-gmbh/smarti/issues/232[#232 - Bug: Put a message which does not exist results in error 500 ]
+* https://github.com/redlink-gmbh/smarti/issues/237[#237 - Widget: "Post selected messages" button is not shown when room is closed]
+* https://github.com/redlink-gmbh/smarti/issues/238[#238 - Widget does not render Results]
+* https://github.com/redlink-gmbh/smarti/issues/240[#240 - Conversation Context broken in 0.7.1-RC2]
+* https://github.com/redlink-gmbh/smarti/issues/241[#241 - Posts of SolrSearch DataSources does not work in 0.7.1RC2]
+
+=== Upgrading
+
+To ensure that the improved analysis result is available for all users,
+you should clear the collection caching analysis results.
+
+A migration script is available. If you are not using one of the provided
+installation packages (deb, rpm) or docker, you must apply it manually:
+
+.migrate-06_0.7.0-to-0.7.1.js
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-06_0.7.0-to-0.7.1.js[lines=112..-1]
+-----------------------------------------------
+
 == Smarti 0.7.0 Release Notes
-February, X^th^, 2018
+February 28^th^, 2018
 
 Smarti 0.7.0 is a *refactoring* release, and introduces an improved webservice API.
 
