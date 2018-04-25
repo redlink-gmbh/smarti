@@ -1418,9 +1418,9 @@ function SmartiWidget(element, _options) {
     function postItems(items) {
         function createTextMessage(text, conv) {
             if(conv.parent.templateType === "related.conversation") {
-                text = text + '\n' + conv.parent.content.replace(/\n/g, " ");
+                text = text + '\n>' + conv.parent.content.replace(/\r\n/g, "\n").replace(/\n/g, " ");
             } else {
-                text = text + '\n' + '[' + conv.parent.title + '](' + conv.parent.link + ')' + (conv.parent.description ? ': ' + conv.parent.description : '');
+                text = text + '\n>' + (conv.parent.link ? '[' + conv.parent.title + '](' + conv.parent.link + ')' : conv.parent.title) + (conv.parent.description ? ': ' + conv.parent.description : '');
             }
             $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
                 text += createTextMessage('', {parent : conv.parent.messagesBefore[childIdx]});
@@ -1456,22 +1456,35 @@ function SmartiWidget(element, _options) {
 
             return attachment;
         }
-        items.forEach(conv => {
+        if(items && items.length) {
             let text;
-            if(conv.parent.templateType === "related.conversation") {
-                text = Utils.localize({code:'widget.conversation.answer.title' + (conv.selectedChildIndicesBefore.length || conv.selectedChildIndicesAfter.length ? '' : '_msg')});
+            if(items[0].parent.templateType === "related.conversation") {
+                if(items.length > 1) {
+                    text = Utils.localize({code:'widget.conversation.answer.title_msgs'});
+                } else {
+                    text = Utils.localize({code:'widget.conversation.answer.title' + (items[0].selectedChildIndicesBefore.length || items[0].selectedChildIndicesAfter.length ? '' : '_msg')});
+                }
             } else {
                 text = Utils.localize({code:"widget.latch.answer.title", args:[widgets[widgetHeaderTabsTemplateData.selectedWidget].params.query.displayTitle]});
             }
 
-            if(options.postings && options.postings.type === 'suggestText') {
-                messageInputField.post(createTextMessage(text, conv));
-            } else if(options.postings && options.postings.type === 'postText') {
-                smarti.post(createTextMessage(text, conv),[]);
+            if(options.postings && (options.postings.type === 'suggestText' || options.postings.type === 'postText')) {
+                items.forEach(conv => {
+                    text = createTextMessage(text, conv);
+                });
+                if(options.postings.type === 'suggestText') {
+                    messageInputField.post(text);
+                } else {
+                    smarti.post(text, []);
+                }
             } else {
-                smarti.post(text, [buildAttachments(conv)]);
+                let attachments = [];
+                items.forEach(conv => {
+                    attachments.push(buildAttachments(conv));
+                });
+                smarti.post(text, attachments);
             }
-        });
+        }
     }
 
     footerPostButton.click(() => {

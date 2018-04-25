@@ -152,7 +152,7 @@
     "de": "Vorherige"
   },
   "widget.latch.answer.title":{
-    "de": "Das hab ich dazu in $[1] gefunden:",
+    "de": "Das habe ich dazu in $[1] gefunden:",
     "en": "Here is what I found in $[1]:"
   },
   "widget.conversation.title":{
@@ -170,6 +170,10 @@
   "widget.conversation.answer.title_msg": {
     "de":"Ich habe eine passende Nachricht gefunden:",
     "en":"I found a related message:"
+  },
+  "widget.conversation.answer.title_msgs": {
+    "de":"Ich habe passende Nachrichten gefunden:",
+    "en":"I found some related messages:"
   },
   "widget.conversation.post-all": {
     "de":"Alle $[1] Nachrichten posten",
