@@ -1,4 +1,4 @@
-package io.redlink.smarti.chatpal.Service;
+package io.redlink.smarti.chatpal.service;
 
 import java.util.Date;
 import java.util.Map;

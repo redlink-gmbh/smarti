@@ -57,8 +57,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import io.redlink.smarti.chatpal.Service.ChatpalMessageServcie;
 import io.redlink.smarti.chatpal.model.ChatpalMessage;
+import io.redlink.smarti.chatpal.service.ChatpalMessageServcie;
 import io.redlink.smarti.repositories.UpdatedIds;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
@@ -198,7 +198,8 @@ public class ChatpalIndexer {
     }
 
 
-    @Scheduled(initialDelay=15*1000,fixedDelay=15*1000)
+    @Scheduled(initialDelayString="${chatpal.cloudSync.delay:30000}",
+            fixedDelayString="${chatpal.cloudSync.delay:30000}")
     public void syncIndex() {
         Instant now = Instant.now();
         log.debug("sync Chatpal index with Repository");
@@ -259,7 +260,7 @@ public class ChatpalIndexer {
         /**
          * Setter for the lastSync time. Can only be used if not {@link #isActive() active}
          * @param lastSync the time or <code>null</code> to to a full rebuild
-         * @return <code>true</code> if the pased date was set or <code>false</code> if the
+         * @return <code>true</code> if the parsed date was set or <code>false</code> if the
          * date could not be set because the indexer is currently {@link #isActive() active}
          * @see #enqueueFullRebuild() 
          */
@@ -286,7 +287,6 @@ public class ChatpalIndexer {
             active.set(true);
             try {
                 do {
-                    final Date nextSync;
                     lock.lock();
                     try {
                         if(fullRebuild){
@@ -318,7 +318,7 @@ public class ChatpalIndexer {
                     } finally {
                         lock.unlock();
                     }
-                } while (fullRebuild); //another fill rebuild scheduled?
+                } while (fullRebuild); //another full rebuild scheduled?
             } finally {
                 active.set(false);
             }
