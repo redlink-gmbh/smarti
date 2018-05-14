@@ -3,8 +3,8 @@ package io.redlink.smarti.webservice;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import io.redlink.smarti.chatpal.Service.ChatpalMessageServcie;
 import io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration;
+import io.redlink.smarti.chatpal.service.ChatpalMessageServcie;
 import io.redlink.smarti.model.AuthToken;
 import io.redlink.smarti.model.Client;
 import io.redlink.smarti.model.SmartiUser;

@@ -5,17 +5,25 @@ import java.util.Map;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.PersistenceConstructor;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import io.redlink.smarti.chatpal.repo.ChatpalRepository;
 
 @Document(collection = ChatpalRepository.CHATPAL_COLLECTION)
+@CompoundIndexes({
+    @CompoundIndex(name="clientAndMsgId", def="{'client': 1, 'msgId': 1}")
+})
 public class ChatpalMessage {
     
     private final ObjectId id;
     private String msgId;
+    @Indexed(sparse=false)
     private ObjectId client;
     private boolean removed = false;
+    @Indexed(sparse=false)
     private final Date modified;
     Map<String,Object> data;
     
