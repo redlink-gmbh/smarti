@@ -5,6 +5,18 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.2 Release Notes
+May 14^th^, 2018
+
+Smarti `0.7.2` is contains improvements to to the Chatpal Backend and posting of multiple
+messages in the Widget
+
+=== New in Smarti 0.7.2
+
+* https://github.com/redlink-gmbh/smarti/issues/245[#245 - Posting multiple messages not possible]
+* https://github.com/redlink-gmbh/smarti/issues/247[#247 - Smarti Chatpal Backend causes 100% CPU load on Mongo]
+
+
 == Smarti 0.7.1 Release Notes
 April 20^th^, 2018
 
