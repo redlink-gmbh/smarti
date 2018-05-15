@@ -427,13 +427,13 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     public void syncIndex() {
         Instant now = Instant.now();
         if(indexTask != null){
-            log.debug("sync conversation index with Repository");
             if(indexTask.isCompleted()) {
+                log.debug("execute sync of conversation index with repository");
                 indexerPool.execute(indexTask);
             } else if(indexTask.isActive()){
-                log.info("skipping Term Index sync at {} as previouse task has not yet completed!", now);
+                log.info("skipping conversation index sync at {} as previouse task has not yet completed!", now);
             } else {
-                log.info("previouse sync of Term Index is still enqueued at {}!", now);
+                log.info("previouse sync of conversation index is still enqueued at {}!", now);
             }
         }
     }
@@ -446,7 +446,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             if(indexTask.isCompleted()) {
                 indexerPool.execute(indexTask); //and start it when not running
             } else if(indexTask.isActive()){ //when running the full rebuild will be done on the next run
-                log.info("enqueued full term index rebuild as an update is currently running");
+                log.info("enqueued full Conversation index rebuild as an update is currently running");
             }
         } else { //no cloud sync active. So re-index via the store service
             log.info("starting scheduled full rebuild of the conversation index");
@@ -511,7 +511,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 if(Objects.equals(this.lastSync, lastSync)){
                     return true;
                 } else if(active.get()){
-                    log.info("Unable to set lastSync to {} as the term indexer is currently active!",
+                    log.info("Unable to set lastSync to {} as the conversation indexer is currently active!",
                             lastSync == null ? null : lastSync.toInstant());
                     return false;
                 } else {

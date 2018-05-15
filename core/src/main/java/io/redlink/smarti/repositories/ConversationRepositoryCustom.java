@@ -79,6 +79,6 @@ public interface ConversationRepositoryCustom {
      * @return the updated entities and the date of the last update
      */
     @Transient
-    UpdatedIds updatedSince(Date date);
+    UpdatedIds updatedSince(Date date, long limit);
 
 }

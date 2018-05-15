@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +152,12 @@ public class ConversationSearchService {
     }
 
     private ConversationResult readConversation(Group group, int ctxBefore, int ctxAfter) {
-        Conversation conversation = conversationService.getConversation(new ObjectId(String.valueOf(group.getGroupValue())));
+        ObjectId convId = new ObjectId(String.valueOf(group.getGroupValue()));
+        Conversation conversation = conversationService.getConversation(convId);
+        if(conversation == null){
+            log.info("ConversationIndex out of Sync with ConversationRepository: Conversation[id:{}] is present in the index but not in the Repository!", convId);
+            return null;
+        }
         ConversationResult cr = new ConversationResult(conversation);
         //clean all messages that does not fit
         Map<String, SolrDocument> matches = new HashMap<>();
@@ -203,15 +209,24 @@ public class ConversationSearchService {
         return map;
     }
 
-    private static <T> SearchResult<T> fromQueryResponse(QueryResponse solrQueryResponse, Function<Group, T> resultMapper) {
+    private <T> SearchResult<T> fromQueryResponse(QueryResponse solrQueryResponse, Function<Group, T> resultMapper) {
         final List<Group> results = solrQueryResponse.getGroupResponse().getValues().get(0).getValues();
 
         int numFound = solrQueryResponse.getGroupResponse().getValues().get(0).getNGroups();
         //TODO paging
         int start = 0;
-
-        final SearchResult<T> searchResult = new SearchResult<>(numFound, start,
-                results.stream().map(resultMapper).collect(Collectors.toList()));
+        Object startValue = solrQueryResponse.getResponseHeader().findRecursive("params","start");
+        if(startValue != null){
+            try {
+                start = Integer.parseInt(startValue.toString());
+            } catch (NumberFormatException e) {
+                log.warn("Unable to parse start offset from Solr Response 'headers.params.start={}", startValue);
+            }
+        }
+        final SearchResult<T> searchResult = new SearchResult<>(numFound, start, results.stream()
+                .map(resultMapper)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
 
         //TODO
         // if (results.getMaxScore() != null) {

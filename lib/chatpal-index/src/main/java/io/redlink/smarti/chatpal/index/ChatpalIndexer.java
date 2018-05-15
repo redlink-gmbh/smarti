@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -202,13 +203,13 @@ public class ChatpalIndexer {
             fixedDelayString="${chatpal.cloudSync.delay:30000}")
     public void syncIndex() {
         Instant now = Instant.now();
-        log.debug("sync Chatpal index with Repository");
         if(indexingTask.isCompleted()) {
+            log.debug("execute sync of Chatpal index with repository");
             indexerPool.execute(indexingTask);
         } else if(indexingTask.isActive()){
-            log.info("skipping Term Index sync at {} as previouse task has not yet completed!", now);
+            log.info("skipping Chatpal index sync at {} as previouse task has not yet completed!", now);
         } else {
-            log.info("previouse sync of Term Index is still enqueued at {}!", now);
+            log.info("previouse sync of Chatpal index is still enqueued at {}!", now);
         }
     }
     
@@ -270,7 +271,7 @@ public class ChatpalIndexer {
                 if(Objects.equals(this.lastSync, lastSync)){
                     return true;
                 } else if(active.get()){
-                    log.info("Unable to set lastSync to {} as the term indexer is currently active!",
+                    log.info("Unable to set lastSync to {} as the Chatpal indexer is currently active!",
                             lastSync == null ? null : lastSync.toInstant());
                     return false;
                 } else {
@@ -327,28 +328,41 @@ public class ChatpalIndexer {
         private SyncData syncAll() {
             return sync(null);
         }
-        private SyncData sync(Date since) {
+        private SyncData sync(Date date) {
             long start = System.currentTimeMillis();
-            UpdatedIds<ObjectId> updated = chatpalService.updatedSince(since);
-            Date lastUpdate = updated.getLastModified();
-            AtomicInteger count = new AtomicInteger();
-            //load in batches of 10 from the MongoDB
-            ListUtils.partition(updated.ids(), 10).forEach(batch -> {
-                chatpalService.get(batch).forEach(c -> {
-                        indexMessage(c, lastUpdate);
-                        count.incrementAndGet();
-                    });
-            });
-            return new SyncData(lastUpdate, count.get(), (int)(System.currentTimeMillis()-start));
+            UpdatedIds<ObjectId> updated;
+            AtomicLong count = new AtomicLong();
+            Date since = date;
+            do {
+                updated = chatpalService.updatedSince(since, 10000);
+                final Date currentModifiedBatch = updated.getLastModified();
+                since  = currentModifiedBatch;
+                //load in batches of 10 from the MongoDB
+                ListUtils.partition(updated.ids(), 10).forEach(batch -> {
+                    chatpalService.get(batch).forEach(c -> {
+                            try {
+                                indexMessage(c, currentModifiedBatch);
+                                count.incrementAndGet();
+                            } catch (RuntimeException e){
+                                if(log.isDebugEnabled()){
+                                    log.warn("Error while indexing {}",c, e);
+                                } else {
+                                    log.warn("Error while indexing {} ({} - {})",c, e.getClass().getSimpleName(), e.getMessage());
+                                }
+                            }
+                        });
+                });
+            } while(!updated.ids().isEmpty());
+            return new SyncData(updated.getLastModified(), count.get(), (int)(System.currentTimeMillis()-start));
 
         }
     }
     
     public static class SyncData {
-        final int count;
+        final long count;
         final int duration;
         final Date syncDate;
-        SyncData(Date syncDate, int count, int duration){
+        SyncData(Date syncDate, long count, int duration){
             this.syncDate = syncDate;
             this.count = count;
             this.duration = duration;
@@ -358,7 +372,7 @@ public class ChatpalIndexer {
             return syncDate;
         }
         
-        public int getCount() {
+        public long getCount() {
             return count;
         }
         

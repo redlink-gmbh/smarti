@@ -14,6 +14,6 @@ public interface ChatpalRepositoryCustom {
     void markAsDeleted(ObjectId client, String messageIdx);
     void markAsDeleted(ObjectId client);
     
-    UpdatedIds<ObjectId> updatedSince(Date date);
+    UpdatedIds<ObjectId> updatedSince(Date date, int limit);
 
 }

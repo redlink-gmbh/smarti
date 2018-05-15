@@ -53,12 +53,12 @@ public class Conversation {
 //    @JsonIgnore
 //    private String channelId;
 
-    @Indexed
     @ApiModelProperty(notes="The Smarti client owning this conversation. Set during creation. MUST NOT be changed "
             + "afterwadrs. If the authenticated user is assigned to a single client (always the case for tokens) the "
             + "owner is set by the server. If a owner is parsed it MUST correspond to one of the clients the "
             + "authenticated user is assigned to.")
     @JsonIgnore
+    @Indexed
     private ObjectId owner;
     
     @ApiModelProperty
@@ -82,6 +82,7 @@ public class Conversation {
     private Context context = new Context();
 
     @ApiModelProperty(readOnly=true,notes="Server assigned modification date")
+    @Indexed
     private Date lastModified = null;
 
     public Conversation(){

@@ -23,8 +23,8 @@ public class ChatpalMessageServcie {
         repo.store(clientId, data);
     }
     
-    public UpdatedIds<ObjectId> updatedSince(Date date){
-        return repo.updatedSince(date);
+    public UpdatedIds<ObjectId> updatedSince(Date date, int limit){
+        return repo.updatedSince(date, limit);
     }
     
     public ChatpalMessage get(ObjectId id){

@@ -33,6 +33,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
@@ -328,7 +329,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
             .max("lastModified").as("lastModified");
     
     @Override
-    public UpdatedIds<ObjectId> updatedSince(Date date) {
+    public UpdatedIds<ObjectId> updatedSince(Date date, long limit) {
         //IMPLEMENTATION NOTES (Rupert Westenthaler, 2017-07-19):
         // * we need to use $gte as we might get additional updates in the same ms ...
         // * Instead of $max: modified we would like to use the current Server time of the
@@ -337,13 +338,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         //   Entities updated at lastModified on every call. To avoid this a Workaround is used
         //   that increases the reported lastModified time by 1ms in cases no update was done
         //   since the last call (meaning the parsed date equals the lastModified)
-        Aggregation agg = date != null ? //if a date is parsed search for updated after this date
-                Aggregation.newAggregation(Aggregation.match(Criteria.where("lastModified").gte(date)),
-                        ID_MODIFIED_PROJECTION, GROUP_MODIFIED) :
-                    //else return all updates
-                    Aggregation.newAggregation(ID_MODIFIED_PROJECTION, GROUP_MODIFIED);
-        log.trace("UpdatedSince Aggregation: {}", agg);
-        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(agg,Conversation.class, 
+        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(getUpdatedSinceAggregation(date, limit),Conversation.class, 
                 UpdatedIds.class);
         if(log.isTraceEnabled()){
             log.trace("updated Conversations : {}", aggResult.getMappedResults());
@@ -360,6 +355,22 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                 return updates;
             }    
         }
+    }
+    
+    private Aggregation getUpdatedSinceAggregation(Date since, long limit) {
+        List<AggregationOperation> ops = new LinkedList<>();
+        if(since != null){
+            ops.add(Aggregation.match(Criteria.where("lastModified").gte(since)));
+        }
+        ops.add(Aggregation.sort(Direction.ASC,"lastModified"));
+        if(limit > 0){
+            ops.add(Aggregation.limit(limit));
+        }
+        ops.add(ID_MODIFIED_PROJECTION);
+        ops.add(GROUP_MODIFIED);
+        Aggregation agg = Aggregation.newAggregation(ops);
+        log.trace("UpdatedSince Aggregation: {}", agg);
+        return agg;
     }
 
     @Override
