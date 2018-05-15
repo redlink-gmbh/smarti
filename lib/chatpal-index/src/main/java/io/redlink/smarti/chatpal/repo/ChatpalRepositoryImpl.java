@@ -2,13 +2,17 @@ package io.redlink.smarti.chatpal.repo;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
@@ -93,7 +97,7 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
      * @see io.redlink.smarti.chatpal.repo.ChatpalRepositoryCustom#updatedSince(java.util.Date)
      */
     @Override
-    public UpdatedIds<ObjectId> updatedSince(Date date) {
+    public UpdatedIds<ObjectId> updatedSince(Date date, int limit) {
         //IMPLEMENTATION NOTES (Rupert Westenthaler, 2017-07-19):
         // * we need to use $gte as we might get additional updates in the same ms ...
         // * Instead of $max: modified we would like to use the current Server time of the
@@ -102,14 +106,9 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
         //   Entities updated at lastModified on every call. To avoid this a Workaround is used
         //   that increases the reported lastModified time by 1ms in cases no update was done
         //   since the last call (meaning the parsed date equals the lastModified)
-        Aggregation agg = date != null ? //if a date is parsed search for updated after this date
-                Aggregation.newAggregation(Aggregation.match(Criteria.where("modified").gte(date)),
-                        ID_MODIFIED_PROJECTION, GROUP_MODIFIED) :
-                    //else return all updates
-                    Aggregation.newAggregation(ID_MODIFIED_PROJECTION, GROUP_MODIFIED);
-        log.trace("UpdatedSince Aggregation: {}", agg);
         @SuppressWarnings("rawtypes")
-        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(agg, ChatpalMessage.class, UpdatedIds.class);
+        AggregationResults<UpdatedIds> aggResult = mongoTemplate.aggregate(
+                getUpdatedSinceAggregation(date, limit), ChatpalMessage.class, UpdatedIds.class);
         if(log.isTraceEnabled()){
             log.trace("{} : {} updated since {}", ChatpalMessage.class, aggResult.getMappedResults(), 
                     date == null ? null : date.toInstant());
@@ -126,5 +125,21 @@ public class ChatpalRepositoryImpl implements ChatpalRepositoryCustom {
                 return updates;
             }    
         }
+    }
+
+    private Aggregation getUpdatedSinceAggregation(Date since, long limit) {
+        List<AggregationOperation> ops = new LinkedList<>();
+        if(since != null){
+            ops.add(Aggregation.match(Criteria.where("modified").gte(since)));
+        }
+        ops.add(Aggregation.sort(Direction.ASC,"modified"));
+        if(limit > 0){
+            ops.add(Aggregation.limit(limit));
+        }
+        ops.add(ID_MODIFIED_PROJECTION);
+        ops.add(GROUP_MODIFIED);
+        Aggregation agg = Aggregation.newAggregation(ops);
+        log.trace("UpdatedSince Aggregation: {}", agg);
+        return agg;
     }
 }
