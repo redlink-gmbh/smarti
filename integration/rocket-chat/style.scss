@@ -802,5 +802,14 @@
           z-index: 1;
         }
     }
+
+    .widgetToast {
+        transform: translateX(12%);
+    }
+
+    .toast-error {
+        background-color: $theme-pink-2;
+    }
+
     }
 }
