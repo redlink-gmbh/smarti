@@ -316,12 +316,10 @@ public class ConversationWebservice {
     ) {
         authenticationService.assertConversation(authContext, conversationId);
 
-        final Conversation conversation = conversationService.deleteConversation(conversationId);
-
-        if (conversation == null) {
-            return ResponseEntity.notFound().build();
-        } else {
+        if (conversationService.deleteConversation(conversationId)) {
             return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 

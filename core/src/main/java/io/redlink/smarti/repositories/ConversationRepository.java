@@ -36,11 +36,17 @@ import java.util.Set;
  */
 public interface ConversationRepository extends PagingAndSortingRepository<Conversation, ObjectId>, ConversationRepositoryCustom {
 
-    Conversation findByOwnerAndId(ObjectId owner, ObjectId id);
+    boolean existsByDeletedIsNull(ObjectId id);
     
-    Page<Conversation> findByOwner(ObjectId owner, Pageable paging);
+    Conversation findOneByIdAndDeletedIsNull(ObjectId id);
+    
+    Page<Conversation> findByDeletedIsNull(Pageable paging);
+    
+    Conversation findByOwnerAndIdAndDeletedIsNull(ObjectId owner, ObjectId id);
+    
+    Page<Conversation> findByOwnerAndDeletedIsNull(ObjectId owner, Pageable paging);
 
-    List<Conversation> findByOwner(ObjectId owner);
+    List<Conversation> findByOwnerAndDeletedIsNull(ObjectId owner);
 
-    Page<Conversation> findByOwnerIn(Set<ObjectId> clientIDs, Pageable paging);
+    Page<Conversation> findByOwnerInAndDeletedIsNull(Set<ObjectId> clientIDs, Pageable paging);
 }
