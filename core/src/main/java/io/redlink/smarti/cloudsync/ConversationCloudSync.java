@@ -38,17 +38,24 @@ public class ConversationCloudSync {
     public SyncData sync(ConversytionSyncCallback callback, Date date) {
         long start = System.currentTimeMillis();
         UpdatedIds<ObjectId> updated;
-        AtomicLong count = new AtomicLong();
+        AtomicLong updatedCount = new AtomicLong();
+        AtomicLong deletedCount = new AtomicLong();
         Date since = date;
         do {
             updated = conversationRepository.updatedSince(since, 10000);
             final Date currentModifiedBatch = updated.getLastModified();
             //load in batches of 10 from the MongoDB
             ListUtils.partition(updated.ids(), 10).forEach(batch -> {
+                //NOTE: findAll will also return conversations marked as deleted
                 conversationRepository.findAll((Iterable<ObjectId>)batch).forEach(c -> {
                         try {
-                            callback.updateConversation(c, currentModifiedBatch);
-                            count.incrementAndGet();
+                            if(c == null || c.getDeleted() != null){
+                                callback.removeConversation(c.getId(), currentModifiedBatch);
+                                deletedCount.incrementAndGet();
+                            } else {
+                                callback.updateConversation(c, currentModifiedBatch);
+                                updatedCount.incrementAndGet();
+                            }
                         } catch (RuntimeException e) {
                             if(log.isDebugEnabled()){
                                 log.warn("Unable to update {}", c, e);
@@ -60,21 +67,24 @@ public class ConversationCloudSync {
             });
             since = currentModifiedBatch;
         } while(!updated.ids().isEmpty());
-        return new SyncData(updated.getLastModified(), count.get(), (int)(System.currentTimeMillis()-start));
+        return new SyncData(updated.getLastModified(), updatedCount.get(), deletedCount.get(), (int)(System.currentTimeMillis()-start));
 
     }
     
     public static interface ConversytionSyncCallback {
+        void removeConversation(ObjectId conversationId, Date syncDate);
         void updateConversation(Conversation conversation, Date syncDate);
     }
     
     public static class SyncData {
-        final long count;
+        final long updated;
+        final long deleted;
         final int duration;
         final Date syncDate;
-        SyncData(Date syncDate, long count, int duration){
+        SyncData(Date syncDate, long updated, long deleted, int duration){
             this.syncDate = syncDate;
-            this.count = count;
+            this.updated = updated;
+            this.deleted = deleted;
             this.duration = duration;
         }
         
@@ -83,7 +93,15 @@ public class ConversationCloudSync {
         }
         
         public long getCount() {
-            return count;
+            return updated + deleted;
+        }
+        
+        public long getUpdatedCount() {
+            return updated;
+        }
+        
+        public long getDeletedCount() {
+            return deleted;
         }
         
         public int getDuration() {
@@ -92,7 +110,7 @@ public class ConversationCloudSync {
 
         @Override
         public String toString() {
-            return "SyncData [syncDate=" + (syncDate == null ? null : syncDate.toInstant()) + ", count=" + count + ", duration=" + duration + "ms]";
+            return "SyncData [syncDate=" + (syncDate == null ? null : syncDate.toInstant()) + ", updated=" + updated + ", deleted=" + deleted + ", duration=" + duration + "ms]";
         }
         
     }

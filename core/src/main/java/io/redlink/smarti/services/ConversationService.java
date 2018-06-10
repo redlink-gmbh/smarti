@@ -115,10 +115,11 @@ public class ConversationService {
     }
 
     public Conversation getConversation(Client client, ObjectId convId){
+        Preconditions.checkNotNull(convId);
         if(client != null){
-            return conversationRepository.findByOwnerAndId(client.getId(), convId);
+            return conversationRepository.findByOwnerAndIdAndDeletedIsNull(client.getId(), convId);
         } else {
-            return conversationRepository.findOne(convId);
+            return conversationRepository.findOneByIdAndDeletedIsNull(convId);
         }
     }
 
@@ -157,9 +158,9 @@ public class ConversationService {
     public Page<Conversation> listConversations(Set<ObjectId> clientIDs, int page, int pageSize) {
         final PageRequest paging = new PageRequest(page, pageSize);
         if (CollectionUtils.isNotEmpty(clientIDs)) {
-            return conversationRepository.findByOwnerIn(clientIDs, paging);
+            return conversationRepository.findByOwnerInAndDeletedIsNull(clientIDs, paging);
         } else {
-            return conversationRepository.findAll(paging);
+            return conversationRepository.findByDeletedIsNull(paging);
         }
     }
 
@@ -172,7 +173,7 @@ public class ConversationService {
     }
 
     public List<Conversation> getConversations(ObjectId owner) {
-        return conversationRepository.findByOwner(owner);
+        return conversationRepository.findByOwnerAndDeletedIsNull(owner);
     }
 
     public void importConversations(ObjectId owner, List<Conversation> conversations) {
@@ -185,7 +186,7 @@ public class ConversationService {
     }
 
     public boolean exists(ObjectId conversationId) {
-        return conversationRepository.exists(conversationId);
+        return conversationRepository.existsByDeletedIsNull(conversationId);
     }
 
     public Conversation updateStatus(ObjectId conversationId, ConversationMeta.Status newStatus) {
@@ -213,22 +214,20 @@ public class ConversationService {
         return conversation;
     }
 
-    public Conversation deleteConversation(ObjectId conversationId) {
-        final Conversation one = conversationRepository.findOne(conversationId);
-        if (one != null) {
-            conversationRepository.delete(conversationId);
+    public boolean deleteConversation(ObjectId conversationId) {
+        Preconditions.checkNotNull(conversationId);
+        boolean deleted = conversationRepository.markAsDeleted(conversationId);
+        if(deleted && analysisRepository != null){
             if(eventPublisher != null){
                 eventPublisher.publishEvent(StoreServiceEvent.delete(conversationId, this));
             }
-            if(analysisRepository != null){
-                try {
-                    analysisRepository.deleteByConversation(one.getId());
-                } catch (RuntimeException e) {
-                    log.debug("Unable to delete storead analysis for deleted conversation {}", one, e);
-                }
+            try {
+                analysisRepository.deleteByConversation(conversationId);
+            } catch (RuntimeException e) {
+                log.debug("Unable to delete storead analysis for deleted conversation[id: {}]", conversationId, e);
             }
         }
-        return one;
+        return deleted;
     }
     /**
      * Updates a field of the conversation<p>
@@ -415,6 +414,8 @@ public class ConversationService {
     }
     
     protected final Conversation store(Conversation conversation) {
+        Preconditions.checkNotNull(conversation);
+        Preconditions.checkArgument(conversation.getDeleted() == null, "Unable to store %s as it is marked as deleted", conversation);
         conversation.setLastModified(new Date());
         if(conversation.getId() != null){ //if we update an existing we need to validate the clientId value
             Conversation persisted = getConversation(conversation.getId());

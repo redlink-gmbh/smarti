@@ -19,6 +19,10 @@
     "de": "Serverseitiger Fehler: $[1]",
     "en": "Server-side error: $[1]"
   },
+  "smarti.result.no-response": {
+    "de": "Keine Antwort vom Server!",
+    "en": "No response from server!"
+  },
   "smarti.no-widgets": {
     "de": "Keine Widgets verfügbar!",
     "en": "No widgets found!"

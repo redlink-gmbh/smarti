@@ -19,6 +19,8 @@ require('./style.scss');
 const md5 = require('js-md5');
 const moment = require('moment');
 const ld_lang = require('lodash/lang');
+const toastr = require('toastr');
+require('./node_modules/toastr/toastr.scss');
 require('jsviews');
 
 const DDP = require("ddp.js").default;
@@ -29,6 +31,8 @@ let conversationId = null;
 const Localize = require('localize');
 const i18n = require('./i18n.json');
 let localize = new Localize(i18n, undefined, 'xx');
+toastr.options.target = ".widgetMessage";
+toastr.options.positionClass = "widgetToast";
 
 const Utils = {
     getAvatarUrl : (id) => {
@@ -250,9 +254,10 @@ function Smarti(options) {
                 return failure({code:"get.conversation.params", args:[message.error.reason]});
             } else if(message.id === msgid) {
                 if(message.result) {
-                    if(message.result.errorCode) {
-                        console.debug('Server-side error:', message.result.errorCode);
-                        if(failure) failure({code:'smarti.result.error', args:[message.result.errorCode]});
+                    if(message.result.error) {
+                        console.debug('Server-side error:', message.result.error);
+                        const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
+                        if(failure) failure({code:'smarti.result.error', args:[errorCode]});
                     } else {
                         pubsub('smarti.data').publish(message.result);
                     }
@@ -269,11 +274,10 @@ function Smarti(options) {
       console.debug('get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
       const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
       ddp.on("result", (message) => {
-          if (message.error) return failure({code:"get.query.params",args:[message.error.reason]});
-
           if(message.id === msgid) {
-            success(message.result || {});
-              }
+              if (message.error) return failure({code:"get.query.params", args:[message.error.reason]});
+              success(message.result || {});
+          }
       });
     }
 
@@ -281,10 +285,14 @@ function Smarti(options) {
         console.debug('search for conversation messages');
         const msgid = ddp.method("searchConversations",[params]);
         ddp.on("result", (message) => {
-            if (message.error) return failure({code:"get.query.params", args:[message.error.reason]});
-
             if(message.id === msgid) {
-                success(message.result || {});
+                if (message.error) {
+                    failure(message.error);
+                } else if (!message.result || message.result.error) {
+                    failure(message.result && message.result.error);
+                } else {
+                    success(message.result);
+                }
             }
         });
     }
@@ -583,6 +591,9 @@ function SmartiWidget(element, _options) {
         };
     }
 
+    let similarityQuery = '';
+    let similarityQueryPath = [];
+
     /**
      * @param params
      * @returns {Object} {
@@ -594,6 +605,8 @@ function SmartiWidget(element, _options) {
         widgetConversationTemplate.link(params.elem, params.templateData);
         $.observable(params.templateData.filters).observeAll(onDataChange);
 
+        let lastSimilarityQuery = null;
+        let currentSimilarityQuery = null;
         let lastTks = [];
         let lastFilters = [];
         let currentFilters = [];
@@ -618,6 +631,8 @@ function SmartiWidget(element, _options) {
                 let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
+                currentSimilarityQuery = similarityQuery;
+
                 currentFilters = [];
                 params.query.filterQueries.forEach(fq => {
                     if(!fq.optional) {
@@ -631,7 +646,7 @@ function SmartiWidget(element, _options) {
                     }
                 });
 
-                if(equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
+                if(lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
 
                 if(!append) {
                     page = 0;
@@ -654,10 +669,19 @@ function SmartiWidget(element, _options) {
                         queryParams[property] = params.query.defaults[property];
                 }
 
+                // Filters
                 queryParams.fq = lastFilters = currentFilters;
                 queryParams.start = start;
                 queryParams.q = getSolrQuery(tks);
-                if(params.query.similarityQuery) queryParams["q.alt"] = params.query.similarityQuery;
+
+                // SimilarityQuery
+                lastSimilarityQuery = currentSimilarityQuery;
+                if (currentSimilarityQuery) {
+                    queryParams["q.alt"] = currentSimilarityQuery;
+                } else {
+                    delete queryParams["q.alt"];
+                }
+                console.log("queryParams: " + queryParams);
 
                 smarti.search(queryParams, (data) => {
                     console.log("Conversation search results:", data);
@@ -695,9 +719,10 @@ function SmartiWidget(element, _options) {
                     }
 
                     tracker.trackEvent(params.query.creator, conversations.length);
+
                     noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
 
-                    $.observable(params.templateData).setProperty("total", data.numFound || 0);
+                    if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(conversations);
@@ -712,8 +737,14 @@ function SmartiWidget(element, _options) {
                     } else {
                         if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
                     }
-                }, function(err) {
-                    showError(err);
+                }, function(error) {
+                    if(error) {
+                        console.log("Server error:", error);
+                        const errorCode = error.code || error.response && error.response.statusCode;
+                        toastr.error(Utils.localize({code:'smarti.result.error', args:[error.reason || errorCode]}));
+                    } else {
+                        toastr.error(Utils.localize({code:'smarti.result.no-response'}));
+                    }
                     $.observable(params.templateData).setProperty("loading", false);
                 });
             } else if(params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
@@ -792,8 +823,7 @@ function SmartiWidget(element, _options) {
     }
 
     function showError(err) {
-        widgetMessage.empty().append($('<p>').text(Utils.localize(err)));
-        widgetContent.empty();
+        toastr.error(Utils.localize(err), null, {timeOut: 0, extendedTimeOut: 0});
     }
 
     function drawLogin() {
@@ -900,6 +930,11 @@ function SmartiWidget(element, _options) {
                         };
 
                         if(template.type == "related.conversation") {
+                            // similarityQuery
+                            similarityQuery = query.similarityQuery;
+                            similarityQueryPath = ['templates', i, 'queries', j, 'similarityQuery'];
+
+                            // filterQueries
                             params.templateData.filters = query.filterQueries.filter(fq => {
                                 return fq.optional;
                             });
@@ -931,6 +966,7 @@ function SmartiWidget(element, _options) {
                 showError({code:'smarti.no-widgets'});
             }
         } else {
+            similarityQuery = getProp(similarityQueryPath, data);
             $.each(widgets, (i, wgt) => {
                 wgt.refresh();
             });
@@ -985,6 +1021,7 @@ function SmartiWidget(element, _options) {
     readStorage();
 
     const widgetHeaderTagsTemplateStr = `
+        {^{if widgets.length > 0}}
         <span>${Utils.localize({code: 'widget.tags.label'})}</span>
         <ul>
             <li class="add"><i class="icon-plus"></i></li>
@@ -1004,7 +1041,7 @@ function SmartiWidget(element, _options) {
         <div class="tag-actions">
             {^{if userTokens.length + tokens.length > 0}}<span class="remove-all">${Utils.localize({code: 'widget.latch.query.remove.all'})}</span>{{/if}}
         </div>
-
+        {{/if}}
     `;
     /*
         {^{if exclude.length}}<span>{^{:exclude.length}} ${Utils.localize({code: 'widget.latch.query.excluded'})}</span><span class="reset-exclude" title="${Utils.localize({code: 'widget.latch.query.reset'})}"><i class="icon-ccw"></i></span>{{/if}}
@@ -1172,7 +1209,8 @@ function SmartiWidget(element, _options) {
         tokens: [],
         userTokens: widgetStorage.tokens.userTokens,
         include: widgetStorage.tokens.include,
-        exclude: widgetStorage.tokens.exclude
+        exclude: widgetStorage.tokens.exclude,
+        widgets
     };
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
@@ -1737,5 +1775,7 @@ function equalArrays(a, b) {
 function getSolrQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
 }
+
+const getProp = (p, o) => p.reduce((xs, x) => (xs && xs[x]) ? xs[x] : null, o);
 
 window.SmartiWidget = SmartiWidget;

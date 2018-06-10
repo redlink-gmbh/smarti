@@ -12,7 +12,7 @@ Smarti `0.7.3` contains a fix to the Chatpal Backend
 
 === New in Smarti 0.7.3
 
-* https://github.com/redlink-gmbh/smarti/issues/249[#249 - CloudSync does not work for deleted Conversations]
+* https://github.com/redlink-gmbh/smarti/issues/250[#250 - Aggregation size limit exceeded while CloudSync]
 
 == Smarti 0.7.2 Release Notes
 May 14^th^, 2018

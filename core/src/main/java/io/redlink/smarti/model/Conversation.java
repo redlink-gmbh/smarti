@@ -84,23 +84,42 @@ public class Conversation {
     @ApiModelProperty(readOnly=true,notes="Server assigned modification date")
     @Indexed
     private Date lastModified = null;
+    
+    @JsonIgnore
+    @Indexed(sparse=false)
+    private final Date deleted;
 
     public Conversation(){
-        this(null, null);
+        this(null, null, null);
+    }
+    
+    public Conversation(ObjectId id, ObjectId owner) {
+        this(id,owner,null);
     }
     
     @PersistenceConstructor
-    public Conversation(ObjectId id, ObjectId owner){
+    public Conversation(ObjectId id, ObjectId owner, Date deleted){
         this.id = id;
         this.owner = owner;
+        this.deleted = deleted;
     }
     
+
     public ObjectId getId() {
         return id;
     }
     
     public void setId(ObjectId id) {
         this.id = id;
+    }
+    
+    /**
+     * If not <code>null</code> this conversation is marked as deleted
+     * @return the date when this conversation was marked as deleted or 
+     * <code>null</code> if not 
+     */
+    public Date getDeleted() {
+        return deleted;
     }
     
     /**
