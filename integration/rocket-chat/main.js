@@ -591,6 +591,9 @@ function SmartiWidget(element, _options) {
         };
     }
 
+    let similarityQuery = '';
+    let similarityQueryPath = [];
+
     /**
      * @param params
      * @returns {Object} {
@@ -602,6 +605,8 @@ function SmartiWidget(element, _options) {
         widgetConversationTemplate.link(params.elem, params.templateData);
         $.observable(params.templateData.filters).observeAll(onDataChange);
 
+        let lastSimilarityQuery = null;
+        let currentSimilarityQuery = null;
         let lastTks = [];
         let lastFilters = [];
         let currentFilters = [];
@@ -626,6 +631,8 @@ function SmartiWidget(element, _options) {
                 let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
+                currentSimilarityQuery = similarityQuery;
+
                 currentFilters = [];
                 params.query.filterQueries.forEach(fq => {
                     if(!fq.optional) {
@@ -639,7 +646,7 @@ function SmartiWidget(element, _options) {
                     }
                 });
 
-                if(equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
+                if(lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
 
                 if(!append) {
                     page = 0;
@@ -662,10 +669,19 @@ function SmartiWidget(element, _options) {
                         queryParams[property] = params.query.defaults[property];
                 }
 
+                // Filters
                 queryParams.fq = lastFilters = currentFilters;
                 queryParams.start = start;
                 queryParams.q = getSolrQuery(tks);
-                if(params.query.similarityQuery) queryParams["q.alt"] = params.query.similarityQuery;
+
+                // SimilarityQuery
+                lastSimilarityQuery = currentSimilarityQuery;
+                if (currentSimilarityQuery) {
+                    queryParams["q.alt"] = currentSimilarityQuery;
+                } else {
+                    delete queryParams["q.alt"];
+                }
+                console.log("queryParams: " + queryParams);
 
                 smarti.search(queryParams, (data) => {
                     console.log("Conversation search results:", data);
@@ -914,6 +930,11 @@ function SmartiWidget(element, _options) {
                         };
 
                         if(template.type == "related.conversation") {
+                            // similarityQuery
+                            similarityQuery = query.similarityQuery;
+                            similarityQueryPath = ['templates', i, 'queries', j, 'similarityQuery'];
+
+                            // filterQueries
                             params.templateData.filters = query.filterQueries.filter(fq => {
                                 return fq.optional;
                             });
@@ -945,6 +966,7 @@ function SmartiWidget(element, _options) {
                 showError({code:'smarti.no-widgets'});
             }
         } else {
+            similarityQuery = getProp(similarityQueryPath, data);
             $.each(widgets, (i, wgt) => {
                 wgt.refresh();
             });
@@ -1753,5 +1775,7 @@ function equalArrays(a, b) {
 function getSolrQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
 }
+
+const getProp = (p, o) => p.reduce((xs, x) => (xs && xs[x]) ? xs[x] : null, o);
 
 window.SmartiWidget = SmartiWidget;
