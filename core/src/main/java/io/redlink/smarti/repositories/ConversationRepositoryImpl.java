@@ -427,6 +427,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         query.addCriteria(where("owner").is(ownerId));
         query.addCriteria(where("meta.properties.channel_id").is(channelId));
         query.addCriteria(where("context.contextType").is(contextType));
+        query.addCriteria(where("deleted").exists(false));
 
         return mongoTemplate.findOne(query, Conversation.class);
     }
