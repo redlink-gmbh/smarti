@@ -1089,7 +1089,7 @@ function SmartiWidget(element, _options) {
                                     {{tls:time}}
                                     </div>
                                     <div class="title"></div>
-                                    <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
+                                    <div class="text"><p>{{he:~hl(content || '', true)}}</p></div>
                                     <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                     <div class="selectMessage"></div>
                                 </div>
@@ -1105,7 +1105,7 @@ function SmartiWidget(element, _options) {
                             {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.show_details'})}</span>{{/if}}
                         </div>
                         <div class="title"></div>
-                        <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
+                        <div class="text"><p>{{he:~hl(content || '', true)}}</p></div>
                         <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                         <div class="selectMessage"></div>
                     </div>
@@ -1119,7 +1119,7 @@ function SmartiWidget(element, _options) {
                                     {{tls:time}}
                                     </div>
                                     <div class="title"></div>
-                                    <div class="text"><p>{{nl:~hl(content || '', true)}}</p></div>
+                                    <div class="text"><p>{{he:~hl(content || '', true)}}</p></div>
                                     <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                     <div class="selectMessage"></div>
                                 </div>
@@ -1754,9 +1754,9 @@ function SmartiWidget(element, _options) {
     return {};
 }
 
-// custom new line converter for jsrender/views
-$.views.converters("nl", (val) => {
-    return val.replace(/\n/g, '<br />');
+// custom html encode and new line converter for jsrender/views
+$.views.converters("he", (val) => {
+    return $('<div/>').text(val).html().replace(/\n/g, '<br />');
 });
 
 // custom timestamp to local string converter for jsrender/views
