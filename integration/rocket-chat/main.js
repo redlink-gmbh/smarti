@@ -150,7 +150,7 @@ function Smarti(options) {
             ddp.on('result', (message) => {
 
                 if (message.id === loginId) {
-                    if (message.error) return failure({code:"login.failed",args:[message.error.reason]});
+                    if (message.error) return failure({code:"login.failed",args:[message.error.reason]}, true);
                     localStorage.setItem('Meteor.loginToken',message.result.token);
                     localStorage.setItem('Meteor.loginTokenExpires',new Date(message.result.tokenExpires.$date));
                     localStorage.setItem('Meteor.userId',message.result.id);
@@ -186,7 +186,7 @@ function Smarti(options) {
             ]);
 
         } else {
-            failure({code:'login.no-auth-token'});
+            failure({code:'login.no-auth-token'}, true);
         }
     }
 
@@ -205,7 +205,7 @@ function Smarti(options) {
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
             if (message.error) {
-                return failure({code:"get.conversation.params", args:[message.error.reason]});
+                return failure({code:"get.conversation.params", args:[message.error.reason]}, true);
             } else if(message.id === lastConvCallId) {
                 if(message.result) {
                     // conversation ID found for channel -> fetch conversation results
@@ -251,13 +251,13 @@ function Smarti(options) {
         ddp.on("result", (message) => {
 
             if (message.error) {
-                return failure({code:"get.conversation.params", args:[message.error.reason]});
+                return failure({code:"get.conversation.params", args:[message.error.reason]}, true);
             } else if(message.id === msgid) {
                 if(message.result) {
                     if(message.result.error) {
                         console.debug('Server-side error:', message.result.error);
                         const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
-                        if(failure) failure({code:'smarti.result.error', args:[errorCode]});
+                        if(failure) failure({code:'smarti.result.error', args:[errorCode]}, true);
                     } else {
                         pubsub('smarti.data').publish(message.result);
                     }
@@ -275,7 +275,7 @@ function Smarti(options) {
       const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
       ddp.on("result", (message) => {
           if(message.id === msgid) {
-              if (message.error) return failure({code:"get.query.params", args:[message.error.reason]});
+              if (message.error) return failure({code:"get.query.params", args:[message.error.reason]}, true);
               success(message.result || {});
           }
       });
@@ -287,9 +287,9 @@ function Smarti(options) {
         ddp.on("result", (message) => {
             if(message.id === msgid) {
                 if (message.error) {
-                    failure(message.error);
+                    failure(message.error, true);
                 } else if (!message.result || message.result.error) {
-                    failure(message.result && message.result.error);
+                    failure(message.result && message.result.error, true);
                 } else {
                     success(message.result);
                 }
@@ -314,7 +314,7 @@ function Smarti(options) {
 
                     console.debug('cannot post message:\n', JSON.stringify(message.error,null,2));
 
-                    if(failure) failure({code:"msg.post.failure"});
+                    if(failure) failure({code:"msg.post.failure"}, true);
                 }
                 else if(success) success();
             }
@@ -796,7 +796,7 @@ function SmartiWidget(element, _options) {
                     $.observable(params.templateData).setProperty("loading", false);
 
                 }, function(err) {
-                    showError(err);
+                    showMsg(err, true);
                     $.observable(params.templateData).setProperty("loading", false);
                 });
             }
@@ -822,8 +822,12 @@ function SmartiWidget(element, _options) {
         };
     }
 
-    function showError(err) {
-        toastr.error(Utils.localize(err), null, {timeOut: 0, extendedTimeOut: 0});
+    function showMsg(msg, isError) {
+        if(isError) {
+            toastr.error(Utils.localize(msg), null, {timeOut: 0, extendedTimeOut: 0});
+        } else {
+            toastr.info(Utils.localize(msg), null, {timeOut: 0, extendedTimeOut: 0});
+        }
     }
 
     function drawLogin() {
@@ -839,7 +843,7 @@ function SmartiWidget(element, _options) {
 
             smarti.login(
                 initialize,
-                showError,
+                showMsg,
                 username,
                 password
             );
@@ -963,7 +967,7 @@ function SmartiWidget(element, _options) {
                 initNavTabs();
                 initialized = true;
             } else {
-                showError({code:'smarti.no-widgets'});
+                showMsg({code:'smarti.no-widgets'});
             }
         } else {
             similarityQuery = getProp(similarityQueryPath, data);
@@ -974,7 +978,7 @@ function SmartiWidget(element, _options) {
     }
 
     function initialize() {
-        smarti.init(showError);
+        smarti.init(showMsg);
     }
 
     function initNavTabs() {
@@ -1626,7 +1630,7 @@ function SmartiWidget(element, _options) {
         } else {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(tokenData.value.trim().toLowerCase());
             $.observable(widgetHeaderTagsTemplateData.tokens).remove(tokenIdx);
-            smarti.refresh(showError);
+            smarti.refresh(showMsg);
         }
 
         tracker.trackEvent('tag.remove');
@@ -1667,14 +1671,14 @@ function SmartiWidget(element, _options) {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(t.value.trim().toLowerCase());
         });
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
-        smarti.refresh(showError);
+        smarti.refresh(showMsg);
         tracker.trackEvent('tag.remove-all');
     });
 
     tags.on('click', '.reset-exclude', function() {
         $.observable(widgetHeaderTagsTemplateData.exclude).refresh([]);
         tracker.trackEvent('tag.reset-exclude');
-        smarti.refresh(showError);
+        smarti.refresh(showMsg);
     });
 
     tags.on('click', 'li.add', function() {
