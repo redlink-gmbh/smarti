@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -232,6 +233,9 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 return s + "\n\n" + e;
             });
         log.trace("SimilarityContext: {}", context);
+        if(StringUtils.isBlank(context)){ //fix for #2258
+            return ""; //for an empty context use an empty query
+        }
 
         //we make a MLT query to get the interesting terms
         final SolrQuery solrQuery = new SolrQuery();
@@ -287,6 +291,15 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                     })
                     .collect(Collectors.joining(" OR "));
             }
+        } catch (SolrException solrEx) { //related to #2258 - make code more robust to unexpected errors
+            if(log.isDebugEnabled()){
+                log.warn("Unable to build ContextQuery using solrQuery: {} and context: '{}'", 
+                        solrQuery, context, solrEx);
+            } else {
+                log.warn("Unable to build ContextQuery using solrQuery: {} and context: '{}' ({} - {})", 
+                        solrQuery, context, solrEx.getClass().getSimpleName(), solrEx.getMessage());
+            }
+            return ""; //return an empty context query as fallback
         }
     }
 
