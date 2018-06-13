@@ -366,6 +366,17 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         return result.getN() > 0;
     }
     
+    @Override
+    public Conversation findLegacyConversation(ObjectId ownerId, String contextType, String channelId) {
+        Query query = new Query();
+        query.addCriteria(where("owner").is(ownerId));
+        query.addCriteria(where("meta.properties.channel_id").is(channelId));
+        query.addCriteria(where("context.contextType").is(contextType));
+        query.addCriteria(getNotDeletedCriteria());
+
+        return mongoTemplate.findOne(query, Conversation.class);
+    }
+
     
     private static final ProjectionOperation ID_MODIFIED_PROJECTION = Aggregation.project("id","lastModified");
     private static final GroupOperation GROUP_MODIFIED = Aggregation.group()
@@ -421,14 +432,4 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         return Criteria.where("deleted").is(null);
     }
 
-    @Override
-    public Conversation findLegacyConversation(ObjectId ownerId, String contextType, String channelId) {
-        Query query = new Query();
-        query.addCriteria(where("owner").is(ownerId));
-        query.addCriteria(where("meta.properties.channel_id").is(channelId));
-        query.addCriteria(where("context.contextType").is(contextType));
-        query.addCriteria(where("deleted").exists(false));
-
-        return mongoTemplate.findOne(query, Conversation.class);
-    }
 }
