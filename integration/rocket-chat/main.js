@@ -205,7 +205,8 @@ function Smarti(options) {
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
             if (message.error) {
-                return failure({code:"get.conversation.params", args:[message.error.reason]}, true);
+                console.debug('Failed to get conversation ID:', message.error);
+                return failure({code:'smarti.result.conversation-not-found'}, true);
             } else if(message.id === lastConvCallId) {
                 if(message.result) {
                     // conversation ID found for channel -> fetch conversation results
@@ -213,7 +214,7 @@ function Smarti(options) {
                     getConversation(message.result, failure);
                 } else {
                     console.debug('Smarti widget init -> conversation ID not found for channel:', options.channel);
-                    return failure({code:'smarti.result.no-result'});
+                    return failure({code:'smarti.result.conversation-not-found'}, true);
                 }
             }
         });
@@ -247,23 +248,23 @@ function Smarti(options) {
      */
     function getConversation(conversationId, failure) {
         console.debug('Fetch results for conversation with ID:', conversationId);
-        const msgid = ddp.method("getConversation",[conversationId]);
+        const msgid = ddp.method("getConversation", [conversationId]);
         ddp.on("result", (message) => {
-
             if (message.error) {
-                return failure({code:"get.conversation.params", args:[message.error.reason]}, true);
+                console.debug('Failed to get conversation:', message.error);
+                if(failure) failure({code:'smarti.result.conversation-not-found'}, true);
             } else if(message.id === msgid) {
                 if(message.result) {
                     if(message.result.error) {
                         console.debug('Server-side error:', message.result.error);
-                        const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
-                        if(failure) failure({code:'smarti.result.error', args:[errorCode]}, true);
+                        //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
+                        if(failure) failure({code:'smarti.result.conversation-not-found'}, true);
                     } else {
                         pubsub('smarti.data').publish(message.result);
                     }
                 } else {
                     console.debug('No conversation found for ID:', conversationId);
-                    if(failure) failure({code:'smarti.result.no-result'});
+                    if(failure) failure({code:'smarti.result.conversation-not-found'}, true);
                 }
             }
         });
@@ -729,6 +730,7 @@ function SmartiWidget(element, _options) {
                     } else {
                         $.observable(params.templateData.results).refresh(conversations);
                     }
+                    $.observable(params.templateData).setProperty("tokensUsed", tks.length > 0);
                     $.observable(params.templateData).setProperty("loading", false);
 
                     if(params.elem.height() <= widgetBody.innerHeight()) {
@@ -924,7 +926,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: [], total: 0, msg: ""},
+                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1134,7 +1136,11 @@ function SmartiWidget(element, _options) {
             </div>
         {{else}}
             {^{if !loading}}
-                <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+                {^{if tokensUsed}}
+                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+                {{else}}
+                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results-no-tokens'})}</div>
+                {{/if}}
             {{/if}}
             {^{if msg}}
                 <div class="msg">{^{:msg}}</div>
