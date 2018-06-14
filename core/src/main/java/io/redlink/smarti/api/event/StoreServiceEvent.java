@@ -70,5 +70,11 @@ public class StoreServiceEvent extends ApplicationEvent {
         return new StoreServiceEvent(source, Operation.DELETE, conversationId, null);
     }
 
+    @Override
+    public String toString() {
+        return "StoreServiceEvent [operation=" + operation + ", conversationId=" + conversationId
+                + ", conversationStatus=" + conversationStatus + "]";
+    }
+
 
 }
