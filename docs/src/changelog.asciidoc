@@ -5,6 +5,20 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.4 Release Notes
+June 13^th^, 2018
+
+Smarti `0.7.4` contains bug fixes to Smarti and the Samrti Widget
+
+=== New in Smarti 0.7.4
+
+* https://github.com/redlink-gmbh/smarti/issues/225[#225 - Automatic reloading of results does not work as expected]
+* https://github.com/redlink-gmbh/smarti/issues/249[#249 - CloudSync does not work for deleted Conversations]
+* https://github.com/redlink-gmbh/smarti/issues/252[#252 - The ConversationWidget is not refreshed correctly]
+* https://github.com/redlink-gmbh/smarti/issues/255[#255 - Smarti Widget fails to render messages containing code]
+* https://github.com/redlink-gmbh/smarti/issues/258[#258 - Loading Smarti fails for empty conversations] 
+* https://github.com/redlink-gmbh/smarti/issues/259[#259 - Rocket.Chat legacy endpoint does not filter for conversations marked as deleted]
+
 == Smarti 0.7.3 Release Notes
 May 15^th^, 2018
 

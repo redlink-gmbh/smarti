@@ -219,11 +219,11 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         log.debug("StoreServiceEvent for {}", storeEvent.getConversationId());
         if(storeEvent.getOperation() == Operation.SAVE){
             if(storeEvent.getConversationStatus() == Status.Complete){
-                log.debug("  - SAVE operation of a COMPLETED conversation");
+                log.debug("  - SAVE operation of a COMPLETED conversation[id: {}]", storeEvent.getConversationId());
                 indexConversation(conversationService.getConversation(storeEvent.getConversationId()), true);
             } //else we do not index uncompleted conversations
         } else if(storeEvent.getOperation() == Operation.DELETE){
-            log.debug("  - DELETE operation");
+            log.debug("  - DELETE operation for conversation[id:{}]", storeEvent.getConversationId());
             removeConversation(storeEvent.getConversationId(), true);
         } else {
             log.debug("  - {} ignored", storeEvent);
