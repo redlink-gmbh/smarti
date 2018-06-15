@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.bson.types.ObjectId;
+import org.springframework.boot.jackson.JsonComponent;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -33,6 +34,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @ApiModel(description="The analysis of a conversation based on the configuration of a client")
@@ -59,6 +62,10 @@ public class Analysis {
     @ApiModelProperty(notes="The id of the conversation this analysis is about. Might be absent if serialized as part of a conversation")
     @Indexed
     private final ObjectId conversation;
+    
+    @ApiModelProperty(notes="Contextual information about the analysis (e.g. the analysed section of the channel)")
+    @JsonInclude(Include.NON_NULL)
+    private AnalysisContext context;
     
     @ApiModelProperty(notes="The last modification date of the analyzed conversation. Might be absent if serialized as part of a conversation")
     private final Date date;
@@ -104,6 +111,14 @@ public class Analysis {
     public Date getDate() {
         return date;
     }
+
+    public AnalysisContext getContext() {
+        return context;
+    }
+    
+    public void setContext(AnalysisContext context) {
+        this.context = context;
+    }
     
     public List<Token> getTokens() {
         return tokens;
@@ -124,5 +139,43 @@ public class Analysis {
     @Override
     public String toString() {
         return "Analysis [" + tokens.size() + "tokens, " + templates.size() + " templates]";
+    }
+    
+    @ApiModel(description="The analysis context provides information about the section of a channel analysed.")
+    public static class AnalysisContext {
+        
+        
+        @ApiModelProperty(notes="The index of the message at the start of the analyzed section")
+        final private int start;
+        @ApiModelProperty(notes="The index of the message after the end of the analyzed section")
+        final private int end;
+        
+        @ApiModelProperty(notes="The number of messages skipped for analysis within the analyzed section")
+        @JsonInclude(Include.NON_NULL)
+        private Integer skipped;
+        
+        @JsonCreator
+        public AnalysisContext(@JsonProperty("start")int start, @JsonProperty("end")int end) {
+            assert start >= 0;
+            this.start = start;
+            assert end >= start;
+            this.end = end;
+        }
+        
+        public int getStart() {
+            return start;
+        }
+        
+        public int getEnd() {
+            return end;
+        }
+
+        public void setSkipped(Integer skipped) {
+            this.skipped = skipped;
+        }
+        
+        public Integer getSkipped() {
+            return skipped;
+        }
     }
 }

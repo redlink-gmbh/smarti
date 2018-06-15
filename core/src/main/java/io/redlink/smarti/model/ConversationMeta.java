@@ -69,7 +69,8 @@ public class ConversationMeta {
     public enum Status {
         New,
         Ongoing,
-        Complete
+        Complete,
+        Deleted
     }
 
     @ApiModelProperty(notes="the status of the conversation", allowableValues="New,Ongoing,Complete",example="New")
