@@ -1095,7 +1095,7 @@ function SmartiWidget(element, _options) {
                                     {{tls:time}}
                                     </div>
                                     <div class="title"></div>
-                                    <div class="text"><p>{{he:~hl(content || '', true)}}</p></div>
+                                    <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
                                     <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                     <div class="selectMessage"></div>
                                 </div>
@@ -1111,7 +1111,7 @@ function SmartiWidget(element, _options) {
                             {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.show_details'})}</span>{{/if}}
                         </div>
                         <div class="title"></div>
-                        <div class="text"><p>{{he:~hl(content || '', true)}}</p></div>
+                        <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
                         <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                         <div class="selectMessage"></div>
                     </div>
@@ -1125,7 +1125,7 @@ function SmartiWidget(element, _options) {
                                     {{tls:time}}
                                     </div>
                                     <div class="title"></div>
-                                    <div class="text"><p>{{he:~hl(content || '', true)}}</p></div>
+                                    <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
                                     <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
                                     <div class="selectMessage"></div>
                                 </div>
@@ -1758,16 +1758,15 @@ function SmartiWidget(element, _options) {
                 text = text.replace(new RegExp(`(${escapeRegExp(t)})`, 'ig'), '<mark>$1</mark>');
             });
             return text;
+        },
+        // helper method for html encoding and new line conversion for jsrender/views
+        he: (text) => {
+            return $('<div/>').text(text).html().replace(/\n/g, '<br />');
         }
     });
 
     return {};
 }
-
-// custom html encode and new line converter for jsrender/views
-$.views.converters("he", (val) => {
-    return $('<div/>').text(val).html().replace(/\n/g, '<br />');
-});
 
 // custom timestamp to local string converter for jsrender/views
 $.views.converters("tls", (val) => {
