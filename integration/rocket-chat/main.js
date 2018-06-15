@@ -148,12 +148,14 @@ function Smarti(options) {
         function loginRequest(params) {
             const loginId = ddp.method("login", params);
             ddp.on('result', (message) => {
-
                 if (message.id === loginId) {
-                    if (message.error) return failure({code:"login.failed",args:[message.error.reason]}, true);
-                    localStorage.setItem('Meteor.loginToken',message.result.token);
-                    localStorage.setItem('Meteor.loginTokenExpires',new Date(message.result.tokenExpires.$date));
-                    localStorage.setItem('Meteor.userId',message.result.id);
+                    if (message.error) {
+                        console.log("Login error:", message.error);
+                        return failure({i18nObj: {code:"login.failed", args:[message.error.reason]}});
+                    }
+                    localStorage.setItem('Meteor.loginToken', message.result.token);
+                    localStorage.setItem('Meteor.loginTokenExpires', new Date(message.result.tokenExpires.$date));
+                    localStorage.setItem('Meteor.userId', message.result.id);
                     success();
                 }
             });
@@ -186,7 +188,7 @@ function Smarti(options) {
             ]);
 
         } else {
-            failure({code:'login.no-auth-token'}, true);
+            failure({i18nObj: {code:'login.no-auth-token'}});
         }
     }
 
@@ -206,7 +208,7 @@ function Smarti(options) {
         ddp.on("result", (message) => {
             if (message.error) {
                 console.debug('Failed to get conversation ID:', message.error);
-                return failure({code:'smarti.result.conversation-not-found'}, true);
+                return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
             } else if(message.id === lastConvCallId) {
                 if(message.result) {
                     // conversation ID found for channel -> fetch conversation results
@@ -214,7 +216,7 @@ function Smarti(options) {
                     getConversation(message.result, failure);
                 } else {
                     console.debug('Smarti widget init -> conversation ID not found for channel:', options.channel);
-                    return failure({code:'smarti.result.conversation-not-found'}, true);
+                    return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
                 }
             }
         });
@@ -223,7 +225,7 @@ function Smarti(options) {
         console.debug('Smarti widget init -> subscribe channel', options.channel);
         const subId = ddp.sub("stream-notify-room", [options.channel+"/newConversationResult", false]);
         ddp.on("nosub", () => {
-            failure({code:'sub.new-conversation-result.nosub'});
+            failure({i18nObj: {code:'sub.new-conversation-result.nosub'}, dismissOnClick: true});
         });
         ddp.on("changed", (message) => {
             if(message.collection == "stream-notify-room") {
@@ -234,9 +236,11 @@ function Smarti(options) {
         });
     }
 
-    function refresh(failure) {
+    function refresh() {
         if(conversationId) {
-            getConversation(conversationId, failure);
+            getConversation(conversationId, showError);
+        } else {
+            Console.warn("Widget data refresh failed. Conversation ID not found!");
         }
     }
 
@@ -252,31 +256,33 @@ function Smarti(options) {
         ddp.on("result", (message) => {
             if (message.error) {
                 console.debug('Failed to get conversation:', message.error);
-                if(failure) failure({code:'smarti.result.conversation-not-found'}, true);
+                if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
             } else if(message.id === msgid) {
                 if(message.result) {
                     if(message.result.error) {
                         console.debug('Server-side error:', message.result.error);
                         //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
-                        if(failure) failure({code:'smarti.result.conversation-not-found'}, true);
+                        if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
                     } else {
                         pubsub('smarti.data').publish(message.result);
                     }
                 } else {
                     console.debug('No conversation found for ID:', conversationId);
-                    if(failure) failure({code:'smarti.result.conversation-not-found'}, true);
+                    if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
                 }
             }
         });
     }
 
     function query(params, success, failure) {
-
-      console.debug('get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
+      console.debug('Get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
       const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
       ddp.on("result", (message) => {
           if(message.id === msgid) {
-              if (message.error) return failure({code:"get.query.params", args:[message.error.reason]}, true);
+              if (message.error) {
+                  console.error("Query error:", message.error);
+                  return failure({i18nObj: {code: "get.query.params", args: [message.error.reason]}, dismissOnClick: true});
+              }
               success(message.result || {});
           }
       });
@@ -288,9 +294,15 @@ function Smarti(options) {
         ddp.on("result", (message) => {
             if(message.id === msgid) {
                 if (message.error) {
-                    failure(message.error, true);
+                    console.error("Conversation search error:", message.error);
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else if (!message.result || message.result.error) {
-                    failure(message.result && message.result.error, true);
+                    if(!message.result) {
+                        console.error("Conversation search returned no result!");
+                    } else {
+                        console.error("Conversation search error:", message.result.error);
+                    }
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else {
                     success(message.result);
                 }
@@ -306,18 +318,16 @@ function Smarti(options) {
      * @param success
      * @param failure
      */
-    function post(msg,attachments,success,failure) {
-        const methodId = ddp.method("sendMessage",[{rid:options.channel,msg:msg,attachments:attachments,origin:'smartiWidget'}]);
-
+    function post(msg, attachments, success, failure) {
+        const methodId = ddp.method("sendMessage",[{rid:options.channel, msg:msg, attachments:attachments, origin:'smartiWidget'}]);
         ddp.on("result", (message) => {
             if(message.id === methodId) {
-                if(message.error && failure) {
-
-                    console.debug('cannot post message:\n', JSON.stringify(message.error,null,2));
-
-                    if(failure) failure({code:"msg.post.failure"}, true);
+                if(message.error) {
+                    console.error('Cannot post message:\n', JSON.stringify(message.error, null, 2));
+                    if(failure) failure({i18nObj: {code:"msg.post.failure"}, dismissOnClick: true});
+                } else if(success) {
+                    success();
                 }
-                else if(success) success();
             }
         });
     }
@@ -741,11 +751,9 @@ function SmartiWidget(element, _options) {
                     }
                 }, function(error) {
                     if(error) {
-                        console.log("Server error:", error);
-                        const errorCode = error.code || error.response && error.response.statusCode;
-                        toastr.error(Utils.localize({code:'smarti.result.error', args:[error.reason || errorCode]}));
+                        showError(error);
                     } else {
-                        toastr.error(Utils.localize({code:'smarti.result.no-response'}));
+                        showMsg({i18nObj: {code: 'smarti.result.no-response'}, isError: true, dismissOnClick: true});
                     }
                     $.observable(params.templateData).setProperty("loading", false);
                 });
@@ -797,8 +805,12 @@ function SmartiWidget(element, _options) {
 
                     $.observable(params.templateData).setProperty("loading", false);
 
-                }, function(err) {
-                    showMsg(err, true);
+                }, function(error) {
+                    if(error) {
+                        showError(error);
+                    } else {
+                        showMsg({i18nObj: {code: 'smarti.result.no-response'}, isError: true, dismissOnClick: true});
+                    }
                     $.observable(params.templateData).setProperty("loading", false);
                 });
             }
@@ -824,12 +836,14 @@ function SmartiWidget(element, _options) {
         };
     }
 
-    function showMsg(msg, isError) {
-        if(isError) {
-            toastr.error(Utils.localize(msg), null, {timeOut: 0, extendedTimeOut: 0});
-        } else {
-            toastr.info(Utils.localize(msg), null, {timeOut: 0, extendedTimeOut: 0});
-        }
+    function showMsg(options) {
+        const toastrFunction = options.isError ? toastr.error : toastr.info;
+        toastrFunction(options.i18nObj ? Utils.localize(options.i18nObj) : options.msg, null, {timeOut: 0, extendedTimeOut: 0, tapToDismiss: options.dismissOnClick || false});
+    }
+
+    function showError(options) {
+        options.isError = true;
+        showMsg(options);
     }
 
     function drawLogin() {
@@ -845,7 +859,7 @@ function SmartiWidget(element, _options) {
 
             smarti.login(
                 initialize,
-                showMsg,
+                showError,
                 username,
                 password
             );
@@ -969,7 +983,7 @@ function SmartiWidget(element, _options) {
                 initNavTabs();
                 initialized = true;
             } else {
-                showMsg({code:'smarti.no-widgets'});
+                showMsg({i18nObj: {code:'smarti.no-widgets'}});
             }
         } else {
             similarityQuery = getProp(similarityQueryPath, data);
@@ -980,7 +994,7 @@ function SmartiWidget(element, _options) {
     }
 
     function initialize() {
-        smarti.init(showMsg);
+        smarti.init(showError);
     }
 
     function initNavTabs() {
@@ -1523,14 +1537,14 @@ function SmartiWidget(element, _options) {
                 if(options.postings.type === 'suggestText') {
                     messageInputField.post(text);
                 } else {
-                    smarti.post(text, []);
+                    smarti.post(text, [], null, showError);
                 }
             } else {
                 let attachments = [];
                 items.forEach(conv => {
                     attachments.push(buildAttachments(conv));
                 });
-                smarti.post(text, attachments);
+                smarti.post(text, attachments, null, showError);
             }
         }
     }
@@ -1636,7 +1650,7 @@ function SmartiWidget(element, _options) {
         } else {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(tokenData.value.trim().toLowerCase());
             $.observable(widgetHeaderTagsTemplateData.tokens).remove(tokenIdx);
-            smarti.refresh(showMsg);
+            smarti.refresh();
         }
 
         tracker.trackEvent('tag.remove');
@@ -1677,14 +1691,14 @@ function SmartiWidget(element, _options) {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(t.value.trim().toLowerCase());
         });
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
-        smarti.refresh(showMsg);
+        smarti.refresh();
         tracker.trackEvent('tag.remove-all');
     });
 
     tags.on('click', '.reset-exclude', function() {
         $.observable(widgetHeaderTagsTemplateData.exclude).refresh([]);
         tracker.trackEvent('tag.reset-exclude');
-        smarti.refresh(showMsg);
+        smarti.refresh();
     });
 
     tags.on('click', 'li.add', function() {
