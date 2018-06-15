@@ -150,6 +150,10 @@ public class Analysis {
         @ApiModelProperty(notes="The index of the message after the end of the analyzed section")
         final private int end;
         
+        @ApiModelProperty(notes="The number of messages skipped for analysis within the analyzed section")
+        @JsonInclude(Include.NON_NULL)
+        private Integer skipped;
+        
         @JsonCreator
         public AnalysisContext(@JsonProperty("start")int start, @JsonProperty("end")int end) {
             assert start >= 0;
@@ -164,6 +168,14 @@ public class Analysis {
         
         public int getEnd() {
             return end;
+        }
+
+        public void setSkipped(Integer skipped) {
+            this.skipped = skipped;
+        }
+        
+        public Integer getSkipped() {
+            return skipped;
         }
     }
 }

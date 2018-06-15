@@ -74,6 +74,7 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
         int startIdx = contextSize <= 0 ? 0 : Math.max(0, numMessages - contextSize);
         log.trace("analysisContext: [{}..{}](size: {})", startIdx, numMessages-1, contextSize);
         analysis.setContext(new AnalysisContext(startIdx, numMessages));
+        int skipped = 0;
         for(int i=startIdx; i < numMessages; i++){
             Message message = conversation.getMessages().get(i);
             log.trace("message idx: {}", i);
@@ -97,8 +98,11 @@ public class AnalysisData extends io.redlink.nlp.api.ProcessingData {
                     section.addAnnotation(SECTION_ANNOTATION, new SectionTag(SectionType.paragraph, "message"));
                     first = false;
                 } //else ignore empty content
-            } //else ignore blank messages for analysis
+            } else { //else ignore messages marked as skipAnalysis
+                skipped++;
+            }
         }
+        analysis.getContext().setSkipped(skipped);
         return new AnalysisData(conversation, analysis, atb.create());
     }
     /**
