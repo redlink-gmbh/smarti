@@ -25,6 +25,7 @@ import com.mongodb.WriteResult;
 import io.redlink.smarti.exception.NotFoundException;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
+import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -353,6 +354,8 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
                     .addCriteria(getNotDeletedCriteria()), //do not mark deleted twice
                 new Update()
                     .unset("messages") //clean all the messages (for privacy reasons)
+                    .unset("user") //clean the user information
+                    .set("meta.status", Status.Deleted.name()) //set the status to deleted
                     .currentDate("lastModified") //update the lastModified (to notify about the deletion)
                     .currentDate("deleted"), //mark as deleted (use date to allow physical deletions after period)
                 Conversation.class);

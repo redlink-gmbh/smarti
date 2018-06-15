@@ -16,19 +16,24 @@
  */
 package io.redlink.smarti.webservice;
 
-import com.google.common.collect.ImmutableMap;
-import io.redlink.smarti.exception.DataException;
-import io.redlink.smarti.exception.NotFoundException;
-import io.redlink.smarti.model.*;
-import io.redlink.smarti.model.result.Result;
-import io.redlink.smarti.query.conversation.ConversationSearchService;
-import io.redlink.smarti.query.conversation.MessageSearchService;
-import io.redlink.smarti.services.AnalysisService;
-import io.redlink.smarti.services.AuthenticationService;
-import io.redlink.smarti.services.ConversationService;
-import io.redlink.smarti.utils.ResponseEntities;
-import io.redlink.smarti.webservice.pojo.*;
-import io.swagger.annotations.*;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -43,16 +48,40 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableMap;
+
+import io.redlink.smarti.exception.DataException;
+import io.redlink.smarti.exception.NotFoundException;
+import io.redlink.smarti.model.Analysis;
+import io.redlink.smarti.model.Client;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.model.Message;
+import io.redlink.smarti.model.SearchResult;
+import io.redlink.smarti.model.Template;
+import io.redlink.smarti.model.Token;
+import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.query.conversation.ConversationSearchService;
+import io.redlink.smarti.query.conversation.MessageSearchService;
+import io.redlink.smarti.services.AnalysisService;
+import io.redlink.smarti.services.AuthenticationService;
+import io.redlink.smarti.services.ConversationService;
+import io.redlink.smarti.utils.ResponseEntities;
+import io.redlink.smarti.webservice.pojo.AuthContext;
+import io.redlink.smarti.webservice.pojo.CallbackPayload;
+import io.redlink.smarti.webservice.pojo.ConversationData;
+import io.redlink.smarti.webservice.pojo.PagedConversationList;
+import io.redlink.smarti.webservice.pojo.Projection;
+import io.swagger.annotations.*;
 
 
 /**

@@ -167,6 +167,8 @@ public class ConversationSearchService {
                 matches.put(String.valueOf(mid), d);
             }));
         
+        //TODO: validate the IDs of Messages to avoid adding the wrong message in case the
+        //      solrIndex is out of Sync with the MongoDB!
         MessageResult current = null;
         for(int i = 0; i < conversation.getMessages().size(); i++){
             Message m = conversation.getMessages().get(i);
