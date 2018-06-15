@@ -604,6 +604,7 @@ function SmartiWidget(element, _options) {
 
     let similarityQuery = '';
     let similarityQueryPath = [];
+    let analyzedMessages = 0;
 
     /**
      * @param params
@@ -741,6 +742,7 @@ function SmartiWidget(element, _options) {
                         $.observable(params.templateData.results).refresh(conversations);
                     }
                     $.observable(params.templateData).setProperty("tokensUsed", tks.length > 0);
+                    $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
                     $.observable(params.templateData).setProperty("loading", false);
 
                     if(params.elem.height() <= widgetBody.innerHeight()) {
@@ -914,6 +916,10 @@ function SmartiWidget(element, _options) {
 
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
 
+        if(data.context) {
+            analyzedMessages = data.context.end - data.context.start - data.context.skipped;
+        }
+
         if(!initialized) {
             widgetContent.empty();
             widgetMessage.empty();
@@ -940,7 +946,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false},
+                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1150,10 +1156,10 @@ function SmartiWidget(element, _options) {
             </div>
         {{else}}
             {^{if !loading}}
-                {^{if tokensUsed}}
-                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+                {^{if noMessages}}
+                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results-no-msg'})}</div>
                 {{else}}
-                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results-no-tokens'})}</div>
+                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
                 {{/if}}
             {{/if}}
             {^{if msg}}

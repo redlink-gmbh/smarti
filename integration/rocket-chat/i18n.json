@@ -167,7 +167,7 @@
     "en":"No related conversations could be found. The knowledge-base requires more message content.",
     "de":"Es konnten keine passenden Inhalte gefunden werden. Für eine Analyse benötigt die Wissensbasis mehr Nachrichteninhalte."
   },
-  "widget.conversation.no-results-no-tokens":{
+  "widget.conversation.no-results-no-msg":{
     "en":"In order for the knowledge-base to find related conversations, at least one message should exist. Please start the conversation.",
     "de":"Damit die Wissensbasis etwas vorschlagen kann, muss mindestens eine Nachricht geschrieben werden. Bitte starte die Unterhaltung."
   },
