@@ -263,8 +263,6 @@ function Smarti(options) {
                         console.debug('Server-side error:', message.result.error);
                         //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
                         if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-                    } else {
-                        pubsub('smarti.data').publish(message.result);
                     }
                 } else {
                     console.debug('No conversation found for ID:', conversationId);
@@ -991,12 +989,11 @@ function SmartiWidget(element, _options) {
             } else {
                 showMsg({i18nObj: {code:'smarti.no-widgets'}});
             }
-        } else {
-            similarityQuery = getProp(similarityQueryPath, data);
-            $.each(widgets, (i, wgt) => {
-                wgt.refresh();
-            });
         }
+        similarityQuery = getProp(similarityQueryPath, data);
+        $.each(widgets, (i, wgt) => {
+            wgt.refresh();
+        });
     }
 
     function initialize() {
