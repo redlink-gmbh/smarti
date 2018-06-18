@@ -96,7 +96,15 @@ Allows to inject backend properties in the Frontend
 
 * `jsonp.callback = callback`: The name of the callback
 
-==== Rocket.chat Endpoint
+==== Http Callback configuration
+
+* `http.retryCount=3`
+* `http.callback.proxy.hostname=127.0.0.1`
+* `http.callback.proxy.port=8181`
+* `http.callback.proxy.scheme=http`
+
+
+For versions up to `0.6.*` the following properties where supported to configure the async. callback to Rocket.Chat
 
 * `rocketchat.proxy.hostname =`
 * `rocketchat.proxy.port = 80`
