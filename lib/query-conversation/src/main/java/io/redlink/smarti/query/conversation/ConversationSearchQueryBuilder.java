@@ -22,6 +22,8 @@ import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -227,6 +229,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
                 ConversationContextUtils.getContextStart(conv.getMessages(), 
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE),
                 conv.getMessages().size()).stream()
+            .filter(m -> !MapUtils.getBoolean(m.getMetadata(), Message.Metadata.SKIP_ANALYSIS, false))
             .map(Message::getContent)
             .reduce(null, (s, e) -> {
                 if (s == null) return e;

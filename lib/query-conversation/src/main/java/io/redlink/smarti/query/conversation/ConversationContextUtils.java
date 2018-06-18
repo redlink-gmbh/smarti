@@ -6,6 +6,8 @@ import java.util.ListIterator;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
+import org.apache.commons.collections4.MapUtils;
+
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
 
@@ -33,20 +35,22 @@ public final class ConversationContextUtils {
                 it.hasPrevious();){
             int index = it.previousIndex();
             Message msg = it.previous();
-            if(contextDate == null){
-                contextDate = msg.getTime();
-            }
-            if(contextSize < minContextLength || //force inclusion
-                    inclMsgs < minInclMsgs || 
-                    msg.getTime().getTime() >= contextDate.getTime() - minAge){
-                contextSize = contextSize + msg.getContent().length();
-            } else if(contextSize < contextLength && //allow include if more context is allowed
-                    inclMsgs < maxInclMsgs && 
-                    msg.getTime().getTime() >= contextDate.getTime() - maxAge){
-                contextSize = contextSize + msg.getContent().length();
-            } else {
-                return index; //we have enough content ... ignore previous messages
-            }
+            if(!MapUtils.getBooleanValue(msg.getMetadata(), Message.Metadata.SKIP_ANALYSIS, false)){
+                if(contextDate == null){
+                    contextDate = msg.getTime();
+                }
+                if(contextSize < minContextLength || //force inclusion
+                        inclMsgs < minInclMsgs || 
+                        msg.getTime().getTime() >= contextDate.getTime() - minAge){
+                    contextSize = contextSize + msg.getContent().length();
+                } else if(contextSize < contextLength && //allow include if more context is allowed
+                        inclMsgs < maxInclMsgs && 
+                        msg.getTime().getTime() >= contextDate.getTime() - maxAge){
+                    contextSize = contextSize + msg.getContent().length();
+                } else {
+                    return index; //we have enough content ... ignore previous messages
+                }
+            } //do not consider Messages skipped for analysis
         }
         return 0;
     }
