@@ -5,6 +5,18 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.6 Release Notes
+June 18^th^, 2018
+
+Smarti `0.7.6` contains bug fixes for the Samrti Widget the Conversation Search and the synchronization of the Conversation Index
+
+=== New in Smarti 0.7.6
+
+* https://github.com/redlink-gmbh/smarti/issues/262[#262 - Show meaningful informations/warnings/error within the Smarti widget]
+* https://github.com/redlink-gmbh/smarti/issues/263[#263 - HTML-Tags for highlighting should not be escaped in Smarti results]
+* https://github.com/redlink-gmbh/smarti/issues/269[#269 - Conversation Indexer not syncing]
+* https://github.com/redlink-gmbh/smarti/issues/270[#270 - Messages flagged as `skipAnalysis` should not be considered for related conversation queries]
+
 == Smarti 0.7.5 Release Notes
 June 14^th^, 2018
 
