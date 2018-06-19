@@ -1,0 +1,114 @@
+version: 2
+jobs:
+  build:
+    docker:  
+      - image: circleci/openjdk:8-jdk-node-browsers
+
+    working_directory: ~/repo
+
+    environment:
+      # Customize the JVM maximum heap limit
+      MAVEN_OPTS: -Xmx3200m
+
+    steps:
+      - checkout
+
+      - setup_remote_docker
+
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y rpm pbzip2 ruby ruby-sass ruby-compass
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "pom.xml" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run:
+          name: Build & Test
+          command: |
+            mvn -B clean install -Dquick
+
+      - run:
+          name: dist
+          command: |
+            mvn -B -f dist/ install -Pdeb,rpm,docker
+      
+      - run:
+          name: docker image
+          command: |
+            export SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
+            docker save redlinkgmbh/smarti:${SMARTI_VERSION} | pbzip2 > "dist/target/smarti-${SMARTI_VERSION}.docker.tbz2"
+
+      - run:
+          name: copy artifacts
+          command: |
+            export SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
+            mkdir tmp
+            mkdir tmp/build/
+            cp application/target/*-exec.jar tmp/build/
+            cp application/target/*-solrcores.zip tmp/build/
+            cp dist/target/*.deb tmp/build/
+            cp dist/target/rpm/smarti/RPMS/noarch/*.rpm tmp/build/smarti-${SMARTI_VERSION}.noarch.rpm
+            cp dist/target/*.docker.tbz2 tmp/build/
+
+      - save_cache:
+          paths:
+            - ~/.m2
+            - frontend/src/bower_components
+            - frontend/src/node_modules
+            - integration/rocket-chat/node_modules
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+      - persist_to_workspace:
+          root: tmp
+          paths:
+            - build
+
+  aws-upload-artifact:
+    docker:
+      - image: circleci/openjdk:8-jdk-node-browsers
+
+    steps:
+      - attach_workspace:
+          at: /tmp
+
+      - checkout
+
+      - run:
+          name: Install AWS cli
+          command: |
+            sudo apt-get -y -qq update
+            sudo apt-get -y -qq install python-dev
+            curl -O https://bootstrap.pypa.io/get-pip.py
+            python get-pip.py --user
+            export PATH=~/.local/bin:$PATH
+            pip install awscli --upgrade --user
+
+      - run:
+          name: Publish assets
+          command: |
+            bash .circleci/deploy-assistify-smarti.sh
+
+workflows:
+  version: 2
+  build-and-test:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only:
+                - develop
+                - master
+      - aws-upload-artifact:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - develop
+                - master
