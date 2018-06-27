@@ -1,8 +1,14 @@
 version: 2
+
+# machine:
+#   environment:
+#     JAVA_OPTS: "-Xmx4g"
 jobs:
   build:
     docker:  
       - image: circleci/openjdk:8-jdk-node-browsers
+      # - image: mongo:3.4
+      #   command: [mongod, --nojournal, --noprealloc, --smallfiles]
 
     working_directory: ~/repo
 
@@ -14,6 +20,14 @@ jobs:
       - checkout
 
       - setup_remote_docker
+
+      # - run:
+      #     name: Install dependencies
+      #     command: |
+      #       sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6
+      #       echo "deb [ arch=amd64 ] http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.4.list
+      #       sudo apt-get update
+      #       sudo apt-get install -y mongodb-org-shell
 
       - run:
           name: Install dependencies
@@ -50,6 +64,7 @@ jobs:
             export SMARTI_VERSION="$(mvn -B -q -N exec:exec -Dexec.executable=echo -Dexec.args='${project.version}')"
             mkdir tmp
             mkdir tmp/build/
+            echo $SMARTI_VERSION > tmp/build/smarti_version
             cp application/target/*-exec.jar tmp/build/
             cp application/target/*-solrcores.zip tmp/build/
             cp dist/target/*.deb tmp/build/
@@ -93,6 +108,52 @@ jobs:
           name: Publish assets
           command: |
             bash .circleci/deploy-assistify-smarti.sh
+  
+  publish-docker:
+    docker:
+      - image: docker:17.05.0-ce-git
+
+    steps:
+      - attach_workspace:
+          at: /tmp
+
+      - checkout
+
+      - setup_remote_docker
+
+      - run:
+          command: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+      - run:
+          command: |
+            export SMARTI_VERSION=$(cat /tmp/build/smarti_version)
+            cat /tmp/build/smarti-${SMARTI_VERSION}.docker.tbz2 | docker load 
+            if [[ ! -z $CI_PULL_REQUEST ]]
+              then
+                docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:pr-${CIRCLE_PULL_REQUEST##*/}
+                docker push assistify/smarti:pr-${CIRCLE_PULL_REQUEST##*/}
+                echo "pushed assistify/smarti:pr-${CIRCLE_PULL_REQUEST##*/}"
+            else
+              if [[ ! -z ${CIRCLE_TAG} ]]
+                then
+                  docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:${CIRCLE_TAG}
+                  docker push assistify/smarti:${CIRCLE_TAG}
+                  echo "pushed assistify/smarti:${CIRCLE_TAG}"
+              else
+                if [[ ${CIRCLE_BRANCH} == develop ]]
+                  then
+                    docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:develop
+                    docker push assistify/smarti:develop
+                    echo "pushed assistify/smarti:develop"
+                else
+                  if [[ ${CIRCLE_BRANCH} == master ]]
+                  then
+                    docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:latest
+                    docker push assistify/smarti:latest
+                    echo "pushed assistify/smarti:latest"
+                  fi
+                fi
+              fi
+            fi
 
 workflows:
   version: 2
@@ -100,10 +161,8 @@ workflows:
     jobs:
       - build:
           filters:
-            branches:
-              only:
-                - develop
-                - master
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$/
       - aws-upload-artifact:
           requires:
             - build
@@ -112,3 +171,9 @@ workflows:
               only:
                 - develop
                 - master
+      - publish-docker:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$/
