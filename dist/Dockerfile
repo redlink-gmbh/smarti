@@ -17,7 +17,7 @@ RUN mkdir -p /opt/ext/
 #    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0.jar", \
 #    "https://repo1.maven.org/maven2/edu/stanford/nlp/stanford-corenlp/3.8.0/stanford-corenlp-3.8.0-models-german.jar", \
 #    "/opt/ext/"]
-#RUN chmod -R a+r /opt/ext/
+RUN chmod -R a+r /opt/ext/
 ADD target/classes/docker/*.properties target/classes/docker/*.xml ${HOME}/
 ADD target/classes/docker/smarti.sh /opt/smarti.sh
 RUN chmod a+x /opt/smarti.sh
