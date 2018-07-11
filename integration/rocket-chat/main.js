@@ -407,7 +407,7 @@ function SmartiWidget(element, _options) {
 
     $.extend(true,options,_options);
 
-    console.debug('init smarti widget:\n', JSON.stringify(options,null,2));
+    // console.debug('init smarti widget:\n', JSON.stringify(options,null,2));
 
     localize = new Localize(options.i18n, undefined, 'xx');
     localize.setLocale(options.lang);
