@@ -258,7 +258,7 @@ function Smarti(options) {
                 console.debug('Failed to get conversation:', message.error);
                 if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
             } else if(message.id === msgid) {
-                if(message.result) {
+                if(message.result && message.result != "null") {
                     if(message.result.error) {
                         console.debug('Server-side error:', message.result.error);
                         //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
@@ -267,8 +267,7 @@ function Smarti(options) {
                         pubsub('smarti.data').publish(message.result);
                     }
                 } else {
-                    console.debug('No conversation found for ID:', conversationId);
-                    if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
+                    console.debug(`Conversation fetch returned no results. Expecting async response... (${conversationId})`);
                 }
             }
         });
