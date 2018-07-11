@@ -1166,7 +1166,7 @@ function SmartiWidget(element, _options) {
             {{/if}}
         {{/for}}
         {^{if loading}}
-            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+            <div class="loading-animation"><div class="bounce bounce1"></div><div class="bounce bounce2"></div><div class="bounce bounce3"></div></div>
         {{/if}}
     `;
     const widgetIrLatchTemplateStr = `
@@ -1194,7 +1194,7 @@ function SmartiWidget(element, _options) {
             {{/if}}
         {{/for}}
         {^{if loading}}
-            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+            <div class="loading-animation"><div class="bounce bounce1"></div><div class="bounce bounce2"></div><div class="bounce bounce3"></div></div>
         {{/if}}
     `;
 
@@ -1215,7 +1215,7 @@ function SmartiWidget(element, _options) {
     let innerTabSearch = $('<div id="innerTabSearch">').appendTo(widgetHeader);
     let innerTabFilter = $('<div id="innerTabFilter">').appendTo(widgetHeader);
 
-    let widgetContent = $('<div class="widgetContent"><div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div></div>').appendTo(widgetBody);
+    let widgetContent = $('<div class="widgetContent"><div class="loading-animation"><div class="bounce bounce1"></div><div class="bounce bounce2"></div><div class="bounce bounce3"></div></div></div>').appendTo(widgetBody);
 
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
 

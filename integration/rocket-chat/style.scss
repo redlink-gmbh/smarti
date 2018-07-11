@@ -504,6 +504,43 @@
 
             .loading-animation {
                 position: relative;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+
+                display: -webkit-flex;
+
+                display: flex;
+
+                text-align: center;
+                -webkit-align-items: center;
+                align-items: center;
+                -webkit-justify-content: center;
+                justify-content: center;
+
+                .bounce {
+                    display: inline-block;
+
+                    width: 10px;
+                    height: 10px;
+                    margin: 2px;
+
+                    -webkit-animation: loading-bouncedelay 1.4s infinite ease-in-out both;
+
+                    animation: loading-bouncedelay 1.4s infinite ease-in-out both;
+
+                    border-radius: 100%;
+                    background-color: #444;
+                }
+                .bounce1 {
+                    -webkit-animation-delay: -0.32s;
+                    animation-delay: -0.32s;
+                }
+                .bounce2 {
+                    -webkit-animation-delay: -0.16s;
+                    animation-delay: -0.16s;
+                }
             }
 
             .conversation {
