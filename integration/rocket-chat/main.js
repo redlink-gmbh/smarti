@@ -230,7 +230,7 @@ function Smarti(options) {
         ddp.on("changed", (message) => {
             if(message.collection == "stream-notify-room") {
                 // subscriotion has changed (message send) -> fetch conversation results
-                console.debug('Smarti widget subscription changed -> get conversation result for message:', message.fields.args[0]);
+                console.debug('Async smarti results received:', message.fields.args[0]);
                 pubsub('smarti.data').publish(message.fields.args[0]);
             }
         });
