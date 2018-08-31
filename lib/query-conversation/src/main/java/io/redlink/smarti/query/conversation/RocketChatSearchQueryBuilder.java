@@ -26,11 +26,20 @@ import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
+import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
+import org.apache.solr.client.solrj.response.AnalysisResponseBase.AnalysisPhase;
+import org.apache.solr.client.solrj.response.AnalysisResponseBase.TokenInfo;
+import org.apache.solr.client.solrj.response.DocumentAnalysisResponse.FieldAnalysis;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +49,19 @@ import org.springframework.stereotype.Component;
 import com.google.common.util.concurrent.AtomicDouble;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -95,6 +112,11 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
                 .setDisplayTitle(displayTitle);
         
         query.setUrl(null);
+        
+        query.setUsers(conversation.getMessages().subList(contextStart, conversation.getMessages().size()).stream()
+                .map(Message::getUser).filter(Objects::nonNull)
+                .map(User::getId).filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
         
         keywords.stream()
                 .filter(t -> t.getMessageIdx() >= contextStart)
@@ -207,20 +229,25 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
             if(interestingTermList != null && interestingTermList.size() > 0) { //interesting terms present
                 //Do make it easier to combine context params with other ensure that the maximum boost is 1.0
                 AtomicDouble norm = new AtomicDouble(-1);
-                StreamSupport.stream(interestingTermList.spliterator(), false)
+                List<ContextTerm> ctxTerms = StreamSupport.stream(interestingTermList.spliterator(), false)
                     .sorted((a,b) -> Double.compare(((Number)b.getValue()).doubleValue(), ((Number)a.getValue()).doubleValue()))
-                    .forEach(e -> {
+                    .map(e -> {
                         //NOTE: we need to query escape the value of the term as the returned
                         // interesting terms are not!
                         final String term;
-                        int fieldSepIdx = e.getKey().indexOf(':'); //check if their 
+                        final String field;
+                        int fieldSepIdx = e.getKey().indexOf(':'); //we need to strip the solr field from the term 
+                        //NOTE: we do not Solr query escape as we do not want to make assumptions about the
+                        //      implementation of the Rocket.Chat search
                         if(fieldSepIdx >= 0){
-                            term = e.getKey().substring(0, fieldSepIdx + 1) + 
-                                    ClientUtils.escapeQueryChars(e.getKey().substring(fieldSepIdx + 1));
+                            term = e.getKey().substring(fieldSepIdx + 1);
+                            field = e.getKey().substring(0,fieldSepIdx);
                         } else {
-                            term = ClientUtils.escapeQueryChars(e.getKey());
+                            term = e.getKey();
+                            field = null;
                         }
-                        //TODO: Try to map the term with Terms and Keywords extracted from the conversation
+                        //NOTE that those terms are Solr Analyzed (lower case, stemmed, ...)
+                        //We could try to map them with words in the context or extracted Entities and Keywords
                         final float relevance;
                         if(norm.doubleValue() < 0) {
                             norm.set(1d/((Number)e.getValue()).doubleValue());
@@ -228,8 +255,25 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
                         } else {
                             relevance = (((Number)e.getValue()).floatValue() * norm.floatValue());
                         }
-                        query.addContextQueryTerm(term, relevance);
-                    });
+                        return new ContextTerm(e.getKey(), relevance);
+                    })
+                    .collect(Collectors.toList());
+                //build an Index of {field,term} -> [<AnalysisInfo>]
+                final WordAnalysisIdx waIdx = new WordAnalysisIdx();
+                analyseTerm(solrClient, 
+                        ctxTerms.stream().map(ContextTerm::getField).collect(Collectors.toSet()), 
+                        context).forEach((field,terms) -> waIdx.add(field,terms));
+                //now we can get the actual words for the Terms returned by the Solr MLT interesting Terms element
+                log.debug("write contextQueryTerms");
+                ctxTerms.forEach(ctxTerm -> {
+                    Set<String> words = waIdx.getWords(ctxTerm.field,ctxTerm.term);
+                    if(CollectionUtils.isNotEmpty(words)){
+                        log.debug(" term: {} -> words: {}", ctxTerm.term, words);
+                        query.addContextQueryTerm(words.iterator().next(), ctxTerm.getRelevance());
+                    } else {
+                        log.debug(" term: {} -> no words found - ignored", ctxTerm.term);
+                    }
+                });
             }
         } catch (SolrException solrEx) { //related to #2258 - make code more robust to unexpected errors
             if(log.isDebugEnabled()){
@@ -241,6 +285,181 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
             }
         }
     }
-
+    
+    /**
+     * This method allows to analyse the parsed text with the Solr Analyser of the parsed field name.
+     * This is useful when one needs to match Solr terms (from the inverted index) with sections of
+     * the text or Terms and Keywords extracted from that text
+     * @param client the SolrClient used to execute the requests
+     * @param field the Solr field
+     * @param text the text to analyse
+     * @throws SolrException
+     * @throws IOException
+     * @throws SolrServerException
+     */
+    private Map<String,List<WordAnalysis>> analyseTerm(SolrClient client, Set<String> fields, String text) throws SolrException, IOException, SolrServerException {
+        FieldAnalysisRequest request = new FixedFieldAnalysisRequest();
+        request.setFieldNames(new ArrayList<>(fields));
+        request.setFieldValue(text);
+        FieldAnalysisResponse respone = request.process(client);
+        Map<String,List<WordAnalysis>> fieldAnalysis = new HashMap<>();
+        respone.getAllFieldNameAnalysis().forEach(e -> {
+            org.apache.solr.client.solrj.response.FieldAnalysisResponse.Analysis analysis = e.getValue();
+            final AnalysisPhase result; //the analysis result is the output of the last AnalysisPhase
+            if(analysis.getIndexPhases() instanceof List){ //in current SolrJ this is a list 
+                result = ((List<AnalysisPhase>)analysis.getIndexPhases()).get(analysis.getIndexPhasesCount() - 1);
+            } else { //but provide a fallback if not ...
+                AnalysisPhase phase = null;
+                for(Iterator<AnalysisPhase> it = analysis.getIndexPhases().iterator(); it.hasNext(); phase = it.next());
+                result = phase;
+            }
+            fieldAnalysis.put(e.getKey(), result.getTokens().stream().map(t -> new WordAnalysis(text, t)).collect(Collectors.toList()));
+        });
+        return fieldAnalysis;
+    }
+    
+    private static class WordAnalysis {
+        
+        public final String word;
+        public final String term;
+        public final int start;
+        public final int end;
+        public final int pos;
+        
+        WordAnalysis(String text, TokenInfo token){
+            start = token.getStart();
+            end = token.getEnd();
+            pos = token.getPosition();
+            this.term = token.getText();
+            word = text.substring(start, end);
+        }
+        
+        public String getWord() {
+            return word;
+        }
+        
+        public String getTerm() {
+            return term;
+        }
+        
+        public int getStart() {
+            return start;
+        }
+        
+        public int getEnd() {
+            return end;
+        }
+        
+        public int getPos() {
+            return pos;
+        }
+    }
+    
+    private static class ContextTerm {
+        
+        final String field;
+        final String term;
+        final float relevance;
+        
+        ContextTerm(String solrTerm, float relevance){
+            int fieldSepIdx = solrTerm.indexOf(':'); //we need to strip the solr field from the term 
+            //NOTE: we do not Solr query escape as we do not want to make assumptions about the
+            //      implementation of the Rocket.Chat search
+            if(fieldSepIdx >= 0){
+                term = solrTerm.substring(fieldSepIdx + 1);
+                field = solrTerm.substring(0,fieldSepIdx);
+            } else {
+                term = solrTerm;
+                field = null;
+            }
+            this.relevance = relevance;
+        }
+        
+        public String getField() {
+            return field;
+        }
+        
+        public String getTerm() {
+            return term;
+        }
+        
+        public float getRelevance() {
+            return relevance;
+        }
+    }
+    
+    static class WordAnalysisIdx {
+        
+        private final Map<Pair<String,String>, Collection<WordAnalysis>> tokenIndex = new HashMap<>();
+        
+        public void add(String field, Iterable<WordAnalysis> words){
+            words.forEach(wa -> tokenIndex.computeIfAbsent(
+                    new ImmutablePair<String, String>(field, wa.term), k -> new LinkedList<>()).add(wa));
+        }
+        
+        public Collection<WordAnalysis> getWordAnalysis(String field, String term){
+            return tokenIndex.get(new ImmutablePair<String,String>(field, term));
+        }
+        public Set<String> getWords(String field, String term){
+            return tokenIndex.getOrDefault(new ImmutablePair<String,String>(field, term), Collections.emptySet()).stream()
+                .map(WordAnalysis::getWord)
+                .collect(Collectors.toSet());
+        }
+    }
+    
+    /*
+     * Workaround for a Bug in SolrJ FixedFieldAnalysisResponse
+     * 
+     * The FixedFieldAnalysisResponse#buildPhases(..) can not handle situations where
+     * a CharFilter is part of the AnalysisPipeline.
+     * In those cases the phaseNL does simple contain the parsed Text and not a
+     * further NamedList. So the buildPhrase runs into an ClassCastException.
+     * 
+     * This implementation performs an instanceof check and simple ignores CharFilter
+     * information present in the Response
+     * 
+     * To make this work it is required to call the default visible constructor of the
+     * AnalysisPhase via reflection :(
+     * 
+     */
+    private final static class FixedFieldAnalysisRequest extends FieldAnalysisRequest {
+        @Override
+        protected FieldAnalysisResponse createResponse(SolrClient client) {
+            if (getFieldTypes() == null && getFieldNames() == null) {
+                throw new IllegalStateException("At least one field type or field name need to be specified");
+            }
+            if (getFieldValue() == null) {
+                throw new IllegalStateException("The field value must be set");
+            }
+            return new FixedFieldAnalysisResponse();
+        }
+    }
+    private final static class FixedFieldAnalysisResponse extends FieldAnalysisResponse {
+        @Override
+        protected List<AnalysisPhase> buildPhases(NamedList<List<NamedList<Object>>> phaseNL) {
+            List<AnalysisPhase> phases = new ArrayList<>(phaseNL.size());
+            for (Map.Entry<String, List<NamedList<Object>>> phaseEntry : phaseNL) {
+                if(phaseEntry.getValue() instanceof List){
+                    final AnalysisPhase phase;
+                    try {
+                        Constructor<AnalysisPhase> constructor = AnalysisPhase.class.getDeclaredConstructor(String.class);
+                        constructor.setAccessible(true);
+                        phase = constructor.newInstance(phaseEntry.getKey());
+                    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | 
+                            IllegalArgumentException | InvocationTargetException e) {
+                        throw new SolrException(ErrorCode.UNKNOWN, "Unable to instanciate AnalysisPhrase using reflection ("
+                                + e.getClass().getSimpleName() + " - " + e.getMessage() + ")!", e);
+                    }
+                    List<NamedList<Object>> tokens = phaseEntry.getValue();
+                    for (NamedList<Object> token : tokens) {
+                        TokenInfo tokenInfo = buildTokenInfo(token);
+                        phase.getTokens().add(tokenInfo);
+                    }
+                    phases.add(phase);
+                } // CharFilter do not define the information needed to construct AnalysisPhrases ... as we do not need those anyway we just ignore them
+            }
+            return phases;
+        }
+    }
     
 }
