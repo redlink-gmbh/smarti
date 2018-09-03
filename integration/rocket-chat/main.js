@@ -27,12 +27,26 @@ const DDP = require("ddp.js").default;
 
 let conversationId = null;
 
+let searchProvider = null;
+let searchProviderSupported = false;
+
 //multi-linguality
 const Localize = require('localize');
 const i18n = require('./i18n.json');
 let localize = new Localize(i18n, undefined, 'xx');
 toastr.options.target = ".widgetMessage";
 toastr.options.positionClass = "widgetToast";
+
+let Logger = function(prefix) {
+    this.logger = {};
+    for (let m in console)
+        if(typeof console[m] == 'function')
+            this.logger[m] = console[m].bind(window.console, prefix + ":");
+
+    return this.logger;
+};
+
+let log = Logger("SmartiWidget");
 
 const Utils = {
     getAvatarUrl : (id) => {
@@ -150,7 +164,7 @@ function Smarti(options) {
             ddp.on('result', (message) => {
                 if (message.id === loginId) {
                     if (message.error) {
-                        console.log("Login error:", message.error);
+                        log.error("Login error:", message.error);
                         return failure({i18nObj: {code:"login.failed", args:[message.error.reason]}});
                     }
                     localStorage.setItem('Meteor.loginToken', message.result.token);
@@ -176,12 +190,7 @@ function Smarti(options) {
             localStorage.getItem('Meteor.loginTokenExpires') &&
             (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())
         ) {
-            console.debug(
-                'found token %s for user %s that expires on %s',
-                localStorage.getItem('Meteor.loginToken'),
-                localStorage.getItem('Meteor.userId'),
-                localStorage.getItem('Meteor.loginTokenExpires')
-            );
+            log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
 
             loginRequest([
                 { "resume": localStorage.getItem('Meteor.loginToken') }
@@ -202,12 +211,35 @@ function Smarti(options) {
      */
     function init(failure) {
 
+        // get RC's search provider
+        const spCallId = ddp.method("rocketchatSearch.getProvider", []);
+        ddp.on("result", (message) => {
+            if (message.error) {
+                log.error('Failed to get search provider:', message.error);
+                return;
+            } else if(message.id === spCallId) {
+                if(message.result) {
+                    searchProvider = message.result;
+                    log.debug('Search provider found: ', searchProvider);
+                    if(searchProvider.key == "chatpalProvider") {
+                        searchProviderSupported = true;
+                    } else {
+                        searchProviderSupported = false;
+                        log.info(`Search provider ${searchProvider.key} is not supported!`);
+                    }
+                } else {
+                    log.info('Search provider is not active!');
+                    return;
+                }
+            }
+        });
+
         // fetch last Smarti results when the wiget gets initialized (channel entered)
-        console.debug('Smarti widget init -> get conversation ID for channel', options.channel);
+        log.debug('init -> get conversation ID for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
             if (message.error) {
-                console.debug('Failed to get conversation ID:', message.error);
+                log.error('Failed to get conversation ID:', message.error);
                 return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
             } else if(message.id === lastConvCallId) {
                 if(message.result) {
@@ -215,14 +247,14 @@ function Smarti(options) {
                     conversationId = message.result;
                     getConversation(message.result, failure);
                 } else {
-                    console.debug('Smarti widget init -> conversation ID not found for channel:', options.channel);
+                    log.debug('init -> conversation ID not found for channel:', options.channel);
                     return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
                 }
             }
         });
 
         // subscribe changes on the channel that is passed by SmartiWidget constructor (message send)
-        console.debug('Smarti widget init -> subscribe channel', options.channel);
+        log.debug('init -> subscribe channel', options.channel);
         const subId = ddp.sub("stream-notify-room", [options.channel+"/newConversationResult", false]);
         ddp.on("nosub", () => {
             failure({i18nObj: {code:'sub.new-conversation-result.nosub'}, dismissOnClick: true});
@@ -230,7 +262,7 @@ function Smarti(options) {
         ddp.on("changed", (message) => {
             if(message.collection == "stream-notify-room") {
                 // subscriotion has changed (message send) -> fetch conversation results
-                console.debug('Smarti widget subscription changed -> get conversation result for message:', message.fields.args[0]);
+                log.debug('Async smarti results received:', message.fields.args[0]);
                 pubsub('smarti.data').publish(message.fields.args[0]);
             }
         });
@@ -251,36 +283,35 @@ function Smarti(options) {
      * @param failure - a function called on any errors to display a message
      */
     function getConversation(conversationId, failure) {
-        console.debug('Fetch results for conversation with ID:', conversationId);
+        log.debug('Fetch results for conversation with ID:', conversationId);
         const msgid = ddp.method("getConversation", [conversationId]);
         ddp.on("result", (message) => {
             if (message.error) {
-                console.debug('Failed to get conversation:', message.error);
+                log.error('Failed to get conversation:', message.error);
                 if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
             } else if(message.id === msgid) {
-                if(message.result) {
+                if(message.result && message.result != "null") {
                     if(message.result.error) {
-                        console.debug('Server-side error:', message.result.error);
+                        log.error('Server-side error:', message.result.error);
                         //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
                         if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
                     } else {
                         pubsub('smarti.data').publish(message.result);
                     }
                 } else {
-                    console.debug('No conversation found for ID:', conversationId);
-                    if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
+                    log.info(`Conversation fetch returned no results. Expecting async response... (${conversationId})`);
                 }
             }
         });
     }
 
     function query(params, success, failure) {
-      console.debug('Get query builder result for conversation with [id: %s, templateIndex: %s, creatorName: %s, start: %s}', params.conversationId, params.template, params.creator, params.start);
+        log.debug(`Get query builder result for conversation with [id: ${params.conversationId}, templateIndex: ${params.template}, creatorName: ${params.creator}, start: ${params.start}}`);
       const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
       ddp.on("result", (message) => {
           if(message.id === msgid) {
               if (message.error) {
-                  console.error("Query error:", message.error);
+                  log.error("Query error:", message.error);
                   return failure({i18nObj: {code: "get.query.params", args: [message.error.reason]}, dismissOnClick: true});
               }
               success(message.result || {});
@@ -289,18 +320,40 @@ function Smarti(options) {
     }
 
     function search(params, success, failure) {
-        console.debug('search for conversation messages');
+        log.info('Searching for conversation messages...');
         const msgid = ddp.method("searchConversations",[params]);
         ddp.on("result", (message) => {
             if(message.id === msgid) {
                 if (message.error) {
-                    console.error("Conversation search error:", message.error);
+                    log.error("Conversation search error:", message.error);
                     failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else if (!message.result || message.result.error) {
                     if(!message.result) {
-                        console.error("Conversation search returned no result!");
+                        log.info("Conversation search returned no result!");
                     } else {
-                        console.error("Conversation search error:", message.result.error);
+                        log.error("Conversation search error:", message.result.error);
+                    }
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
+                } else {
+                    success(message.result);
+                }
+            }
+        });
+    }
+
+    function rcSearch(params, success, failure) {
+        log.debug('RC Search...', params);
+        const msgid = ddp.method("rocketchatSearch.search", params);
+        ddp.on("result", (message) => {
+            if(message.id === msgid) {
+                if (message.error) {
+                    log.error("RC search error:", message.error);
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
+                } else if (!message.result || message.result.error) {
+                    if(!message.result) {
+                        log.info("RC search returned no result!");
+                    } else {
+                        log.error("RC search error:", message.result.error);
                     }
                     failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else {
@@ -323,7 +376,7 @@ function Smarti(options) {
         ddp.on("result", (message) => {
             if(message.id === methodId) {
                 if(message.error) {
-                    console.error('Cannot post message:\n', JSON.stringify(message.error, null, 2));
+                    log.error('Cannot post message:', message.error);
                     if(failure) failure({i18nObj: {code:"msg.post.failure"}, dismissOnClick: true});
                 } else if(success) {
                     success();
@@ -340,6 +393,7 @@ function Smarti(options) {
         unsubscribe: (id, func) => pubsub(id).unsubscribe(func),
         query,
         search,
+        rcSearch,
         post
     };
 }
@@ -353,7 +407,7 @@ function Smarti(options) {
  */
 function Tracker(category, roomId, onEvent) {
     this.trackEvent = (action, value) => {
-        console.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
+        log.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
         if(onEvent) onEvent(category, action, roomId, value);
     };
 }
@@ -408,10 +462,12 @@ function SmartiWidget(element, _options) {
 
     $.extend(true,options,_options);
 
-    console.debug('init smarti widget:\n', JSON.stringify(options,null,2));
+    // log.debug('init:', options);
 
     localize = new Localize(options.i18n, undefined, 'xx');
     localize.setLocale(options.lang);
+
+    moment.locale(options.lang);
 
     let tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
 
@@ -421,7 +477,7 @@ function SmartiWidget(element, _options) {
 
     function InputField(elem) {
         this.post = (msg) => {
-            console.debug(`write text to element: ${msg}`);
+            log.debug(`write text to element: ${msg}`);
             elem.val(msg);
             elem.focus();
         };
@@ -500,7 +556,7 @@ function SmartiWidget(element, _options) {
             queryParams.start = page > 0 ? (page*numOfRows) : 0;
 
             // external Solr search
-            console.log(`executeSearch ${ params.query.url }, with`, queryParams);
+            log.debug(`executeSearch ${ params.query.url }, with`, queryParams);
             $.observable(params.templateData).setProperty("loading", true);
             $.ajax({
                 url: params.query.url,
@@ -509,7 +565,7 @@ function SmartiWidget(element, _options) {
                 dataType: 'jsonp',
                 jsonp: 'json.wrf',
                 failure: (err) => {
-                    console.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
+                    log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
                 /**
                  *
@@ -527,8 +583,8 @@ function SmartiWidget(element, _options) {
                                     !data.response.docs.length ||
                                     (params.templateData.results.length + data.response.docs.length) == data.response.numFound;
 
-                    console.log(params.query);
-                    console.log(data.response);
+                    log.debug("ir-latch query:", params.query);
+                    log.debug("ir-latch response:", data.response);
 
                     //map to search results
                     let docs = $.map(data.response && data.response.docs || [], (doc) => {
@@ -561,8 +617,6 @@ function SmartiWidget(element, _options) {
                         });
                     }
 
-                    console.log(docs);
-
                     $.observable(params.templateData).setProperty("total", data.response && data.response.numFound || 0);
 
                     if(append) {
@@ -584,7 +638,7 @@ function SmartiWidget(element, _options) {
 
         function loadNextPage() {
             if(!noMoreData) {
-                console.log("LOAD MORE!");
+                log.debug("Load more:", params.query.creator);
                 currentPage++;
                 getResults(currentPage, true, true);
             }
@@ -620,6 +674,8 @@ function SmartiWidget(element, _options) {
         let lastSimilarityQuery = null;
         let currentSimilarityQuery = null;
         let lastTks = [];
+        let lastQueryTerms = "";
+        let lastContext = {};
         let lastFilters = [];
         let currentFilters = [];
         let currentPage = 0;
@@ -632,7 +688,141 @@ function SmartiWidget(element, _options) {
 
         function getResults(page, useSearchTerms, append) {
 
-            if(params.query.creator.indexOf("queryBuilder:conversationsearch") > -1) {
+            if(params.query.creator.indexOf("queryBuilder:rocketchatsearch") > -1) {
+
+                if(!searchProvider) {
+                    return $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'rc.search-provider.inactive'}));
+                }
+
+                if(!searchProviderSupported) {
+                    return $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'rc.search-provider.not-supported'}));
+                }
+
+                let queryTerms = (params.query.contextQuery||[]).sort((a, b) => b.relevance - a.relevance).map((q) => q.term);
+
+                let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
+                // if(useSearchTerms) tks = tks.concat(searchTerms || []);
+
+                queryTerms = tks.length ? tks : queryTerms;
+
+                currentSimilarityQuery = similarityQuery;
+
+                let context = {"uid": Meteor.userId(), "rid": Session.get("openedRoom")};
+
+                if(lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastQueryTerms, queryTerms) && context.uid == lastContext.uid && context.rid == lastContext.rid && loadedPage >= page) return;
+
+                if(!append) {
+                    page = 0;
+                    currentPage = 0;
+                    noMoreData = false;
+                }
+
+                let pageSize = params.query.payload && params.query.payload.rows || 0;
+                let start = pageSize ? page * pageSize : 0;
+
+                $.observable(params.templateData).setProperty("loading", true);
+
+                lastQueryTerms = queryTerms;
+
+                let payload = JSON.parse(JSON.stringify(params.query.payload));
+
+                payload.start = start;
+                payload.rows = pageSize;
+
+                // SimilarityQuery
+                lastSimilarityQuery = currentSimilarityQuery;
+                if (currentSimilarityQuery) {
+                    payload["q.alt"] = currentSimilarityQuery;
+                } else {
+                    delete payload["q.alt"];
+                }
+
+                lastContext = context;
+
+                smarti.rcSearch([queryTerms.join(" "), context, payload], (data) => {
+                    log.debug("RC search results:", data);
+
+                    loadedPage = page;
+
+                    let messages = [];
+                    data = data.message;
+                    if(data.docs && data.docs.length) {
+                        data.docs.forEach(m => {
+                            /* default provider message
+                            messages.push({
+                                content: m.msg,
+                                time: m._updatedAt ? m._updatedAt.$date : m.ts.$date,
+                                username: m.u.name
+                            });
+                            */
+
+                            let user = Meteor.users.findOne({username: m.username});
+                            let userDisplayName = user ? user.name : m.username;
+
+                            messages.push({
+                                _id: m._id,
+                                rid: m.rid,
+                                messageLink: getRCMessageLink(m.rid, m._id),
+                                content: m.text[0],
+                                time: m.created,
+                                username: m.username,
+                                userDisplayName: userDisplayName,
+                                roomType: m.r.t,
+                                roomName: m.r.name
+                            });
+
+                            /* Chatpal results message
+                                {
+                                    "rid":"DFGNe9uuLts4882yF",
+                                    "user":"ur6BtsL5grm6BfinF",
+                                    "created":"2018-05-14T17:20:40.707Z",
+                                    "type":"message",
+                                    "score":15.663331,
+                                    "_id":"5xoJQpoySBgHkbYEw",
+                                    "text":[
+                                        "Content <em>string</em>"
+                                    ],
+                                    "r":{
+                                        "name":"room-name",
+                                        "t":"r"
+                                    },
+                                    "username":"username",
+                                    "valid":true
+                                }
+                             */
+                        });
+                    }
+
+                    tracker.trackEvent(params.query.creator, messages.length);
+
+                    noMoreData = !data.docs || !data.docs.length || typeof data.numFound == "undefined" || (params.templateData.results.length + data.docs.length) == data.numFound;
+
+                    if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
+
+                    if(append) {
+                        $.observable(params.templateData.results).insert(messages);
+                    } else {
+                        $.observable(params.templateData.results).refresh(messages);
+                    }
+                    $.observable(params.templateData).setProperty("tokensUsed", queryTerms.length > 0);
+                    $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
+                    $.observable(params.templateData).setProperty("loading", false);
+
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                        loadNextPage();
+                    } else {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                    }
+                }, function(error) {
+                    if(error) {
+                        showError(error);
+                    } else {
+                        showMsg({i18nObj: {code: 'smarti.result.no-response'}, isError: true, dismissOnClick: true});
+                    }
+                    $.observable(params.templateData).setProperty("loading", false);
+                });
+            } else if(params.query.creator.indexOf("queryBuilder:conversationsearch") > -1) {
                 /*
                     fl:"id,message_id,meta_channel_id,user_id,time,message,type"
                     hl:"true"
@@ -693,10 +883,10 @@ function SmartiWidget(element, _options) {
                 } else {
                     delete queryParams["q.alt"];
                 }
-                console.log("queryParams: " + queryParams);
+                log.debug("queryParams:", queryParams);
 
                 smarti.search(queryParams, (data) => {
-                    console.log("Conversation search results:", data);
+                    log.debug("Conversation search results:", data);
 
                     loadedPage = page;
 
@@ -797,8 +987,6 @@ function SmartiWidget(element, _options) {
                         });
                     }
 
-                    console.log(data);
-
                     if(append) {
                         $.observable(params.templateData.results).insert(data.docs);
                     } else {
@@ -820,7 +1008,7 @@ function SmartiWidget(element, _options) {
 
         function loadNextPage() {
             if(!noMoreData) {
-                console.log("LOAD MORE!");
+                log.info("Load more:", params.query.creator);
                 currentPage++;
                 getResults(currentPage, true, true);
             }
@@ -904,10 +1092,10 @@ function SmartiWidget(element, _options) {
                 return !widgetHeaderTagsTemplateData.include.some(iT => iT.value.trim().toLowerCase() === t.value.trim().toLowerCase());
             });
 
-        console.log("Filtered tokens:", uniqueTokens);
+        log.debug("Filtered tokens:", uniqueTokens);
 
         if(widgetHeaderTagsTemplateData.include.length) {
-            console.log("Pinned tokens:", widgetHeaderTagsTemplateData.include);
+            log.debug("Pinned tokens:", widgetHeaderTagsTemplateData.include);
             uniqueTokens = widgetHeaderTagsTemplateData.include.map(t => {
                 t.pinned = true;
                 return t;
@@ -940,7 +1128,8 @@ function SmartiWidget(element, _options) {
                     if(
                         constructor &&
                         (!options.widget[query.creator] || !options.widget[query.creator].disabled) &&
-                        query.creator.indexOf("queryBuilder:conversationmlt") == -1
+                        query.creator.indexOf("queryBuilder:conversationmlt") == -1 &&
+                        query.creator.indexOf("queryBuilder:conversationsearch") == -1
                     ) {
                         let elem = $('<div class="smarti-widget">').hide().appendTo(widgetContent);
 
@@ -961,20 +1150,22 @@ function SmartiWidget(element, _options) {
                             similarityQueryPath = ['templates', i, 'queries', j, 'similarityQuery'];
 
                             // filterQueries
-                            params.templateData.filters = query.filterQueries.filter(fq => {
-                                return fq.optional;
-                            });
-                            params.templateData.filters.forEach(fq => {
-                                let enabled = widgetStorage.widgetOptions && widgetStorage.widgetOptions[params.query.creator] && widgetStorage.widgetOptions[params.query.creator].filters[fq.filter];
-                                fq.enabled = typeof enabled == "undefined" ? fq.enabled : enabled;
-                                try {
-                                    fq.label = Utils.localize({code: fq.name});
-                                } catch(e) {
-                                    let nameParts = fq.name.split(".");
-                                    fq.label = nameParts[nameParts.length - 1];
-                                }
-                                fq.label += ": " + (fq.displayValue || fq.filter);
-                            });
+                            if(query.filterQueries) {
+                                params.templateData.filters = query.filterQueries.filter(fq => {
+                                    return fq.optional;
+                                });
+                                params.templateData.filters.forEach(fq => {
+                                    let enabled = widgetStorage.widgetOptions && widgetStorage.widgetOptions[params.query.creator] && widgetStorage.widgetOptions[params.query.creator].filters[fq.filter];
+                                    fq.enabled = typeof enabled == "undefined" ? fq.enabled : enabled;
+                                    try {
+                                        fq.label = Utils.localize({code: fq.name});
+                                    } catch(e) {
+                                        let nameParts = fq.name.split(".");
+                                        fq.label = nameParts[nameParts.length - 1];
+                                    }
+                                    fq.label += ": " + (fq.displayValue || fq.filter);
+                                });
+                            }
                         }
 
                         let config = options.widget[query.creator] || {};
@@ -994,6 +1185,14 @@ function SmartiWidget(element, _options) {
         } else {
             similarityQuery = getProp(similarityQueryPath, data);
             $.each(widgets, (i, wgt) => {
+                // update widget queries
+                $.each(data.templates, (i, template) => {
+                    $.each(template.queries, (j, query) => {
+                        if(wgt.params.query.creator == query.creator) {
+                            $.observable(wgt.params).setProperty("query", query);
+                        }
+                    });
+                });
                 wgt.refresh();
             });
         }
@@ -1105,69 +1304,32 @@ function SmartiWidget(element, _options) {
     `;
     const widgetConversationTemplateStr = `
         {^{for results}}
-            <div class="conversation">
-                {^{if messagesBefore && messagesBefore.length}}
-                    <div class="beforeContextContainer">
-                        {^{for messagesBefore}}
-                            <div class="convMessage">
-                                <div class="middle">
-                                    <div class="datetime">
-                                    {{tls:time}}
-                                    </div>
-                                    <div class="title"></div>
-                                    <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
-                                    <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
-                                    <div class="selectMessage"></div>
-                                </div>
-                            </div>
-                        {{/for}}
+            <div class="rc-search-result">
+                <div class="middle">
+                    <div class="datetime">
+                        <a data-link="href{:messageLink}">{^{rcdt:time}}</a>
                     </div>
-                {{/if}}
-                <div class="convMessage" data-link="class{merge: messagesCnt toggle='parent'}">
-                    <div class="middle">
-                        <div class="datetime">
-                            {{tls:time}}
-                            {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
-                            {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.show_details'})}</span>{{/if}}
-                        </div>
-                        <div class="title"></div>
-                        <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
-                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
-                        <div class="selectMessage"></div>
-                    </div>
+                    <div class="title">{^{:userDisplayName + ' > ' + roomName}}</div>
+                    <div class="text"><p>{^{:content}}</p></div>
+                    <!--<div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>-->
+                    <!--<div class="selectMessage"></div>-->
                 </div>
-                {^{if messagesAfter && messagesAfter.length}}
-                    <div class="afterContextContainer">
-                        {^{for messagesAfter}}
-                            <div class="convMessage">
-                                <div class="middle">
-                                    <div class="datetime">
-                                    {{tls:time}}
-                                    </div>
-                                    <div class="title"></div>
-                                    <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
-                                    <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
-                                    <div class="selectMessage"></div>
-                                </div>
-                            </div>
-                        {{/for}}
-                    </div>
-                {{/if}}
             </div>
         {{else}}
-            {^{if !loading}}
-                {^{if noMessages}}
-                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results-no-msg'})}</div>
-                {{else}}
-                    <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
-                {{/if}}
-            {{/if}}
             {^{if msg}}
                 <div class="msg">{^{:msg}}</div>
+            {{else}}
+                {^{if !loading}}
+                    {^{if noMessages}}
+                        <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results-no-msg'})}</div>
+                    {{else}}
+                        <div class="no-result">${Utils.localize({code: 'widget.conversation.no-results'})}</div>
+                    {{/if}}
+                {{/if}}
             {{/if}}
         {{/for}}
         {^{if loading}}
-            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+            <div class="loading-animation"><div class="bounce bounce1"></div><div class="bounce bounce2"></div><div class="bounce bounce3"></div></div>
         {{/if}}
     `;
     const widgetIrLatchTemplateStr = `
@@ -1195,7 +1357,7 @@ function SmartiWidget(element, _options) {
             {{/if}}
         {{/for}}
         {^{if loading}}
-            <div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+            <div class="loading-animation"><div class="bounce bounce1"></div><div class="bounce bounce2"></div><div class="bounce bounce3"></div></div>
         {{/if}}
     `;
 
@@ -1216,7 +1378,7 @@ function SmartiWidget(element, _options) {
     let innerTabSearch = $('<div id="innerTabSearch">').appendTo(widgetHeader);
     let innerTabFilter = $('<div id="innerTabFilter">').appendTo(widgetHeader);
 
-    let widgetContent = $('<div class="widgetContent"><div class="loading-animation"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div></div>').appendTo(widgetBody);
+    let widgetContent = $('<div class="widgetContent"><div class="loading-animation"><div class="bounce bounce1"></div><div class="bounce bounce2"></div><div class="bounce bounce3"></div></div></div>').appendTo(widgetBody);
 
     let footerPostButton = $('<button class="button button-block" id="postSelected">').prependTo(widgetFooter);
 
@@ -1269,7 +1431,7 @@ function SmartiWidget(element, _options) {
 
     const MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
     let footerObserver = new MutationObserver((mutationRecords) => {
-        //console.log("Footer Observer:", mutationRecords);
+        //log.debug("Footer Observer:", mutationRecords);
         noChatCloseBtn = !$('#widgetFooter .help-request-actions').length;
         adjustFooter();
     });
@@ -1363,7 +1525,7 @@ function SmartiWidget(element, _options) {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
 
-                if(newWidget.params.templateData.filters.length) {
+                if(newWidget.params.templateData.filters && newWidget.params.templateData.filters.length) {
                     let widgetHeaderInnerTabFilterTemplateData = {filters: newWidget.params.templateData.filters};
                     widgetHeaderInnerTabFilterTemplate.link(innerTabFilter, widgetHeaderInnerTabFilterTemplateData);
 
@@ -1462,19 +1624,15 @@ function SmartiWidget(element, _options) {
 
     function toggleConversation($conversation) {
         function afterCollapse() {
-            console.log('after collapse');
             $conversation.removeClass('expanded');
             $conversation.find('.context').text(Utils.localize({code: 'widget.show_details'}));
         }
         function afterExpand() {
-            console.log('after expand');
             $conversation.find('.context').text(Utils.localize({code: 'widget.hide_details'}));
         }
         if($conversation.hasClass('expanded')) {
-
             $conversation.children('.beforeContextContainer').toggle(200, afterCollapse);
             $conversation.children('.afterContextContainer').toggle(200, afterCollapse);
-
         } else {
             $conversation.addClass('expanded');
             $conversation.children('.beforeContextContainer').toggle(200, afterExpand);
@@ -1596,7 +1754,7 @@ function SmartiWidget(element, _options) {
                 }
 
             });
-            console.log(selectedItems);
+            log.debug("selected items:", selectedItems);
             postItems(selectedItems);
             tracker.trackEvent("conversation.post");
         }
@@ -1614,7 +1772,7 @@ function SmartiWidget(element, _options) {
             //selectedChildIndicesAfter: parentMessageData.messagesAfter && parentMessageData.messagesAfter.length ? Array.apply(null, {length: parentMessageData.messagesAfter.length}).map(Number.call, Number) : []
         };
         selectedItems.push(conv);
-        console.log(selectedItems);
+        log.debug("selected items:", selectedItems);
         postItems(selectedItems);
         tracker.trackEvent("conversation.part.post", $.view(parent).index);
     });
@@ -1793,6 +1951,11 @@ $.views.converters("tls", (val) => {
     return moment(val).format(Utils.localize({code: 'smarti.date-format'}));
 });
 
+// custom converter for RC message date and time display
+$.views.converters("rcdt", (val) => {
+    return moment(val).format(RocketChat.settings.get('Message_DateFormat') + ' - ' + RocketChat.settings.get('Message_TimeFormat'));
+});
+
 function escapeRegExp(str) {
     return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
 }
@@ -1803,6 +1966,12 @@ function equalArrays(a, b) {
 
 function getSolrQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
+}
+
+function getRCMessageLink(rid, mid) {
+    const subscription = RocketChat.models.Subscriptions.findOne({rid});
+    const roomLink = RocketChat.roomTypes.getRouteLink(subscription.t, subscription);
+    return roomLink ? `${roomLink}?msg=${mid}` : '';
 }
 
 const getProp = (p, o) => p.reduce((xs, x) => (xs && xs[x]) ? xs[x] : null, o);

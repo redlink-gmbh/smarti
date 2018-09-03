@@ -198,5 +198,13 @@
   "filter.property.support_area": {
     "de": "Thema",
     "en": "Topic"
+  },
+  "rc.search-provider.inactive": {
+    "de": "Der Suchanbieter ist nicht aktiviert.",
+    "en": "The search provider is not active."
+  },
+  "rc.search-provider.not-supported": {
+    "de": "Der aktuelle Suchanbieter wird nicht unterstützt.",
+    "en": "Current search provider is not supported."
   }
 }
