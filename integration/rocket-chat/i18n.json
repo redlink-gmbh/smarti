@@ -196,7 +196,7 @@
     "en": "Post $[1] selected messages"
   },
   "filter.property.support_area": {
-    "de": "Thema",
-    "en": "Topic"
+    "de": "ähnliches Thema",
+    "en": "related topic"
   }
 }
