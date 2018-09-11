@@ -766,6 +766,16 @@
                             font-size: 10px;
                             cursor:pointer;
                         }
+
+                        .jump-link {
+                            opacity: 0;
+                            vertical-align: middle;
+                        }
+
+                        .copy {
+                            opacity: 0;
+                            cursor: pointer;
+                        }
                     }
                     .title {
                         font-size: 14px;
@@ -817,6 +827,16 @@
                     &:hover {
                         .selectMessage {
                             opacity: 1;
+                        }
+
+                        .datetime {
+                            .jump-link {
+                                opacity: 1;
+                            }
+
+                            .copy {
+                                opacity: 1;
+                            }
                         }
                     }
                 }

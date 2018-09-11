@@ -23,6 +23,8 @@ const toastr = require('toastr');
 require('./node_modules/toastr/toastr.scss');
 require('jsviews');
 
+const clipboard = require('./clipboard');
+
 const DDP = require("ddp.js").default;
 
 let conversationId = null;
@@ -656,8 +658,6 @@ function SmartiWidget(element, _options) {
         };
     }
 
-    let similarityQuery = '';
-    let similarityQueryPath = [];
     let analyzedMessages = 0;
 
     /**
@@ -705,7 +705,7 @@ function SmartiWidget(element, _options) {
 
                 queryTerms = tks.length ? tks : queryTerms;
 
-                currentSimilarityQuery = similarityQuery;
+                currentSimilarityQuery = params.query.similarityQuery;
 
                 let context = {"uid": Meteor.userId(), "rid": Session.get("openedRoom")};
 
@@ -833,7 +833,7 @@ function SmartiWidget(element, _options) {
                 let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
-                currentSimilarityQuery = similarityQuery;
+                currentSimilarityQuery = params.query.similarityQuery;
 
                 currentFilters = [];
                 params.query.filterQueries.forEach(fq => {
@@ -1102,8 +1102,6 @@ function SmartiWidget(element, _options) {
             }).concat(uniqueTokens);
         }
 
-        $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
-
         if(data.context) {
             analyzedMessages = data.context.end - data.context.start - data.context.skipped;
         }
@@ -1124,18 +1122,19 @@ function SmartiWidget(element, _options) {
                             constructor = ConversationWidget;break;
                     }
 
+                    const isRCSearch = query.creator.indexOf("queryBuilder:rocketchatsearch") > -1;
+                    const isConversationMlt = query.creator.indexOf("queryBuilder:conversationmlt") > -1;
 
                     if(
                         constructor &&
                         (!options.widget[query.creator] || !options.widget[query.creator].disabled) &&
-                        query.creator.indexOf("queryBuilder:conversationmlt") == -1 &&
-                        query.creator.indexOf("queryBuilder:conversationsearch") == -1
+                        !isConversationMlt
                     ) {
                         let elem = $('<div class="smarti-widget">').hide().appendTo(widgetContent);
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false},
+                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false, isRCSearch},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1145,10 +1144,6 @@ function SmartiWidget(element, _options) {
                         };
 
                         if(template.type == "related.conversation") {
-                            // similarityQuery
-                            similarityQuery = query.similarityQuery;
-                            similarityQueryPath = ['templates', i, 'queries', j, 'similarityQuery'];
-
                             // filterQueries
                             if(query.filterQueries) {
                                 params.templateData.filters = query.filterQueries.filter(fq => {
@@ -1172,7 +1167,11 @@ function SmartiWidget(element, _options) {
 
                         let config = options.widget[query.creator] || {};
 
-                        $.observable(widgets).insert(new constructor(params, config));
+                        if(isRCSearch) {
+                            $.observable(widgets).insert(0, new constructor(params, config));
+                        } else {
+                            $.observable(widgets).insert(new constructor(params, config));
+                        }
                     }
 
                 });
@@ -1185,7 +1184,6 @@ function SmartiWidget(element, _options) {
                 showMsg({i18nObj: {code:'smarti.no-widgets'}});
             }
         } else {
-            similarityQuery = getProp(similarityQueryPath, data);
             $.each(widgets, (i, wgt) => {
                 // update widget queries
                 $.each(data.templates, (i, template) => {
@@ -1197,6 +1195,9 @@ function SmartiWidget(element, _options) {
                 });
                 wgt.refresh();
             });
+
+            // triggers search
+            $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
         }
     }
 
@@ -1306,17 +1307,69 @@ function SmartiWidget(element, _options) {
     `;
     const widgetConversationTemplateStr = `
         {^{for results}}
-            <div class="rc-search-result">
-                <div class="middle">
-                    <div class="datetime">
-                        <a data-link="href{:messageLink}">{^{rcdt:time}}</a>
+            {^{if ~root.isRCSearch}}
+                <div class="rc-search-result">
+                    <div class="middle">
+                        <div class="datetime">
+                            {^{rcdt:time}} <a class="jump-link" data-link="href{:messageLink}" title="${Utils.localize({code: 'rc.search.jump'})}"><i class="icon-link-ext"></i></a> <span class="copy" title="${Utils.localize({code: 'rc.search.copy'})}"><i class="icon-docs"></i></span>
+                        </div>
+                        <div class="title">{^{: '@' + userDisplayName + ' in #' + roomName}}</div>
+                        <div class="text"><p>{^{:content}}</p></div>
+                        <!--<div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>-->
+                        <!--<div class="selectMessage"></div>-->
                     </div>
-                    <div class="title">{^{:userDisplayName + ' > ' + roomName}}</div>
-                    <div class="text"><p>{^{:content}}</p></div>
-                    <!--<div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>-->
-                    <!--<div class="selectMessage"></div>-->
                 </div>
-            </div>
+            {{else}}
+                <div class="conversation">
+                    {^{if messagesBefore && messagesBefore.length}}
+                        <div class="beforeContextContainer">
+                            {^{for messagesBefore}}
+                                <div class="convMessage">
+                                    <div class="middle">
+                                        <div class="datetime">
+                                        {{tls:time}}
+                                        </div>
+                                        <div class="title"></div>
+                                        <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
+                                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
+                                        <div class="selectMessage"></div>
+                                    </div>
+                                </div>
+                            {{/for}}
+                        </div>
+                    {{/if}}
+                    <div class="convMessage" data-link="class{merge: messagesCnt toggle='parent'}">
+                        <div class="middle">
+                            <div class="datetime">
+                                {{tls:time}}
+                                {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
+                                {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.show_details'})}</span>{{/if}}
+                            </div>
+                            <div class="title"></div>
+                            <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
+                            <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
+                            <div class="selectMessage"></div>
+                        </div>
+                    </div>
+                    {^{if messagesAfter && messagesAfter.length}}
+                        <div class="afterContextContainer">
+                            {^{for messagesAfter}}
+                                <div class="convMessage">
+                                    <div class="middle">
+                                        <div class="datetime">
+                                        {{tls:time}}
+                                        </div>
+                                        <div class="title"></div>
+                                        <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
+                                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
+                                        <div class="selectMessage"></div>
+                                    </div>
+                                </div>
+                            {{/for}}
+                        </div>
+                    {{/if}}
+                </div>
+            {{/if}}
         {{else}}
             {^{if msg}}
                 <div class="msg">{^{:msg}}</div>
@@ -1715,6 +1768,20 @@ function SmartiWidget(element, _options) {
         }
     }
 
+    widgetBody.on('click', '.rc-search-result .copy', function() {
+        let parent = $(this).parent().parent().parent();
+        let parentResultIndex = $.view(parent).getIndex();
+        let text = parent.text().trim().split(/\n/g).map(l => l.trim()).join("\r\n") + "\r\n";
+        clipboard.copy(text);
+        tracker.trackEvent("rc.search.result.copy", parentResultIndex);
+    });
+
+    widgetBody.on('click', '.rc-search-result .jump-link', function() {
+        let parent = $(this).parent().parent().parent();
+        let parentResultIndex = $.view(parent).getIndex();
+        tracker.trackEvent("rc.search.result.jump", parentResultIndex);
+    });
+
     footerPostButton.click(() => {
         let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
         if(currentWidget && currentWidget.params.elem) {
@@ -1776,7 +1843,7 @@ function SmartiWidget(element, _options) {
         selectedItems.push(conv);
         log.debug("selected items:", selectedItems);
         postItems(selectedItems);
-        tracker.trackEvent("conversation.part.post", $.view(parent).index);
+        tracker.trackEvent("conversation.part.post", $.view(parent).getIndex());
     });
 
     let searchTimeout = null;
@@ -1819,7 +1886,7 @@ function SmartiWidget(element, _options) {
             smarti.refresh();
         }
 
-        tracker.trackEvent('tag.remove');
+        tracker.trackEvent('tag.remove', tokenIdx);
     });
 
     tags.on('click', '.action-pin', function() {
@@ -1840,13 +1907,13 @@ function SmartiWidget(element, _options) {
             if(includeIdx > -1) $.observable(widgetHeaderTagsTemplateData.include).remove(includeIdx);
             $(this).attr('title', Utils.localize({code: 'widget.latch.query.pin'}));
             $li.removeClass('pinned');
-            tracker.trackEvent('tag.unpin');
+            tracker.trackEvent('tag.unpin', tokenIdx);
         } else {
             $.observable(tokenData).setProperty("pinned", true);
             $.observable(widgetHeaderTagsTemplateData.include).insert(tokenData);
             $(this).attr('title', Utils.localize({code: 'widget.latch.query.unpin'}));
             $li.addClass('pinned');
-            tracker.trackEvent('tag.pin');
+            tracker.trackEvent('tag.pin', tokenIdx);
         }
     });
 
@@ -1884,7 +1951,7 @@ function SmartiWidget(element, _options) {
                     }
                     tags.find('li.add').html('<i class="icon-plus"></i>').removeClass('active');
                 }
-                tracker.trackEvent('tag.add');
+                tracker.trackEvent('tag.add', 0);
             }
             if(e.which == 13 || e.which == 27) {
                 tags.find('li.add').html('<i class="icon-plus"></i>').removeClass('active');

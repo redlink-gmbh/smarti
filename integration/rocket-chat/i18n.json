@@ -206,5 +206,13 @@
   "rc.search-provider.not-supported": {
     "de": "Der aktuelle Suchanbieter wird nicht unterstützt.",
     "en": "Current search provider is not supported."
+  },
+  "rc.search.jump": {
+    "de": "Springen",
+    "en": "Jump"
+  },
+  "rc.search.copy": {
+    "de": "Kopieren",
+    "en": "Copy"
   }
 }
