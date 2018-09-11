@@ -171,7 +171,7 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
                     .reduce((a, b) -> a + " OR " + b)
                     .map(fs -> new Filter(filterName, getMetaField(fieldName) 
                             + ":(" + ClientUtils.escapeQueryChars(fs) + ")")
-                            .setOptional(true).setEnabled(true)
+                            .setOptional(true).setEnabled(false)
                             .setDisplayValue(fs.replaceAll(" OR ", " | ")))
                     .orElse(null);
         }
