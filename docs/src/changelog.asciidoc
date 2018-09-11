@@ -5,6 +5,16 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.7.7 Release Notes
+Sept 11^th^, 2018
+
+Smarti `0.7.7` contains minor bug fixes for the Samrti Widget and deactivated filters for conversation search
+
+=== New in Smarti 0.7.7
+
+* https://github.com/redlink-gmbh/smarti/issues/265[#265 - Smarti widget does not update analysis results correctly]
+* https://github.com/redlink-gmbh/smarti/issues/280[#280 - Conversation Search Filters update]
+
 == Smarti 0.7.6 Release Notes
 June 18^th^, 2018
 
