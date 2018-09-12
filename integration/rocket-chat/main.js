@@ -1313,7 +1313,8 @@ function SmartiWidget(element, _options) {
                         <div class="datetime">
                             {^{rcdt:time}} <a class="jump-link" data-link="href{:messageLink}" title="${Utils.localize({code: 'rc.search.jump'})}"><i class="icon-link-ext"></i></a> <span class="copy" title="${Utils.localize({code: 'rc.search.copy'})}"><i class="icon-docs"></i></span>
                         </div>
-                        <div class="title">{^{: '@' + userDisplayName + ' in #' + roomName}}</div>
+                        <div class="user-avatar"><img data-link="src{:'/avatar/' + username}"></div>
+                        <div class="title">{^{: '@' + username + ' in #' + roomName}}</div>
                         <div class="text"><p>{^{:content}}</p></div>
                         <!--<div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>-->
                         <!--<div class="selectMessage"></div>-->
