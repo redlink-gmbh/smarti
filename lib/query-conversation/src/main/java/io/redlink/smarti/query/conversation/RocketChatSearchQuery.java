@@ -53,6 +53,7 @@ public class RocketChatSearchQuery extends Query {
     @JsonProperty("filterQueries")
     private final Set<String> users = new HashSet<>();
     
+    private final Collection<String> contextMsgs = new LinkedHashSet<>();
     @JsonProperty("contextQuery")
     private final List<ContextTerm> contextQuery = new LinkedList<>();
     
@@ -132,6 +133,24 @@ public class RocketChatSearchQuery extends Query {
         this.users.add(user);
     }
 
+    public void setContextMsgs(Collection<String> msgIds){
+        this.contextMsgs.clear();
+        if(msgIds != null){
+            this.contextMsgs.addAll(msgIds);
+        }
+    }
+    
+    public Collection<String> getContextMsgs() {
+        return contextMsgs;
+    }
+
+    @JsonIgnore
+    public void addContextMsg(String id){
+        if(id != null){
+            this.contextMsgs.add(id);
+        }
+    }
+    
     public List<ContextTerm> getContextQuery() {
         return contextQuery;
     }

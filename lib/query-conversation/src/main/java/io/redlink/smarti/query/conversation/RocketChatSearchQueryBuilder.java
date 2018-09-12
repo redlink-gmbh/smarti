@@ -59,18 +59,16 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
-import static io.redlink.smarti.query.conversation.ConversationSearchService.DEFAULT_CONTEXT_AFTER;
-import static io.redlink.smarti.query.conversation.ConversationSearchService.DEFAULT_CONTEXT_BEFORE;
-import static io.redlink.smarti.query.conversation.ConversationSearchService.PARAM_CONTEXT_AFTER;
-import static io.redlink.smarti.query.conversation.ConversationSearchService.PARAM_CONTEXT_BEFORE;
-import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MLT_CONTEXT;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.TYPE_CONVERSATION;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_KEYWORD;
+import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_TERM;
 
 /**
  */
@@ -184,10 +182,12 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
     }
     
     private void buildContextQuery(Conversation conv, ComponentConfiguration conf, RocketChatSearchQuery query) throws IOException, SolrServerException{
-        String context = conv.getMessages().subList(
-                ConversationContextUtils.getContextStart(conv.getMessages(), 
-                MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE),
-                conv.getMessages().size()).stream()
+        int cxtStart = ConversationContextUtils.getContextStart(conv.getMessages(), 
+                MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE);
+        List<Message> ctxMsgs = conv.getMessages().subList(cxtStart, conv.getMessages().size());
+        //add the context messages to Ids of the Messages
+        ctxMsgs.forEach(msg -> query.addContextMsg(msg.getId()));
+        String context = ctxMsgs.stream()
             .filter(m -> !MapUtils.getBoolean(m.getMetadata(), Message.Metadata.SKIP_ANALYSIS, false))
             .map(Message::getContent)
             .reduce(null, (s, e) -> {
