@@ -12,7 +12,12 @@ Rocket.Chat search functionality.
 
 === New in Smarti 0.8.0
 
-
+* https://github.com/redlink-gmbh/smarti/issues/275[#275 - Implement UI for Rocket.Chat Query Provider]
+* https://github.com/redlink-gmbh/smarti/issues/276[#276 - Implement Rocket.Chat query provider]
+* https://github.com/redlink-gmbh/smarti/issues/278[#278 - Exclude Context Messages for Rocket.Chat Search]
+* https://github.com/redlink-gmbh/smarti/issues/281[#281 - Limit Messages per Conversation]
+* https://github.com/redlink-gmbh/smarti/issues/282[#282 - Add RocketChatSearch Query Provider to existing Configurations]
+* https://github.com/redlink-gmbh/smarti/issues/283[#283 - Update Changelog with the new Features in Smarit 0.8.0]
 
 === Upgrading
 
