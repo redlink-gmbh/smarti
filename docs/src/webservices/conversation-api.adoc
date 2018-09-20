@@ -283,6 +283,32 @@ The following listing shows the structure use by this template and queries
       "terms" : [ "{term-1}", "{term-2}", ".." ],
       "queryParams" : [ ],
       "filterQueries" : [ "completed:true", "-conversation_id:5a7befcb27c2da49d629dcab", "-meta_support_area:*" ]
+    }, {
+      "_class" : "io.redlink.smarti.query.conversation.RocketChatSearchQuery",
+      "creator" : "queryBuilder:rocketchatsearch:rocketchatsearch",
+      "displayTitle" : "Rocket.Chat Search",
+      "confidence" : 0.6,
+      "url" : null,
+      "inlineResultSupport" : false,
+      "created" : 1518423401234,
+      "state" : "Suggested",
+      "payload" : {
+        "rows" : 3,
+      },
+      "params" : {
+        "excludeCurrentChannel" : true
+      }
+      "keywords" : [ "{keyword-1}", "{keyword-1}", ".." ],
+      "terms" : [ "{term-1}", "{term-2}", ".." ],
+      "users" : [ "{user-1}", "{user-2}", ".."],
+      "contextQuery" : [{
+        "term" : "{term-1}", 
+        "relevance" : 1.0
+      } , {
+        "term" : "{term-2}", 
+        "relevance" : 0.912
+      },
+      "contextMsgs" : ["{msg-id1}","{msg-id2}"]]
     } ]
   }
 ----
@@ -309,6 +335,14 @@ Related Conversation Search Query:
 ** the `defaults` are additional parameter to be parsed to the conversation search service. Those are based on the clients conviguration and should be included unchanged when calling the conversation search service.
 ** `filterQueries` are expected to be parsed as is via the Solr `fq` parameter. They are also calculated based on the clients configuration and expected to be included unchanged on calles to the conversation search service. **NOTE:** that skipping those filter does NOT allow users to retrieve information they do not have acces to as all security relevant restrictions are applied by the conversation search service based on  the authentication information of the call. So removing some/all of those filter does only affect the quality of results.
 
+Rocket.Chat Search Query Builder
+
+* Provides parameters that can be used to perform queries for relevant Channels, Users and Messages by using the Rocket.Chat search API
+* `keywords` and `terms` suggest extracted words to be presented to the user (e.g. as search suggestions)
+* `users` are user ids of users actively participating in the conversation
+* `params` provide configuration parameters of the QueryProvider to the client.
+* `contextQuery` provides search terms and boosts for implicit queries. This are intended to be used to search for relevant information if the user does not interact with the widget
+* `contextMsgs` provide a array of message ids used as context for the context query, keywords and terms. Typically one would like to exclude those messages as results from context searches. 
 
 ==== LATCH Information Retrieval
 

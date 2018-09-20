@@ -27,6 +27,8 @@ Mongo DB is used by Smarti to store client, configuration and conversations.
 
 * `smarti.migration.mongo.script-home = /usr/share/smarti/scripts` location of the database-migration scripts. When
     using on of the provided start-scripts, the database migration will be carried out on startup.
+    
+* `smarti.storage.mongodb.maxConvMsg = 5000` the maximum number of messages for a conversation. If more as this messages are added to a conversation the oldest will be sliced. The intension of this is to keep Conversation data within the `16MB` limit of MongoDB. see https://github.com/redlink-gmbh/smarti/issues/281[Smarti #281] for more information
 
 ===== Tomcat AJP-Config
 
