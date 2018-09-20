@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.PersistenceConstructor;
@@ -70,7 +71,7 @@ public class Conversation {
     private User user = new User();
 
     @ApiModelProperty(required = true, value = "List of Messages")
-    private final List<Message> messages = new LinkedList<>();
+    private final List<Message> messages = new LinkedList<Message>();
 
 //    NOTE: removed with 0.7.0: Analysis is now stored in an own collection. Mainly because one
 //    conversation might have different analysis for clients with different configurations.
@@ -89,6 +90,7 @@ public class Conversation {
     @Indexed(sparse=false)
     private final Date deleted;
 
+    
     public Conversation(){
         this(null, null, null);
     }

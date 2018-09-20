@@ -32,6 +32,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -56,15 +57,20 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
  * Custom implementations of Conversation Repository
  *
  * @author Sergio Fernández
+ * @author Rupert Westenthaler
+ * @author Jakob Frank
  */
+@EnableConfigurationProperties(MongoConversationStorageConfig.class)
 public class ConversationRepositoryImpl implements ConversationRepositoryCustom {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
-    
+    private final MongoConversationStorageConfig config;
+
     private final MongoTemplate mongoTemplate;
 
-    public ConversationRepositoryImpl(MongoTemplate mongoTemplate) {
+    public ConversationRepositoryImpl(MongoTemplate mongoTemplate, MongoConversationStorageConfig config) {
         this.mongoTemplate = mongoTemplate;
+        this.config = config;
 
         /* see #findLegacyConversation */
         mongoTemplate.indexOps(Conversation.class)
@@ -106,8 +112,11 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
             query.addCriteria(Criteria.where("messages").size(conversation.getMessages().size()));
 
             update = new Update();
-            update.addToSet("messages", message)
-                    .currentDate("lastModified");
+            //NOTE: we need to enforce MAM MESSAGES PER CONVERSATION (#281)
+            update.push("messages")
+                .slice(config.getMaxConvMsg()*-1)
+                .each(message)
+                .currentDate("lastModified");
         } else { //conversation not present or already marked as deleted
             throw new NotFoundException(Conversation.class, conversation.getId());
         }
