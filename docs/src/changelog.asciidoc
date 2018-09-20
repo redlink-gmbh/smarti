@@ -5,6 +5,32 @@
 
 This document shows the changes that are introduced into Smarti with the releases.
 
+== Smarti 0.8.0 Release Notes
+
+Smarti `0.8.0` introduces a new result provider "Rocket.Chat-Search", providing live search on the integrated
+Rocket.Chat search functionality.
+
+=== New in Smarti 0.8.0
+
+
+
+=== Upgrading
+
+To ensure that the improved analysis result is available for all users,
+you should clear the collection caching analysis results.
+
+Furthermore, all client-configurations that have the classical `conversationsearch` enabled get the new
+`rocketchatsearch` endpoint added.
+
+A migration script is available. If you are not using one of the provided
+installation packages (deb, rpm) or docker, you must apply it manually:
+
+.migrate-07_0.7.1-to-0.8.0.js
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-07_0.7.1-to-0.8.0.js[lines=112..-1]
+-----------------------------------------------
+
 == Smarti 0.7.7 Release Notes
 Sept 11^th^, 2018
 
