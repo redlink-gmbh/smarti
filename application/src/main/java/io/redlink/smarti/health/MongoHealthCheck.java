@@ -36,7 +36,7 @@ import java.util.*;
 @Component
 public class MongoHealthCheck extends AbstractHealthIndicator {
 
-    public static final int EXPECTED_DB_VERSION = 6;
+    public static final int EXPECTED_DB_VERSION = 7;
 
     public static final String SMARTI_DB_VERSION_ID = "db-version";
     public static final String COLLECTION_NAME = "smarti";
