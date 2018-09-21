@@ -1195,10 +1195,10 @@ function SmartiWidget(element, _options) {
                 });
                 wgt.refresh();
             });
-
-            // triggers search
-            $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
         }
+
+        // triggers search
+        $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
     }
 
     function initialize() {
