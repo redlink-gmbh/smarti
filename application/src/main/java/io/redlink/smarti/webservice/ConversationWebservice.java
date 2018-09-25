@@ -803,9 +803,17 @@ public class ConversationWebservice {
             client = null;
         }
 
-        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
+        CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);        
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
+            log.debug("asynch analysis triggered, confirm request has been accepted.");
+            return ResponseEntity.accepted()
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
+                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
+                    .build();
+        }
+        analysis.whenComplete((a , e) -> {
+            log.debug("analyis has been completed.");
+            if(callback != null){
                 if(a != null){
                     log.debug("callback {} with {}", callback, a.getTokens());
                     callbackExecutor.execute(callback, CallbackPayload.success(a.getTokens()));
@@ -814,17 +822,14 @@ public class ConversationWebservice {
                     log.debug("STACKTRACE: ",e);
                     callbackExecutor.execute(callback, CallbackPayload.error(e));
                 }
-            });
-            return ResponseEntity.accepted()
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .build();
-        } else {
-            return ResponseEntity.ok()
+            } else {
+                log.debug("synch analysis complete, send back the result.");
+                ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
                     .body(waitFor(analysis).getTokens());
-        }
+            }
+        });
     }
 
     @ApiOperation(value = "get the (query-)templates in the conversation", code= 200, response = TemplateList.class,
