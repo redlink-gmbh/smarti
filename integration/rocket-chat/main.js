@@ -1538,7 +1538,7 @@ function SmartiWidget(element, _options) {
         if (widgetBody.scrollTop() > 1) {
             // Hide title and filters only when the gained height is less than the overflowing height,
             // otherwise there will be no scrolling and the UI will reset right away!
-            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height()) {
+            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height() + 10) {
                 widgetTitle.slideUp(200);
                 if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
             }
