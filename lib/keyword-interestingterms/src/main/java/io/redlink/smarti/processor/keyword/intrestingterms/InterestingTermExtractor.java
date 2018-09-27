@@ -24,6 +24,9 @@ import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.NlpAnnotations;
 import io.redlink.nlp.model.Token;
 import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Analysis;
+import io.redlink.smarti.processing.SmartiAnnotations;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.solr.client.solrj.SolrClient;
@@ -111,6 +114,15 @@ public abstract class InterestingTermExtractor extends Processor {
                 mltQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS,field);
             }
         }
+        Analysis analysis = processingData.getAnnotation(SmartiAnnotations.ANALYSIS_ANNOTATION);
+        try {
+            beforeSimilarity(mltQuery, analysis);
+        }catch (SimilarityNotSupportedException e) {
+            log.warn("Similarity is not supported for this analysis");
+            return;
+        }
+        //TODO: add callback that allows to add filters to the MLT query based on the analysis
+        
         MltRequest mltRequest = new MltRequest(mltQuery, at.getSpan());
         log.trace("MLT Request: query:{} | text: {}", mltQuery, at.getSpan());
         NamedList<Object> response;
@@ -166,7 +178,17 @@ public abstract class InterestingTermExtractor extends Processor {
         
 
     }
-    
+
+    /**
+     * Callback that allows implementations to modify the similarity query.
+     * The base implementation is empty
+     * based on the analysis (e.g. add filters based on the {@link Analysis#getClient() client}
+     * @param mltQuery the Solr MLT query used for the similarity
+     * @param analysis the analysis
+     */
+    protected void beforeSimilarity(SolrQuery mltQuery, Analysis analysis) throws SimilarityNotSupportedException {
+    }
+
     private void addTerm(Map<String, List<Token>> termMap, String stem, Locale locale, Token token) {
         if(stem == null){
             return;
@@ -203,6 +225,18 @@ public abstract class InterestingTermExtractor extends Processor {
             }
         }
         return languages;
+    }
+    
+    public static class SimilarityNotSupportedException extends RuntimeException {
+        
+        private static final long serialVersionUID = -3140358965019251641L;
+
+        public SimilarityNotSupportedException(){
+            super();
+        }
+        public SimilarityNotSupportedException(String message){
+            super(message);
+        }
     }
     
 }

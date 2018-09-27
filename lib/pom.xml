@@ -39,7 +39,9 @@
         <module>query-conversation</module>
         <module>query-solr</module>
         
-        <module>chatpal-index</module>
+        <!-- chatpal-index is no longer supported (module removed with v0.9.0)
+             Smarti now uses the native Chatpal backend
+        <module>chatpal-index</module> -->
     </modules>
 
     <build>

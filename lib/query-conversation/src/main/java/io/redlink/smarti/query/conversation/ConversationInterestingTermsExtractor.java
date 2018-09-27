@@ -17,12 +17,15 @@
 
 package io.redlink.smarti.query.conversation;
 
+import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.processor.keyword.intrestingterms.InterestingTermExtractor;
 import io.redlink.smarti.processor.keyword.intrestingterms.MltConfig;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -58,5 +61,13 @@ public final class ConversationInterestingTermsExtractor extends InterestingTerm
     @Override
     protected MltConfig getMltConf() {
         return mltConfig;
+    }
+    
+    @Override
+    protected void beforeSimilarity(SolrQuery mltQuery, Analysis analysis) throws SimilarityNotSupportedException {
+        if(analysis == null || analysis.getClient() == null){
+            throw new SimilarityNotSupportedException("unknown client");
+        }
+        ObjectId client = analysis.getClient();
     }
 }

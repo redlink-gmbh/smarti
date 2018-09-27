@@ -539,13 +539,6 @@
                                     <classifier>solrcores</classifier>
                                     <type>zip</type>
                                 </artifactItem>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>chatpal-index</artifactId>
-                                    <version>${project.version}</version>
-                                    <classifier>solrcores</classifier>
-                                    <type>zip</type>
-                                </artifactItem>
                             </artifactItems>
                         </configuration>
                     </execution>

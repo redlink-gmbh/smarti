@@ -94,10 +94,9 @@
         <spring.data.version>1.10.6.RELEASE</spring.data.version>
         <spring.version>4.3.10.RELEASE</spring.version>
 
-        <solr.version>6.6.2</solr.version>
-        <!-- solr-text-tagger version needs to be in sync with solr.version
-             (see: https://github.com/OpenSextant/SolrTextTagger/blob/master/CHANGES.md) -->
-        <solr.text.tagger.version>2.4</solr.text.tagger.version>
+        <solr.version>7.5.0</solr.version>
+        <!-- solr-text-tagger is part of Solr since 7.4.0
+        <solr.text.tagger.version>2.4</solr.text.tagger.version> -->
         <solrlib.version>0.5.0-SNAPSHOT</solrlib.version>
         <redlinknlp.version>2.0.0-SNAPSHOT</redlinknlp.version>
 
