@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -20,7 +21,7 @@ import io.redlink.smarti.test.SpringServiceTest;
 
 @ContextConfiguration(classes={ConversationRepoListener.class})
 @EnableMongoRepositories(basePackageClasses={ConversationRepository.class})
-@EnableAutoConfiguration
+@EnableAutoConfiguration(exclude={SolrAutoConfiguration.class})
 public class ConversationRepositoryTest extends SpringServiceTest {
 
     

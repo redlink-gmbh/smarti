@@ -97,7 +97,7 @@
         <solr.version>7.5.0</solr.version>
         <!-- solr-text-tagger is part of Solr since 7.4.0
         <solr.text.tagger.version>2.4</solr.text.tagger.version> -->
-        <solrlib.version>0.5.0-SNAPSHOT</solrlib.version>
+        <solrlib.version>0.6.0-SNAPSHOT</solrlib.version>
         <redlinknlp.version>2.0.0-SNAPSHOT</redlinknlp.version>
 
         <springfox.version>2.7.0</springfox.version>
