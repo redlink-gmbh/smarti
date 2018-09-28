@@ -25,6 +25,7 @@ import io.redlink.nlp.model.NlpAnnotations;
 import io.redlink.nlp.model.Token;
 import io.redlink.nlp.model.util.NlpUtils;
 import io.redlink.smarti.model.Analysis;
+import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.processing.SmartiAnnotations;
 
 import org.apache.commons.lang3.StringUtils;
@@ -115,8 +116,9 @@ public abstract class InterestingTermExtractor extends Processor {
             }
         }
         Analysis analysis = processingData.getAnnotation(SmartiAnnotations.ANALYSIS_ANNOTATION);
+        Conversation conversation = processingData.getAnnotation(SmartiAnnotations.CONVERSATION_ANNOTATION);
         try {
-            beforeSimilarity(mltQuery, analysis);
+            beforeSimilarity(mltQuery, analysis, conversation);
         }catch (SimilarityNotSupportedException e) {
             log.warn("Similarity is not supported for this analysis");
             return;
@@ -185,8 +187,9 @@ public abstract class InterestingTermExtractor extends Processor {
      * based on the analysis (e.g. add filters based on the {@link Analysis#getClient() client}
      * @param mltQuery the Solr MLT query used for the similarity
      * @param analysis the analysis
+     * @param conversation the analysed conversation
      */
-    protected void beforeSimilarity(SolrQuery mltQuery, Analysis analysis) throws SimilarityNotSupportedException {
+    protected void beforeSimilarity(SolrQuery mltQuery, Analysis analysis, Conversation conversation) throws SimilarityNotSupportedException {
     }
 
     private void addTerm(Map<String, List<Token>> termMap, String stem, Locale locale, Token token) {
