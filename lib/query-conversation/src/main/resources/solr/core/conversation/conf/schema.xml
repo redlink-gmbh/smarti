@@ -16,7 +16,7 @@
   ~
   -->
 
-<schema name="hasso" version="1.6">
+<schema name="smarti_conversation" version="1.6">
 
     <!-- system -->
     <field name="_version_"             type="long"           indexed="true"  stored="false" />
@@ -114,7 +114,8 @@
         <analyzer type="index">
             <charFilter class="solr.HTMLStripCharFilterFactory"/>
             <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterFilterFactory" 
+            <filter class="solr.HyphenatedWordsFilterFactory"/>
+            <filter class="solr.WordDelimiterGraphFilterFactory" 
               generateWordParts="1" generateNumberParts="1"
               splitOnCaseChange="1" splitOnNumerics="1"
               catenateWords="1" catenateNumbers="1" catenateAll="1"
@@ -125,11 +126,13 @@
             <filter class="solr.LowerCaseFilterFactory"/>
             <filter class="solr.ASCIIFoldingFilterFactory"/>
             <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+            <filter class="solr.FlattenGraphFilterFactory"/>
         </analyzer>
         <analyzer type="query">
             <charFilter class="solr.HTMLStripCharFilterFactory"/>
             <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterFilterFactory"
+            <filter class="solr.HyphenatedWordsFilterFactory"/>
+            <filter class="solr.WordDelimiterGraphFilterFactory"
                 generateWordParts="1" generateNumberParts="1"
                 splitOnCaseChange="0" splitOnNumerics="0"
                 catenateWords="0" catenateNumbers="1" catenateAll="0"
@@ -140,6 +143,7 @@
             <filter class="solr.LowerCaseFilterFactory"/>
             <filter class="solr.ASCIIFoldingFilterFactory"/>
             <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+            <filter class="solr.FlattenGraphFilterFactory"/>
         </analyzer>
     </fieldType>
     
@@ -148,6 +152,7 @@
         <analyzer type="index">
           <charFilter class="solr.HTMLStripCharFilterFactory"/>
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.HyphenatedWordsFilterFactory"/>
           <filter class="solr.WordDelimiterGraphFilterFactory"
                   generateWordParts="1" generateNumberParts="1"
                   splitOnCaseChange="1" splitOnNumerics="1"
@@ -157,29 +162,34 @@
                   />
           <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
           <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
+          <filter class="solr.StemmerOverrideFilterFactory" dictionary="lang/stemdict_de.tsv" ignoreCase="true"/>
           <filter class="solr.LowerCaseFilterFactory"/>
           <filter class="solr.GermanLightStemFilterFactory"/>
           <filter class="solr.GermanNormalizationFilterFactory"/>
           <filter class="solr.ASCIIFoldingFilterFactory"/>
           <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+          <filter class="solr.FlattenGraphFilterFactory"/>
         </analyzer>
         <analyzer type="query">
-            <charFilter class="solr.HTMLStripCharFilterFactory"/>
-            <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-            <filter class="solr.WordDelimiterGraphFilterFactory"
-                    generateWordParts="1" generateNumberParts="1"
-                    splitOnCaseChange="0" splitOnNumerics="0"
-                    catenateWords="0" catenateNumbers="0" catenateAll="0"
-                    stemEnglishPossessive="0"
-                    preserveOriginal="1"
-                    />
-            <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
-            <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
-            <filter class="solr.LowerCaseFilterFactory"/>
-            <filter class="solr.GermanLightStemFilterFactory"/>
-            <filter class="solr.GermanNormalizationFilterFactory"/>
-            <filter class="solr.ASCIIFoldingFilterFactory"/>
-            <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+          <charFilter class="solr.HTMLStripCharFilterFactory"/>
+          <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+          <filter class="solr.HyphenatedWordsFilterFactory"/>
+          <filter class="solr.WordDelimiterGraphFilterFactory"
+                  generateWordParts="1" generateNumberParts="1"
+                  splitOnCaseChange="0" splitOnNumerics="0"
+                  catenateWords="0" catenateNumbers="0" catenateAll="0"
+                  stemEnglishPossessive="0"
+                  preserveOriginal="1"
+                  />
+          <filter class="solr.PatternReplaceFilterFactory" pattern="(^[,;&quot;'´`]+)|([\!\?\.,;&quot;'´`]+$)" replacement=""/>
+          <filter class="solr.StopFilterFactory" ignoreCase="true" words="lang/stopwords_de.txt" format="snowball" />
+          <filter class="solr.StemmerOverrideFilterFactory" dictionary="lang/stemdict_de.tsv" ignoreCase="true"/>
+          <filter class="solr.LowerCaseFilterFactory"/>
+          <filter class="solr.GermanLightStemFilterFactory"/>
+          <filter class="solr.GermanNormalizationFilterFactory"/>
+          <filter class="solr.ASCIIFoldingFilterFactory"/>
+          <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
+          <filter class="solr.FlattenGraphFilterFactory"/>
         </analyzer>
     </fieldType>
 
