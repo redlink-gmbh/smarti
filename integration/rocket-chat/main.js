@@ -216,22 +216,24 @@ function Smarti(options) {
         // get RC's search provider
         const spCallId = ddp.method("rocketchatSearch.getProvider", []);
         ddp.on("result", (message) => {
-            if (message.error) {
-                log.error('Failed to get search provider:', message.error);
-                return;
-            } else if(message.id === spCallId) {
-                if(message.result) {
-                    searchProvider = message.result;
-                    log.debug('Search provider found: ', searchProvider);
-                    if(searchProvider.key == "chatpalProvider") {
-                        searchProviderSupported = true;
-                    } else {
-                        searchProviderSupported = false;
-                        log.info(`Search provider ${searchProvider.key} is not supported!`);
-                    }
-                } else {
-                    log.info('Search provider is not active!');
+            if(message.id === spCallId) {
+                if (message.error) {
+                    log.error('Failed to get search provider:', message.error);
                     return;
+                } else {
+                    if(message.result) {
+                        searchProvider = message.result;
+                        log.debug('Search provider found: ', searchProvider);
+                        if(searchProvider.key == "chatpalProvider") {
+                            searchProviderSupported = true;
+                        } else {
+                            searchProviderSupported = false;
+                            log.info(`Search provider ${searchProvider.key} is not supported!`);
+                        }
+                    } else {
+                        log.info('Search provider is not active!');
+                        return;
+                    }
                 }
             }
         });
@@ -240,17 +242,19 @@ function Smarti(options) {
         log.debug('init -> get conversation ID for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
-            if (message.error) {
-                log.error('Failed to get conversation ID:', message.error);
-                return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-            } else if(message.id === lastConvCallId) {
-                if(message.result) {
-                    // conversation ID found for channel -> fetch conversation results
-                    conversationId = message.result;
-                    getConversation(message.result, failure);
+            if(message.id === lastConvCallId) {
+                if (message.error) {
+                    log.error('Failed to get conversation ID:', message.error);
+                    return failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                 } else {
-                    log.debug('init -> conversation ID not found for channel:', options.channel);
-                    return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
+                    if (message.result) {
+                        // conversation ID found for channel -> fetch conversation results
+                        conversationId = message.result;
+                        getConversation(message.result, failure);
+                    } else {
+                        log.debug('init -> conversation ID not found for channel:', options.channel);
+                        return failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
+                    }
                 }
             }
         });
@@ -288,20 +292,22 @@ function Smarti(options) {
         log.debug('Fetch results for conversation with ID:', conversationId);
         const msgid = ddp.method("getConversation", [conversationId]);
         ddp.on("result", (message) => {
-            if (message.error) {
-                log.error('Failed to get conversation:', message.error);
-                if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-            } else if(message.id === msgid) {
-                if(message.result && message.result != "null") {
-                    if(message.result.error) {
-                        log.error('Server-side error:', message.result.error);
-                        //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
-                        if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-                    } else {
-                        pubsub('smarti.data').publish(message.result);
-                    }
+            if(message.id === msgid) {
+                if (message.error) {
+                    log.error('Failed to get conversation:', message.error);
+                    if (failure) failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                 } else {
-                    log.info(`Conversation fetch returned no results. Expecting async response... (${conversationId})`);
+                    if (message.result && message.result != "null") {
+                        if (message.result.error) {
+                            log.error('Server-side error:', message.result.error);
+                            //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
+                            if (failure) failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
+                        } else {
+                            pubsub('smarti.data').publish(message.result);
+                        }
+                    } else {
+                        log.info(`Conversation fetch returned no results. Expecting async response... (${conversationId})`);
+                    }
                 }
             }
         });
@@ -1532,7 +1538,7 @@ function SmartiWidget(element, _options) {
         if (widgetBody.scrollTop() > 1) {
             // Hide title and filters only when the gained height is less than the overflowing height,
             // otherwise there will be no scrolling and the UI will reset right away!
-            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height()) {
+            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height() + 10) {
                 widgetTitle.slideUp(200);
                 if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
             }
