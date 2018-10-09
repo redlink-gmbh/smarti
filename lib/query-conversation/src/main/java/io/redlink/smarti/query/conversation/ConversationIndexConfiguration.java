@@ -33,7 +33,7 @@ public class ConversationIndexConfiguration {
      * The current conversation index version. Needs to be increased on schema.xml
      * or software updates that do require a full re-index
      */
-    public static final int CONVERSATION_INDEX_VERSION = 6; //v6 for #217
+    public static final int CONVERSATION_INDEX_VERSION = 7; //v7 for Solr7 update #248
     
     public static final String FIELD_ID = "id";
     /**
@@ -49,6 +49,7 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_USER_ID = "user_id";
     public static final String FIELD_USER_NAME = "user_name";
     public static final String FIELD_CONTEXT = "context";
+    public static final String FIELD_TEXT = "text";
     public static final String FIELD_ENVIRONMENT = "environment";
     public static final String FIELD_DOMAIN = "domain";
     public static final String FIELD_MESSAGE_COUNT = "message_count";

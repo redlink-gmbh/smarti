@@ -50,6 +50,7 @@ import java.util.List;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 import static org.apache.commons.lang3.math.NumberUtils.toInt;
+import static org.apache.solr.common.params.MoreLikeThisParams.SIMILARITY_FIELDS;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -101,7 +102,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if (solrRequest == null) {
             return new SearchResult<ConversationResult>(pageSize);
         }
-
+        log.debug("releated conversation request: {}", solrRequest);
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
             final NamedList<Object> response = solrClient.request(solrRequest);
             final QueryResponse solrResponse = new QueryResponse(response, solrClient);
@@ -111,7 +112,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
             for (SolrDocument solrDocument : solrResults) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
-                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID,solrDocument.get(FIELD_CONVERSATION_ID)));
+                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID, solrDocument.get(FIELD_CONVERSATION_ID)));
                 query.add("fq", FIELD_MESSAGE_IDXS + ":[1 TO *]");
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
@@ -192,9 +193,11 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         }
 
         final SolrQuery solrQuery = new SolrQuery();
+        solrQuery.set(SIMILARITY_FIELDS, FIELD_MLT_CONTEXT);
         solrQuery.addField("*").addField("score");
         solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDXS));
+        solrQuery.addFilterQuery(String.format("-%s:\"%s\"", FIELD_CONVERSATION_ID, conversation.getId()));
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
 
         // #39 - paging
@@ -212,7 +215,6 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         addPropertyFilters(solrQuery, conversation, conf);
 
         return new ConversationMltRequest(solrQuery, mltQuery.getContent());
-
     }
 
 

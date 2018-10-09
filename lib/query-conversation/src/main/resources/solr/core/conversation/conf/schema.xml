@@ -92,7 +92,6 @@
     <copyField source="messages" dest="iterms"/>
 
     <uniqueKey>id</uniqueKey>
-    <defaultSearchField>text</defaultSearchField>
 
     <fieldType name="string"   class="solr.StrField" sortMissingLast="true" docValues="true" />
     <fieldType name="boolean"  class="solr.BoolField" sortMissingLast="true" />

@@ -17,12 +17,16 @@
 
 package io.redlink.smarti.query.conversation;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.ContentType;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 
 /**
@@ -32,6 +36,7 @@ import java.util.Collection;
 public class ConversationMltRequest extends QueryRequest {
 
     private String content;
+    private Collection<ContentStream> _cs;
 
     public ConversationMltRequest(SolrParams q, String content) {
         super(q, METHOD.POST);
@@ -45,7 +50,30 @@ public class ConversationMltRequest extends QueryRequest {
 
     @Override
     public Collection<ContentStream> getContentStreams() {
-        return ClientUtils.toContentStreams(getContent(), ContentType.TEXT_PLAIN.toString());
+        if (_cs == null) {
+            _cs = ClientUtils.toContentStreams(getContent(), ContentType.TEXT_PLAIN.toString());
+        }
+        return _cs;
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+        Collection<ContentStream> cs = getContentStreams();
+        if (cs.isEmpty() || cs.size() > 1){
+            return null;
+        }
+        ContentStream stream = cs.iterator().next();
+        return new RequestWriter.ContentWriter() {
+            @Override
+            public void write(OutputStream os) throws IOException {
+                IOUtils.copy(stream.getStream(), os);
+            }
+
+            @Override
+            public String getContentType() {
+                return stream.getContentType();
+            }
+        };
     }
 
     public String getContent() {

@@ -154,12 +154,6 @@
             <scope>runtime</scope>
         </dependency>
         
-        <dependency>
-            <groupId>io.redlink.smarti</groupId>
-            <artifactId>chatpal-index</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Analysis -->
         <!-- (1) we need to detect the language -->
         <dependency>
@@ -490,10 +484,6 @@
                         <dependency> <!-- for the conversation solr config -->
                             <groupId>io.redlink.smarti</groupId>
                             <artifactId>query-conversation</artifactId>
-                        </dependency>
-                        <dependency> <!-- for the chatpal solr config -->
-                            <groupId>io.redlink.smarti</groupId>
-                            <artifactId>chatpal-index</artifactId>
                         </dependency>
                     </requiresUnpack>
                     <!-- GPL licensed, needs to be installed manually -->

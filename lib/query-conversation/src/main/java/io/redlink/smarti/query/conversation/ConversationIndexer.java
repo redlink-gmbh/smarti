@@ -359,7 +359,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 //to the index within the conversation
                 .append(StringUtils.isNoneBlank(message.getId()) ? message.getId() : String.valueOf(i)).toString();
         solrMsg.setField(FIELD_ID, id);
-        solrMsg.setField(FIELD_CONVERSATION_ID, conversation.getId());
+        solrMsg.setField(FIELD_CONVERSATION_ID, conversation.getId().toHexString());
         solrMsg.setField(FIELD_MESSAGE_IDS, message.getId());
         solrMsg.setField(FIELD_MESSAGE_IDXS, i);
         //#150 index the current version of the index so that we can detect the need of a

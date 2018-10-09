@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
@@ -106,7 +107,7 @@ import io.redlink.solrlib.spring.boot.autoconfigure.SolrLibProperties;
 @ActiveProfiles("test")
 //@WebAppConfiguration
 //@EnableMongoRepositories(basePackageClasses={ConversationRepository.class, ClientRepository.class, ConfigurationRepo.class})
-@EnableAutoConfiguration
+@EnableAutoConfiguration(exclude={SolrAutoConfiguration.class})
 public class ConversationWebserviceIT {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -1318,8 +1319,8 @@ public class ConversationWebserviceIT {
         String supportArea2 = "integration test";
         Map<String,List<String>> supportAreaMessages = new HashMap<>();
         supportAreaMessages.put(supportArea1, Arrays.asList(
-                "Wie kann in eine Komponente mit Abhängigkeiten testen?",
-                "Wie definiere ich die jenigen Spring Komponenten welche ich für einen Test benötige",
+                "Eine Banane hat nicht mit diesem Context zu tun",
+                "Wie definiere ich die jenigen Spring Komponenten welche ich für einen Unit Test benötige",
                 "Funktioniert das automatische Binden von Komponenten bei Unit Tests?",
                 "Kann ich Komponenten auch im @BeforeClass verwenden?",
                 "Werden Spring Komponenten für mehrere Unit Tests wiederverwendet?",
@@ -1425,7 +1426,7 @@ public class ConversationWebserviceIT {
         String[] expectedResults = new String[]{
                 conversations.get(5).getId().toHexString(),
                 conversations.get(4).getId().toHexString(),
-                conversations.get(2).getId().toHexString()};
+                conversations.get(1).getId().toHexString()};
         Conversation bestResult = conversations.get(5);
         Message bestMessage = bestResult.getMessages().get(0);
         
@@ -1437,7 +1438,7 @@ public class ConversationWebserviceIT {
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is(200))
-                .andExpect(jsonPath("numFound").value(5)) //5 of 6 have words in common
+                .andExpect(jsonPath("numFound").value(4)) //4 of 6 have words in common
                 .andExpect(jsonPath("start").value(0))
                 .andExpect(jsonPath("pageSize").value(3))
                 .andExpect(jsonPath("docs").isArray())

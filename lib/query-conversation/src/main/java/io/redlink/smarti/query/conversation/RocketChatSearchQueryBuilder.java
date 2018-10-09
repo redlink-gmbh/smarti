@@ -423,6 +423,8 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
      * 
      */
     private final static class FixedFieldAnalysisRequest extends FieldAnalysisRequest {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected FieldAnalysisResponse createResponse(SolrClient client) {
             if (getFieldTypes() == null && getFieldNames() == null) {
@@ -435,10 +437,12 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
         }
     }
     private final static class FixedFieldAnalysisResponse extends FieldAnalysisResponse {
+        private static final long serialVersionUID = 1L;
+
         @Override
-        protected List<AnalysisPhase> buildPhases(NamedList<List<NamedList<Object>>> phaseNL) {
+        protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
             List<AnalysisPhase> phases = new ArrayList<>(phaseNL.size());
-            for (Map.Entry<String, List<NamedList<Object>>> phaseEntry : phaseNL) {
+            for (Map.Entry<String, Object> phaseEntry : phaseNL) {
                 if(phaseEntry.getValue() instanceof List){
                     final AnalysisPhase phase;
                     try {
@@ -450,7 +454,7 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
                         throw new SolrException(ErrorCode.UNKNOWN, "Unable to instanciate AnalysisPhrase using reflection ("
                                 + e.getClass().getSimpleName() + " - " + e.getMessage() + ")!", e);
                     }
-                    List<NamedList<Object>> tokens = phaseEntry.getValue();
+                    List<NamedList<Object>> tokens = (List<NamedList<Object>>)phaseEntry.getValue();
                     for (NamedList<Object> token : tokens) {
                         TokenInfo tokenInfo = buildTokenInfo(token);
                         phase.getTokens().add(tokenInfo);

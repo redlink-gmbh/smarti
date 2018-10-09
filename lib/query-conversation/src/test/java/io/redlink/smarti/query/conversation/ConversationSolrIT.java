@@ -33,14 +33,13 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,25 +55,22 @@ import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
 @ActiveProfiles("embedded")
-@EnableAutoConfiguration
 @ContextConfiguration(classes = {
         ConversationSolrIT.EmbeddedSolrConfiguration.class, SolrLibEmbeddedAutoconfiguration.class,
         ConversationService.class, ConversationIndexer.class, ConversationSearchService.class})
 @EnableMongoRepositories(basePackageClasses={ConversationRepository.class})
+@EnableAutoConfiguration(exclude={SolrAutoConfiguration.class})
 public class ConversationSolrIT {
 
     @ClassRule

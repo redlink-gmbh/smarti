@@ -108,6 +108,11 @@
         <npm.version>5.6.0</npm.version>
 
         <redlink.logback.extension>1.0-SNAPSHOT</redlink.logback.extension>
+        <mockito.version>1.10.19</mockito.version>
+        
+        <!-- Version overrides from spring-boot-dependencies -->
+        <!-- NOTE: check those after a spring spring.boot.version update -->
+        <dropwizard-metrics.version>3.2.6</dropwizard-metrics.version> <!-- required by solr 7.5.0 -->
     </properties>
 
     <scm>
@@ -205,9 +210,9 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-			    <artifactId>spring-boot-starter-data-mongodb</artifactId>
+                <artifactId>spring-boot-starter-data-mongodb</artifactId>
                 <version>${spring.boot.version}</version>
-			</dependency>
+            </dependency>
 
             <dependency>
                 <groupId>io.redlink.utils</groupId>
@@ -222,10 +227,10 @@
             </dependency>
 
             <dependency>
-			    <groupId>org.apache.commons</groupId>
-			    <artifactId>commons-collections4</artifactId>
-			    <version>4.1</version>
-			</dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>4.1</version>
+            </dependency>
 
             <dependency>
                 <groupId>commons-validator</groupId>
@@ -251,21 +256,52 @@
                 <version>3.6.1</version>
             </dependency>
 
-	        <dependency>
-	            <groupId>com.google.guava</groupId>
-	            <artifactId>guava</artifactId>
-	            <version>20.0</version><!-- solr is incompatible with 21+ -->
-	        </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>20.0</version><!-- solr is incompatible with 21+ -->
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-core</artifactId>
                 <version>${solr.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-solrj</artifactId>
                 <version>${solr.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-ganglia</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-graphite</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jetty9</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jvm</artifactId>
+                <version>${dropwizard-metrics.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.redlink.solrlib</groupId>
@@ -275,6 +311,11 @@
             <dependency>
                 <groupId>io.redlink.solrlib</groupId>
                 <artifactId>solrlib-api</artifactId>
+                <version>${solrlib.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.redlink.solrlib</groupId>
+                <artifactId>solrlib-embedded</artifactId>
                 <version>${solrlib.version}</version>
             </dependency>
             
@@ -294,6 +335,13 @@
                 <artifactId>logback-ext-jackson</artifactId>
                 <version>${redlink.logback.extension}</version>
             </dependency>
+            
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+            
         </dependencies>
     </dependencyManagement>
 
@@ -553,18 +601,18 @@
                     <version>2.8.2</version>
                 </plugin>
                 <plugin>
-			        <groupId>org.apache.maven.plugins</groupId>
-			        <artifactId>maven-failsafe-plugin</artifactId>
-			        <version>2.19.1</version>
-			        <executions>
-			            <execution>
-			                <goals>
-			                    <goal>integration-test</goal>
-			                    <goal>verify</goal>
-			                </goals>
-			            </execution>
-			        </executions>
-			    </plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>2.19.1</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
