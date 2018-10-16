@@ -26,7 +26,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
+        <version>0.8.0-RC4</version>
     </parent>
 
     <artifactId>smarti-documentation</artifactId>
