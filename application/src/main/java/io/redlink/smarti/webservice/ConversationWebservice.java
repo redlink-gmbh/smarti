@@ -805,7 +805,7 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a.getTokens());
                     callbackExecutor.execute(callback, CallbackPayload.success(a.getTokens()));
@@ -852,7 +852,7 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a.getTemplates());
                     callbackExecutor.execute(callback, CallbackPayload.success(a.getTemplates()));
@@ -899,7 +899,7 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     if(a.getTemplates().size() > templateIdx){
                         log.debug("callback {} with {}", callback, a);
@@ -984,7 +984,7 @@ public class ConversationWebservice {
         }
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation, updatedAnalysis);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     try {
                         SearchResult<? extends Result> result = execcuteQuery(client, conversation, a, templateIdx, creator);
@@ -1078,7 +1078,7 @@ public class ConversationWebservice {
 
     private void appendCallbackExecution(URI callback, Conversation conversation, CompletableFuture<Analysis> analysis) {
         final ObjectId conversationId = conversation.getId();
-        analysis.whenComplete((a , e) -> {
+        analysis.whenCompleteAsync((a , e) -> {
             if(a != null){
                 log.debug("callback {} with {}", callback, a);
                 callbackExecutor.execute(callback, CallbackPayload.success(a));

@@ -19,6 +19,7 @@ package io.redlink.smarti.chatpal.index;
 
 import java.io.IOException;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -49,6 +50,7 @@ public class ChatpalIndexConfiguration {
 
     
     @Bean(name=CHATPAL_INDEX)
+    @ConditionalOnExpression("${chatpal.enabled:false}")
     protected SolrCoreDescriptor getConversationCoreDescriptor() throws IOException {
         return SimpleCoreDescriptor.createFromResource(CHATPAL_INDEX, "/solr/core/" + CHATPAL_INDEX, ChatpalIndexConfiguration.class);
     }

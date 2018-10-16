@@ -21,7 +21,9 @@ Rocket.Chat search functionality.
 * https://github.com/redlink-gmbh/smarti/issues/283[#283 - Update Changelog with the new Features in Smarit 0.8.0]
 * https://github.com/redlink-gmbh/smarti/pull/284[#284 - Set EXPECTED_DB_VERSION to 7]
 * https://github.com/redlink-gmbh/smarti/issues/285[#285 - SmartiWidget: Tokens are not shown initially]
-* https://github.com/redlink-gmbh/smarti/issues/287[#287 - Widget shows wrong error messages] 
+* https://github.com/redlink-gmbh/smarti/issues/287[#287 - Widget shows wrong error messages]
+* https://github.com/redlink-gmbh/smarti/issues/292[#292 - ConversationWebservice Analysis with parsed callback is not Async] 
+* https://github.com/redlink-gmbh/smarti/issues/293[#293 - Allow to disable Chatpal Backend support] 
 
 === Upgrading
 

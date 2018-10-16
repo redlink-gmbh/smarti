@@ -1,30 +1,14 @@
 package io.redlink.smarti.webservice;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 
 import io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration;
 import io.redlink.smarti.chatpal.service.ChatpalMessageServcie;
-import io.redlink.smarti.model.AuthToken;
-import io.redlink.smarti.model.Client;
-import io.redlink.smarti.model.SmartiUser;
-import io.redlink.smarti.model.config.ComponentConfiguration;
-import io.redlink.smarti.model.config.Configuration;
-import io.redlink.smarti.processor.keyword.intrestingterms.InterestingTermExtractor;
 import io.redlink.smarti.services.*;
 import io.redlink.smarti.utils.ResponseEntities;
 import io.redlink.smarti.webservice.pojo.AuthContext;
-import io.redlink.smarti.webservice.pojo.ConversationData;
-import io.redlink.smarti.webservice.pojo.SmartiUserData;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,25 +16,22 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpStatus;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.CHATPAL_INDEX;
 import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_CLIENT;
 import static io.redlink.smarti.chatpal.index.ChatpalIndexConfiguration.FIELD_ID;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -70,6 +50,7 @@ import java.util.stream.Collectors;
  */
 @CrossOrigin
 @RestController
+@ConditionalOnExpression("${chatpal.enabled:false}")
 @RequestMapping(value = "/chatpal")
 //@Api(hidden=true) //this SHOULD NOT be used by other clients as Chatpal anyways!
 public class ChatpalWebservice {

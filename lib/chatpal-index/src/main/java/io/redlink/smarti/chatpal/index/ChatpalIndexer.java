@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -66,6 +67,7 @@ import io.redlink.solrlib.SolrCoreDescriptor;
 
 @Component
 @EnableScheduling
+@ConditionalOnExpression("${chatpal.enabled:false}")
 public class ChatpalIndexer {
 
 
