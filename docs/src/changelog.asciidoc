@@ -42,6 +42,15 @@ installation packages (deb, rpm) or docker, you must apply it manually:
 include::{migration_scripts}/migrate-07_0.7.1-to-0.8.0.js[lines=112..-1]
 -----------------------------------------------
 
+To ensure that Chatpal is newly syncronized with the Smarti Chatpal backend you should clear
+the collection storing Chatpal data.
+
+.migrate-08_0.8.1-to-0.9.0.js
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-08_0.8.1-to-0.9.0.js[lines=112..-1]
+-----------------------------------------------
+
 == Smarti 0.7.7 Release Notes
 Sept 11^th^, 2018
 
