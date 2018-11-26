@@ -27,6 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collection;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.join;
@@ -34,7 +35,7 @@ import static org.springframework.http.HttpHeaders.*;
 
 /**
  */
-@Component
+//@Component //NOT USED!
 public class CorsFilter extends org.springframework.web.filter.CorsFilter  {
 
     @Value("${cors.enabled:true}")
