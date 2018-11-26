@@ -18,6 +18,7 @@
 package io.redlink.smarti.query.conversation;
 
 import io.redlink.smarti.model.*;
+import io.redlink.smarti.model.config.SchedulerConfiguration;
 import io.redlink.smarti.repositories.ConversationRepository;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.solrlib.SolrCoreContainer;
@@ -56,14 +57,11 @@ import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  */
@@ -73,7 +71,8 @@ import static org.mockito.Mockito.when;
 @EnableAutoConfiguration
 @ContextConfiguration(classes = {
         ConversationSolrIT.EmbeddedSolrConfiguration.class, SolrLibEmbeddedAutoconfiguration.class,
-        ConversationService.class, ConversationIndexer.class, ConversationSearchService.class})
+        ConversationService.class, ConversationIndexer.class, ConversationSearchService.class,
+        SchedulerConfiguration.class})
 @EnableMongoRepositories(basePackageClasses={ConversationRepository.class})
 public class ConversationSolrIT {
 
@@ -126,13 +125,13 @@ public class ConversationSolrIT {
         final Conversation conversation = buildConversation(client,"Servus Hasso, wie geht's denn so?");
 
         conversationService.update(client, conversation);
-        Thread.sleep(2 * conversationIndexer.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
 
         assertThat(countDocs(), Matchers.equalTo(docCount));
 
         conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversationService.update(client, conversation);
-        Thread.sleep(2 * conversationIndexer.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
         assertThat(countDocs(), Matchers.greaterThan(docCount));
     }
 
@@ -152,7 +151,7 @@ public class ConversationSolrIT {
         conversationService.update(client, conversation1);
         conversationService.update(client, conversation2);
 
-        Thread.sleep(2 * conversationIndexer.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
 
         assertThat(countDocs(), Matchers.equalTo(4L));
 

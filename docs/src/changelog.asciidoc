@@ -24,7 +24,7 @@ Rocket.Chat search functionality.
 * https://github.com/redlink-gmbh/smarti/issues/287[#287 - Widget shows wrong error messages]
 * https://github.com/redlink-gmbh/smarti/issues/292[#292 - ConversationWebservice Analysis with parsed callback is not Async] 
 * https://github.com/redlink-gmbh/smarti/issues/293[#293 - Allow to disable Chatpal Backend support] 
-* https://github.com/redlink-gmbh/smarti/issues/293[#294 - Disable analysis for Conversation Updates that do not explicitly request Analysis Data in the Response] 
+* https://github.com/redlink-gmbh/smarti/issues/294[#294 - Disable analysis for Conversation Updates that do not explicitly request Analysis Data in the Response] 
 
 === Upgrading
 
