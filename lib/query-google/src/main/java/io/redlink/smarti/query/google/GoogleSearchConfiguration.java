@@ -28,7 +28,7 @@ import io.redlink.smarti.model.config.ComponentConfiguration;
 @JsonInclude(content=Include.ALWAYS) //the UI needs to know all possible properties
 public class GoogleSearchConfiguration extends ComponentConfiguration implements Cloneable {
 
-    private String googleEndpoint = GOOGLE_CUSTOM_SEARCH_JSON_API_URI + "?key=<your_key>&cx=<your_id>";
+    private String googleEndpoint = "https://www.googleapis.com/customsearch/v1?key=YOUR_KEY&cx=YOUR_ID";
     private Map<String,Object> defaults = new HashMap<>();
     private ResultConfig result = new ResultConfig();    
 
