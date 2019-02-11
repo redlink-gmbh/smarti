@@ -1,0 +1,159 @@
+/*
+ * Copyright 2019 DB Systel GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.redlink.smarti.query.google;
+
+import java.util.*;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import io.redlink.smarti.model.config.ComponentConfiguration;
+
+@ConfigurationProperties(prefix="query.google")
+@JsonInclude(content=Include.ALWAYS) //the UI needs to know all possible properties
+public class GoogleSearchConfiguration extends ComponentConfiguration implements Cloneable {
+
+    private String googleEndpoint = GOOGLE_CUSTOM_SEARCH_JSON_API_URI + "?key=<your_key>&cx=<your_id>";
+    private Map<String,Object> defaults = new HashMap<>();
+    private ResultConfig result = new ResultConfig();    
+
+
+    public String getGoogleEndpoint() {
+        return googleEndpoint;
+    }
+    public void setGoogleEndpoint(String googleEndpoint) {
+        this.googleEndpoint = googleEndpoint;
+    }
+
+    public ResultConfig getResult() {
+        return result;
+    }
+    public void setResult(ResultConfig result) {
+        this.result = result;
+    }
+
+    public Map<String, Object> getDefaults() {
+        return defaults;
+    }
+
+    /**
+      * Allows to configure the mappings from fields in the index
+      * to fields shown by the templates presenting results
+      * @author Rupert Westenthaler
+      *
+      */
+    @JsonInclude(content=Include.ALWAYS) //the UI needs to know all possible properties
+    public static class ResultConfig {
+
+        private Mappings mappings = new Mappings();
+        private int numOfRows = 10;
+
+        public Mappings getMappings() {
+            return mappings;
+        }
+
+        public void setMappings(Mappings mappings) {
+            this.mappings = mappings;
+        }
+
+        public int getNumOfRows() {
+            return numOfRows;
+        }
+
+        public void setNumOfRows(int numOfRows) {
+            this.numOfRows = numOfRows;
+        }
+
+        public static class Mappings {
+
+            private String source, title, description, type, doctype, link, date, thumb;
+
+            public String getSource() {
+                return source;
+            }
+
+            public void setSource(String source) {
+                this.source = source;
+            }
+
+            public String getTitle() {
+                return title;
+            }
+
+            public void setTitle(String title) {
+                this.title = title;
+            }
+
+            public String getDescription() {
+                return description;
+            }
+
+            public void setDescription(String description) {
+                this.description = description;
+            }
+
+            public String getType() {
+                return type;
+            }
+
+            public void setType(String type) {
+                this.type = type;
+            }
+
+            public String getDoctype() {
+                return doctype;
+            }
+
+            public void setDoctype(String doctype) {
+                this.doctype = doctype;
+            }
+
+            public String getLink() {
+                return link;
+            }
+
+            public void setLink(String link) {
+                this.link = link;
+            }
+
+            public String getDate() {
+                return date;
+            }
+
+            public void setDate(String date) {
+                this.date = date;
+            }
+
+            public String getThumb() {
+                return thumb;
+            }
+
+            public void setThumb(String thumb) {
+                this.thumb = thumb;
+            }
+        }
+    }
+
+    @Override
+    public GoogleSearchConfiguration clone() {
+        GoogleSearchConfiguration clone = new GoogleSearchConfiguration();
+        copyState(clone);
+        clone.googleEndpoint = googleEndpoint;
+        return clone;
+    }
+}
