@@ -190,14 +190,21 @@ function Smarti(options) {
             localStorage &&
             localStorage.getItem('Meteor.loginToken') &&
             localStorage.getItem('Meteor.loginTokenExpires') &&
-            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())
-        ) {
-            log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
+            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())) {
 
-            loginRequest([
-                { "resume": localStorage.getItem('Meteor.loginToken') }
-            ]);
+                log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
 
+                loginRequest([
+                    { "resume": localStorage.getItem('Meteor.loginToken') }
+                ]);
+
+                $.ajaxSetup({
+                    headers: {
+                    'content-type': 'application/json',
+                    'x-auth-token': localStorage.getItem('Meteor.loginToken'),
+                    'x-user-id': localStorage.getItem('Meteor.userId')
+                    }
+                });
         } else {
             failure({i18nObj: {code:'login.no-auth-token'}});
         }
