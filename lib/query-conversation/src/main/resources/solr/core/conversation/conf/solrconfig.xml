@@ -34,18 +34,21 @@
 
 
     <updateHandler class="solr.DirectUpdateHandler2">
+        
+        <!-- We do not need tlog for embedded SolrServer
+            NOTE: re-enable this when switching to SolrCloud
         <updateLog>
             <str name="dir">${solr.ulog.dir:}</str>
             <int name="numVersionBuckets">${solr.ulog.numVersionBuckets:65536}</int>
-        </updateLog>
+        </updateLog> -->
 
-        <autoCommit>
-            <maxTime>${solr.autoCommit.maxTime:15000}</maxTime>
+        <autoCommit> <!-- ensure we write to disc every 30sec -->
+            <maxTime>${solr.autoCommit.maxTime:30000}</maxTime>
             <openSearcher>false</openSearcher>
         </autoCommit>
 
-        <autoSoftCommit>
-            <maxTime>${solr.autoSoftCommit.maxTime:1500}</maxTime>
+        <autoSoftCommit> <!-- we use commitWithin - so set this to a long period -->
+            <maxTime>${solr.autoSoftCommit.maxTime:120000}</maxTime>
         </autoSoftCommit>
     </updateHandler>
 

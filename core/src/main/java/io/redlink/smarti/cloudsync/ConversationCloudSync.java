@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,19 +33,22 @@ public class ConversationCloudSync {
         this.conversationRepository = conversationRepository;
     }
     
-    public SyncData syncAll(ConversytionSyncCallback callback) {
-        return sync(callback, null);
+    public SyncData syncAll(ConversytionSyncCallback callback, IndexingStatus indexingStatus) {
+        return sync(callback, null, indexingStatus);
     }
 
-    public SyncData sync(ConversytionSyncCallback callback, Date date) {
+    public SyncData sync(ConversytionSyncCallback callback, Date date, IndexingStatus status) {
         long start = System.currentTimeMillis();
         UpdatedIds<ObjectId> updated;
         AtomicLong updatedCount = new AtomicLong();
         AtomicLong deletedCount = new AtomicLong();
+        status.setStarted(new Date());
         Date since = date;
         do {
             updated = conversationRepository.updatedSince(since, 10000);
             final Date currentModifiedBatch = updated.getLastModified();
+            status.incrementCount(updated.ids().size());
+            status.setUntil(updated.getLastModified());
             //load in batches of 10 from the MongoDB
             ListUtils.partition(updated.ids(), 10).forEach(batch -> {
                 //NOTE: findAll will also return conversations marked as deleted
@@ -52,9 +57,11 @@ public class ConversationCloudSync {
                             if(c == null || c.getDeleted() != null){
                                 callback.removeConversation(c.getId(), currentModifiedBatch);
                                 deletedCount.incrementAndGet();
+                                status.incrementDeleted();
                             } else {
                                 callback.updateConversation(c, currentModifiedBatch);
                                 updatedCount.incrementAndGet();
+                                status.incrementUpdate();
                             }
                         } catch (RuntimeException e) {
                             if(log.isDebugEnabled()){
@@ -114,5 +121,74 @@ public class ConversationCloudSync {
         }
         
     }
-
+    public static class IndexingStatus {
+        
+        private Date started;
+        private int count;
+        private Date until;
+        private int updated;
+        private int deleted;
+        
+        public Date getStarted() {
+            return started;
+        }
+        public void incrementCount(int num) {
+            count = count + num;
+        }
+        public void setUntil(Date until) {
+            this.until = until;
+        }
+        public Date getUntil() {
+            return until;
+        }
+        public void incrementUpdate() {
+            updated++;
+        }
+        public void incrementDeleted() {
+            deleted++;
+        }
+        public void setStarted(Date started) {
+            this.started = started;
+        }
+        public int getCount() {
+            return count;
+        }
+        public void setCount(int count) {
+            this.count = count;
+        }
+        public int getUpdated() {
+            return updated;
+        }
+        public void setUpdated(int updated) {
+            this.updated = updated;
+        }
+        public int getDeleted() {
+            return deleted;
+        }
+        public void setDeleted(int deleted) {
+            this.deleted = deleted;
+        }
+        
+        public int getProcessed(){
+            return updated + deleted;
+        }
+        public double completedPercent(){
+            if(count <= 0 || getProcessed() < 1){
+                return 0;
+            } else {
+                return (new BigDecimal(getProcessed()/(double)count)
+                        .setScale(2, RoundingMode.HALF_EVEN))
+                        .doubleValue() * 100;
+            }
+        }
+        
+        @Override
+        public String toString() {
+            int duration = started == null ? 0 : (int)((new Date().getTime() - started.getTime())/1000);
+            return "[started " + (duration > 119 ? (duration/60 +"min") : (duration + "sec") ) + " ago , processed=" + getProcessed() + '/' + count + '(' + completedPercent() + "% complete)]";
+        }
+        
+        
+        
+    }
 }

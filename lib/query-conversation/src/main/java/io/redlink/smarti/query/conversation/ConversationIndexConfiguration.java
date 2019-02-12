@@ -33,7 +33,7 @@ public class ConversationIndexConfiguration {
      * The current conversation index version. Needs to be increased on schema.xml
      * or software updates that do require a full re-index
      */
-    public static final int CONVERSATION_INDEX_VERSION = 6; //v6 for #217
+    public static final int CONVERSATION_INDEX_VERSION = 7; //v7 for reduced stored fields
     
     public static final String FIELD_ID = "id";
     /**
