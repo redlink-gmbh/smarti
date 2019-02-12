@@ -541,6 +541,7 @@ function SmartiWidget(element, _options) {
             $.observable(params.templateData).setProperty("noTags", !tks.length);
 
             if(equalArrays(lastTks, tks) && loadedPage >= page) return;
+            lastTks = tks;
 
             if(!append) {
                 page = 0;
@@ -548,55 +549,50 @@ function SmartiWidget(element, _options) {
                 noMoreData = false;
             }
 
-            lastTks = tks;
-
             let queryParams = {};
+            let datatype = 'jsonp';
+            let start = page > 0 ? (page*numOfRows) : 0;
             if (isGoogle) {
                 queryParams  = {
                     'num': numOfRows,
+                    'start': start+1,
                     'q':  getSolrQuery(tks)
                 }
+                datatype = 'json';
             } else {
                 queryParams = {
                     'wt': 'json',
                     'fl': '*,score',
                     'rows': numOfRows,
+                    'start': start,
                     'q':  getSolrQuery(tks)
                 };
             }
 
-            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
-
-            //append params
+            // append default params
             for(let property in params.query.defaults) {
                 if (params.query.defaults.hasOwnProperty(property))
                     queryParams[property] = params.query.defaults[property];
             }
 
-            let start = page > 0 ? (page*numOfRows) : 0;
-            if (isGoogle) {
-                start++;
-            }
-            queryParams.start = start;
+            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
 
             // external Solr search
             log.debug(`executeSearch ${ params.query.url }, with`, queryParams);
             $.observable(params.templateData).setProperty("loading", true);
+
             $.ajax({
                 url: params.query.url,
                 data: queryParams,
                 traditional: true,
-                dataType: 'jsonp',
+                dataType: datatype,
                 jsonp: 'json.wrf',
+                error: (err) => {
+                    log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
+                },
                 failure: (err) => {
                     log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
-                /**
-                 *
-                 * @param {Object} data
-                 * @param {Object} data.response
-                 * @param {Object} data.items
-                 */
                 success: (data) => {
 
                     log.debug("ir-latch query:", params.query);
@@ -607,7 +603,7 @@ function SmartiWidget(element, _options) {
                     if (isGoogle && data && data.items) {
                         log.debug("ir-latch response:", data);
                         foundDocs = data.items;
-                        numFound = searchInformation.totalResults;
+                        numFound = data.searchInformation.totalResults;
                     } else if (data && data.response && data.response.docs) {
                         log.debug("ir-latch response:", data.response);
                         foundDocs = data.response.docs;
@@ -629,7 +625,7 @@ function SmartiWidget(element, _options) {
                                 } else if(k === "link") {
                                     newDoc[k] = Array.isArray(doc[v]) ? doc[v][0] : doc[v];
                                 } else if(k === "type") {
-                                    newDoc[k] = doc[v].split(".").pop();
+                                    newDoc[k] = doc[v] ? doc[v].split(".").pop() : "unknown";
                                 } else {
                                     newDoc[k] = doc[v];
                                 }
@@ -2063,10 +2059,6 @@ function equalArrays(a, b) {
 }
 
 function getSolrQuery(queryArray) {
-    return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
-}
-
-function getGoogleQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
 }
 
