@@ -281,9 +281,9 @@ function Smarti(options) {
         });
     }
 
-    function refresh() {
+    function refresh(onFailure) {
         if(conversationId) {
-            getConversation(conversationId, showError);
+            getConversation(conversationId, onFailure);
         } else {
             Console.warn("Widget data refresh failed. Conversation ID not found!");
         }
@@ -1915,7 +1915,7 @@ function SmartiWidget(element, _options) {
         } else {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(tokenData.value.trim().toLowerCase());
             $.observable(widgetHeaderTagsTemplateData.tokens).remove(tokenIdx);
-            smarti.refresh();
+            smarti.refresh(showError);
         }
 
         tracker.trackEvent('tag.remove', tokenIdx);
@@ -1956,14 +1956,14 @@ function SmartiWidget(element, _options) {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(t.value.trim().toLowerCase());
         });
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
-        smarti.refresh();
+        smarti.refresh(showError);
         tracker.trackEvent('tag.remove-all');
     });
 
     tags.on('click', '.reset-exclude', function() {
         $.observable(widgetHeaderTagsTemplateData.exclude).refresh([]);
         tracker.trackEvent('tag.reset-exclude');
-        smarti.refresh();
+        smarti.refresh(showError);
     });
 
     tags.on('click', 'li.add', function() {

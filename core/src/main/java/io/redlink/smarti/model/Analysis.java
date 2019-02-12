@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.List;
 
 import org.bson.types.ObjectId;
-import org.springframework.boot.jackson.JsonComponent;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -41,6 +40,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @ApiModel(description="The analysis of a conversation based on the configuration of a client")
 @Document
 @CompoundIndexes(value={
+        @CompoundIndex(def= "{'conversation': 1, 'client': 1, 'date': 1}"),
+        @CompoundIndex(def= "{'conversation': 1, 'client': 1}"),
         @CompoundIndex(def= "{'conversation': 1, 'date': 1}")
 })
 public class Analysis {
