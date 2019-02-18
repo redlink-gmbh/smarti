@@ -8,7 +8,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -22,14 +22,16 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  */
 @Component
+@EnableConfigurationProperties(ConversationCloudSyncConfiguration.class)
 public class ConversationCloudSync {
     
     final Logger log = LoggerFactory.getLogger(getClass());
     
-    @Autowired
-    private ConversationRepository conversationRepository;
+    private final ConversationRepository conversationRepository;
+    private final ConversationCloudSyncConfiguration config;
     
-    ConversationCloudSync(ConversationRepository conversationRepository){
+    ConversationCloudSync(ConversationCloudSyncConfiguration config, ConversationRepository conversationRepository){
+        this.config = config;
         this.conversationRepository = conversationRepository;
     }
     
@@ -38,6 +40,8 @@ public class ConversationCloudSync {
     }
 
     public SyncData sync(ConversytionSyncCallback callback, Date date, IndexingStatus status) {
+        log.debug("cloud sync conversation Repository [date: {}, epochSize: {}, batchSize: {}, caller: {}]", 
+                date == null ? null : date.toInstant(),config.getEpochSize(), config.getBatchSize(), callback);
         long start = System.currentTimeMillis();
         UpdatedIds<ObjectId> updated;
         AtomicLong updatedCount = new AtomicLong();
@@ -45,12 +49,12 @@ public class ConversationCloudSync {
         status.setStarted(new Date());
         Date since = date;
         do {
-            updated = conversationRepository.updatedSince(since, 10000);
+            updated = conversationRepository.updatedSince(since, config.getEpochSize());
             final Date currentModifiedBatch = updated.getLastModified();
             status.incrementCount(updated.ids().size());
             status.setUntil(updated.getLastModified());
             //load in batches of 10 from the MongoDB
-            ListUtils.partition(updated.ids(), 10).forEach(batch -> {
+            ListUtils.partition(updated.ids(), config.getBatchSize()).forEach(batch -> {
                 //NOTE: findAll will also return conversations marked as deleted
                 conversationRepository.findAll((Iterable<ObjectId>)batch).forEach(c -> {
                         try {

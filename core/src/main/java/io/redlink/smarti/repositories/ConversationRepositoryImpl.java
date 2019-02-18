@@ -125,7 +125,7 @@ public class ConversationRepositoryImpl implements ConversationRepositoryCustom 
         if (writeResult.getN() == 1) {
             return mongoTemplate.findById(conversation.getId(), Conversation.class);
         } else {
-            throw new ConcurrentModificationException();
+            throw new ConcurrentModificationException("Conversation changed while appending Message");
         }
     }
 
