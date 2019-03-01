@@ -81,7 +81,7 @@ public class GoogleSearchConfiguration extends ComponentConfiguration implements
 
         public static class Mappings {
 
-            private String source, title, description, type, doctype, link, date, thumb;
+            private String source, title, description, link;
 
             public String getSource() {
                 return source;
@@ -107,44 +107,12 @@ public class GoogleSearchConfiguration extends ComponentConfiguration implements
                 this.description = description;
             }
 
-            public String getType() {
-                return type;
-            }
-
-            public void setType(String type) {
-                this.type = type;
-            }
-
-            public String getDoctype() {
-                return doctype;
-            }
-
-            public void setDoctype(String doctype) {
-                this.doctype = doctype;
-            }
-
             public String getLink() {
                 return link;
             }
 
             public void setLink(String link) {
                 this.link = link;
-            }
-
-            public String getDate() {
-                return date;
-            }
-
-            public void setDate(String date) {
-                this.date = date;
-            }
-
-            public String getThumb() {
-                return thumb;
-            }
-
-            public void setThumb(String thumb) {
-                this.thumb = thumb;
             }
         }
     }

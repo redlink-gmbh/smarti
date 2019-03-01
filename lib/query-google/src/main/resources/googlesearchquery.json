@@ -11,11 +11,7 @@
           "source": "displayLink",
           "title": "title",
           "description": "snippet",
-          "type": "mime",
-          "doctype": "fileFormat",
-          "link": "link",
-          "date": null,
-          "thumb": "dbsearch_thumbnail_data"
+          "link": "link"
       }
   },
   "defaults": {
