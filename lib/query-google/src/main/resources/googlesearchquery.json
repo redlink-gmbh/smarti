@@ -1,0 +1,21 @@
+{
+  "_class": "io.redlink.smarti.query.google.GoogleSearchQuery",
+  "displayTitle": "googlesearch",
+  "confidence": 0.8,
+  "url": "https://www.googleapis.com/customsearch/v1?key=YOUR_KEY&cx=YOUR_ID",
+  "creator": "queryBuilder:googlesearch:googlesearch",
+  "inlineResultSupport": false,
+  "state": "Suggested",
+  "resultConfig": {
+      "mappings": {
+          "source": "displayLink",
+          "title": "title",
+          "description": "snippet",
+          "link": "link"
+      }
+  },
+  "defaults": {
+      "num": "4",
+      "orTerms": "Bahn"
+  }
+}

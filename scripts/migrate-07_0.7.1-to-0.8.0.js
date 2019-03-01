@@ -126,7 +126,7 @@ function runDatabaseMigration() {
             $push: {
                 'config.queryBuilder': {
                     name : 'rocketchatsearch',
-                    displayName : 'rocketchatsearch',
+                    displayName : 'Ähnliche Nachrichten',
                     type : 'rocketchatsearch',
                     enabled : conversationSearch.enabled,
                     unbound : false,

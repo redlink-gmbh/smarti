@@ -190,14 +190,21 @@ function Smarti(options) {
             localStorage &&
             localStorage.getItem('Meteor.loginToken') &&
             localStorage.getItem('Meteor.loginTokenExpires') &&
-            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())
-        ) {
-            log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
+            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())) {
 
-            loginRequest([
-                { "resume": localStorage.getItem('Meteor.loginToken') }
-            ]);
+                log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
 
+                loginRequest([
+                    { "resume": localStorage.getItem('Meteor.loginToken') }
+                ]);
+
+                $.ajaxSetup({
+                    headers: {
+                    'content-type': 'application/json',
+                    'x-auth-token': localStorage.getItem('Meteor.loginToken'),
+                    'x-user-id': localStorage.getItem('Meteor.userId')
+                    }
+                });
         } else {
             failure({i18nObj: {code:'login.no-auth-token'}});
         }
@@ -517,6 +524,9 @@ function SmartiWidget(element, _options) {
      * @constructor
      */
     function IrLatchWidget(params,wgt_conf) {
+
+        let isGoogle = params.query._class == "io.redlink.smarti.query.google.GoogleSearchQuery";
+
         widgetIrLatchTemplate.link(params.elem, params.templateData);
 
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
@@ -538,6 +548,7 @@ function SmartiWidget(element, _options) {
             $.observable(params.templateData).setProperty("noTags", !tks.length);
 
             if(equalArrays(lastTks, tks) && loadedPage >= page) return;
+            lastTks = tks;
 
             if(!append) {
                 page = 0;
@@ -545,57 +556,71 @@ function SmartiWidget(element, _options) {
                 noMoreData = false;
             }
 
-            lastTks = tks;
+            let queryParams = {};
+            let datatype = 'jsonp';
+            let start = page > 0 ? (page*numOfRows) : 0;
+            if (isGoogle) {
+                queryParams  = {
+                    'num': numOfRows,
+                    'start': start+1,
+                    'q':  getGoogleQuery(tks)
+                }
+                datatype = 'json';
+            } else {
+                queryParams = {
+                    'wt': 'json',
+                    'fl': '*,score',
+                    'rows': numOfRows,
+                    'start': start,
+                    'q':  getSolrQuery(tks)
+                };
+            }
 
-            let queryParams = {
-                'wt': 'json',
-                'fl': '*,score',
-                'rows': numOfRows,
-                'q':  getSolrQuery(tks)
-            };
-
-            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
-
-            //append params
+            // append default params
             for(let property in params.query.defaults) {
                 if (params.query.defaults.hasOwnProperty(property))
                     queryParams[property] = params.query.defaults[property];
             }
-            queryParams.start = page > 0 ? (page*numOfRows) : 0;
+
+            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
 
             // external Solr search
             log.debug(`executeSearch ${ params.query.url }, with`, queryParams);
             $.observable(params.templateData).setProperty("loading", true);
+
             $.ajax({
                 url: params.query.url,
                 data: queryParams,
                 traditional: true,
-                dataType: 'jsonp',
+                dataType: datatype,
                 jsonp: 'json.wrf',
+                error: (err) => {
+                    log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
+                },
                 failure: (err) => {
                     log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
-                /**
-                 *
-                 * @param {Object} data
-                 * @param {Object} data.response
-                 * @param {Number} data.response.numFound
-                 *
-                 */
                 success: (data) => {
-                    tracker.trackEvent(params.query.creator, data.response && data.response.docs && data.response.docs.length || 0);
-
-                    loadedPage = page;
-                    noMoreData =    !data.response ||
-                                    !data.response.docs ||
-                                    !data.response.docs.length ||
-                                    (params.templateData.results.length + data.response.docs.length) == data.response.numFound;
 
                     log.debug("ir-latch query:", params.query);
-                    log.debug("ir-latch response:", data.response);
+                    loadedPage = page;
+                    let foundDocs = new Array();
+                    let numFound = 0;
+
+                    if (isGoogle && data && data.items) {
+                        log.debug("ir-latch response:", data);
+                        foundDocs = data.items;
+                        numFound = data.searchInformation.totalResults;
+                    } else if (data && data.response && data.response.docs) {
+                        log.debug("ir-latch response:", data.response);
+                        foundDocs = data.response.docs;
+                        numFound = data.response.numFound
+                    }
+                    noMoreData = !foundDocs || (params.templateData.results.length + foundDocs.length) == numFound;
+                    tracker.trackEvent(params.query.creator, foundDocs && foundDocs.length || 0);
 
                     //map to search results
-                    let docs = $.map(data.response && data.response.docs || [], (doc) => {
+                    let docs = $.map(foundDocs || [], (doc) => {
                         let newDoc = {};
                         Object.keys(params.query.resultConfig.mappings).forEach(k => {
                             let v = params.query.resultConfig.mappings[k];
@@ -607,7 +632,7 @@ function SmartiWidget(element, _options) {
                                 } else if(k === "link") {
                                     newDoc[k] = Array.isArray(doc[v]) ? doc[v][0] : doc[v];
                                 } else if(k === "type") {
-                                    newDoc[k] = doc[v].split(".").pop();
+                                    newDoc[k] = doc[v] ? doc[v].split(".").pop() : "unknown";
                                 } else {
                                     newDoc[k] = doc[v];
                                 }
@@ -625,7 +650,7 @@ function SmartiWidget(element, _options) {
                         });
                     }
 
-                    $.observable(params.templateData).setProperty("total", data.response && data.response.numFound || 0);
+                    $.observable(params.templateData).setProperty("total", numFound || 0);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(docs);
@@ -2042,6 +2067,16 @@ function equalArrays(a, b) {
 
 function getSolrQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
+}
+
+function getGoogleQuery(queryArray) {
+    var terms = queryArray.join(' ').split(' ');
+    var uniqueNames = [];
+    $.each(terms, function(i, el){
+      var term = el.toLowerCase();
+      if($.inArray(term, uniqueNames) === -1) uniqueNames.push(term);
+    });
+    return uniqueNames.join(' ');
 }
 
 function getRCMessageLink(rid, mid) {
