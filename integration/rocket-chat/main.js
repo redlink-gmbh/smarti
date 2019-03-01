@@ -563,7 +563,7 @@ function SmartiWidget(element, _options) {
                 queryParams  = {
                     'num': numOfRows,
                     'start': start+1,
-                    'q':  getSolrQuery(tks)
+                    'q':  getGoogleQuery(tks)
                 }
                 datatype = 'json';
             } else {
@@ -2067,6 +2067,16 @@ function equalArrays(a, b) {
 
 function getSolrQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
+}
+
+function getGoogleQuery(queryArray) {
+    var terms = queryArray.join(' ').split(' ');
+    var uniqueNames = [];
+    $.each(terms, function(i, el){
+      var term = el.toLowerCase();
+      if($.inArray(term, uniqueNames) === -1) uniqueNames.push(term);
+    });
+    return uniqueNames.join(' ');
 }
 
 function getRCMessageLink(rid, mid) {
