@@ -86,9 +86,8 @@ public final class GoogleSearchQueryBuilder extends QueryBuilder<GoogleSearchCon
                 final Token t = e.getValue();
                 final Collection<String> queryParams = new LinkedList<>();
                 switch (s.getRole()) {
-                case IrLatchTemplate.ROLE_LOCATION:
-                    //TODO: add support location filter
-                    break;
+                //we add Location and Alphabet tokens for now
+                case IrLatchTemplate.ROLE_LOCATION: 
                 case IrLatchTemplate.ROLE_ALPHABET:
                     queryParams.add(t.getValue().toString());
                     break;
