@@ -269,6 +269,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- (8.1) Google based Information Retrieval -->
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>query-google</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- (9) Solr MLP Interesting Terms -->
         <!-- allows to configure external Solr Servier used for MLT queries
              for interesting terms -->
