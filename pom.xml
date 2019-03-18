@@ -46,6 +46,8 @@
         <module>data</module>
 
         <module>docs</module>
+        
+        <module>tools</module>
     </modules>
 
     <licenses>
