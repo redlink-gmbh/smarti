@@ -23,42 +23,49 @@
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
         <version>0.9.0-SNAPSHOT</version>
+        <relativePath>../../</relativePath>
     </parent>
 
-    <artifactId>lib</artifactId>
-    <name>smarti :: Libraries (reactor)</name>
-    <packaging>pom</packaging>
+    <artifactId>query-google</artifactId>
+    <name>Query :: google</name>
+    <description>A highly configureable Query Provider intended to be used for google search</description>
 
-    <modules>
-        <module>hasso-vocabulary-extractors</module>
-        <module>keyword-interestingterms</module>
-        <module>keyword-solr-mlt</module>
-        <module>ner</module>
-        <module>pos</module>
-        <module>token-processor</module>
-        <module>query-conversation</module>
-        <module>query-solr</module>
-        <!-- chatpal-index is no longer supported (module removed with v0.9.0)
-             Smarti now uses the native Chatpal backend
-        <module>chatpal-index</module> -->
-        <module>query-google</module>
-    </modules>
+    <dependencies>
+
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>smarti-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.10.19</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-install-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
+                <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
-    
+
+
 </project>

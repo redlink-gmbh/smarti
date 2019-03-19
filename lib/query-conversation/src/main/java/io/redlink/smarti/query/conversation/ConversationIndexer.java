@@ -21,7 +21,6 @@ import static io.redlink.smarti.model.Message.Metadata.SKIP_ANALYSIS;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,7 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.annotation.PostConstruct;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -55,13 +53,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
 import io.redlink.smarti.api.event.StoreServiceEvent;
@@ -69,26 +66,23 @@ import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
 import io.redlink.smarti.cloudsync.ConversationCloudSync;
 import io.redlink.smarti.cloudsync.ConversationCloudSync.ConversytionSyncCallback;
 import io.redlink.smarti.cloudsync.ConversationCloudSync.SyncData;
+import io.redlink.smarti.cloudsync.ConversationCloudSync.IndexingStatus;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.Message.Metadata;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
 
 @Component
-@EnableScheduling
+@EnableConfigurationProperties(ConversationIndexerConfig.class)
 public class ConversationIndexer implements ConversytionSyncCallback {
 
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
-    public static final int DEFAULT_COMMIT_WITHIN = 10*1000; //10sec
-
-    public static final int MIN_COMMIT_WITHIN = 1000; //1sec
     
     //TODO: make configurable
     private static final Set<String> NOT_INDEXED_META_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -118,12 +112,6 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     protected static final long MAX_AGE = TimeUnit.DAYS.toMillis(1);
 
 
-    @Value("${smarti.index.conversation.commitWithin:0}") //<0 ... use default
-    private int commitWithin = DEFAULT_COMMIT_WITHIN; 
-
-    @Value("${smarti.index.conversation.message.merge-timeout:30}")
-    private int messageMergeTimeout = 30;
-
     @Autowired
     @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX)
     private SolrCoreDescriptor conversationCore;
@@ -133,30 +121,28 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     
     private ConversationIndexTask indexTask;
 
-    private final SolrCoreContainer solrServer;
+    protected final SolrCoreContainer solrServer;
     
-    private final ConversationService conversationService;
+    protected final ConversationService conversationService;
 
-    private final ExecutorService indexerPool;
+    protected final TaskScheduler taskScheduler;
+    
+    protected final ExecutorService indexerPool;
 
     @Value("${smarti.index.rebuildOnStartup:false}")
     private boolean rebuildOnStartup = false;
 
+    protected final ConversationIndexerConfig config;
+    
     @Autowired
-    public ConversationIndexer(SolrCoreContainer solrServer, ConversationService storeService){
+    public ConversationIndexer(ConversationIndexerConfig config, SolrCoreContainer solrServer, ConversationService storeService, 
+            TaskScheduler taskScheduler){
+        this.config = config;
         this.solrServer = solrServer;
         this.conversationService = storeService;
+        this.taskScheduler = taskScheduler;
         this.indexerPool = Executors.newSingleThreadExecutor(
                 new BasicThreadFactory.Builder().namingPattern("conversation-indexing-thread-%d").daemon(true).build());
-    }
-    
-    @PostConstruct
-    protected void init()  {
-        if(commitWithin <= 0){
-            commitWithin = DEFAULT_COMMIT_WITHIN;
-        } else if(commitWithin < MIN_COMMIT_WITHIN){
-            commitWithin = MIN_COMMIT_WITHIN;
-        }
     }
     
     @EventListener(ContextRefreshedEvent.class)
@@ -206,12 +192,18 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                                 .forEach(c -> indexConversation(c, false));
                     });
         }
+        
+        //start the recurring scheduled tasks
+        this.taskScheduler.scheduleAtFixedRate(this::syncIndex, config.getSyncDelay());
+        if(config.getReindexCron() != null){
+            log.info("Rebuild Index Cron: ", config.getReindexCron());
+            this.taskScheduler.schedule(this::rebuildIndex, config.getReindexCron());
+        } else {
+            log.info("Rebuild Index Cron: disabled");
+        }
+        
     }    
     
-    
-    public int getCommitWithin() {
-        return commitWithin;
-    }
     
     /**
      * Processes update events as e.g. sent by the {@link StoreService}
@@ -242,7 +234,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     }
     public void removeConversation(ObjectId conversationId, boolean commit) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            solr.deleteByQuery(getDeleteQuery(conversationId), commitWithin);
+            solr.deleteByQuery(getDeleteQuery(conversationId), config.getCommitWithin());
             if(commit){
                 solr.commit();
             }
@@ -258,9 +250,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             SolrInputDocument doc = toSolrInputDocument(conversation);
             if(doc != null){
                 doc.setField(FIELD_SYNC_DATE, syncDate);
-                solr.add(doc, commitWithin);
+                solr.add(doc, config.getCommitWithin());
             } else { //remove from index
-                solr.deleteByQuery(getDeleteQuery(conversation),commitWithin);
+                solr.deleteByQuery(getDeleteQuery(conversation),config.getCommitWithin());
             }
         } catch (IOException | SolrServerException e) {
             log.warn("Unable to index Conversation {} ({}: {})",conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
@@ -272,9 +264,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
             SolrInputDocument doc = toSolrInputDocument(conversation);
             if(doc != null){
-                solr.add(doc, commitWithin);
+                solr.add(doc, config.getCommitWithin());
             } else { //remove from index
-                solr.deleteByQuery(getDeleteQuery(conversation),commitWithin);
+                solr.deleteByQuery(getDeleteQuery(conversation), config.getCommitWithin());
             }
             if(commit){
                 solr.commit();
@@ -325,7 +317,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                     if ((prevMessage != null) && (prevSolrInputDoc != null)
                             && Objects.equals(m.getUser(), prevMessage.getUser()) // Same user
                             && Objects.equals(m.getOrigin(), prevMessage.getOrigin()) // "same" user
-                            && m.getTime().before(DateUtils.addSeconds(prevMessage.getTime(), messageMergeTimeout))) { // within X seconds
+                            && m.getTime().before(DateUtils.addSeconds(prevMessage.getTime(), config.getMessage().getMergeTimeout()))) { // within X seconds
                         // merge messages;
                         prevSolrInputDoc = mergeSolrUInputDoc(prevSolrInputDoc, toSolrInputDocument(m, i, conversation));
 
@@ -432,9 +424,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         return prev;
     }
 
-    @Scheduled(initialDelay=15*1000,fixedDelay=15*1000)
-    public void syncIndex() {
-        Instant now = Instant.now();
+    protected void syncIndex() {
         if(indexTask != null){
             if(indexTask.isError()){
                 if(log.isDebugEnabled()){
@@ -452,13 +442,13 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                         indexTask.getLastSync() == null ? "none" : indexTask.getLastSync().toInstant());
                 indexerPool.execute(indexTask);
             } else {  
-                log.info("skipping conversation index sync at {} as indexing is currently active (last completed sync: {})",
-                        now, indexTask.getLastSync() == null ? "none" : indexTask.getLastSync().toInstant());
+                log.info("ongoing indexing task (status: {}, last completed sync: {})",
+                        indexTask.getIndexingStatus() == null ? "not available" : indexTask.getIndexingStatus(), 
+                        indexTask.getLastSync() == null ? "none" : indexTask.getLastSync().toInstant());
             }
         }
     }
     
-    @Scheduled(cron = "30 0 3 * * *" /* once per day at 03:00:30 AM */)
     public void rebuildIndex() {
         if(indexTask != null){
             log.info("starting scheduled full sync of the conversation index");
@@ -485,7 +475,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         final Lock lock = new ReentrantLock();
         
         AtomicBoolean active = new AtomicBoolean(false);
-        AtomicBoolean completed = new AtomicBoolean(false);;
+        AtomicBoolean completed = new AtomicBoolean(false);
+        IndexingStatus indexingStatus = null;
         
         Date lastSync;
         
@@ -511,6 +502,10 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         public String getError(){
             Exception error = getException();
             return error == null ? null : String.format("%s: %s", error.getClass().getSimpleName(), error.getMessage());
+        }
+        
+        public IndexingStatus getIndexingStatus() {
+            return indexingStatus;
         }
         
         public Exception getException(){
@@ -578,9 +573,10 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                     lock.unlock();
                 }
                 SyncData syncData;
+                indexingStatus = new IndexingStatus();
                 if(lastSync == null){
                     log.debug("start full rebuild of Index using {}", cloudSync);
-                    syncData = cloudSync.syncAll(ConversationIndexer.this);
+                    syncData = cloudSync.syncAll(ConversationIndexer.this, indexingStatus);
                     try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
                         log.debug("optimize Index after the full rebuild");
                         solr.optimize(); //optimize after a full rebuild
@@ -589,7 +585,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                     if(log.isTraceEnabled()){
                         log.trace("update Index with changes after {}", lastSync == null ? null : lastSync.toInstant());
                     }
-                    syncData = cloudSync.sync(ConversationIndexer.this, lastSync);
+                    syncData = cloudSync.sync(ConversationIndexer.this, lastSync, indexingStatus);
                 }
                 if(syncData.getCount() > 0){
                     log.debug("performed {} updates in the Conversation Index - {}", syncData.getCount(), syncData);
@@ -600,6 +596,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 try {
                     lastSync = syncData.getSyncDate();
                     completed.set(true);
+                    indexingStatus = null;
                 } finally {
                     lock.unlock();
                 }
@@ -612,5 +609,5 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }
         
     }
-    
+
 }

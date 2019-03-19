@@ -34,8 +34,8 @@
     <dynamicField name="meta_*"         type="string"         indexed="true"  stored="true"  multiValued="true"/>
     <dynamicField name="env_txt_*"      type="text_gen"       indexed="true"  stored="true"  multiValued="true"/>
     <dynamicField name="meta_txt_*"     type="text_gen"       indexed="true"  stored="true"  multiValued="true"/>
-    <field name="text"                  type="text_de"        indexed="true"  stored="true"  multiValued="true" termVectors="true"/>
-    <field name="iterms"                type="text_iterms_de" indexed="true"  stored="true"  multiValued="true" termVectors="true"/>
+    <field name="text"                  type="text_de"        indexed="true"  stored="fase"  multiValued="true" termVectors="true"/>
+    <field name="iterms"                type="text_iterms_de" indexed="true"  stored="fase"  multiValued="true" termVectors="true"/>
     
     <!-- "mandantenfähigkeit" -->
     <field name="context"               type="string"         indexed="true"  stored="true"  multiValued="false"/>
@@ -51,12 +51,8 @@
     <field name="message_count"         type="long"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="modified"              type="date"           indexed="true"  stored="true"  multiValued="false"/>
     <!-- used by the conversation to store all messages (e.g. for highlighting) -->
-    <field name="messages"              type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
+    <field name="messages"              type="text_de"        indexed="true"  stored="false"  multiValued="true"/>
     
-
-    <field name="related_conversation"  type="string"         indexed="true"  stored="true"  multiValued="true"/>
-    <field name="related_message"       type="string"         indexed="true"  stored="true"  multiValued="true"/>
-
     <!-- message -->
     <field name="conversation_id"       type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="message_ids"           type="string"         indexed="true"  stored="true"  multiValued="true"/>
@@ -67,10 +63,15 @@
     <field name="time"                  type="date"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="vote"                  type="long"           indexed="true"  stored="true"  multiValued="false"/>
     <field name="link"                  type="string"         indexed="true"  stored="true"  multiValued="true"/>
-    <field name="keyword"               type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
-    <field name="keyword_synonyms"      type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
-    <field name="keyword_homonyms"      type="text_de"        indexed="true"  stored="true"  multiValued="true"/>
 
+<!-- unused fields
+    <field name="related_conversation"  type="string"         indexed="true"  stored="true"  multiValued="true"/>
+    <field name="related_message"       type="string"         indexed="true"  stored="true"  multiValued="true"/>
+
+    <field name="keyword"               type="text_de"        indexed="true"  stored="fase"  multiValued="true"/>
+    <field name="keyword_synonyms"      type="text_de"        indexed="true"  stored="fase"  multiValued="true"/>
+    <field name="keyword_homonyms"      type="text_de"        indexed="true"  stored="fase"  multiValued="true"/> 
+ -->
     <!-- 
       Similarity search:
         * for Conversations this holds the whole content of the conversation

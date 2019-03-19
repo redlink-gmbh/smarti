@@ -12,12 +12,22 @@ Rocket.Chat search functionality.
 
 === New in Smarti 0.8.0
 
+* https://github.com/redlink-gmbh/smarti/issues/274[#274 - Specify Query Provider for Rocket Chat Search]
 * https://github.com/redlink-gmbh/smarti/issues/275[#275 - Implement UI for Rocket.Chat Query Provider]
 * https://github.com/redlink-gmbh/smarti/issues/276[#276 - Implement Rocket.Chat query provider]
 * https://github.com/redlink-gmbh/smarti/issues/278[#278 - Exclude Context Messages for Rocket.Chat Search]
 * https://github.com/redlink-gmbh/smarti/issues/281[#281 - Limit Messages per Conversation]
 * https://github.com/redlink-gmbh/smarti/issues/282[#282 - Add RocketChatSearch Query Provider to existing Configurations]
 * https://github.com/redlink-gmbh/smarti/issues/283[#283 - Update Changelog with the new Features in Smarit 0.8.0]
+* https://github.com/redlink-gmbh/smarti/pull/284[#284 - Set EXPECTED_DB_VERSION to 7]
+* https://github.com/redlink-gmbh/smarti/issues/285[#285 - SmartiWidget: Tokens are not shown initially]
+* https://github.com/redlink-gmbh/smarti/issues/287[#287 - Widget shows wrong error messages]
+* https://github.com/redlink-gmbh/smarti/issues/292[#292 - ConversationWebservice Analysis with parsed callback is not Async] 
+* https://github.com/redlink-gmbh/smarti/issues/293[#293 - Allow to disable Chatpal Backend support] 
+* https://github.com/redlink-gmbh/smarti/issues/294[#294 - Disable analysis for Conversation Updates that do not explicitly request Analysis Data in the Response] 
+* https://github.com/redlink-gmbh/smarti/issues/294[#296 - Conversation Indexing Improvements] 
+* https://github.com/redlink-gmbh/smarti/issues/297[#297 - SmartiWidget: Error handling fails on widget refresh] 
+* https://github.com/redlink-gmbh/smarti/issues/297[#300 - Make Conversation Cloud Sync Epoch and Batch size Configureable] 
 
 === Upgrading
 
@@ -34,6 +44,15 @@ installation packages (deb, rpm) or docker, you must apply it manually:
 [source,javascript]
 -----------------------------------------------
 include::{migration_scripts}/migrate-07_0.7.1-to-0.8.0.js[lines=112..-1]
+-----------------------------------------------
+
+To ensure that Chatpal is newly syncronized with the Smarti Chatpal backend you should clear
+the collection storing Chatpal data.
+
+.migrate-08_0.8.1-to-0.9.0.js
+[source,javascript]
+-----------------------------------------------
+include::{migration_scripts}/migrate-08_0.8.1-to-0.9.0.js[lines=112..-1]
 -----------------------------------------------
 
 == Smarti 0.7.7 Release Notes

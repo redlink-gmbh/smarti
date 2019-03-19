@@ -25,23 +25,12 @@
         <version>0.9.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>lib</artifactId>
-    <name>smarti :: Libraries (reactor)</name>
+    <artifactId>tools</artifactId>
+    <name>smarti :: Tools (reactor)</name>
     <packaging>pom</packaging>
 
     <modules>
-        <module>hasso-vocabulary-extractors</module>
-        <module>keyword-interestingterms</module>
-        <module>keyword-solr-mlt</module>
-        <module>ner</module>
-        <module>pos</module>
-        <module>token-processor</module>
-        <module>query-conversation</module>
-        <module>query-solr</module>
-        <!-- chatpal-index is no longer supported (module removed with v0.9.0)
-             Smarti now uses the native Chatpal backend
-        <module>chatpal-index</module> -->
-        <module>query-google</module>
+    <module>tools-conversationdata</module>
     </modules>
 
     <build>

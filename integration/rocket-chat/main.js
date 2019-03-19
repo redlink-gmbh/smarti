@@ -190,14 +190,21 @@ function Smarti(options) {
             localStorage &&
             localStorage.getItem('Meteor.loginToken') &&
             localStorage.getItem('Meteor.loginTokenExpires') &&
-            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())
-        ) {
-            log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
+            (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())) {
 
-            loginRequest([
-                { "resume": localStorage.getItem('Meteor.loginToken') }
-            ]);
+                log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
 
+                loginRequest([
+                    { "resume": localStorage.getItem('Meteor.loginToken') }
+                ]);
+
+                $.ajaxSetup({
+                    headers: {
+                    'content-type': 'application/json',
+                    'x-auth-token': localStorage.getItem('Meteor.loginToken'),
+                    'x-user-id': localStorage.getItem('Meteor.userId')
+                    }
+                });
         } else {
             failure({i18nObj: {code:'login.no-auth-token'}});
         }
@@ -216,22 +223,24 @@ function Smarti(options) {
         // get RC's search provider
         const spCallId = ddp.method("rocketchatSearch.getProvider", []);
         ddp.on("result", (message) => {
-            if (message.error) {
-                log.error('Failed to get search provider:', message.error);
-                return;
-            } else if(message.id === spCallId) {
-                if(message.result) {
-                    searchProvider = message.result;
-                    log.debug('Search provider found: ', searchProvider);
-                    if(searchProvider.key == "chatpalProvider") {
-                        searchProviderSupported = true;
-                    } else {
-                        searchProviderSupported = false;
-                        log.info(`Search provider ${searchProvider.key} is not supported!`);
-                    }
-                } else {
-                    log.info('Search provider is not active!');
+            if(message.id === spCallId) {
+                if (message.error) {
+                    log.error('Failed to get search provider:', message.error);
                     return;
+                } else {
+                    if(message.result) {
+                        searchProvider = message.result;
+                        log.debug('Search provider found: ', searchProvider);
+                        if(searchProvider.key == "chatpalProvider") {
+                            searchProviderSupported = true;
+                        } else {
+                            searchProviderSupported = false;
+                            log.info(`Search provider ${searchProvider.key} is not supported!`);
+                        }
+                    } else {
+                        log.info('Search provider is not active!');
+                        return;
+                    }
                 }
             }
         });
@@ -240,17 +249,19 @@ function Smarti(options) {
         log.debug('init -> get conversation ID for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
-            if (message.error) {
-                log.error('Failed to get conversation ID:', message.error);
-                return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-            } else if(message.id === lastConvCallId) {
-                if(message.result) {
-                    // conversation ID found for channel -> fetch conversation results
-                    conversationId = message.result;
-                    getConversation(message.result, failure);
+            if(message.id === lastConvCallId) {
+                if (message.error) {
+                    log.error('Failed to get conversation ID:', message.error);
+                    return failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                 } else {
-                    log.debug('init -> conversation ID not found for channel:', options.channel);
-                    return failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
+                    if (message.result) {
+                        // conversation ID found for channel -> fetch conversation results
+                        conversationId = message.result;
+                        getConversation(message.result, failure);
+                    } else {
+                        log.debug('init -> conversation ID not found for channel:', options.channel);
+                        return failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
+                    }
                 }
             }
         });
@@ -270,9 +281,9 @@ function Smarti(options) {
         });
     }
 
-    function refresh() {
+    function refresh(onFailure) {
         if(conversationId) {
-            getConversation(conversationId, showError);
+            getConversation(conversationId, onFailure);
         } else {
             Console.warn("Widget data refresh failed. Conversation ID not found!");
         }
@@ -288,20 +299,22 @@ function Smarti(options) {
         log.debug('Fetch results for conversation with ID:', conversationId);
         const msgid = ddp.method("getConversation", [conversationId]);
         ddp.on("result", (message) => {
-            if (message.error) {
-                log.error('Failed to get conversation:', message.error);
-                if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-            } else if(message.id === msgid) {
-                if(message.result && message.result != "null") {
-                    if(message.result.error) {
-                        log.error('Server-side error:', message.result.error);
-                        //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
-                        if(failure) failure({i18nObj: {code:'smarti.result.conversation-not-found'}});
-                    } else {
-                        pubsub('smarti.data').publish(message.result);
-                    }
+            if(message.id === msgid) {
+                if (message.error) {
+                    log.error('Failed to get conversation:', message.error);
+                    if (failure) failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                 } else {
-                    log.info(`Conversation fetch returned no results. Expecting async response... (${conversationId})`);
+                    if (message.result && message.result != "null") {
+                        if (message.result.error) {
+                            log.error('Server-side error:', message.result.error);
+                            //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
+                            if (failure) failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
+                        } else {
+                            pubsub('smarti.data').publish(message.result);
+                        }
+                    } else {
+                        log.info(`Conversation fetch returned no results. Expecting async response... (${conversationId})`);
+                    }
                 }
             }
         });
@@ -511,6 +524,9 @@ function SmartiWidget(element, _options) {
      * @constructor
      */
     function IrLatchWidget(params,wgt_conf) {
+
+        let isGoogle = params.query._class == "io.redlink.smarti.query.google.GoogleSearchQuery";
+
         widgetIrLatchTemplate.link(params.elem, params.templateData);
 
         const numOfRows = wgt_conf.numOfRows || params.query.resultConfig.numOfRows;
@@ -532,6 +548,7 @@ function SmartiWidget(element, _options) {
             $.observable(params.templateData).setProperty("noTags", !tks.length);
 
             if(equalArrays(lastTks, tks) && loadedPage >= page) return;
+            lastTks = tks;
 
             if(!append) {
                 page = 0;
@@ -539,57 +556,71 @@ function SmartiWidget(element, _options) {
                 noMoreData = false;
             }
 
-            lastTks = tks;
+            let queryParams = {};
+            let datatype = 'jsonp';
+            let start = page > 0 ? (page*numOfRows) : 0;
+            if (isGoogle) {
+                queryParams  = {
+                    'num': numOfRows,
+                    'start': start+1,
+                    'q':  getGoogleQuery(tks)
+                }
+                datatype = 'json';
+            } else {
+                queryParams = {
+                    'wt': 'json',
+                    'fl': '*,score',
+                    'rows': numOfRows,
+                    'start': start,
+                    'q':  getSolrQuery(tks)
+                };
+            }
 
-            let queryParams = {
-                'wt': 'json',
-                'fl': '*,score',
-                'rows': numOfRows,
-                'q':  getSolrQuery(tks)
-            };
-
-            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
-
-            //append params
+            // append default params
             for(let property in params.query.defaults) {
                 if (params.query.defaults.hasOwnProperty(property))
                     queryParams[property] = params.query.defaults[property];
             }
-            queryParams.start = page > 0 ? (page*numOfRows) : 0;
+
+            params.query.url = params.query.url.substring(0, params.query.url.indexOf('?')) + '?';
 
             // external Solr search
             log.debug(`executeSearch ${ params.query.url }, with`, queryParams);
             $.observable(params.templateData).setProperty("loading", true);
+
             $.ajax({
                 url: params.query.url,
                 data: queryParams,
                 traditional: true,
-                dataType: 'jsonp',
+                dataType: datatype,
                 jsonp: 'json.wrf',
+                error: (err) => {
+                    log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
+                },
                 failure: (err) => {
                     log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
-                /**
-                 *
-                 * @param {Object} data
-                 * @param {Object} data.response
-                 * @param {Number} data.response.numFound
-                 *
-                 */
                 success: (data) => {
-                    tracker.trackEvent(params.query.creator, data.response && data.response.docs && data.response.docs.length || 0);
-
-                    loadedPage = page;
-                    noMoreData =    !data.response ||
-                                    !data.response.docs ||
-                                    !data.response.docs.length ||
-                                    (params.templateData.results.length + data.response.docs.length) == data.response.numFound;
 
                     log.debug("ir-latch query:", params.query);
-                    log.debug("ir-latch response:", data.response);
+                    loadedPage = page;
+                    let foundDocs = new Array();
+                    let numFound = 0;
+
+                    if (isGoogle && data && data.items) {
+                        log.debug("ir-latch response:", data);
+                        foundDocs = data.items;
+                        numFound = data.searchInformation.totalResults;
+                    } else if (data && data.response && data.response.docs) {
+                        log.debug("ir-latch response:", data.response);
+                        foundDocs = data.response.docs;
+                        numFound = data.response.numFound
+                    }
+                    noMoreData = !foundDocs || (params.templateData.results.length + foundDocs.length) == numFound;
+                    tracker.trackEvent(params.query.creator, foundDocs && foundDocs.length || 0);
 
                     //map to search results
-                    let docs = $.map(data.response && data.response.docs || [], (doc) => {
+                    let docs = $.map(foundDocs || [], (doc) => {
                         let newDoc = {};
                         Object.keys(params.query.resultConfig.mappings).forEach(k => {
                             let v = params.query.resultConfig.mappings[k];
@@ -601,7 +632,7 @@ function SmartiWidget(element, _options) {
                                 } else if(k === "link") {
                                     newDoc[k] = Array.isArray(doc[v]) ? doc[v][0] : doc[v];
                                 } else if(k === "type") {
-                                    newDoc[k] = doc[v].split(".").pop();
+                                    newDoc[k] = doc[v] ? doc[v].split(".").pop() : "unknown";
                                 } else {
                                     newDoc[k] = doc[v];
                                 }
@@ -619,7 +650,7 @@ function SmartiWidget(element, _options) {
                         });
                     }
 
-                    $.observable(params.templateData).setProperty("total", data.response && data.response.numFound || 0);
+                    $.observable(params.templateData).setProperty("total", numFound || 0);
 
                     if(append) {
                         $.observable(params.templateData.results).insert(docs);
@@ -1195,10 +1226,10 @@ function SmartiWidget(element, _options) {
                 });
                 wgt.refresh();
             });
-
-            // triggers search
-            $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
         }
+
+        // triggers search
+        $.observable(widgetHeaderTagsTemplateData.tokens).refresh(uniqueTokens);
     }
 
     function initialize() {
@@ -1532,7 +1563,7 @@ function SmartiWidget(element, _options) {
         if (widgetBody.scrollTop() > 1) {
             // Hide title and filters only when the gained height is less than the overflowing height,
             // otherwise there will be no scrolling and the UI will reset right away!
-            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height()) {
+            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height() + 10) {
                 widgetTitle.slideUp(200);
                 if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
             }
@@ -1884,7 +1915,7 @@ function SmartiWidget(element, _options) {
         } else {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(tokenData.value.trim().toLowerCase());
             $.observable(widgetHeaderTagsTemplateData.tokens).remove(tokenIdx);
-            smarti.refresh();
+            smarti.refresh(showError);
         }
 
         tracker.trackEvent('tag.remove', tokenIdx);
@@ -1925,14 +1956,14 @@ function SmartiWidget(element, _options) {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(t.value.trim().toLowerCase());
         });
         $.observable(widgetHeaderTagsTemplateData.tokens).refresh([]);
-        smarti.refresh();
+        smarti.refresh(showError);
         tracker.trackEvent('tag.remove-all');
     });
 
     tags.on('click', '.reset-exclude', function() {
         $.observable(widgetHeaderTagsTemplateData.exclude).refresh([]);
         tracker.trackEvent('tag.reset-exclude');
-        smarti.refresh();
+        smarti.refresh(showError);
     });
 
     tags.on('click', 'li.add', function() {
@@ -2036,6 +2067,16 @@ function equalArrays(a, b) {
 
 function getSolrQuery(queryArray) {
     return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
+}
+
+function getGoogleQuery(queryArray) {
+    var terms = queryArray.join(' ').split(' ');
+    var uniqueNames = [];
+    $.each(terms, function(i, el){
+      var term = el.toLowerCase();
+      if($.inArray(term, uniqueNames) === -1) uniqueNames.push(term);
+    });
+    return uniqueNames.join(' ');
 }
 
 function getRCMessageLink(rid, mid) {

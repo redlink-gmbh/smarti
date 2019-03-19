@@ -123,8 +123,12 @@ The Speak Service managed resource bundles for bot generated replay messages in 
 
 Conversation are indexed in Solr managed by SolrLib
 
-* `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup
-* `smarti.index.conversation.commitWithin = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
+* `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup (default: `false`)
+* `smarti.index.sync.epochSize = 10000`: The epoch size ist the maximum number of conversation IDs of updated conversations loaded from the conversation repository. This is needed because of https://docs.mongodb.com/manual/core/aggregation-pipeline-limits/[MongoDB limitations for aggregations] for some supported Mongo versions to be limited as.
+* `smarti.index.sync.batchSize = 1`: The batch size for loading conversations from the Conversation Repository. The default is set to `1` to reduce the memory footprint. When setting to higher values ensure that sufficient heap is available (recommended about `500MByte` times the configured number) 
+* `smarti.index.conversation.commit-within = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
+* `smarti.index.conversation.sync-delay = 15000`: Defines the period between the synchronization of the conversation index with the conversation repository (default: `15000` ms, min: `5000` ms)
+* `smarti.index.conversation.reindex-cron=`: The cron trigger for full rebuilds of the conversation index (default: none - no rebuild)
 * `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
 
 ==== Processing Configuration

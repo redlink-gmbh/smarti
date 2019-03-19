@@ -26,7 +26,9 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 
 import io.redlink.smarti.model.*;
+import io.redlink.smarti.repositories.AnalysisRepository;
 import io.redlink.smarti.repositories.AuthTokenRepository;
+import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthTokenService;
 import io.redlink.smarti.services.AuthenticationService;
 
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration.WebMvcAutoConfigurationAdapter.FaviconConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
@@ -126,6 +129,9 @@ public class ConversationWebserviceIT {
     private ConversationRepository conversationRepository;
     
     @Autowired
+    private AnalysisRepository analysisRepository;
+    
+    @Autowired
     private ClientRepository clientRepository;
 
     @Autowired
@@ -145,6 +151,9 @@ public class ConversationWebserviceIT {
     
     @Autowired
     private ConfigurationService configService;
+    
+    @Autowired
+    private AnalysisService analysisService;
 
     @MockBean
     private CallbackService callbackService;
@@ -618,7 +627,10 @@ public class ConversationWebserviceIT {
               .accept(MediaType.APPLICATION_JSON_VALUE))
               .andDo(MockMvcResultHandlers.print())
               .andExpect(MockMvcResultMatchers.status().is(200));
-
+        
+        //#294 Assert that creation does NOT trigger an analysis
+        TimeUnit.SECONDS.sleep(3); // wait some time so that an analysis would be completed if triggered
+        Assert.assertEquals(0, analysisRepository.count()); //no analysis triggered
         
     }
     
@@ -679,6 +691,10 @@ public class ConversationWebserviceIT {
         //     and never JSON serialized. Both the analysis ID and the Client are @JsonIgnored!
         Assert.assertNotNull(analysis.getId());
         Assert.assertEquals(conversation.getOwner(), analysis.getClient()); //NOTE assert to conversaion.getOwner() and NOT created.getOwner() as the owner is @JsonIgnored!
+
+        //Assert that an analysis is stored
+        Assert.assertEquals(1, analysisRepository.count());
+
     }
     
     @Test
@@ -724,6 +740,10 @@ public class ConversationWebserviceIT {
         Assert.assertNotNull(created.getAnalysis());
         Assert.assertNotNull(created.getAnalysis().getTokens());
         Assert.assertNotNull(created.getAnalysis().getTemplates());
+
+        //Assert that an analysis is stored
+        Assert.assertEquals(1, analysisRepository.count());
+        
     }
     
     @Test
@@ -765,6 +785,10 @@ public class ConversationWebserviceIT {
         Map<String,String> links = parseLinks(response.getHeaders("link"));
         
         Conversation created = objectMapper.readValue(response.getContentAsString(),Conversation.class);
+        
+        //#294 Assert that this has NOT triggered an Analysis
+        TimeUnit.SECONDS.sleep(3); // wait some time so that an analysis would be completed if triggered
+        Assert.assertEquals(0, analysisRepository.count());
         
         String analyseLink = links.get("analyse");
         Assert.assertNotNull(analyseLink);
@@ -823,6 +847,10 @@ public class ConversationWebserviceIT {
                 .andExpect(jsonPath("[2].origin").value("System"))
                 .andExpect(jsonPath("[2].state").value("Suggested"))
                 .andExpect(jsonPath("[2].type").value("Place"));
+        
+        //Assert that an analysis is stored
+        Assert.assertEquals(1, analysisRepository.count());
+
     }
     
     @Test
@@ -929,6 +957,9 @@ public class ConversationWebserviceIT {
             Assert.assertEquals(conversation.getOwner(), analysis.getClient()); //NOTE assert to conversaion.getOwner() and NOT created.getOwner() as the owner is @JsonIgnored!
         });
         Assert.assertEquals(1, analysisIds.size()); //both analysis MUST HAVE the same ID
+        
+        //callbacks do trigger Analysis
+        Assert.assertEquals(1, analysisRepository.count()); //only the current analysis is stored
     }
     
     @Test
@@ -1469,6 +1500,7 @@ public class ConversationWebserviceIT {
         clientRepository.deleteAll();
         configurationRepo.deleteAll();
         authTokenRepository.deleteAll();
+        analysisRepository.deleteAll();
     }
     
     @org.springframework.context.annotation.Configuration

@@ -227,7 +227,10 @@ public class ConversationWebservice {
         final Conversation created = conversationService.update(client, conversation);
 
         //trigger analysis
-        CompletableFuture<Analysis> analysis = analysisService.analyze(client, created);
+        CompletableFuture<Analysis> analysis = null;
+        if(callback != null || inclAnalysis){ //Do only start analysis if requested
+            analysis = analysisService.analyze(client, created);
+        }
         if(callback != null){
             appendCallbackExecution(callback, created, analysis);
         }
@@ -235,7 +238,7 @@ public class ConversationWebservice {
         return ResponseEntity.created(conversationUri)
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", conversationUri))
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, created.getId())))
-                .body(toConversationData(client, created, analysis, inclAnalysis));
+                .body(toConversationData(client, created, inclAnalysis ? analysis : null));
 
     }
 
@@ -330,7 +333,7 @@ public class ConversationWebservice {
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, conversationId)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, conversationId)))
-                    .body(toConversationData(client, conversation, null, inclAnalysis));
+                    .body(toConversationData(client, conversation, null));
         }
     }
 
@@ -378,14 +381,18 @@ public class ConversationWebservice {
 
         if (conversationService.exists(conversationId)) {
             Conversation updated = conversationService.updateConversationField(conversationId, field, data);
-            CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
+            CompletableFuture<Analysis> analysis = null;
+            if(callback != null || inclAnalysis){
+                analysis = analysisService.analyze(client, updated);
+                
+            }
             if(callback != null){
                 appendCallbackExecution(callback, updated, analysis);
             }
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, updated.getId())))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, updated.getId())))
-                    .body(toConversationData(client, updated, analysis, inclAnalysis));
+                    .body(toConversationData(client, updated, inclAnalysis ? analysis : null));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -419,14 +426,18 @@ public class ConversationWebservice {
                 return ResponseEntity.notFound().build();
             }
 
-            CompletableFuture<Analysis> analysis = analysisService.analyze(client, updated);
+            CompletableFuture<Analysis> analysis = null;
+            if(callback != null || inclAnalysis){
+                analysis = analysisService.analyze(client, updated);
+                
+            }
             if(callback != null){
                 appendCallbackExecution(callback, updated, analysis);
             }
             return ResponseEntity.ok()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildConversationURI(uriBuilder, updated.getId())))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"analyse\"", buildAnalysisURI(uriBuilder, updated.getId())))
-                    .body(toConversationData(client, updated, analysis, inclAnalysis));
+                    .body(toConversationData(client, updated, inclAnalysis ? analysis : null));
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -495,9 +506,8 @@ public class ConversationWebservice {
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Created Message[id: "+message.getId()+"] not present in " + c));
 
-        CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
         if(callback != null){
-            appendCallbackExecution(callback, c, analysis);
+            appendCallbackExecution(callback, c, analysisService.analyze(client, c));
         }
         URI messageLocation = buildMessageURI(uriBuilder, conversationId, created.getId());
         return ResponseEntity.created(messageLocation)
@@ -571,9 +581,8 @@ public class ConversationWebservice {
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
-        CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
         if(callback != null){
-            appendCallbackExecution(callback, c, analysis);
+            appendCallbackExecution(callback, c, analysisService.analyze(client, c));
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, c.getId(), updated.getId())))
@@ -610,9 +619,8 @@ public class ConversationWebservice {
 
         if(conversationService.deleteMessage(conversationId, messageId)){
             Conversation c = conversationService.getConversation(conversationId);
-            CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
             if(callback != null){
-                appendCallbackExecution(callback, c, analysis);
+                appendCallbackExecution(callback, c, analysisService.analyze(client, c));
             }
             return ResponseEntity.noContent()
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
@@ -661,9 +669,8 @@ public class ConversationWebservice {
                 .filter(m -> Objects.equals(messageId, m.getId()))
                 .findAny().orElseThrow(() -> new IllegalStateException(
                         "Updated Message[id: "+messageId+"] not present in " + c));
-        CompletableFuture<Analysis> analysis = analysisService.analyze(client, c);
         if(callback != null){
-            appendCallbackExecution(callback, c, analysis);
+            appendCallbackExecution(callback, c, analysisService.analyze(client, c));
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildMessageURI(uriBuilder, conversationId, updated.getId())))
@@ -805,7 +812,7 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a.getTokens());
                     callbackExecutor.execute(callback, CallbackPayload.success(a.getTokens()));
@@ -852,7 +859,7 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     log.debug("callback {} with {}", callback, a.getTemplates());
                     callbackExecutor.execute(callback, CallbackPayload.success(a.getTemplates()));
@@ -899,7 +906,7 @@ public class ConversationWebservice {
 
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation);
         if(callback != null){ //async execution with sync ACCEPTED response
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     if(a.getTemplates().size() > templateIdx){
                         log.debug("callback {} with {}", callback, a);
@@ -984,7 +991,7 @@ public class ConversationWebservice {
         }
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation, updatedAnalysis);
         if(callback != null){
-            analysis.whenComplete((a , e) -> {
+            analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     try {
                         SearchResult<? extends Result> result = execcuteQuery(client, conversation, a, templateIdx, creator);
@@ -1013,7 +1020,7 @@ public class ConversationWebservice {
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildResultURI(uriBuilder, conversationId, templateIdx, creator)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"template\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .body(execcuteQuery(client, conversation, getAnalysis(client, conversation), templateIdx, creator));
+                    .body(execcuteQuery(client, conversation, waitFor(analysisService.analyze(client, conversation)), templateIdx, creator));
         }
     }
 
@@ -1078,7 +1085,7 @@ public class ConversationWebservice {
 
     private void appendCallbackExecution(URI callback, Conversation conversation, CompletableFuture<Analysis> analysis) {
         final ObjectId conversationId = conversation.getId();
-        analysis.whenComplete((a , e) -> {
+        analysis.whenCompleteAsync((a , e) -> {
             if(a != null){
                 log.debug("callback {} with {}", callback, a);
                 callbackExecutor.execute(callback, CallbackPayload.success(a));
@@ -1164,22 +1171,15 @@ public class ConversationWebservice {
      * @param analysis the the analysis should be performed and included in the response
      * @return the ConversationData or <code>null</code> of <code>null</code> was parsed as conversation
      */
-    protected ConversationData toConversationData(final Client client, Conversation con, CompletableFuture<Analysis> analysis, boolean inclAnalysis) {
+    protected ConversationData toConversationData(final Client client, Conversation con, CompletableFuture<Analysis> analysis) {
         if(con == null){
             return null;
         }
         ConversationData cd = ConversationData.fromModel(con);
-        if(inclAnalysis){
-            cd.setAnalysis(analysis == null ? getAnalysis(client, con) : waitFor(analysis));
+        if(analysis != null){
+            cd.setAnalysis(waitFor(analysis));
         }
         return cd;
-    }
-    /**
-     * Helper method that calls {@link AnalysisService#analyze(Client, Conversation)} and
-     * cares about Error Handling
-     */
-    protected Analysis getAnalysis(Client client, Conversation con){
-        return waitFor(analysisService.analyze(client, con));
     }
     
     /**
