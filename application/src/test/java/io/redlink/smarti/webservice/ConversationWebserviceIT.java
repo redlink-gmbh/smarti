@@ -833,20 +833,29 @@ public class ConversationWebserviceIT {
                 .andExpect(jsonPath("[0].origin").value("System"))
                 .andExpect(jsonPath("[0].state").value("Suggested"))
                 .andExpect(jsonPath("[0].type").value("Person"))
-                .andExpect(jsonPath("[1].value").value("München"))
+                //NOTE: With InterestingTerms for historic conversations now activated we do find Peter Tester
+                //      also as Keyword!
+                .andExpect(jsonPath("[1].value").value("Peter Tester"))
                 .andExpect(jsonPath("[1].messageIdx").value(0))
-                .andExpect(jsonPath("[1].start").value(31))
-                .andExpect(jsonPath("[1].end").value(38))
+                .andExpect(jsonPath("[1].start").value(14))
+                .andExpect(jsonPath("[1].end").value(26))
                 .andExpect(jsonPath("[1].origin").value("System"))
                 .andExpect(jsonPath("[1].state").value("Suggested"))
-                .andExpect(jsonPath("[1].type").value("Place"))
-                .andExpect(jsonPath("[2].value").value("Berlin"))
+                .andExpect(jsonPath("[1].type").value("Keyword"))
+                .andExpect(jsonPath("[2].value").value("München"))
                 .andExpect(jsonPath("[2].messageIdx").value(0))
-                .andExpect(jsonPath("[2].start").value(44))
-                .andExpect(jsonPath("[2].end").value(50))
+                .andExpect(jsonPath("[2].start").value(31))
+                .andExpect(jsonPath("[2].end").value(38))
                 .andExpect(jsonPath("[2].origin").value("System"))
                 .andExpect(jsonPath("[2].state").value("Suggested"))
-                .andExpect(jsonPath("[2].type").value("Place"));
+                .andExpect(jsonPath("[2].type").value("Place"))
+                .andExpect(jsonPath("[3].value").value("Berlin"))
+                .andExpect(jsonPath("[3].messageIdx").value(0))
+                .andExpect(jsonPath("[3].start").value(44))
+                .andExpect(jsonPath("[3].end").value(50))
+                .andExpect(jsonPath("[3].origin").value("System"))
+                .andExpect(jsonPath("[3].state").value("Suggested"))
+                .andExpect(jsonPath("[3].type").value("Place"));
         
         //Assert that an analysis is stored
         Assert.assertEquals(1, analysisRepository.count());

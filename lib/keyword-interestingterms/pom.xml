@@ -47,6 +47,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>solr-iterms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.redlink.nlp</groupId>
             <artifactId>nlp-model</artifactId>
             <version>${redlinknlp.version}</version>

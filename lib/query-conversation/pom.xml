@@ -30,6 +30,13 @@
     <name>Query :: Previous Conversations</name>
 
     <dependencies>
+    
+        <dependency>
+            <groupId>io.redlink.smarti</groupId>
+            <artifactId>solr-iterms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    
         <!-- SolrLib dependencies for indexing conversations -->
         <dependency>
             <groupId>io.redlink.solrlib</groupId>

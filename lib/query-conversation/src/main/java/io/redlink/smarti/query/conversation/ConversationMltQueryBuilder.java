@@ -17,6 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
+import io.redlink.smarti.lib.solr.iterms.MltRequest;
 import io.redlink.smarti.model.Analysis;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.Message;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,7 +52,6 @@ import java.util.List;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
 import static org.apache.commons.lang3.math.NumberUtils.toInt;
-import static org.apache.solr.common.params.MoreLikeThisParams.SIMILARITY_FIELDS;
 
 /**
  * @author Thomas Kurz (thomas.kurz@redlink.co)
@@ -102,7 +103,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         if (solrRequest == null) {
             return new SearchResult<ConversationResult>(pageSize);
         }
-        log.debug("releated conversation request: {}", solrRequest);
+
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
             final NamedList<Object> response = solrClient.request(solrRequest);
             final QueryResponse solrResponse = new QueryResponse(response, solrClient);
@@ -112,7 +113,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
             for (SolrDocument solrDocument : solrResults) {
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
-                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID, solrDocument.get(FIELD_CONVERSATION_ID)));
+                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID,solrDocument.get(FIELD_CONVERSATION_ID)));
                 query.add("fq", FIELD_MESSAGE_IDXS + ":[1 TO *]");
                 query.setFields("*","score");
                 query.setSort("time", SolrQuery.ORDER.asc);
@@ -122,7 +123,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
                 results.add(toConverationResult(conf, solrDocument, answers.getResults(), template.getType()));
             }
-            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results);
+            return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results); 
         } catch (SolrServerException e) {
             throw new IOException(e);
         }
@@ -193,13 +194,15 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         }
 
         final SolrQuery solrQuery = new SolrQuery();
-        solrQuery.set(SIMILARITY_FIELDS, FIELD_MLT_CONTEXT);
         solrQuery.addField("*").addField("score");
         solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDXS));
-        solrQuery.addFilterQuery(String.format("-%s:\"%s\"", FIELD_CONVERSATION_ID, conversation.getId()));
+        solrQuery.addFilterQuery(String.format("-%s:%s", FIELD_CONVERSATION_ID, conversation.getId()));//do not suggest the current conversation
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
-
+        if(log.isDebugEnabled()) {
+            solrQuery.add(CommonParams.HEADER_ECHO_PARAMS,"all");
+        }
+        
         // #39 - paging
         solrQuery.setStart((int) offset);
         solrQuery.setRows(pageSize);
@@ -214,7 +217,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         addPropertyFilters(solrQuery, conversation, conf);
 
-        return new ConversationMltRequest(solrQuery, mltQuery.getContent());
+        return new MltRequest(solrQuery, mltQuery.getContent());
+
     }
 
 

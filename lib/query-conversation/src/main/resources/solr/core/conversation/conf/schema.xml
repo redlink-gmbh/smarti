@@ -74,7 +74,7 @@
  -->
     <!-- 
       Similarity search:
-        * for Conversations this holds the whole content of the conversation
+        * for Conversations this holds recent messages (configurable, default: 50)
         * for Messages the context (the content of some messages before/after incl. the content of the current message)
     -->
     <field name="mlt_context"           type="text_de"        indexed="true"  stored="false"  multiValued="true" termVectors="true"/>

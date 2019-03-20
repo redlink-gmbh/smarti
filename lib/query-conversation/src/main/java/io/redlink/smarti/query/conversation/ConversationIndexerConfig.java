@@ -14,11 +14,18 @@ public class ConversationIndexerConfig{
     public static final int DEFAULT_SYNC_DELAY = 15 * 1000; //15 sec
     public static final int MIN_SYNC_DELAY = 5 * 1000; //5sec
     
+    /**
+     * By default the last 50 messages are used as context for a conversation
+     */
+    public static final int DEFAULT_CONVERSATION_CONTEXT_SIZE = 50;
+    
     private int commitWithin = DEFAULT_COMMIT_WITHIN;
     private ConversationIndexerConfig.Message message = new Message();
     
     private CronTrigger reindexCron = null;
     private int syncDelay = DEFAULT_SYNC_DELAY;
+    
+    private int convCtxSize = DEFAULT_CONVERSATION_CONTEXT_SIZE;
     
     public static class Message {
         private int mergeTimeout = DEFAULT_MESSAGE_MERGE_TIMEOUT;
@@ -64,5 +71,27 @@ public class ConversationIndexerConfig{
     
     public int getSyncDelay() {
         return syncDelay;
+    }
+    /**
+     * Getter for the number of messages used a context for a conversation.
+     * <p>
+     * The text of the latest messages is used as context for the conversation.
+     * This context is indexed with the conversation for content based recommendations.
+     * @return the number of messages used as context for the conversation
+     */
+    public int getConvCtxSize() {
+        return convCtxSize;
+    }
+    /**
+     * Setter for the number of messages used as context for the conversation
+     * <p>
+     * The text of the latest messages is used as context for the conversation.
+     * This context is indexed with the conversation for content based recommendations.
+     * @param convCtxSize the number of messages in the context. 
+     * <code>0</code> to deactivate this feature; <code>&lt;0</code> to use the
+     * {@link #DEFAULT_CONVERSATION_CONTEXT_SIZE default}
+     */
+    public void setConvCtxSize(int convCtxSize) {
+        this.convCtxSize = convCtxSize < 0 ? DEFAULT_CONVERSATION_CONTEXT_SIZE : convCtxSize;
     }
 }

@@ -21,10 +21,12 @@ import static io.redlink.smarti.model.Message.Metadata.SKIP_ANALYSIS;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -33,19 +35,24 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collector;
 
-
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.MutableTriple;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -234,7 +241,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     }
     public void removeConversation(ObjectId conversationId, boolean commit) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            solr.deleteByQuery(getDeleteQuery(conversationId), config.getCommitWithin());
+            solr.deleteByQuery(getConversationDeleteQuery(conversationId), config.getCommitWithin());
             if(commit){
                 solr.commit();
             }
@@ -247,13 +254,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     @Override
     public void updateConversation(Conversation conversation, Date syncDate) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            SolrInputDocument doc = toSolrInputDocument(conversation);
-            if(doc != null){
-                doc.setField(FIELD_SYNC_DATE, syncDate);
-                solr.add(doc, config.getCommitWithin());
-            } else { //remove from index
-                solr.deleteByQuery(getDeleteQuery(conversation),config.getCommitWithin());
-            }
+            indexConversationAndMessages(solr, conversation, syncDate);
         } catch (IOException | SolrServerException e) {
             log.warn("Unable to index Conversation {} ({}: {})",conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
             log.debug("STACKTRACE",e);
@@ -262,12 +263,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     public void indexConversation(Conversation conversation, boolean commit) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            SolrInputDocument doc = toSolrInputDocument(conversation);
-            if(doc != null){
-                solr.add(doc, config.getCommitWithin());
-            } else { //remove from index
-                solr.deleteByQuery(getDeleteQuery(conversation), config.getCommitWithin());
-            }
+            indexConversationAndMessages(solr, conversation, null);
             if(commit){
                 solr.commit();
             }
@@ -277,16 +273,68 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }        
     }
 
-    private String getDeleteQuery(Conversation conversation) {
-        return getDeleteQuery(conversation.getId());
+    private void indexConversationAndMessages(SolrClient solr, Conversation conversation, Date syncDate)
+            throws SolrServerException, IOException {
+        SolrInputDocument doc = toSolrInputDocument(conversation, syncDate);
+        if(doc != null){ //we want to index this conversation
+            List<String> convCtx = indexMessages(solr, conversation, syncDate);
+            if(CollectionUtils.isEmpty(convCtx)) {
+                //we want the content of the messages also stored with the conversation (e.g. for highlighting)
+                doc.addField(FIELD_MESSAGES, convCtx);
+                //in addition store the content of the conversation also in the Solr MLT field
+                doc.addField(FIELD_MLT_CONTEXT, convCtx);
+            }
+            solr.add(doc, config.getCommitWithin());
+        } else { //remove from conversation AND all messages from the index
+            solr.deleteByQuery(getConversationDeleteQuery(conversation), config.getCommitWithin());
+        }
+    }
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s 
+     * for the parsed conversation (incl. docs for messages and the conversation itself
+     * Messages of the parsed conversation
+     * @param conversation
+     * @return
+     */
+    private String getConversationDeleteQuery(Conversation conversation) {
+        return getConversationDeleteQuery(conversation.getId());
     }
 
-    private String getDeleteQuery(ObjectId conversationId) {
-        return String.format("%s:%s OR %s:%s", FIELD_ID, conversationId.toHexString(), 
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s 
+     * for the parsed conversation (incl. docs for messages and the conversation itself
+     * Messages of the parsed conversation id
+     * @param conversation
+     * @return
+     */
+    private String getConversationDeleteQuery(ObjectId conversationId) {
+        return String.format("%s:%s OR %s:%s", 
+                FIELD_ID, conversationId.toHexString(), 
+                FIELD_CONVERSATION_ID, conversationId.toHexString());
+    }
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s for
+     * Messages of the parsed conversation
+     * @param conversation
+     * @return
+     */
+    private String getMessagesDeleteQuery(Conversation conversation) {
+        return getMessagesDeleteQuery(conversation.getId());
+    }
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s for
+     * Messages of the parsed conversation id
+     * @param conversation
+     * @return
+     */
+    private String getMessagesDeleteQuery(ObjectId conversationId) {
+        return String.format("%s:%s AND (%s:%s OR %s:%s)", 
+                FIELD_TYPE, TYPE_MESSAGE,
+                FIELD_ID, conversationId.toHexString(), 
                 FIELD_CONVERSATION_ID, conversationId.toHexString());
     }
 
-    private SolrInputDocument toSolrInputDocument(Conversation conversation) {
+    private SolrInputDocument toSolrInputDocument(Conversation conversation, Date syncDate) {
         final SolrInputDocument solrConversation = new SolrInputDocument();
 
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
@@ -307,44 +355,66 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         if(!conversation.getMessages().isEmpty()) {
             solrConversation.setField(FIELD_START_TIME, conversation.getMessages().get(0).getTime());
             solrConversation.setField(FIELD_END_TIME, conversation.getMessages().get(conversation.getMessages().size() -1).getTime());
-
-            List<SolrInputDocument> messages = new ArrayList<>(conversation.getMessages().size());
-            Message prevMessage = null;
-            SolrInputDocument prevSolrInputDoc = null;
-            for (int i = 0; i < conversation.getMessages().size(); i++) {
-                final Message m = conversation.getMessages().get(i);
-                if (!m.isPrivate() && !MapUtils.getBoolean(m.getMetadata(), SKIP_ANALYSIS, false)) {
-                    if ((prevMessage != null) && (prevSolrInputDoc != null)
-                            && Objects.equals(m.getUser(), prevMessage.getUser()) // Same user
-                            && Objects.equals(m.getOrigin(), prevMessage.getOrigin()) // "same" user
-                            && m.getTime().before(DateUtils.addSeconds(prevMessage.getTime(), config.getMessage().getMergeTimeout()))) { // within X seconds
-                        // merge messages;
-                        prevSolrInputDoc = mergeSolrUInputDoc(prevSolrInputDoc, toSolrInputDocument(m, i, conversation));
-
-                        messages.remove(messages.size() - 1);
-                    } else {
-                        prevSolrInputDoc = toSolrInputDocument(m, i, conversation);
-                    }
-                    messages.add(prevSolrInputDoc);
-                    prevMessage = m;
-
-                }
-            }
-            messages.forEach(m -> {
-                //we want the content of the messages also stored with the conversation (e.g. for highlighting)
-                solrConversation.addField(FIELD_MESSAGES, m.getFieldValues(FIELD_MESSAGE));
-                //in addition store the content of the conversation also in the Solr MLT field
-                solrConversation.addField(FIELD_MLT_CONTEXT, m.getFieldValues(FIELD_MESSAGE));
-            });
-            solrConversation.addChildDocuments(messages);
+        }
+        if(syncDate != null) {
+            solrConversation.setField(FIELD_SYNC_DATE, syncDate);
         }
 
         return solrConversation;
     }
 
-
+    /**
+     * Indexes the messages of the conversation in their own solr documents and returns the
+     * text of the {@link ConversationIndexerConfig#getConvCtxSize()} messages to be used
+     * later as contextual content when indexing the conversation
+     * @param client the solr client used to index the messages
+     * @param conversation the conversation
+     * @return the {@link ConversationIndexerConfig#getConvCtxSize()} messages to be used
+     * later as contextual content when indexing the conversation
+     */
+    private List<String> indexMessages(SolrClient client, Conversation conversation, Date syncDate) {
+        MutablePair<Message, SolrInputDocument> prev = new MutablePair<>();
+        AtomicInteger idx = new AtomicInteger();
+        //(1) delete all messages for this conversation first (so that we do not keep anthem messages in the index)
+        try {
+            client.deleteByQuery(getMessagesDeleteQuery(conversation));
+        } catch (IOException | SolrServerException e) {
+            log.warn("Unable to delete messages of Conversation {} before reindexing ({}: {})", conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
+            log.debug("STACKTRACE",e);
+        }
+        return conversation.getMessages().stream()
+            .filter(msg -> !msg.isPrivate() && !MapUtils.getBoolean(msg.getMetadata(), SKIP_ANALYSIS, false))
+            .map(msg -> new MutableTriple<>(idx.getAndIncrement(), msg, (SolrInputDocument)null))
+            .map(t -> {
+                t.right = toSolrInputDocument(t.middle, t.getLeft(), conversation, syncDate);
+                return t;
+            })
+            .filter(t -> {
+                if(prev.left != null && prev.right != null
+                    && Objects.equals(t.middle.getUser(), prev.left.getUser()) // Same user
+                    && Objects.equals(t.middle.getOrigin(), prev.left.getOrigin()) // "same" user
+                    && t.middle.getTime().before(DateUtils.addSeconds(prev.left.getTime(), config.getMessage().getMergeTimeout()))) { // within X seconds
+                        mergeSolrUInputDoc(prev.right, t.right);
+                        return false; //filter this message as it was merged
+                } else {
+                    return true;
+                }
+            })
+            .map(t -> { //index the documents (as side effect)
+                try {
+                    client.add(t.right, config.getCommitWithin());
+                } catch (IOException | SolrServerException e) {
+                    log.warn("Unable to index Message {} of Conversation {} ({}: {})", t.middle.getId(), conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
+                    log.debug("STACKTRACE",e);
+                }
+                //return the content as it is needed for further processing
+                return (String)t.right.getFieldValue(FIELD_MESSAGE);
+            })
+            .collect(lastN(config.getConvCtxSize()));
+    }
     
-    private SolrInputDocument toSolrInputDocument(Message message, int i, Conversation conversation) {
+    
+    private SolrInputDocument toSolrInputDocument(Message message, int i, Conversation conversation, Date syncDate) {
         final SolrInputDocument solrMsg = new SolrInputDocument();
         String id = new StringBuilder(conversation.getId().toHexString()).append('_')
                 //we prefer to use the messageId but some system might not provide a such so we have a fallback
@@ -386,6 +456,10 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         
         // TODO: Add keywords, links, ...
 
+        if(syncDate != null) {
+            solrMsg.setField(FIELD_SYNC_DATE, syncDate);
+        }
+        
         return solrMsg;
     }
     
@@ -609,5 +683,19 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }
         
     }
-
+    /*
+     * see https://stackoverflow.com/a/30477722/3932024
+     */
+    public static <T> Collector<T, ?, List<T>> lastN(int n) {
+        return Collector.<T, Deque<T>, List<T>>of(ArrayDeque::new, (acc, t) -> {
+            if(acc.size() == n)
+                acc.pollFirst();
+            acc.add(t);
+        }, (acc1, acc2) -> {
+            while(acc2.size() < n && !acc1.isEmpty()) {
+                acc2.addFirst(acc1.pollLast());
+            }
+            return acc2;
+        }, ArrayList::new);
+    }
 }
