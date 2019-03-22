@@ -27,10 +27,10 @@ ADD target/classes/db-migration/ /opt/db-migration/
 # smarti shoud run as it's own user
 RUN groupadd -r smarti && \
     useradd -r -g smarti -d ${HOME} -s /sbin/nologin -c "smarti docker user" smarti && \
-    chown -R smarti:smarti ${HOME}
+    chown -R smarti:0 ${HOME}
 
-RUN chown -R smarti:smarti /opt/ext/
-USER smarti:smarti
+RUN chown -R smarti:0 /opt/ext/
+USER smarti:0
 
 VOLUME ${HOME}
 WORKDIR ${HOME}
