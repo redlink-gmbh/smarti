@@ -25,11 +25,12 @@ ADD target/dependency/db-migrator.jar /opt/db-migrator.jar
 ADD target/classes/db-migration/ /opt/db-migration/
 
 # smarti shoud run as it's own user
-RUN groupadd -r smarti && \
-    useradd -r -g smarti -d ${HOME} -s /sbin/nologin -c "smarti docker user" smarti && \
-    chown -R smarti:0 ${HOME}
+RUN useradd -r -g 0 -d ${HOME} -s /sbin/nologin -c "smarti docker user" smarti && \
+    chown -R smarti:0 ${HOME} && \
+    chmod -R g=u ${HOME}
 
-RUN chown -R smarti:0 /opt/ext/
+RUN chown -R smarti:0 /opt/ext/ && \
+    chmod -R g=u /opt/ext/
 USER smarti:0
 
 VOLUME ${HOME}
