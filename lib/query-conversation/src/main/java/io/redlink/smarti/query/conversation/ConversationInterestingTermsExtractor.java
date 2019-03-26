@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_INTERESTING_TERMS;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_OWNER;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
 
@@ -52,7 +52,7 @@ public final class ConversationInterestingTermsExtractor extends InterestingTerm
         this.conversationCore = conversationCore;
         this.mltConfig = MltConfig.getDefault();
         //TODO: multi lingual support .. currently conversations are indexed with a German language configuration
-        mltConfig.setSimilarityFields("de", Arrays.asList(FIELD_INTERESTING_TERMS));
+        mltConfig.setSimilarityFields("de", Arrays.asList(FIELD_MESSAGE));
         //we only want to consider single Messages (no conversations as they duplicate the content)
         mltConfig.setFilterQuery(String.format("%s:%s",FIELD_TYPE, ConversationIndexConfiguration.TYPE_MESSAGE));
     }

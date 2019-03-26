@@ -1,4 +1,4 @@
-ARG SOLR_VERSION=7.2-alpine
+ARG SOLR_VERSION=7-alpine
 FROM solr:$SOLR_VERSION
 
 LABEL maintainer=jakob.frank@redlink.co

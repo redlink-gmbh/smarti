@@ -124,13 +124,13 @@ public class ConversationSolrIT {
         final Conversation conversation = buildConversation(client,"Servus Hasso, wie geht's denn so?");
 
         conversationService.update(client, conversation);
-        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
 
         assertThat(countDocs(), Matchers.equalTo(docCount));
 
         conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversationService.update(client, conversation);
-        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
         assertThat(countDocs(), Matchers.greaterThan(docCount));
     }
 
@@ -150,11 +150,11 @@ public class ConversationSolrIT {
         conversationService.update(client, conversation1);
         conversationService.update(client, conversation2);
 
-        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
 
         assertThat(countDocs(), Matchers.equalTo(4L));
 
-        ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, null);
+        ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, conversationIndexer.indexConfig, null);
 
         // TODO does not make sense to build a query without a template...
         // hassoMlt.doBuildQuery(null, null, conversation3);

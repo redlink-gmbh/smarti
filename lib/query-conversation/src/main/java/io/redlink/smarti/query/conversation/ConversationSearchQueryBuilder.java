@@ -63,8 +63,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     @Autowired
     public ConversationSearchQueryBuilder(SolrCoreContainer solrServer, 
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore,
-            TemplateRegistry registry) {
-        super(CREATOR_NAME, solrServer, conversationCore, registry);
+            ConversationIndexerConfig indexConfig, TemplateRegistry registry) {
+        super(CREATOR_NAME, indexConfig, solrServer, conversationCore, registry);
     }
 
 //    @Override
@@ -123,7 +123,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     protected ConversationSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         List<Token> keywords = getTokens(ROLE_KEYWORD, intent, analysis);
         List<Token> terms = getTokens(ROLE_TERM, intent, analysis);
-        int contextStart = ConversationContextUtils.getContextStart(conversation.getMessages(),
+        int contextStart = ConversationContextUtils.getContextStart(indexConfig, conversation.getMessages(),
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE);
 
         final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName(conf));
@@ -222,7 +222,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     
     private String buildContextQuery(Conversation conv, ComponentConfiguration conf) throws IOException, SolrServerException{
         String context = conv.getMessages().subList(
-                ConversationContextUtils.getContextStart(conv.getMessages(), 
+                ConversationContextUtils.getContextStart(indexConfig, conv.getMessages(), 
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE),
                 conv.getMessages().size()).stream()
             .filter(m -> !MapUtils.getBoolean(m.getMetadata(), Message.Metadata.SKIP_ANALYSIS, false))
@@ -240,7 +240,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         final SolrQuery solrQuery = new SolrQuery();
         //search interesting terms in the conversations (as those do not have overlapping
         //contexts as messages)
-        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_CONVERSATION));
+        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         //respect client filters
         addClientFilter(solrQuery, conv);
         //and also property related filters
@@ -250,7 +250,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
             addCompletedFilter(solrQuery);
         }
         //we search for interesting terms in the MLT Context field
-        solrQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS, FIELD_MLT_CONTEXT);
+        solrQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS, FIELD_MESSAGE);
         solrQuery.add(MoreLikeThisParams.MAX_QUERY_TERMS, String.valueOf(10));
         solrQuery.add(MoreLikeThisParams.MIN_WORD_LEN, String.valueOf(3));
         

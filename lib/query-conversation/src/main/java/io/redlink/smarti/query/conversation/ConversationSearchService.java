@@ -98,7 +98,7 @@ public class ConversationSearchService {
         log.debug("search[clients: {}, params:{}", clients, queryParams);
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, PARAM_EXCLUDES));
         solrParams.set(CommonParams.QT, "/query");
-        solrParams.add(CommonParams.FL, FIELD_ID,FIELD_MESSAGE_IDS,FIELD_CONVERSATION_ID,"score");
+        solrParams.add(CommonParams.FL, FIELD_ID,FIELD_MESSAGE_IDS,FIELD_CONVERSATION_ID,FIELD_MESSAGE, "score");
         if (clients != null) {
             if (clients.isEmpty()) {
               return new SearchResult<>();
@@ -129,7 +129,6 @@ public class ConversationSearchService {
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
 
             final QueryResponse queryResponse = solrClient.query(solrParams);
-
 
             return fromQueryResponse(queryResponse, (g) -> readConversation(g, ctxBefore, ctxAfter));
 

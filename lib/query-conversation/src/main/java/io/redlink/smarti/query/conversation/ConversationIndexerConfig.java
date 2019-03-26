@@ -1,7 +1,15 @@
 package io.redlink.smarti.query.conversation;
 
+import static io.redlink.smarti.model.Message.Metadata.SKIP_ANALYSIS;
+
+import java.util.Objects;
+
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.scheduling.support.CronTrigger;
+
+import io.redlink.smarti.model.Message.Metadata;
 
 @ConfigurationProperties(prefix = "smarti.index.conversation")
 public class ConversationIndexerConfig{
@@ -27,8 +35,10 @@ public class ConversationIndexerConfig{
     
     private int convCtxSize = DEFAULT_CONVERSATION_CONTEXT_SIZE;
     
+    
     public static class Message {
         private int mergeTimeout = DEFAULT_MESSAGE_MERGE_TIMEOUT;
+        private boolean indexPrivate = false;
         
         public void setMergeTimeout(int mergeTimeout) {
             this.mergeTimeout = mergeTimeout < 0 ? DEFAULT_MESSAGE_MERGE_TIMEOUT : mergeTimeout;
@@ -36,6 +46,14 @@ public class ConversationIndexerConfig{
         
         public int getMergeTimeout() {
             return mergeTimeout;
+        }
+        
+        public boolean isIndexPrivate() {
+            return indexPrivate;
+        }
+        
+        public void setIndexPrivate(boolean indexPrivate) {
+            this.indexPrivate = indexPrivate;
         }
     }
     
@@ -94,4 +112,30 @@ public class ConversationIndexerConfig{
     public void setConvCtxSize(int convCtxSize) {
         this.convCtxSize = convCtxSize < 0 ? DEFAULT_CONVERSATION_CONTEXT_SIZE : convCtxSize;
     }
+    
+    /**
+     * Returns <code>true</code> if the parsed message is indexed or <code>false</code> if
+     * it should not be indexed because its private (and indexing of private messages is disabled) 
+     * or {@link Metadata#SKIP_ANALYSIS} is set
+     * @param msg the message to check
+     * @return the state: <code>true</code> to index <code>false</code> to skip
+     */
+    public boolean isMessageIndexed(io.redlink.smarti.model.Message msg) {
+        return (!msg.isPrivate() || getMessage().isIndexPrivate()) && !MapUtils.getBoolean(msg.getMetadata(), SKIP_ANALYSIS, false);
+    }
+    /**
+     * Checks if two message should be indexed into a single Solr {@link Document} as they where
+     * sent by the same user within a short period of time
+     * @param prev
+     * @param current
+     * @return
+     */
+    public boolean isMessageMerged(io.redlink.smarti.model.Message prev, io.redlink.smarti.model.Message current) {
+        return prev != null && current != null &&
+                Objects.equals(current.getUser(), prev.getUser()) &&// Same user
+                Objects.equals(current.getOrigin(), prev.getOrigin()) &&// "same" user
+                current.getTime().before(DateUtils.addSeconds(prev.getTime(), getMessage().getMergeTimeout()));
+    }
+
+    
 }

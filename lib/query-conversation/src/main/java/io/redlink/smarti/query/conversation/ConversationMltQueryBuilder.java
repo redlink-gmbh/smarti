@@ -29,6 +29,8 @@ import io.redlink.smarti.model.result.Result;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -43,11 +45,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
+import org.springframework.util.NumberUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.*;
@@ -65,8 +76,8 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     @Autowired
     public ConversationMltQueryBuilder(SolrCoreContainer solrServer, 
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore, 
-            TemplateRegistry registry) {
-        super(CREATOR_NAME, solrServer, conversationCore, registry);
+            ConversationIndexerConfig indexConfig, TemplateRegistry registry) {
+        super(CREATOR_NAME, indexConfig, solrServer, conversationCore, registry);
     }
 
     @Override
@@ -111,17 +122,31 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
             final List<ConversationResult> results = new ArrayList<>();
             for (SolrDocument solrDocument : solrResults) {
+                //we need to receive the context for the message
+                long[] msgIdxs = solrDocument.getFieldValues(FIELD_MESSAGE_IDXS).stream()
+                        .filter(Objects::nonNull).map(Objects::toString)
+                        .mapToLong(v -> NumberUtils.parseNumber(v,Long.class))
+                        .sorted()
+                        .toArray();
+                Object val = solrDocument.getFirstValue(FIELD_MESSAGE_CONTEXT_START);
+                long startIdx = val instanceof Number ? ((Number)val).longValue() : 
+                    val != null ? NumberUtils.parseNumber(Objects.toString(val),Long.class) :
+                        Math.max(0, msgIdxs[0]-3);
+                val = solrDocument.getFirstValue(FIELD_MESSAGE_CONTEXT_END);
+                long endIdx = val instanceof Number ? ((Number)val).longValue() : 
+                    val != null ? NumberUtils.parseNumber(Objects.toString(val), Long.class) :
+                        msgIdxs[msgIdxs.length-1] + 3;
                 //get the answers /TODO hacky, should me refactored (at least ordered by rating)
                 SolrQuery query = new SolrQuery("*:*");
-                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID,solrDocument.get(FIELD_CONVERSATION_ID)));
-                query.add("fq", FIELD_MESSAGE_IDXS + ":[1 TO *]");
+                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID,solrDocument.getFirstValue(FIELD_CONVERSATION_ID)));
+                query.add("fq", FIELD_MESSAGE_IDXS + ":["+startIdx+" TO "+endIdx+"]");
                 query.setFields("*","score");
-                query.setSort("time", SolrQuery.ORDER.asc);
+                query.setSort(FIELD_TIME, SolrQuery.ORDER.asc);
                 //query.setRows(3);
 
-                QueryResponse answers = solrClient.query(query);
+                QueryResponse context = solrClient.query(query);
 
-                results.add(toConverationResult(conf, solrDocument, answers.getResults(), template.getType()));
+                results.add(toConverationResult(conf, solrDocument, context.getResults(), template.getType()));
             }
             return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results); 
         } catch (SolrServerException e) {
@@ -149,10 +174,16 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         return conversationResult;
     }
 
-    private ConversationResult toConverationResult(ComponentConfiguration conf, SolrDocument question, SolrDocumentList answers, String type) {
-        ConversationResult result = toConversationResult(conf, question, type);
-        for(SolrDocument answer : answers) {
-            result.addAnswer(toConversationResult(conf, answer,type));
+    private ConversationResult toConverationResult(ComponentConfiguration conf, SolrDocument qResult, SolrDocumentList context, String type) {
+        //NOTE: now that public channels are indexed and we can no longer assume that the first message 
+        ///     is the question, we need to build the conversation result based on the context of the returned message
+        ConversationResult result = null;
+        for(SolrDocument mResult : context) {
+            if(result == null) {
+                result = toConversationResult(conf, mResult, type);
+            } else {
+                result.addAnswer(toConversationResult(conf, mResult,type));
+            }
         }
         return result;
     }
@@ -161,17 +192,12 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
     protected ConversationMltQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         if (conversation.getMessages().isEmpty()) return null;
 
-        //The context is the content of relevant messages (see #getContextStart(..) for more information
-        String context = conversation.getMessages().subList(
-                ConversationContextUtils.getContextStart(conversation.getMessages(),
-                    MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE), 
-                conversation.getMessages().size()).stream()
-            .sequential()
-            .map(Message::getContent)
-            .reduce(null, (s, e) -> {
-                if (s == null) return e;
-                return s + "\n\n" + e;
-            });
+        String context = getMltContext(conversation)
+                .map(Message::getContent)
+                .reduce(null, (s, e) -> {
+                    if (s == null) return e;
+                    return s + "\n\n" + e;
+                });
         
         if(StringUtils.isBlank(context)){
             return null; //no content in the conversation to search for releated!
@@ -186,18 +212,48 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
                 .setState(State.Suggested)
                 .setContent(context.toString());
     }
+
+    private Stream<Message> getMltContext(Conversation conversation) {
+        //The context is the content of relevant messages (see #getContextStart(..) for more information
+        return conversation.getMessages().subList(
+                ConversationContextUtils.getContextStart(indexConfig, conversation.getMessages(),
+                    MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE), 
+                conversation.getMessages().size()).stream()
+            .sequential()
+            .filter(indexConfig::isMessageIndexed);
+    }
     
     private QueryRequest buildSolrRequest(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis, long offset, int pageSize, MultiValueMap<String, String> queryParams) {
-        final ConversationMltQuery mltQuery = buildQuery(conf, intent, conversation, analysis);
-        if (mltQuery == null) {
+        Collection<Message> ctxMsg = getMltContext(conversation)
+                .collect(Collectors.toList());
+
+        if(ctxMsg.isEmpty()) {
             return null;
         }
-
+        Set<String> ctxMsgDocIds = ctxMsg.stream().map(mid -> ConversationIndexer.getSolrDocId(conversation,mid)).collect(Collectors.toSet());
+        String mltContext = ctxMsg.stream()
+                .map(Message::getContent)
+                .reduce(null, (s, e) -> {
+                    if (s == null) return e;
+                    return s + "\n\n" + e;
+                });
+        
+        if(StringUtils.isBlank(mltContext)) {
+            return null;
+        }
+        
         final SolrQuery solrQuery = new SolrQuery();
         solrQuery.addField("*").addField("score");
         solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
-        solrQuery.addFilterQuery(String.format("%s:0",FIELD_MESSAGE_IDXS));
-        solrQuery.addFilterQuery(String.format("-%s:%s", FIELD_CONVERSATION_ID, conversation.getId()));//do not suggest the current conversation
+        //we use the message context for MLT queries
+        solrQuery.setMoreLikeThisFields(FIELD_MESSAGE, FIELD_MESSAGE_CONTEXT);
+        //#302 needed a full rewrite of how the MLTQueryBuilder works
+        //NOTE: That also the index is now built completely different to make this work
+        //collapse on sections
+        solrQuery.addFilterQuery(String.format("{!collapse field=%s}", FIELD_MESSAGE_CONTEXT_ID));
+        //exclude all messages of the MLT context
+        solrQuery.addFilterQuery(buildTermsQuery(FIELD_MESSAGE_CONTEXT_IDS, ctxMsgDocIds,true));
+
         solrQuery.addSort("score", SolrQuery.ORDER.desc).addSort(FIELD_VOTE, SolrQuery.ORDER.desc);
         if(log.isDebugEnabled()) {
             solrQuery.add(CommonParams.HEADER_ECHO_PARAMS,"all");
@@ -217,9 +273,36 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         addPropertyFilters(solrQuery, conversation, conf);
 
-        return new MltRequest(solrQuery, mltQuery.getContent());
+        return new MltRequest(solrQuery, mltContext);
 
     }
 
+    /**
+     * Builds a query that requires one of the parsed terms by using the Solr terms
+     * query parser.
+     * @param field the field. MUST NOT be <code>null</code> nor blank
+     * @param values the values
+     * @param exclude if <code>true</code> the terms query is inverted
+     * @return the terms filter
+     * @throws IllegalArgumentException if <code>null</code> or blank is parsed as field
+     * @see <a href="https://lucene.apache.org/solr/guide/7_2/other-parsers.html#terms-query-parser">https://lucene.apache.org/solr/guide/7_2/other-parsers.html#terms-query-parser</a>
+     */
+    private String buildTermsQuery(String field, Set<?> values, boolean exclude){
+        if(StringUtils.isBlank(field)){
+            throw new IllegalArgumentException("The parsed field MUST NOT be NULL nor blank");
+        }
+
+        //NOTE: we create an empty terms filter if no values are parsed
+        if (CollectionUtils.isEmpty(values)) {
+            values = Collections.emptySet();
+        }
+
+        return String.format("%s{!terms f=%s}", exclude ? "-" : "", field) +
+                values.stream()
+                        .filter(Objects::nonNull)
+                        .map(Objects::toString)
+                        .filter(StringUtils::isNotBlank)
+                        .collect(Collectors.joining(","));
+    }
 
 }

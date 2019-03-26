@@ -17,9 +17,11 @@
 
 package io.redlink.smarti.query.conversation;
 
-import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MLT_CONTEXT;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGE;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_MESSAGES;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.FIELD_TYPE;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.TYPE_CONVERSATION;
+import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.TYPE_MESSAGE;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_KEYWORD;
 import static io.redlink.smarti.query.conversation.RelatedConversationTemplateDefinition.ROLE_TERM;
 
@@ -73,15 +75,15 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
     @Autowired
     public RocketChatSearchQueryBuilder(SolrCoreContainer solrServer, 
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore,
-            TemplateRegistry registry) {
-        super(CREATOR_NAME, solrServer, conversationCore, registry);
+            ConversationIndexerConfig indexConfig, TemplateRegistry registry) {
+        super(CREATOR_NAME, indexConfig, solrServer, conversationCore, registry);
     }
 
     @Override
     protected RocketChatSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         List<Token> keywords = getTokens(ROLE_KEYWORD, intent, analysis);
         List<Token> terms = getTokens(ROLE_TERM, intent, analysis);
-        int contextStart = ConversationContextUtils.getContextStart(conversation.getMessages(),
+        int contextStart = ConversationContextUtils.getContextStart(indexConfig, conversation.getMessages(),
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE);
 
         final RocketChatSearchQuery query = new RocketChatSearchQuery(getCreatorName(conf));
@@ -166,7 +168,7 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
     }
     
     private void buildContextQuery(Conversation conv, ComponentConfiguration conf, RocketChatSearchQuery query) throws IOException, SolrServerException{
-        int cxtStart = ConversationContextUtils.getContextStart(conv.getMessages(), 
+        int cxtStart = ConversationContextUtils.getContextStart(indexConfig, conv.getMessages(), 
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE);
         List<Message> ctxMsgs = conv.getMessages().subList(cxtStart, conv.getMessages().size());
         //add the context messages to Ids of the Messages
@@ -187,7 +189,7 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
         final SolrQuery solrQuery = new SolrQuery();
         //search interesting terms in the conversations (as those do not have overlapping
         //contexts as messages)
-        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_CONVERSATION));
+        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         //respect client filters
         addClientFilter(solrQuery, conv);
         //and also property related filters
@@ -196,7 +198,7 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
         if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
             addCompletedFilter(solrQuery);
         }
-        solrQuery.addMoreLikeThisField(FIELD_MLT_CONTEXT);
+        solrQuery.addMoreLikeThisField(FIELD_MESSAGE);
         solrQuery.setMoreLikeThisMaxQueryTerms(10);
         solrQuery.setMoreLikeThisMinWordLen(3);
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {

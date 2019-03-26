@@ -69,12 +69,14 @@ public abstract class ConversationQueryBuilder extends QueryBuilder<ComponentCon
     
     public static final boolean DEFAULT_EXCLUDE_CURRENT = true;
     
+    protected final ConversationIndexerConfig indexConfig;
     
     protected final SolrCoreContainer solrServer;
     protected final SolrCoreDescriptor conversationCore;
 
-    public ConversationQueryBuilder(String creatorName, SolrCoreContainer solrServer, SolrCoreDescriptor conversationCore, TemplateRegistry registry) {
+    public ConversationQueryBuilder(String creatorName, ConversationIndexerConfig indexConfig, SolrCoreContainer solrServer, SolrCoreDescriptor conversationCore, TemplateRegistry registry) {
         super(ComponentConfiguration.class, registry);
+        this.indexConfig = indexConfig;
         this.solrServer = solrServer;
         this.conversationCore = conversationCore;
     }
