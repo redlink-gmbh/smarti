@@ -2,12 +2,9 @@ package io.redlink.smarti.webservice;
 
 import static java.nio.file.Files.createTempDirectory;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,9 +27,7 @@ import io.redlink.smarti.repositories.AnalysisRepository;
 import io.redlink.smarti.repositories.AuthTokenRepository;
 import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthTokenService;
-import io.redlink.smarti.services.AuthenticationService;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -54,17 +49,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration.WebMvcAutoConfigurationAdapter.FaviconConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.annotation.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -82,10 +72,8 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 
 import io.redlink.smarti.Application;
-import io.redlink.smarti.health.MongoHealthCheck;
 import io.redlink.smarti.health.MongoHealthCheck.DbVersion;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message.Origin;
@@ -1593,14 +1581,21 @@ public class ConversationWebserviceIT {
                 .andExpect(jsonPath("docs").isArray())
                 .andExpect(jsonPath("docs[*].conversationId",Matchers.contains(expectedResults)))
                 .andExpect(jsonPath("docs[0].replySuggestion").value(bestMessage.getContent()))
-                .andExpect(jsonPath("docs[0].content").value(bestMessage.getContent()))
                 .andExpect(jsonPath("docs[0].score").isNumber())
-                .andExpect(jsonPath("docs[0].messageId").value(bestMessage.getId()))
+                .andExpect(jsonPath("docs[0].messageIds", Matchers.contains(bestMessage.getId())))
                 .andExpect(jsonPath("docs[0].userName").value(bestMessage.getUser().getDisplayName()))
-                .andExpect(jsonPath("docs[0].messageIdx").value(0))
+                .andExpect(jsonPath("docs[0].messageIdxs",Matchers.contains(0)))
                 .andExpect(jsonPath("docs[0].votes").value(0))
                 .andExpect(jsonPath("docs[0].timestamp").value(bestMessage.getTime().getTime()))
-                .andExpect(jsonPath("docs[0].creator").value(query.getCreator()));
+                .andExpect(jsonPath("docs[0].creator").value(query.getCreator()))
+                .andExpect(jsonPath("docs[0].section").isArray())
+                .andExpect(jsonPath("docs[0].section[0].content").value(bestMessage.getContent()))
+                .andExpect(jsonPath("docs[0].section[0].messageIds", Matchers.contains(bestMessage.getId())))
+                .andExpect(jsonPath("docs[0].section[0].messageIdxs",Matchers.contains(0)))
+                .andExpect(jsonPath("docs[0].section[0].userName").value(bestMessage.getUser().getDisplayName()))
+                .andExpect(jsonPath("docs[0].section[0].timestamp").value(bestMessage.getTime().getTime()))
+                .andExpect(jsonPath("docs[0].section[0].votes").value(0))
+                ;
         
     }
     

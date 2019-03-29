@@ -58,6 +58,7 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_CONVERSATION_ID = "conversation_id";
     public static final String FIELD_MESSAGE_IDS = "message_ids";
     public static final String FIELD_MESSAGE_IDXS = "message_idxs";
+    public static final String FIELD_MESSAGE_IDX_START = "message_idx_start";
     public static final String FIELD_MESSAGE_CONTEXT_ID = "message_ctx_id";
     public static final String FIELD_MESSAGE_CONTEXT = "message_ctx";
     public static final String FIELD_MESSAGE_CONTEXT_IDS = "message_ctx_ids";

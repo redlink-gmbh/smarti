@@ -471,6 +471,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         solrMsg.setField(FIELD_CONVERSATION_ID, conv.getId().toHexString());
         solrMsg.setField(FIELD_MESSAGE_IDS, message.getId());
         solrMsg.setField(FIELD_MESSAGE_IDXS, idx);
+        solrMsg.setField(FIELD_MESSAGE_IDX_START, idx); //the start idx (used for sorting
         //#150 index the current version of the index so that we can detect the need of a
         //full re-index after a software update on startup
         solrMsg.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);

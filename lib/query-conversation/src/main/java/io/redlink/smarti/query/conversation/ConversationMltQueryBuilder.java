@@ -26,6 +26,7 @@ import io.redlink.smarti.model.State;
 import io.redlink.smarti.model.Template;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.model.result.Result;
+import io.redlink.smarti.query.conversation.ConversationSectionResult.SectionMessage;
 import io.redlink.smarti.services.TemplateRegistry;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
@@ -34,6 +35,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrQuery.ORDER;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -41,6 +44,8 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -71,6 +76,8 @@ import static org.apache.commons.lang3.math.NumberUtils.toInt;
 @Component
 public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
+    private static final Logger log = LoggerFactory.getLogger(ConversationMltQueryBuilder.class);
+    
     public static final String CREATOR_NAME = "query_related_mlt";
 
     @Autowired
@@ -112,7 +119,7 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         final QueryRequest solrRequest = buildSolrRequest(conf, template, conversation, analysis, offset, pageSize, queryParams);
         if (solrRequest == null) {
-            return new SearchResult<ConversationResult>(pageSize);
+            return new SearchResult<ConversationSectionResult>(pageSize);
         }
 
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
@@ -120,51 +127,43 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
             final QueryResponse solrResponse = new QueryResponse(response, solrClient);
             final SolrDocumentList solrResults = solrResponse.getResults();
 
-            final List<ConversationResult> results = new ArrayList<>();
+            final List<ConversationSectionResult> results = new ArrayList<>();
             for (SolrDocument solrDocument : solrResults) {
                 //we need to receive the context for the message
-                long[] msgIdxs = solrDocument.getFieldValues(FIELD_MESSAGE_IDXS).stream()
-                        .filter(Objects::nonNull).map(Objects::toString)
-                        .mapToLong(v -> NumberUtils.parseNumber(v,Long.class))
-                        .sorted()
-                        .toArray();
-                Object val = solrDocument.getFirstValue(FIELD_MESSAGE_CONTEXT_START);
-                long startIdx = val instanceof Number ? ((Number)val).longValue() : 
-                    val != null ? NumberUtils.parseNumber(Objects.toString(val),Long.class) :
-                        Math.max(0, msgIdxs[0]-3);
-                val = solrDocument.getFirstValue(FIELD_MESSAGE_CONTEXT_END);
-                long endIdx = val instanceof Number ? ((Number)val).longValue() : 
-                    val != null ? NumberUtils.parseNumber(Objects.toString(val), Long.class) :
-                        msgIdxs[msgIdxs.length-1] + 3;
-                //get the answers /TODO hacky, should me refactored (at least ordered by rating)
-                SolrQuery query = new SolrQuery("*:*");
-                query.add("fq",String.format("%s:\"%s\"",FIELD_CONVERSATION_ID,solrDocument.getFirstValue(FIELD_CONVERSATION_ID)));
-                query.add("fq", FIELD_MESSAGE_IDXS + ":["+startIdx+" TO "+endIdx+"]");
-                query.setFields("*","score");
-                query.setSort(FIELD_TIME, SolrQuery.ORDER.asc);
-                //query.setRows(3);
-
-                QueryResponse context = solrClient.query(query);
-
-                results.add(toConverationResult(conf, solrDocument, context.getResults(), template.getType()));
+                String section = String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_CONTEXT_ID));
+                SolrQuery sectionQuery = new SolrQuery("*:*");
+                sectionQuery.addFilterQuery(String.format("%s:%s",FIELD_MESSAGE_CONTEXT_ID, section));
+                sectionQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE)); //only messages
+                sectionQuery.setFields("*"); //TODO: only the fields we really need!
+                addClientFilter(sectionQuery, conversation); //add other required filters
+                sectionQuery.addSort(FIELD_MESSAGE_IDX_START, ORDER.asc); //in the correct order
+                results.add(toConverationResult(conf, solrDocument, 
+                        new QueryRequest(sectionQuery).process(solrClient).getResults(), 
+                        template.getType()));
             }
             return new SearchResult<>(solrResults.getNumFound(), solrResults.getStart(), pageSize, results); 
         } catch (SolrServerException e) {
+            log.error("Exception during execution of /mlt query '{}'", solrRequest.getParams(), e);
             throw new IOException(e);
-        }
+        } catch (final Throwable e) { 
+            log.error("Exception during execution of /mlt query '{}'", solrRequest.getParams(), e);
+            throw e;
+        } 
     }
 
-    private ConversationResult toConversationResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
-        final ConversationResult conversationResult = new ConversationResult(getCreatorName(conf));
+    private ConversationSectionResult toConversationSectionResult(ComponentConfiguration conf, SolrDocument solrDocument, String type) {
+        final ConversationSectionResult conversationResult = new ConversationSectionResult(getCreatorName(conf));
 
         conversationResult.setScore(Double.parseDouble(String.valueOf(solrDocument.getFieldValue("score"))));
+        conversationResult.setMessageIds(solrDocument.getFieldValues(FIELD_MESSAGE_IDS).stream()
+                .map(String::valueOf).collect(Collectors.toList()));
+        conversationResult.setMessageIdxs(solrDocument.getFieldValues(FIELD_MESSAGE_IDXS).stream()
+                .map(v -> parseNumber(v,Long.class))
+                .collect(Collectors.toList()));
 
-        conversationResult.setContent(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
-        conversationResult.setReplySuggestion(conversationResult.getContent());
+        conversationResult.setReplySuggestion(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
 
         conversationResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
-        conversationResult.setMessageId(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_IDS)));
-        conversationResult.setMessageIdx(Integer.parseInt(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE_IDXS))));
 
         conversationResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
 
@@ -174,20 +173,31 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         return conversationResult;
     }
 
-    private ConversationResult toConverationResult(ComponentConfiguration conf, SolrDocument qResult, SolrDocumentList context, String type) {
-        //NOTE: now that public channels are indexed and we can no longer assume that the first message 
-        ///     is the question, we need to build the conversation result based on the context of the returned message
-        ConversationResult result = null;
-        for(SolrDocument mResult : context) {
-            if(result == null) {
-                result = toConversationResult(conf, mResult, type);
-            } else {
-                result.addAnswer(toConversationResult(conf, mResult,type));
-            }
-        }
+    private ConversationSectionResult toConverationResult(ComponentConfiguration conf, SolrDocument qResult, SolrDocumentList context, String type) {
+        ConversationSectionResult result = toConversationSectionResult(conf,qResult, type);
+        //add the context messages
+        result.setSection(context.stream().map(this::toSectionMessage).collect(Collectors.toList()));
         return result;
     }
 
+    private SectionMessage toSectionMessage(SolrDocument solrDocument) {
+        SectionMessage msg = new SectionMessage();
+        msg.setMessageIds(solrDocument.getFieldValues(FIELD_MESSAGE_IDS).stream()
+                .map(String::valueOf).collect(Collectors.toList()));
+        msg.setMessageIdxs(solrDocument.getFieldValues(FIELD_MESSAGE_IDXS).stream()
+                .map(v -> parseNumber(v,Long.class))
+                .collect(Collectors.toList()));
+
+        msg.setContent(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
+
+        msg.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
+
+        msg.setTimestamp((Date) solrDocument.getFieldValue(FIELD_TIME));
+        msg.setUserName((String) solrDocument.getFieldValue(FIELD_USER_NAME));
+
+        return msg; //TODO: continue here
+    }
+    
     @Override
     protected ConversationMltQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         if (conversation.getMessages().isEmpty()) return null;
@@ -305,4 +315,19 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
                         .collect(Collectors.joining(","));
     }
 
+    private static <T extends Number> T parseNumber(Object v, Class<T> type) {
+        if(v == null) {
+            return null;
+        } else if (v instanceof Number) {
+            return NumberUtils.convertNumberToTargetClass((Number)v, type);
+        } else {
+            try {
+                return NumberUtils.parseNumber(String.valueOf(v), type);
+            } catch (IllegalArgumentException e) {
+                log.warn("Unable to parse {} from {} (type: {})", type.getSimpleName(), v, v.getClass().getName());
+                return null;
+            }
+        }
+    }
+    
 }

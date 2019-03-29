@@ -56,6 +56,8 @@
     <field name="conversation_id"       type="string"         indexed="true"  stored="true"  multiValued="false"/>
     <field name="message_ids"           type="string"         indexed="true"  stored="true"  multiValued="true"/>
     <field name="message_idxs"          type="long"           indexed="true"  stored="true"  multiValued="true"/>
+    <field name="message_idx_start"     type="long"           indexed="true"  stored="true"  multiValued="false"/>
+    
     <!-- used by messages to store the content -->
     <field name="message"               type="text_de"        indexed="true"  stored="true"  multiValued="false" termVectors="true"/>
 
