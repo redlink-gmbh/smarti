@@ -116,6 +116,10 @@
             <version>${solrlib.version}</version>
             <scope>runtime</scope>
         </dependency>
+		<dependency> <!-- we need the correct commons-lang if we use an embedded solr -->
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+		</dependency>
         <dependency>
             <groupId>io.redlink.solrlib</groupId>
             <artifactId>solrlib-standalone</artifactId>

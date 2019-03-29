@@ -221,6 +221,11 @@
                 <version>1.0.2-SNAPSHOT</version>
             </dependency>
 
+	        <dependency> <!-- some things still use commons-lang -->
+	            <groupId>commons-lang</groupId>
+	            <artifactId>commons-lang</artifactId>
+	            <version>2.6</version>
+	        </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
