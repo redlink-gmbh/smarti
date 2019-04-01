@@ -60,6 +60,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -215,12 +216,25 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
 
         final String displayTitle = StringUtils.defaultIfBlank(conf.getDisplayName(), conf.getName());
 
-        return new ConversationMltQuery(getCreatorName(conf))
+        ConversationMltQuery query =  new ConversationMltQuery(getCreatorName(conf))
                 .setInlineResultSupport(isResultSupported())
                 .setDisplayTitle(displayTitle)
                 .setConfidence(.55f)
                 .setState(State.Suggested)
                 .setContent(context.toString());
+
+        //apply the defaults from the configuration
+        Object value = conf.getConfiguration(ConversationSearchQueryBuilder.CONFIG_KEY_DEFAULTS);
+        if(value instanceof Map){
+            query.getDefaults().putAll((Map<String,Object>)value);;
+        } else if(value instanceof Collection){
+            ((Collection<Object>)value).stream()
+                .filter(v -> v instanceof Map)
+                .map(v -> Map.class.cast(v))
+                .filter(m -> m.containsKey("key") && m.containsKey("value"))
+                .forEach(m -> query.getDefaults().put(String.valueOf(m.get("key")), m.get("value")));
+        }
+        return query;
     }
 
     private Stream<Message> getMltContext(Conversation conversation) {

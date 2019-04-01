@@ -17,6 +17,11 @@
 
 package io.redlink.smarti.query.conversation;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.redlink.smarti.model.Query;
 import io.redlink.smarti.model.State;
 
@@ -25,6 +30,9 @@ import io.redlink.smarti.model.State;
 public class ConversationMltQuery extends Query {
 
     private String content;
+
+    @JsonProperty("defaults")
+    private final Map<String,Object> defaults = new HashMap<>();
 
     public ConversationMltQuery() {
         super();
@@ -78,4 +86,19 @@ public class ConversationMltQuery extends Query {
     public String getContent() {
         return content;
     }
+
+    public ConversationMltQuery setDefaults(Map<String, Object> defaults) {
+        this.defaults.clear();
+        if(defaults != null){
+            this.defaults.putAll(defaults);
+        }
+        return this;
+    }
+
+    
+    public Map<String, Object> getDefaults() {
+        return defaults;
+    }
+    
+    
 }
