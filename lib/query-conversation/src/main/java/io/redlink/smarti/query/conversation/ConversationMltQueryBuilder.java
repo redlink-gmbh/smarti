@@ -165,7 +165,11 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
         conversationResult.setReplySuggestion(String.valueOf(solrDocument.getFirstValue(FIELD_MESSAGE)));
 
         conversationResult.setConversationId(String.valueOf(solrDocument.getFieldValue(FIELD_CONVERSATION_ID)));
-        conversationResult.setChannelId(String.valueOf(solrDocument.getFirstValue(ConversationIndexConfiguration.getMetaField("channel_id"))));
+        
+        Object channelIdVal = solrDocument.getFirstValue(ConversationIndexConfiguration.getMetaField("channel_id"));
+        if(channelIdVal != null) {
+            conversationResult.setChannelId(String.valueOf(channelIdVal));
+        }
 
         conversationResult.setVotes(Integer.parseInt(String.valueOf(solrDocument.getFieldValue(FIELD_VOTE))));
 
