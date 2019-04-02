@@ -1,5 +1,7 @@
 package io.redlink.smarti.lib.solr.iterms;
 
+import org.apache.solr.client.solrj.util.ClientUtils;
+
 public class ContextTerm {
     
     private final String field;
@@ -33,11 +35,12 @@ public class ContextTerm {
         return term;
     }
     /**
-     * The combination of <code>&lt;field&gt;:&lt;term&gt;</code> as used by Solr
+     * The combination of <code>&lt;field&gt;:&lt;term&gt;</code> as used by Solr. 
+     * Also escapes query chars from the term 
      * @return '<code>&lt;field&gt;:&lt;term&gt;</code>' or '<code>&lt;term&gt;</code>' if the field is <code>null</code>
-     */
+     */ //#307: the term needs to be query escaped
     public String getSolrTerm() {
-        return field == null ? term : field + ':' + term;
+        return (field == null ? "" : field + ':') + ClientUtils.escapeQueryChars(term);
     }
     
     public float getRelevance() {
