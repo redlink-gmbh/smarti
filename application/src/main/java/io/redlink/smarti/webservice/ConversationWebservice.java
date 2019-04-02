@@ -953,10 +953,11 @@ public class ConversationWebservice {
             @PathVariable("conversationId") ObjectId conversationId,
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
-            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @RequestParam MultiValueMap<String, String> params //any additional parameters
     ) throws IOException {
         //just forward to getResults with analysis == null
-        return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null);
+        return getResults(authContext, uriBuilder, conversationId, templateIdx, creator, null, clientId, null, params);
     }
 
     @ApiOperation(nickname="getResultsPOST", value = "get inline-results for the selected template from the query creator",
@@ -974,8 +975,9 @@ public class ConversationWebservice {
             @PathVariable("templateIdx") int templateIdx,
             @PathVariable("creator") String creator,
             @RequestBody Analysis updatedAnalysis,
-            @ApiParam @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
-            @ApiParam(DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback
+            @ApiParam(name=PARAM_CLIENT_ID, required=false, value=DESCRIPTION_PARAM_CLIENT_ID) @RequestParam(value = PARAM_CLIENT_ID, required = false) ObjectId clientId,
+            @ApiParam(DESCRIPTION_PARAM_CALLBACK) @RequestParam(value = PARAM_CALLBACK, required = false) URI callback,
+            @RequestParam MultiValueMap<String, String> params //any additional parameters
     ) throws IOException {
         final Conversation conversation = authenticationService.assertConversation(authContext, conversationId);
         Client c;
@@ -989,12 +991,16 @@ public class ConversationWebservice {
         if (templateIdx < 0) {
             return ResponseEntity.badRequest().build();
         }
+        //remove well known parameters from the params map
+        params.remove(PARAM_CLIENT_ID);
+        params.remove(PARAM_CALLBACK);
+        
         CompletableFuture<Analysis> analysis = analysisService.analyze(client,conversation, updatedAnalysis);
         if(callback != null){
             analysis.whenCompleteAsync((a , e) -> {
                 if(a != null){
                     try {
-                        SearchResult<? extends Result> result = execcuteQuery(client, conversation, a, templateIdx, creator);
+                        SearchResult<? extends Result> result = execcuteQuery(client, conversation, a, templateIdx, creator, params);
                         log.debug("callback {} with {}", callback, result);
                         callbackExecutor.execute(callback, CallbackPayload.success(result));
                     } catch(RuntimeException | IOException e1){
@@ -1020,7 +1026,7 @@ public class ConversationWebservice {
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"self\"", buildResultURI(uriBuilder, conversationId, templateIdx, creator)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"template\"", buildTemplateURI(uriBuilder, conversationId, templateIdx)))
                     .header(HttpHeaders.LINK, String.format(Locale.ROOT, "<%s>; rel=\"up\"", buildConversationURI(uriBuilder, conversationId)))
-                    .body(execcuteQuery(client, conversation, waitFor(analysisService.analyze(client, conversation)), templateIdx, creator));
+                    .body(execcuteQuery(client, conversation, waitFor(analysisService.analyze(client, conversation)), templateIdx, creator, params));
         }
     }
 
@@ -1097,9 +1103,9 @@ public class ConversationWebservice {
         });
     }
 
-    private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis, int templateIdx, String creator) throws IOException {
+    private SearchResult<? extends Result> execcuteQuery(final Client client, final Conversation conversation, final Analysis analysis, int templateIdx, String creator, MultiValueMap<String, String> params) throws IOException {
         if (templateIdx < analysis.getTemplates().size()) {
-            return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator);
+            return analysisService.getInlineResults(client, conversation, analysis, analysis.getTemplates().get(templateIdx), creator, params);
         } else {
             throw new NotFoundException(Template.class, templateIdx);
         }
