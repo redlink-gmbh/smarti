@@ -32,6 +32,7 @@ public class ConversationSectionResult extends Result {
 
     private double score;
     private String conversationId; 
+    private String channelId;
     private List<String> messageIds;
     private List<Long> messageIdxs;
     private String userName;
@@ -108,6 +109,14 @@ public class ConversationSectionResult extends Result {
         this.section = section;
     }
     
+    public String getChannelId() {
+        return channelId;
+    }
+    
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
+    }
+
     public static class SectionMessage {
         
         private String content;
@@ -156,4 +165,5 @@ public class ConversationSectionResult extends Result {
         
         
     }
+
 }
