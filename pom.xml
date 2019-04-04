@@ -101,7 +101,7 @@
         <solr.text.tagger.version>2.4</solr.text.tagger.version> -->
         <solrlib.version>1.0.0</solrlib.version>
         <redlinknlp.version>2.0.0-SNAPSHOT</redlinknlp.version>
-
+        <redlink.springcomp.version>1.0.0-SNAPSHOT</redlink.springcomp.version>
         <springfox.version>2.7.0</springfox.version>
         <swagger.version>1.5.13</swagger.version>
 
@@ -324,11 +324,17 @@
                 <artifactId>solrlib-embedded</artifactId>
                 <version>${solrlib.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.opensextant</groupId>
                 <artifactId>solr-text-tagger</artifactId>
                 <version>${solr.text.tagger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.redlink.utils.spring</groupId>
+                <artifactId>exectoken</artifactId>
+                <version>${redlink.springcomp.version}</version>
             </dependency>
 
             <dependency>

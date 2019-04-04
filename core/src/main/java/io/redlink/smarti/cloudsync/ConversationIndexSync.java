@@ -23,14 +23,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Component
 @EnableConfigurationProperties(ConversationCloudSyncConfiguration.class)
-public class ConversationCloudSync {
+public class ConversationIndexSync {
     
     final Logger log = LoggerFactory.getLogger(getClass());
     
     private final ConversationRepository conversationRepository;
     private final ConversationCloudSyncConfiguration config;
     
-    ConversationCloudSync(ConversationCloudSyncConfiguration config, ConversationRepository conversationRepository){
+    ConversationIndexSync(ConversationCloudSyncConfiguration config, ConversationRepository conversationRepository){
         this.config = config;
         this.conversationRepository = conversationRepository;
     }

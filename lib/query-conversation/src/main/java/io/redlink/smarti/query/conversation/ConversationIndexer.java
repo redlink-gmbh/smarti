@@ -17,10 +17,10 @@
 
 package io.redlink.smarti.query.conversation;
 
-import static io.redlink.smarti.model.Message.Metadata.SKIP_ANALYSIS;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -73,19 +74,21 @@ import com.google.common.collect.Iterators;
 
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
-import io.redlink.smarti.cloudsync.ConversationCloudSync;
-import io.redlink.smarti.cloudsync.ConversationCloudSync.ConversytionSyncCallback;
-import io.redlink.smarti.cloudsync.ConversationCloudSync.SyncData;
-import io.redlink.smarti.cloudsync.ConversationCloudSync.IndexingStatus;
+import io.redlink.smarti.cloudsync.ConversationIndexSync;
+import io.redlink.smarti.cloudsync.ConversationIndexSync.ConversytionSyncCallback;
+import io.redlink.smarti.cloudsync.ConversationIndexSync.SyncData;
+import io.redlink.smarti.cloudsync.ConversationIndexSync.IndexingStatus;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message;
-import io.redlink.smarti.model.Message.Metadata;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+import io.redlink.utils.spring.exectoken.ExecutionLockedException;
+import io.redlink.utils.spring.exectoken.ExecutionToken;
+import io.redlink.utils.spring.exectoken.ExecutionTokenService;
 
 @Component
 @EnableConfigurationProperties(ConversationIndexerConfig.class)
@@ -94,6 +97,21 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
+    //We do not want an dependency to solr-core just to have a check if we run
+    //on an embedded Solr server. So we load the class by name.
+    //If we can not find the Class we will anyway use an external SolrServer
+    private static Class<?> EMBEDDED_SOLR_CLASS;
+    static {
+        Class<?> clazz = null;
+        try {
+            clazz = ConversationIndexer.class.getClassLoader()
+                    .loadClass("org.apache.solr.client.solrj.embedded.EmbeddedSolrServer");
+        } catch (ClassNotFoundException e) {
+            // looks like the EmbeddedSolrServer is not in classpath
+            //   so we will use an remote SolrServer ...
+        }
+        EMBEDDED_SOLR_CLASS = clazz;
+    }
     
     //TODO: make configurable
     private static final Set<String> NOT_INDEXED_META_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -128,7 +146,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     private SolrCoreDescriptor conversationCore;
     
     @Autowired(required=false)
-    private ConversationCloudSync cloudSync;
+    private ConversationIndexSync indexSync;
     
     private ConversationIndexTask indexTask;
 
@@ -145,57 +163,81 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     protected final ConversationIndexerConfig indexConfig;
     
+    protected final ExecutionTokenService executionTokenService;
+    
     @Autowired
     public ConversationIndexer(ConversationIndexerConfig config, SolrCoreContainer solrServer, ConversationService storeService, 
-            TaskScheduler taskScheduler){
+            TaskScheduler taskScheduler, Optional<ExecutionTokenService> executionTokenService){
         this.indexConfig = config;
         this.solrServer = solrServer;
         this.conversationService = storeService;
         this.taskScheduler = taskScheduler;
         this.indexerPool = Executors.newSingleThreadExecutor(
                 new BasicThreadFactory.Builder().namingPattern("conversation-indexing-thread-%d").daemon(true).build());
+        this.executionTokenService = executionTokenService.orElse(null);
     }
     
     @EventListener(ContextRefreshedEvent.class)
-    protected void startup() {
+    protected void startup() throws IOException, SolrServerException {
         log.info("sync conversation index on startup");
-        indexTask = cloudSync == null ? null : new ConversationIndexTask(cloudSync);
+        indexTask = indexSync == null ? null : new ConversationIndexTask(indexSync);
         if(indexTask != null){
             log.info("initialize ConversationIndex after startup ...");
             Date syncDate = null; //null triggers a full rebuild (default)
             if(!rebuildOnStartup){
                 try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-                    //search for conversations indexed with an earlier version of the index
-                    SolrQuery query = new SolrQuery("*:*");
-                    query.addFilterQuery(String.format("!%s:%s",FIELD_INDEX_VERSION,CONVERSATION_INDEX_VERSION));
-                    query.setRows(0); //we only need the count
-                    if(solr.query(query).getResults().getNumFound()  > 0){
+                    if(isIndexOutdated(solr)) {
+                        //can only happen on a softeare release (on
                         log.info("conversation index contains documents indexed with an outdated version - full re-build required");
                         solr.deleteByQuery("*:*");
                         solr.commit();
                         solr.optimize(); //required as some schema changes will cause exceptions without this on reindexing
-                    } else { //partial update possible. Search for the last sync date ...
-                        query = new SolrQuery("*:*");
-                        query.addSort(FIELD_SYNC_DATE, ORDER.desc);
-                        query.setFields(FIELD_SYNC_DATE);
-                        query.setRows(1);
-                        query.setStart(0);
-                        QueryResponse result = solr.query(query);
-                        if(result.getResults() != null && result.getResults().getNumFound() > 0){
-                            syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
-                            log.info("Perform partial update of conversation index (lastSync date:{})", syncDate);
-                        }
                     }
-                } catch (IOException | SolrServerException e) {
+                    syncDate = getIndexSyncDate(solr);
+                } catch (final IOException | SolrServerException e) {
                     log.warn("Updating Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
                     log.debug("STACKTRACE:",e);
+                    throw e;
                 }
             } else {
                 log.info("full re-build on startup required via configuration");
             }
             indexTask.setLastSync(syncDate);
+            //check if we need to be in cloud-sync mode
+            if(indexConfig.getEmbedded() != null) { //mode is manually configured
+                indexTask.setEmbeddedMode(indexConfig.getEmbedded());
+            } else if(EMBEDDED_SOLR_CLASS != null)
+            try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)){
+                indexTask.setEmbeddedMode(EMBEDDED_SOLR_CLASS.isAssignableFrom(solrClient.getClass()));
+            } catch (final IOException | SolrServerException e) {
+                log.warn("Loading Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
+                log.debug("STACKTRACE:",e);
+                throw e;
+            } else { //not configured and EmbeddedSolrServer is not in classpath
+                indexTask.setEmbeddedMode(false); 
+            }
+            log.info("embedded Mode: {}", indexTask.isEmbeddedMode());
+            if(!indexTask.isEmbeddedMode() && executionTokenService == null) {
+                throw new IllegalStateException("When using a remote SolrServer the ExecutionTokenService is required!");
+            }
             indexerPool.execute(indexTask);
+            
+            //now setup the correct scheduled sync tasks depending on the embedded mode
+            if(indexTask.isEmbeddedMode()) {
+                log.info("initializing CouldSync as an EmbeddedSolrServer is configured (cloud sync persiod: {})", indexConfig.getSyncDelay());
+                //start the recurring scheduled tasks
+                this.taskScheduler.scheduleAtFixedRate(this::syncIndex, indexConfig.getSyncDelay());
+            } else {
+                log.info("initializing with external Solr Server (index symc cron: {})", 
+                        indexConfig.getSyncCron() == null ? "deactivated" : indexConfig.getSyncCron());
+                if(indexConfig.getSyncCron() != null) {
+                    this.taskScheduler.schedule(this::syncIndex, indexConfig.getSyncCron());
+                }
+            }
+            
         } else { //manual initialization (performs a full re-index to be up-to-date)
+            log.warn("The conversationIndexSync is NOT available. Index Syncronization is disable and a "
+                    + "full rebuilt of the conversation index is performed at startup!");
             Iterators.partition(conversationService.listConversationIDs().iterator(), 100).forEachRemaining(
                     ids -> {
                         ids.stream()
@@ -203,9 +245,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                                 .forEach(c -> indexConversation(c, false));
                     });
         }
-        
-        //start the recurring scheduled tasks
-        this.taskScheduler.scheduleAtFixedRate(this::syncIndex, indexConfig.getSyncDelay());
+
         if(indexConfig.getReindexCron() != null){
             log.info("Rebuild Index Cron: ", indexConfig.getReindexCron());
             this.taskScheduler.schedule(this::rebuildIndex, indexConfig.getReindexCron());
@@ -213,6 +253,34 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             log.info("Rebuild Index Cron: disabled");
         }
         
+    }
+    
+    private boolean isIndexOutdated(SolrClient solr) throws IOException, SolrServerException{
+        SolrQuery query = new SolrQuery("*:*");
+        query.addFilterQuery(String.format("%s:[* TO %s}",FIELD_INDEX_VERSION,CONVERSATION_INDEX_VERSION));
+        query.setRows(0); //we only need the count
+        return solr.query(query).getResults().getNumFound()  > 0;
+        
+    }
+    
+    /**
+     * Queries the Index to determine the last sync date
+     * @return the last sync date or <code>null</code> if a full rebuild is required
+     * @throws IOException
+     * @throws SolrServerException
+     */
+    private Date getIndexSyncDate(SolrClient solr) throws IOException, SolrServerException {
+        SolrQuery query = new SolrQuery("*:*");
+        query.addSort(FIELD_SYNC_DATE, ORDER.desc);
+        query.setFields(FIELD_SYNC_DATE);
+        query.setRows(1);
+        query.setStart(0);
+        QueryResponse result = solr.query(query);
+        if(result.getResults() != null && result.getResults().getNumFound() > 0){
+            return (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
+        } else {
+            return null;
+        }
     }    
     
     
@@ -224,10 +292,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     protected void conversationUpdated(StoreServiceEvent storeEvent){
         log.debug("StoreServiceEvent for {}", storeEvent.getConversationId());
         if(storeEvent.getOperation() == Operation.SAVE){
-            if(storeEvent.getConversationStatus() == Status.Complete){
-                log.debug("  - SAVE operation of a COMPLETED conversation[id: {}]", storeEvent.getConversationId());
-                indexConversation(conversationService.getConversation(storeEvent.getConversationId()), true);
-            } //else we do not index uncompleted conversations
+            log.debug("  - SAVE operation of a {} conversation[id: {}]", storeEvent.getConversationId(), storeEvent.getConversationStatus());
+            indexConversation(conversationService.getConversation(storeEvent.getConversationId()), true);
         } else if(storeEvent.getOperation() == Operation.DELETE){
             log.debug("  - DELETE operation for conversation[id:{}]", storeEvent.getConversationId());
             removeConversation(storeEvent.getConversationId(), true);
@@ -585,9 +651,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }
     }
     
-    private class ConversationIndexTask implements Runnable {
+    class ConversationIndexTask implements Runnable {
 
-        final ConversationCloudSync cloudSync;
+        final ConversationIndexSync convIndexSync;
         final Lock lock = new ReentrantLock();
         
         AtomicBoolean active = new AtomicBoolean(false);
@@ -598,11 +664,20 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         
         boolean fullRebuild = false;
         private Exception error;
+        private boolean embeddedMode;
         
-        ConversationIndexTask(ConversationCloudSync cloudSync) {
-            this.cloudSync = cloudSync;
+        ConversationIndexTask(ConversationIndexSync cloudSync) {
+            this.convIndexSync = cloudSync;
         }
         
+        public void setEmbeddedMode(boolean embeddedMode) {
+            this.embeddedMode = embeddedMode;
+        }
+        
+        public boolean isEmbeddedMode() {
+            return embeddedMode;
+        }
+
         public boolean isActive() {
             return active.get();
         }
@@ -668,15 +743,28 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             }
         }
         
-        public ConversationCloudSync getCloudSync() {
-            return cloudSync;
+        public ConversationIndexSync getCloudSync() {
+            return convIndexSync;
         }
         
         @Override
         public void run() {
+            if(embeddedMode) {
+                performSync();
+            } else {
+                try (ExecutionToken et = executionTokenService.obtain(getClass().getName(), Duration.ofHours(12))){
+                    performSync();
+                } catch (ExecutionLockedException e) {
+                    log.info("skipping execution as ExecutionToken is already taken");
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+
+        private void performSync() {
             active.set(true);
             try {
-                final Date nextSync;
                 lock.lock();
                 try {
                     completed.set(false);
@@ -684,24 +772,36 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                     if(fullRebuild){
                         lastSync = null;
                         fullRebuild = false;
-                    }
+                    } else if(!embeddedMode){
+                        //in remote mode several instances work with the Solr index so
+                        //we need to query for the sync date beforehand
+                        try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
+                            lastSync = getIndexSyncDate(solr);
+                            log.trace("retrieved syncDate: {}", lastSync == null ? null : lastSync.toInstant());
+                        } catch (IOException | SolrServerException e) {
+                            log.warn("Unable to query for syncDate of ConversationIndex ({} - {}):"
+                                    + " will use the old syncDate {}", e.getClass().getSimpleName(), 
+                                    e.getMessage(), lastSync == null ? null : lastSync.toInstant());
+                        }
+                    } //else embedded mode ... use the current lastSync for the update
                 } finally {
                     lock.unlock();
                 }
                 SyncData syncData;
                 indexingStatus = new IndexingStatus();
                 if(lastSync == null){
-                    log.debug("start full rebuild of Index using {}", cloudSync);
-                    syncData = cloudSync.syncAll(ConversationIndexer.this, indexingStatus);
+                    log.debug("start full rebuild of Index using {}", convIndexSync);
+                    syncData = convIndexSync.syncAll(ConversationIndexer.this, indexingStatus);
                     try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
                         log.debug("optimize Index after the full rebuild");
                         solr.optimize(); //optimize after a full rebuild
+                        log.debug("optimize completed");
                     } catch (IOException | SolrServerException e) {/* ignore*/}
                 } else {
                     if(log.isTraceEnabled()){
                         log.trace("update Index with changes after {}", lastSync == null ? null : lastSync.toInstant());
                     }
-                    syncData = cloudSync.sync(ConversationIndexer.this, lastSync, indexingStatus);
+                    syncData = convIndexSync.sync(ConversationIndexer.this, lastSync, indexingStatus);
                 }
                 if(syncData.getCount() > 0){
                     log.debug("performed {} updates in the Conversation Index - {}", syncData.getCount(), syncData);
@@ -723,7 +823,6 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 active.set(false);
             }
         }
-        
     }
     /*
      * see https://stackoverflow.com/a/30477722/3932024
