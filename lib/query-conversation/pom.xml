@@ -30,6 +30,11 @@
     <name>Query :: Previous Conversations</name>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
     
         <dependency>
             <groupId>io.redlink.smarti</groupId>
@@ -69,6 +74,11 @@
             <groupId>io.redlink.solrlib</groupId>
             <artifactId>solrlib-embedded</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.redlink.utils.spring</groupId>
+            <artifactId>exectoken</artifactId>
         </dependency>
 
     </dependencies>

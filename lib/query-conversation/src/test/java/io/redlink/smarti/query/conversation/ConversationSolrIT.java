@@ -125,13 +125,14 @@ public class ConversationSolrIT {
 
         conversationService.update(client, conversation);
         Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
-
-        assertThat(countDocs(), Matchers.equalTo(docCount));
+        //NOTE: uncompleted conversations are now indexed
+        assertThat(countDocs(), Matchers.greaterThan(docCount));
+        docCount = countDocs();
 
         conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversationService.update(client, conversation);
         Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
-        assertThat(countDocs(), Matchers.greaterThan(docCount));
+        assertThat(countDocs(), Matchers.equalTo(docCount));
     }
 
     @Test
@@ -197,7 +198,7 @@ public class ConversationSolrIT {
 
         SearchResult<ConversationSearchService.ConversationResult> result = searchService.search(client,query);
 
-        assertEquals(2, result.getNumFound());
+        assertEquals(3, result.getNumFound()); //now includes conversation5 as !complete conversations are now also indexed!
         assertEquals(1, result.getDocs().get(0).getResults().size()); //one result
         assertEquals(2, result.getDocs().get(0).getResults().get(0).getMessages().size()); //but with matches in 2 messages
         assertEquals(1, result.getDocs().get(1).getResults().size());

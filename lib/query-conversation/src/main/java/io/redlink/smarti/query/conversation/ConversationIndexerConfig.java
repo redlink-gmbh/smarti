@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.scheduling.support.CronTrigger;
 
@@ -21,7 +22,9 @@ public class ConversationIndexerConfig{
 
     public static final int DEFAULT_SYNC_DELAY = 15 * 1000; //15 sec
     public static final int MIN_SYNC_DELAY = 5 * 1000; //5sec
-    
+
+    public static final CronTrigger DEFAULT_SYNC_CRON = new CronTrigger("16 0 2 * * *");//once per day at 02:00:16 AM )
+
     /**
      * By default the last 50 messages are used as context for a conversation
      */
@@ -30,10 +33,12 @@ public class ConversationIndexerConfig{
     private int commitWithin = DEFAULT_COMMIT_WITHIN;
     private ConversationIndexerConfig.Message message = new Message();
     
+    private CronTrigger syncCron = DEFAULT_SYNC_CRON;
     private CronTrigger reindexCron = null;
     private int syncDelay = DEFAULT_SYNC_DELAY;
     
     private int convCtxSize = DEFAULT_CONVERSATION_CONTEXT_SIZE;
+    private Boolean embedded;
     
     
     public static class Message {
@@ -135,6 +140,65 @@ public class ConversationIndexerConfig{
                 Objects.equals(current.getUser(), prev.getUser()) &&// Same user
                 Objects.equals(current.getOrigin(), prev.getOrigin()) &&// "same" user
                 current.getTime().before(DateUtils.addSeconds(prev.getTime(), getMessage().getMergeTimeout()));
+    }
+
+    /**
+     * When using an external Solr Index (Standalone or Cloud) the index
+     * will be synced with the MongoDB based on this cron. <p>
+     * This means that all Conversations updated after the last sync will
+     * be indexed as part of this Task. This is different to the
+     * {@link #setReindexCron(CronTrigger)} where the whole index is
+     * rebuilt.
+     * @param syncCron the cron configuration or <code>null</code> to
+     * deactuvate this feature
+     * @since 0.9.0
+     */
+    public void setSyncCron(CronTrigger syncCron) {
+        this.syncCron = syncCron;
+    }
+    
+    /**
+     * When using an external Solr Index (Standalone or Cloud) the index
+     * will be synced with the MongoDB based on this cron. <p>
+     * This means that all Conversations updated after the last sync will
+     * be indexed as part of this Task. This is different to the
+     * {@link #getReindexCron()} where the whole index is
+     * rebuilt.
+     * @return
+     * @since 0.9.0
+     */
+    public CronTrigger getSyncCron() {
+        return syncCron;
+    }
+
+    /**
+     * Allows to explicitly configure embedded mode. Embedded mode indicates
+     * that every Smarti instance uses its own Solr Server for managing the
+     * conversation index. Typically this means running an embedded Solr server
+     * in the same JVM, but one could also configure an different external Solr
+     * server for each smarti instance.<p>
+     * The default <code>null</code> will do an automatic detection based on the
+     * type of the {@link SolrClient}.
+     * @param embedded the embedded mode. <code>true</code> for embedded, 
+     * <code>false</code> for shared external or <code>null</code> for autodetect
+     */
+    public void setEmbedded(Boolean embedded) {
+        this.embedded = embedded;
+    }
+    
+    /**
+     * Allows to explicitly configure embedded mode. Embedded mode indicates
+     * that every Smarti instance uses its own Solr Server for managing the
+     * conversation index. Typically this means running an embedded Solr server
+     * in the same JVM, but one could also configure an different external Solr
+     * server for each smarti instance.<p>
+     * The default <code>null</code> will do an automatic detection based on the
+     * type of the {@link SolrClient}.
+     * @return the embedded mode. <code>true</code> for embedded, 
+     * <code>false</code> for shared external or <code>null</code> for autodetect
+     */
+    public Boolean getEmbedded() {
+        return embedded;
     }
 
     

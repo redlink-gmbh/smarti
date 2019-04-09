@@ -239,6 +239,11 @@ public class ConversationMltQueryBuilder extends ConversationQueryBuilder {
                 .filter(m -> m.containsKey("key") && m.containsKey("value"))
                 .forEach(m -> query.getDefaults().put(String.valueOf(m.get("key")), m.get("value")));
         }
+        Object pageSize = conf.getConfiguration(CONFIG_KEY_PAGE_SIZE);
+        if(pageSize != null) {
+            query.getDefaults().put(CommonParams.ROWS, pageSize);
+        }
+        
         return query;
     }
 

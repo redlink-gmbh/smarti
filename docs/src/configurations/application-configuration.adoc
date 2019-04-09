@@ -121,16 +121,48 @@ The Speak Service managed resource bundles for bot generated replay messages in 
 
 ==== Conversation Indexing
 
-Conversation are indexed in Solr managed by SolrLib
+Conversation are indexed in Solr managed by https://github.com/redlink-gmbh/solrlib[SolrLib]. SolrLib supports embedded, standalone and Solr cloud indexes.
+
+* for __Embedded Mode__ one can set `solrlib.home = /path/to/solr/home` otherwise a temp folder will be created on each startup. The embedded mode will be the default if none of the following modes is activated
+* for __Standalone Mode__ one needs to set `solrlib.base-url = http://localhost:8983/solr` to the url to the external Solr server.
+* for __Cloud Mode__ is activated when the Zookeeper Connection `solrlib.zk-connection = zookeeper1:8121,zookeeper2:8121` is configured.
+
+For details about SolrLib please refer to [Documentation](https://github.com/redlink-gmbh/solrlib#usage)
+
+
+__Configuration of the Conversation Index Mode__
+
+NOTE: Starting with version `0.9.0` Smarti supports two operation modes for the Conversation Index:
+
+    1. Embedded Mode using a separate Solr index for every Smarti instance. In this Mode the `conversation` collection in the MongoDB is used to sync the local Solr index with changes performed by other Smarti instances in the cluster. This is also the operation mode supported by all Smarti versions prior to `0.9.0`
+    2. External Mode where a single Solr server is shared by all Smarti instances. In this Mode the conversation update events are used to keep the conversation index up to date - so each Smarti instance is responsible to index changes it performs to conversations.
+
+Samrti `v0.9.0` suports auto-detection of the index mode. This is done based on the type of the `SolrClient` injected to the `ConversationIndexer`. If the type indicates an embedded Solr server the `embedded` mode is activated. If a remote Solr server is detected the mode is set to `external`. This auto-detection is fine for most use cases however the mode can also be manually set by setting `smarti.index.conversation.embedded=true/false`. 
+
+Users should set 
+
+* `embedded=false` if an embedded Solr server is used, but only a single Smarti instance is running at a given time
+* `embedded=true` if an external Solr server per Smarti instance is configured
+
+in all other cases the auto detection of the mode will detect the configuration correctly. The active mode is also logged during startup.
+
+__configuration options__
 
 * `smarti.index.rebuildOnStartup = true`: Allows to enable/disable a full rebuild of indexes on startup (default: `false`)
 * `smarti.index.sync.epochSize = 10000`: The epoch size ist the maximum number of conversation IDs of updated conversations loaded from the conversation repository. This is needed because of https://docs.mongodb.com/manual/core/aggregation-pipeline-limits/[MongoDB limitations for aggregations] for some supported Mongo versions to be limited as.
 * `smarti.index.sync.batchSize = 1`: The batch size for loading conversations from the Conversation Repository. The default is set to `1` to reduce the memory footprint. When setting to higher values ensure that sufficient heap is available (recommended about `500MByte` times the configured number) 
 * `smarti.index.conversation.commit-within = 10000`: Defines the maximum time span until after published conversations are available in the index. Values are in M´milliseconds. For values `< 0` the default `10` seconds will be used. For values `>= 0 < 1000` the minimum value of `1000ms` will be used.
-* `smarti.index.conversation.sync-delay = 15000`: Defines the period between the synchronization of the conversation index with the conversation repository (default: `15000` ms, min: `5000` ms)
 * `smarti.index.conversation.reindex-cron =`: The cron trigger for full rebuilds of the conversation index (default: none - no rebuild)
 * `smarti.index.conversation.convCtxSize = 50`: The number of messages used as context for the conversation. The text of the last `convCtxSize` messages is indexed with the conversation and can be used for conversation level content based recommendations (default: `50`). A negative value causes the default to be used. `0` will deactivate this feature
 * `smarti.index.conversation.message.merge-timeout = 30`: Multiple messages of the same users are merged to a single message if they where sent within the configured time period. Values are in Seconds. The default is `30` seconds.
+
+__configurations specific for embedded mode__ (`smarti.index.conversation.embedded=true`)
+
+* `smarti.index.conversation.sync-delay = 15000`: Defines the period between the synchronization of the conversation index with the conversation repository (default: `15000` ms, min: `5000` ms)
+
+__configurations specific for external mode__ (`smarti.index.conversation.embedded=false`)
+
+* `smarti.index.conversation.sync-cron =16 0 2 * * *`: This cron syncs the shared conversation index with Smarti conversation repository. It (re-)indexes all conversations updated since the last succesfull sync. . This sync is important to cope with service interruptions of the Solr index as updates with a external Solr index are only performed once and not repeated on errors. The default performs the sync once a day at `02:16` but shorter synchronisation intervals of e.g. 10 minutes are also valid choice. A https://github.com/redlink-gmbh/redlink-spring-components/tree/master/exectoken[shared lock] is used to ensure that only a single Smarti instance executes the synchronization.  
 
 ==== Processing Configuration
 

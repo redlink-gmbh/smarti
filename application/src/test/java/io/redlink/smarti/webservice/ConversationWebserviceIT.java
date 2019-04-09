@@ -833,20 +833,27 @@ public class ConversationWebserviceIT {
                 .andExpect(jsonPath("[1].origin").value("System"))
                 .andExpect(jsonPath("[1].state").value("Suggested"))
                 .andExpect(jsonPath("[1].type").value("Keyword"))
-                .andExpect(jsonPath("[2].value").value("München"))
+                .andExpect(jsonPath("[2].value").value("München nach Berlin"))
                 .andExpect(jsonPath("[2].messageIdx").value(0))
                 .andExpect(jsonPath("[2].start").value(31))
-                .andExpect(jsonPath("[2].end").value(38))
+                .andExpect(jsonPath("[2].end").value(50))
                 .andExpect(jsonPath("[2].origin").value("System"))
                 .andExpect(jsonPath("[2].state").value("Suggested"))
-                .andExpect(jsonPath("[2].type").value("Place"))
-                .andExpect(jsonPath("[3].value").value("Berlin"))
+                .andExpect(jsonPath("[2].type").value("Keyword"))
+                .andExpect(jsonPath("[3].value").value("München"))
                 .andExpect(jsonPath("[3].messageIdx").value(0))
-                .andExpect(jsonPath("[3].start").value(44))
-                .andExpect(jsonPath("[3].end").value(50))
+                .andExpect(jsonPath("[3].start").value(31))
+                .andExpect(jsonPath("[3].end").value(38))
                 .andExpect(jsonPath("[3].origin").value("System"))
                 .andExpect(jsonPath("[3].state").value("Suggested"))
-                .andExpect(jsonPath("[3].type").value("Place"));
+                .andExpect(jsonPath("[3].type").value("Place"))
+                .andExpect(jsonPath("[4].value").value("Berlin"))
+                .andExpect(jsonPath("[4].messageIdx").value(0))
+                .andExpect(jsonPath("[4].start").value(44))
+                .andExpect(jsonPath("[4].end").value(50))
+                .andExpect(jsonPath("[4].origin").value("System"))
+                .andExpect(jsonPath("[4].state").value("Suggested"))
+                .andExpect(jsonPath("[4].type").value("Place"));
         
         //Assert that an analysis is stored
         Assert.assertEquals(1, analysisRepository.count());
@@ -1151,8 +1158,8 @@ public class ConversationWebserviceIT {
         //Assert that tokens are NOT NULL but empty
         Assert.assertNotNull(analysis.getTokens());
         Assert.assertTrue(analysis.getTokens().size() > 0);
-        //Assert that Bern is extracted 2 times
-        Assert.assertEquals(2, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
+        //Assert that Bern is extracted 2x2 times (2 mentions, each time as Location and Keyword)
+        Assert.assertEquals(4, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
         //Templates need also t0 be NOT NULL and NOT empty!
         Assert.assertNotNull(analysis.getTemplates());
         Assert.assertTrue(analysis.getTemplates().size() > 0);
@@ -1193,8 +1200,8 @@ public class ConversationWebserviceIT {
         //Assert that tokens are NOT NULL but empty
         Assert.assertNotNull(analysis.getTokens());
         Assert.assertTrue(analysis.getTokens().size() > 0);
-        //Assert that Bern is extracted only once as the 2nd message was deleted
-        Assert.assertEquals(1, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
+        //Assert that Bern is extracted only once as the 2nd message was deleted (2 results -> keyword and entity)
+        Assert.assertEquals(2, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
         //Templates need also t0 be NOT NULL and NOT empty!
         Assert.assertNotNull(analysis.getTemplates());
         Assert.assertTrue(analysis.getTemplates().size() > 0);
