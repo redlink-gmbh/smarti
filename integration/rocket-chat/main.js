@@ -770,6 +770,11 @@ function SmartiWidget(element, _options) {
 
                 lastContext = context;
 
+                payload.custom = {};
+                if(params.query.contextMsgs) {
+                    payload.custom["excl.msg"] = params.query.contextMsgs;
+                }
+
                 smarti.rcSearch([queryTerms.join(" "), context, payload], (data) => {
                     log.debug("RC search results:", data);
 
