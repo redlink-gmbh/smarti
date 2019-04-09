@@ -774,6 +774,9 @@ function SmartiWidget(element, _options) {
                 if(params.query.contextMsgs) {
                     payload.custom["excl.msg"] = params.query.contextMsgs;
                 }
+                if(params.query.contextQuery) {
+                    payload.custom.query = getSolrQueryWithBoost(params.query.contextQuery);
+                }
 
                 smarti.rcSearch([queryTerms.join(" "), context, payload], (data) => {
                     log.debug("RC search results:", data);
@@ -2138,7 +2141,11 @@ function equalArrays(a, b) {
 }
 
 function getSolrQuery(queryArray) {
-    return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
+    return queryArray.map(q => '"' + q.replace(/[\\"]/g, '') + '"').join(' ');
+}
+
+function getSolrQueryWithBoost(queryArray) {
+    return queryArray.map(q => '"' + q.term.replace(/[\\"]/g, '') + '"^' + q.relevance).join(' ');
 }
 
 function getGoogleQuery(queryArray) {
