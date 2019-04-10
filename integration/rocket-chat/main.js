@@ -771,7 +771,9 @@ function SmartiWidget(element, _options) {
                 lastContext = context;
 
                 payload.custom = {};
-                if(params.query.contextMsgs) {
+                if(params.query.params.excludeCurrentChannel && params.query.params.channel_id) {
+                    payload.custom["excl.room"] = [params.query.params.channel_id];
+                } else if(params.query.contextMsgs) {
                     payload.custom["excl.msg"] = params.query.contextMsgs;
                 }
                 if(params.query.contextQuery) {
