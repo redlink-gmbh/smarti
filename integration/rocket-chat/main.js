@@ -736,6 +736,8 @@ function SmartiWidget(element, _options) {
 
                 queryTerms = tks.length ? tks : queryTerms;
 
+                let useQuery = params.query.contextQuery && !tks.length;
+
                 currentSimilarityQuery = params.query.similarityQuery;
 
                 let context = {"uid": Meteor.userId(), "rid": Session.get("openedRoom")};
@@ -752,6 +754,10 @@ function SmartiWidget(element, _options) {
                 let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
+
+                if(!append) {
+                    $.observable(params.templateData.results).refresh([]);
+                }
 
                 lastQueryTerms = queryTerms;
 
@@ -776,11 +782,11 @@ function SmartiWidget(element, _options) {
                 } else if(params.query.contextMsgs) {
                     payload.custom["excl.msg"] = params.query.contextMsgs;
                 }
-                if(params.query.contextQuery) {
+                if(useQuery) { // use query with boosting instead of text
                     payload.custom.query = getSolrQueryWithBoost(params.query.contextQuery);
                 }
 
-                smarti.rcSearch([queryTerms.join(" "), context, payload], (data) => {
+                smarti.rcSearch([useQuery ? "" : queryTerms.join(" "), context, payload], (data) => {
                     log.debug("RC search results:", data);
 
                     loadedPage = page;
@@ -840,11 +846,8 @@ function SmartiWidget(element, _options) {
 
                     if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
 
-                    if(append) {
-                        $.observable(params.templateData.results).insert(messages);
-                    } else {
-                        $.observable(params.templateData.results).refresh(messages);
-                    }
+                    $.observable(params.templateData.results).insert(messages);
+
                     $.observable(params.templateData).setProperty("tokensUsed", queryTerms.length > 0);
                     $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
                     $.observable(params.templateData).setProperty("loading", false);
@@ -1111,8 +1114,6 @@ function SmartiWidget(element, _options) {
             }
         }
 
-        getResults(currentPage);
-
         return {
             params,
             refresh,
@@ -1230,7 +1231,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false, isRCSearch, isConversationMlt},
+                            templateData: {loading: true, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false, isRCSearch, isConversationMlt},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
