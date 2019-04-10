@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
@@ -136,7 +137,10 @@ public class RocketChatSearchQueryBuilder extends ConversationQueryBuilder {
         }
         //copy defined parameters 
         query.setParam(CONFIG_KEY_EXCLUDE_CURRENT, conf.getConfiguration(CONFIG_KEY_EXCLUDE_CURRENT, DEFAULT_EXCLUDE_CURRENT));
-
+        List<String> values = conversation.getMeta().getProperty("channel_id");
+        if(CollectionUtils.isNotEmpty(values)) {
+            query.setParam("channel_id", values.get(0));
+        }
         //TODO: maybe we want Filter support as for other releated conversations Query Builder
         //query.getFilters().addAll(getPropertyFilters(conversation, conf));
         
