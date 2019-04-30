@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Redlink GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.redlink.smarti.lib.solr.iterms;
 
 import java.io.IOException;
@@ -54,6 +71,7 @@ public class SolrInterestingTermsUtils {
         log.trace("InterestingTerms QueryParams: {}", solrQuery);
         
         NamedList<Object> response = solrClient.request(new MltRequest(solrQuery, context));
+        @SuppressWarnings("unchecked")
         NamedList<Object> interestingTermList = (NamedList<Object>)response.get("interestingTerms");
         if(interestingTermList != null && interestingTermList.size() > 0) { //interesting terms present
             //Do make it easier to combine context params with other ensure that the maximum boost is 1.0
@@ -122,7 +140,7 @@ public class SolrInterestingTermsUtils {
      * @author Rupert Westenthaler
      *
      */
-    private static class WordAnalysisIdx {
+    static class WordAnalysisIdx {
         
         private final Map<Pair<String,String>, Collection<WordAnalysis>> tokenIndex = new HashMap<>();
         
@@ -158,6 +176,9 @@ public class SolrInterestingTermsUtils {
      * 
      */
     private final static class FixedFieldAnalysisRequest extends FieldAnalysisRequest {
+
+        private static final long serialVersionUID = -5119011666718786733L;
+
         @Override
         protected FieldAnalysisResponse createResponse(SolrClient client) {
             if (getFieldTypes() == null && getFieldNames() == null) {
@@ -178,6 +199,8 @@ public class SolrInterestingTermsUtils {
      */
     private final static class FixedFieldAnalysisResponse extends FieldAnalysisResponse {
 
+        private static final long serialVersionUID = -7771137722322121975L;
+
         @Override
         protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
             List<AnalysisPhase> phases = new ArrayList<>(phaseNL.size());
@@ -193,6 +216,7 @@ public class SolrInterestingTermsUtils {
                         throw new SolrException(ErrorCode.UNKNOWN, "Unable to instanciate AnalysisPhrase using reflection ("
                                 + e.getClass().getSimpleName() + " - " + e.getMessage() + ")!", e);
                     }
+                    @SuppressWarnings("unchecked")
                     List<NamedList<Object>> tokens = (List<NamedList<Object>>)phaseEntry.getValue();
                     for (NamedList<Object> token : tokens) {
                         TokenInfo tokenInfo = buildTokenInfo(token);
