@@ -39,10 +39,10 @@ let localize = new Localize(i18n, undefined, 'xx');
 toastr.options.target = ".widgetMessage";
 toastr.options.positionClass = "widgetToast";
 
-let Logger = function (prefix) {
+let Logger = function(prefix) {
     this.logger = {};
     for (let m in console)
-        if (typeof console[m] == 'function')
+        if(typeof console[m] == 'function')
             this.logger[m] = console[m].bind(window.console, prefix + ":");
 
     return this.logger;
@@ -51,40 +51,37 @@ let Logger = function (prefix) {
 let log = Logger("SmartiWidget");
 
 const Utils = {
-    getAvatarUrl: (id) => {
-        return "https://www.gravatar.com/avatar/" + md5('redlink' + id) + "?d=identicon";
+    getAvatarUrl : (id) => {
+        return "https://www.gravatar.com/avatar/"+md5('redlink'+id)+"?d=identicon";
     },
     getAnonymUser: (id) => {
-        return 'User-' + (parseInt(md5('redlink' + id), 16) % 10000); //TODO check if this works somehow...
+        return 'User-' + (parseInt(md5('redlink'+id),16)%10000); //TODO check if this works somehow...
     },
     localize: (obj) => {
-        if (obj.args && obj.args.length > 0) {
+        if(obj.args && obj.args.length > 0) {
             const args_clone = ld_lang.cloneDeep(obj.args);
             args_clone.unshift(obj.code);
-            return localize.translate.apply(null, args_clone);
+            return localize.translate.apply(null,args_clone);
         }
         return localize.translate(obj.code);
     },
     mapDocType: (doctype) => {
-        switch (doctype) {
-            case 'application/xhtml+xml':
-                return 'html';
+        switch(doctype) {
+            case 'application/xhtml+xml': return 'html';
         }
-        return doctype.substring(doctype.indexOf('/') + 1).slice(0, 4);
+        return doctype.substring(doctype.indexOf('/')+1).slice(0,4);
     },
-    cropLabel: (label, max_length, replace, mode) => {
-        max_length = max_length - replace.length;
+    cropLabel: (label,max_length,replace,mode) => {
+        max_length = max_length-replace.length;
 
-        if (label.length <= max_length) return label;
+        if(label.length <= max_length) return label;
 
-        switch (mode) {
-            case 'start':
-                return label.substring(0, max_length) + replace;
-            case 'end':
-                return replace + label.substring(label.length - max_length);
+        switch(mode) {
+            case 'start': return label.substring(0,max_length) + replace;
+            case 'end': return replace + label.substring(label.length-max_length);
             default:
-                const partLength = Math.floor(max_length / 2);
-                return label.substring(0, partLength) + replace + label.substring(label.length - partLength);
+                const partLength = Math.floor(max_length/2);
+                return label.substring(0,partLength) + replace + label.substring(label.length-partLength);
         }
     }
 };
@@ -122,7 +119,7 @@ function Smarti(options) {
     }, options);
 
     //init socket connection
-    let ddp = new DDP(options.DDP);
+    let ddp  = new DDP(options.DDP);
 
     let pubsubs = {};
     /**
@@ -131,18 +128,18 @@ function Smarti(options) {
      * @returns {*}
      */
     //taken from http://api.jquery.com/jQuery.Callbacks/
-    function pubsub(id) {
-        let callbacks, pubsub = id && pubsubs[id];
+    function pubsub( id ) {
+        let callbacks, pubsub = id && pubsubs[ id ];
 
-        if (!pubsub) {
+        if ( !pubsub ) {
             callbacks = $.Callbacks();
             pubsub = {
                 publish: callbacks.fire,
                 subscribe: callbacks.add,
                 unsubscribe: callbacks.remove
             };
-            if (id) {
-                pubsubs[id] = pubsub;
+            if ( id ) {
+                pubsubs[ id ] = pubsub;
             }
         }
         return pubsub;
@@ -158,7 +155,7 @@ function Smarti(options) {
      *
 
      */
-    function login(success, failure, username, password) {
+    function login(success,failure,username,password) {
 
         /**
          * Login to meteor ddp sockets with params
@@ -170,12 +167,7 @@ function Smarti(options) {
                 if (message.id === loginId) {
                     if (message.error) {
                         log.error("Login error:", message.error);
-                        return failure({
-                            i18nObj: {
-                                code: "login.failed",
-                                args: [message.error.reason]
-                            }
-                        });
+                        return failure({i18nObj: {code:"login.failed", args:[message.error.reason]}});
                     }
                     localStorage.setItem('Meteor.loginToken', message.result.token);
                     localStorage.setItem('Meteor.loginTokenExpires', new Date(message.result.tokenExpires.$date));
@@ -185,40 +177,36 @@ function Smarti(options) {
             });
         }
 
-        if (username && password) {
+        if(username && password) {
 
-            loginRequest([{
-                "user": {
-                    "username": username
-                },
-                "password": password
-            }, false]);
+            loginRequest([
+                {
+                    "user": {"username": username},
+                    "password": password
+                }, false
+            ]);
 
-        } else if (
+        } else if(
             localStorage &&
             localStorage.getItem('Meteor.loginToken') &&
             localStorage.getItem('Meteor.loginTokenExpires') &&
             (new Date(localStorage.getItem('Meteor.loginTokenExpires')) > new Date())) {
 
-            log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
+                log.debug(`found token ${localStorage.getItem('Meteor.loginToken')} for user ${localStorage.getItem('Meteor.userId')} that expires on ${localStorage.getItem('Meteor.loginTokenExpires')}`);
 
-            loginRequest([{
-                "resume": localStorage.getItem('Meteor.loginToken')
-            }]);
+                loginRequest([
+                    { "resume": localStorage.getItem('Meteor.loginToken') }
+                ]);
 
-            $.ajaxSetup({
-                headers: {
+                $.ajaxSetup({
+                    headers: {
                     'content-type': 'application/json',
                     'x-auth-token': localStorage.getItem('Meteor.loginToken'),
                     'x-user-id': localStorage.getItem('Meteor.userId')
-                }
-            });
+                    }
+                });
         } else {
-            failure({
-                i18nObj: {
-                    code: 'login.no-auth-token'
-                }
-            });
+            failure({i18nObj: {code:'login.no-auth-token'}});
         }
     }
 
@@ -235,15 +223,15 @@ function Smarti(options) {
         // get RC's search provider
         const spCallId = ddp.method("rocketchatSearch.getProvider", []);
         ddp.on("result", (message) => {
-            if (message.id === spCallId) {
+            if(message.id === spCallId) {
                 if (message.error) {
                     log.error('Failed to get search provider:', message.error);
                     return;
                 } else {
-                    if (message.result) {
+                    if(message.result) {
                         searchProvider = message.result;
                         log.debug('Search provider found: ', searchProvider);
-                        if (searchProvider.key == "chatpalProvider") {
+                        if(searchProvider.key == "chatpalProvider") {
                             searchProviderSupported = true;
                         } else {
                             searchProviderSupported = false;
@@ -261,14 +249,10 @@ function Smarti(options) {
         log.debug('init -> get conversation ID for channel', options.channel);
         const lastConvCallId = ddp.method("getConversationId", [options.channel]);
         ddp.on("result", (message) => {
-            if (message.id === lastConvCallId) {
+            if(message.id === lastConvCallId) {
                 if (message.error) {
                     log.error('Failed to get conversation ID:', message.error);
-                    return failure({
-                        i18nObj: {
-                            code: 'smarti.result.conversation-not-found'
-                        }
-                    });
+                    return failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                 } else {
                     if (message.result) {
                         // conversation ID found for channel -> fetch conversation results
@@ -276,11 +260,7 @@ function Smarti(options) {
                         getConversation(message.result, failure);
                     } else {
                         log.debug('init -> conversation ID not found for channel:', options.channel);
-                        return failure({
-                            i18nObj: {
-                                code: 'smarti.result.conversation-not-found'
-                            }
-                        });
+                        return failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                     }
                 }
             }
@@ -288,17 +268,12 @@ function Smarti(options) {
 
         // subscribe changes on the channel that is passed by SmartiWidget constructor (message send)
         log.debug('init -> subscribe channel', options.channel);
-        const subId = ddp.sub("stream-notify-room", [options.channel + "/newConversationResult", false]);
+        const subId = ddp.sub("stream-notify-room", [options.channel+"/newConversationResult", false]);
         ddp.on("nosub", () => {
-            failure({
-                i18nObj: {
-                    code: 'sub.new-conversation-result.nosub'
-                },
-                dismissOnClick: true
-            });
+            failure({i18nObj: {code:'sub.new-conversation-result.nosub'}, dismissOnClick: true});
         });
         ddp.on("changed", (message) => {
-            if (message.collection == "stream-notify-room") {
+            if(message.collection == "stream-notify-room") {
                 // subscriotion has changed (message send) -> fetch conversation results
                 log.debug('Async smarti results received:', message.fields.args[0]);
                 pubsub('smarti.data').publish(message.fields.args[0]);
@@ -307,7 +282,7 @@ function Smarti(options) {
     }
 
     function refresh(onFailure) {
-        if (conversationId) {
+        if(conversationId) {
             getConversation(conversationId, onFailure);
         } else {
             Console.warn("Widget data refresh failed. Conversation ID not found!");
@@ -324,24 +299,16 @@ function Smarti(options) {
         log.debug('Fetch results for conversation with ID:', conversationId);
         const msgid = ddp.method("getConversation", [conversationId]);
         ddp.on("result", (message) => {
-            if (message.id === msgid) {
+            if(message.id === msgid) {
                 if (message.error) {
                     log.error('Failed to get conversation:', message.error);
-                    if (failure) failure({
-                        i18nObj: {
-                            code: 'smarti.result.conversation-not-found'
-                        }
-                    });
+                    if (failure) failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                 } else {
                     if (message.result && message.result != "null") {
                         if (message.result.error) {
                             log.error('Server-side error:', message.result.error);
                             //const errorCode = message.result.error.code || message.result.error.response && message.result.error.response.statusCode;
-                            if (failure) failure({
-                                i18nObj: {
-                                    code: 'smarti.result.conversation-not-found'
-                                }
-                            });
+                            if (failure) failure({i18nObj: {code: 'smarti.result.conversation-not-found'}});
                         } else {
                             pubsub('smarti.data').publish(message.result);
                         }
@@ -355,49 +322,33 @@ function Smarti(options) {
 
     function query(params, success, failure) {
         log.debug(`Get query builder result for conversation with [id: ${params.conversationId}, templateIndex: ${params.template}, creatorName: ${params.creator}, start: ${params.start}}`);
-        const msgid = ddp.method("getQueryBuilderResult", [params.conversationId, params.template, params.creator, params.start]);
-        ddp.on("result", (message) => {
-            if (message.id === msgid) {
-                if (message.error) {
-                    log.error("Query error:", message.error);
-                    return failure({
-                        i18nObj: {
-                            code: "get.query.params",
-                            args: [message.error.reason]
-                        },
-                        dismissOnClick: true
-                    });
-                }
-                success(message.result || {});
-            }
-        });
+      const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
+      ddp.on("result", (message) => {
+          if(message.id === msgid) {
+              if (message.error) {
+                  log.error("Query error:", message.error);
+                  return failure({i18nObj: {code: "get.query.params", args: [message.error.reason]}, dismissOnClick: true});
+              }
+              success(message.result || {});
+          }
+      });
     }
 
     function search(params, success, failure) {
         log.info('Searching for conversation messages...');
-        const msgid = ddp.method("searchConversations", [params]);
+        const msgid = ddp.method("searchConversations",[params]);
         ddp.on("result", (message) => {
-            if (message.id === msgid) {
+            if(message.id === msgid) {
                 if (message.error) {
                     log.error("Conversation search error:", message.error);
-                    failure({
-                        i18nObj: {
-                            code: 'smarti.result.conversation-not-found'
-                        },
-                        dismissOnClick: true
-                    });
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else if (!message.result || message.result.error) {
-                    if (!message.result) {
+                    if(!message.result) {
                         log.info("Conversation search returned no result!");
                     } else {
                         log.error("Conversation search error:", message.result.error);
                     }
-                    failure({
-                        i18nObj: {
-                            code: 'smarti.result.conversation-not-found'
-                        },
-                        dismissOnClick: true
-                    });
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else {
                     success(message.result);
                 }
@@ -409,27 +360,17 @@ function Smarti(options) {
         log.debug('RC Search...', params);
         const msgid = ddp.method("rocketchatSearch.search", params);
         ddp.on("result", (message) => {
-            if (message.id === msgid) {
+            if(message.id === msgid) {
                 if (message.error) {
                     log.error("RC search error:", message.error);
-                    failure({
-                        i18nObj: {
-                            code: 'smarti.result.conversation-not-found'
-                        },
-                        dismissOnClick: true
-                    });
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else if (!message.result || message.result.error) {
-                    if (!message.result) {
+                    if(!message.result) {
                         log.info("RC search returned no result!");
                     } else {
                         log.error("RC search error:", message.result.error);
                     }
-                    failure({
-                        i18nObj: {
-                            code: 'smarti.result.conversation-not-found'
-                        },
-                        dismissOnClick: true
-                    });
+                    failure({i18nObj: {code:'smarti.result.conversation-not-found'}, dismissOnClick: true});
                 } else {
                     success(message.result);
                 }
@@ -446,23 +387,13 @@ function Smarti(options) {
      * @param failure
      */
     function post(msg, attachments, success, failure) {
-        const methodId = ddp.method("sendMessage", [{
-            rid: options.channel,
-            msg: msg,
-            attachments: attachments,
-            origin: 'smartiWidget'
-        }]);
+        const methodId = ddp.method("sendMessage",[{rid:options.channel, msg:msg, attachments:attachments, origin:'smartiWidget'}]);
         ddp.on("result", (message) => {
-            if (message.id === methodId) {
-                if (message.error) {
+            if(message.id === methodId) {
+                if(message.error) {
                     log.error('Cannot post message:', message.error);
-                    if (failure) failure({
-                        i18nObj: {
-                            code: "msg.post.failure"
-                        },
-                        dismissOnClick: true
-                    });
-                } else if (success) {
+                    if(failure) failure({i18nObj: {code:"msg.post.failure"}, dismissOnClick: true});
+                } else if(success) {
                     success();
                 }
             }
@@ -492,7 +423,7 @@ function Smarti(options) {
 function Tracker(category, roomId, onEvent) {
     this.trackEvent = (action, value) => {
         log.debug(`track event: ${category}, ${action}, ${roomId}, ${value}`);
-        if (onEvent) onEvent(category, action, roomId, value);
+        if(onEvent) onEvent(category, action, roomId, value);
     };
 }
 
@@ -529,7 +460,8 @@ function SmartiWidget(element, _options) {
         },
         widget: {},
         tracker: {
-            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : () => {},
+            onEvent: (typeof Piwik !== 'undefined' && Piwik) ? Piwik.getTracker().trackEvent : () => {
+            },
             category: "knowledgebase"
         },
         ui: {
@@ -543,7 +475,7 @@ function SmartiWidget(element, _options) {
         i18n: i18n
     };
 
-    $.extend(true, options, _options);
+    $.extend(true,options,_options);
 
     // log.debug('init:', options);
 
@@ -552,7 +484,7 @@ function SmartiWidget(element, _options) {
 
     moment.locale(options.lang);
 
-    let tracker = new Tracker(options.tracker.category, options.channel, options.tracker.onEvent);
+    let tracker = new Tracker(options.tracker.category,options.channel,options.tracker.onEvent);
 
     let widgets = [];
 
@@ -566,13 +498,13 @@ function SmartiWidget(element, _options) {
         };
     }
 
-    if (options.postings && options.postings.type === 'suggestText') {
-        if (options.postings.cssInputSelector) {
+    if(options.postings && options.postings.type === 'suggestText') {
+        if(options.postings.cssInputSelector) {
             let inputFieldELement = $(options.postings.cssInputSelector);
-            if (inputFieldELement.length) {
+            if(inputFieldELement.length) {
                 messageInputField = new InputField(inputFieldELement);
             } else {
-                console.warn('no element found for cssInputSelector %s, set postings.type to postText', options.postings.inputFieldSelector);
+                console.warn('no element found for cssInputSelector %s, set postings.type to postText',options.postings.inputFieldSelector);
                 options.postings.type = 'postText';
             }
         } else {
@@ -591,7 +523,7 @@ function SmartiWidget(element, _options) {
      * }
      * @constructor
      */
-    function IrLatchWidget(params, wgt_conf) {
+    function IrLatchWidget(params,wgt_conf) {
 
         let isGoogle = params.query._class == "io.redlink.smarti.query.google.GoogleSearchQuery";
 
@@ -611,14 +543,14 @@ function SmartiWidget(element, _options) {
         function getResults(page, useSearchTerms, append) {
 
             let tks = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
-            if (useSearchTerms) tks = tks.concat(searchTerms || []);
+            if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
             $.observable(params.templateData).setProperty("noTags", !tks.length);
 
-            if (equalArrays(lastTks, tks) && loadedPage >= page) return;
+            if(equalArrays(lastTks, tks) && loadedPage >= page) return;
             lastTks = tks;
 
-            if (!append) {
+            if(!append) {
                 page = 0;
                 currentPage = 0;
                 noMoreData = false;
@@ -626,12 +558,12 @@ function SmartiWidget(element, _options) {
 
             let queryParams = {};
             let datatype = 'jsonp';
-            let start = page > 0 ? (page * numOfRows) : 0;
+            let start = page > 0 ? (page*numOfRows) : 0;
             if (isGoogle) {
-                queryParams = {
+                queryParams  = {
                     'num': numOfRows,
-                    'start': start + 1,
-                    'q': getGoogleQuery(tks)
+                    'start': start+1,
+                    'q':  getGoogleQuery(tks)
                 }
                 datatype = 'json';
             } else {
@@ -640,12 +572,12 @@ function SmartiWidget(element, _options) {
                     'fl': '*,score',
                     'rows': numOfRows,
                     'start': start,
-                    'q': getSolrQuery(tks)
+                    'q':  getSolrQuery(tks)
                 };
             }
 
             // append default params
-            for (let property in params.query.defaults) {
+            for(let property in params.query.defaults) {
                 if (params.query.defaults.hasOwnProperty(property))
                     queryParams[property] = params.query.defaults[property];
             }
@@ -663,16 +595,10 @@ function SmartiWidget(element, _options) {
                 dataType: datatype,
                 jsonp: 'json.wrf',
                 error: (err) => {
-                    log.error(Utils.localize({
-                        code: 'widget.latch.query.failed',
-                        args: [params.query.displayTitle, err.responseText]
-                    }));
+                    log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
                 failure: (err) => {
-                    log.error(Utils.localize({
-                        code: 'widget.latch.query.failed',
-                        args: [params.query.displayTitle, err.responseText]
-                    }));
+                    log.error(Utils.localize({code:'widget.latch.query.failed', args:[params.query.displayTitle, err.responseText]}));
                 },
                 success: (data) => {
 
@@ -698,14 +624,14 @@ function SmartiWidget(element, _options) {
                         let newDoc = {};
                         Object.keys(params.query.resultConfig.mappings).forEach(k => {
                             let v = params.query.resultConfig.mappings[k];
-                            if (v) {
-                                if (k === "doctype") {
+                            if(v) {
+                                if(k === "doctype") {
                                     newDoc[k] = Utils.mapDocType(doc[v]);
-                                } else if (k === "date") {
+                                } else if(k === "date") {
                                     newDoc[k] = new Date(doc[v]).getTime();
-                                } else if (k === "link") {
+                                } else if(k === "link") {
                                     newDoc[k] = Array.isArray(doc[v]) ? doc[v][0] : doc[v];
-                                } else if (k === "type") {
+                                } else if(k === "type") {
                                     newDoc[k] = doc[v] ? doc[v].split(".").pop() : "unknown";
                                 } else {
                                     newDoc[k] = doc[v];
@@ -718,7 +644,7 @@ function SmartiWidget(element, _options) {
                         return doc.title;
                     });
 
-                    if (docs && docs.length) {
+                    if(docs && docs.length) {
                         docs.forEach(d => {
                             d.templateType = "ir_latch";
                         });
@@ -726,25 +652,25 @@ function SmartiWidget(element, _options) {
 
                     $.observable(params.templateData).setProperty("total", numFound || 0);
 
-                    if (append) {
+                    if(append) {
                         $.observable(params.templateData.results).insert(docs);
                     } else {
                         $.observable(params.templateData.results).refresh(docs);
                     }
                     $.observable(params.templateData).setProperty("loading", false);
 
-                    if (params.elem.height() <= widgetBody.innerHeight()) {
-                        if (params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
                         loadNextPage();
                     } else {
-                        if (params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
                     }
                 }
             });
         }
 
         function loadNextPage() {
-            if (!noMoreData) {
+            if(!noMoreData) {
                 log.debug("Load more:", params.query.creator);
                 currentPage++;
                 getResults(currentPage, true, true);
@@ -793,21 +719,17 @@ function SmartiWidget(element, _options) {
 
         function getResults(page, useSearchTerms, append) {
 
-            if (params.query.creator.indexOf("queryBuilder:rocketchatsearch") > -1) {
+            if(params.query.creator.indexOf("queryBuilder:rocketchatsearch") > -1) {
 
-                if (!searchProvider) {
-                    return $.observable(params.templateData).setProperty("msg", Utils.localize({
-                        code: 'rc.search-provider.inactive'
-                    }));
+                if(!searchProvider) {
+                    return $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'rc.search-provider.inactive'}));
                 }
 
-                if (!searchProviderSupported) {
-                    return $.observable(params.templateData).setProperty("msg", Utils.localize({
-                        code: 'rc.search-provider.not-supported'
-                    }));
+                if(!searchProviderSupported) {
+                    return $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'rc.search-provider.not-supported'}));
                 }
 
-                let queryTerms = (params.query.contextQuery || []).sort((a, b) => b.relevance - a.relevance).map((q) => q.term);
+                let queryTerms = (params.query.contextQuery||[]).sort((a, b) => b.relevance - a.relevance).map((q) => q.term);
 
                 let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
                 // if(useSearchTerms) tks = tks.concat(searchTerms || []);
@@ -816,14 +738,11 @@ function SmartiWidget(element, _options) {
 
                 currentSimilarityQuery = params.query.similarityQuery;
 
-                let context = {
-                    "uid": Meteor.userId(),
-                    "rid": Session.get("openedRoom")
-                };
+                let context = {"uid": Meteor.userId(), "rid": Session.get("openedRoom")};
 
-                if (lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastQueryTerms, queryTerms) && context.uid == lastContext.uid && context.rid == lastContext.rid && loadedPage >= page) return;
+                if(lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastQueryTerms, queryTerms) && context.uid == lastContext.uid && context.rid == lastContext.rid && loadedPage >= page) return;
 
-                if (!append) {
+                if(!append) {
                     page = 0;
                     currentPage = 0;
                     noMoreData = false;
@@ -858,7 +777,7 @@ function SmartiWidget(element, _options) {
 
                     let messages = [];
                     data = data.message;
-                    if (data.docs && data.docs.length) {
+                    if(data.docs && data.docs.length) {
                         data.docs.forEach(m => {
                             /* default provider message
                             messages.push({
@@ -868,15 +787,13 @@ function SmartiWidget(element, _options) {
                             });
                             */
 
-                            let user = Meteor.users.findOne({
-                                username: m.username
-                            });
+                            let user = Meteor.users.findOne({username: m.username});
                             let userDisplayName = user ? user.name : m.username;
 
                             messages.push({
                                 _id: m._id,
                                 rid: m.rid,
-                                messageLink: getRCMessageLink(m.r, m._id),
+                                messageLink: getRCMessageLink(m.rid, m._id),
                                 content: m.text[0],
                                 time: m.created,
                                 username: m.username,
@@ -911,9 +828,9 @@ function SmartiWidget(element, _options) {
 
                     noMoreData = !data.docs || !data.docs.length || typeof data.numFound == "undefined" || (params.templateData.results.length + data.docs.length) == data.numFound;
 
-                    if (typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
+                    if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
 
-                    if (append) {
+                    if(append) {
                         $.observable(params.templateData.results).insert(messages);
                     } else {
                         $.observable(params.templateData.results).refresh(messages);
@@ -922,27 +839,21 @@ function SmartiWidget(element, _options) {
                     $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
                     $.observable(params.templateData).setProperty("loading", false);
 
-                    if (params.elem.height() <= widgetBody.innerHeight()) {
-                        if (params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
                         loadNextPage();
                     } else {
-                        if (params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
                     }
-                }, function (error) {
-                    if (error) {
+                }, function(error) {
+                    if(error) {
                         showError(error);
                     } else {
-                        showMsg({
-                            i18nObj: {
-                                code: 'smarti.result.no-response'
-                            },
-                            isError: true,
-                            dismissOnClick: true
-                        });
+                        showMsg({i18nObj: {code: 'smarti.result.no-response'}, isError: true, dismissOnClick: true});
                     }
                     $.observable(params.templateData).setProperty("loading", false);
                 });
-            } else if (params.query.creator.indexOf("queryBuilder:conversationsearch") > -1) {
+            } else if(params.query.creator.indexOf("queryBuilder:conversationsearch") > -1) {
                 /*
                     fl:"id,message_id,meta_channel_id,user_id,time,message,type"
                     hl:"true"
@@ -951,26 +862,26 @@ function SmartiWidget(element, _options) {
                     sort:"time desc"
                 */
                 let tks = widgetHeaderTagsTemplateData.tokens.filter(t => t.pinned).map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
-                if (useSearchTerms) tks = tks.concat(searchTerms || []);
+                if(useSearchTerms) tks = tks.concat(searchTerms || []);
 
                 currentSimilarityQuery = params.query.similarityQuery;
 
                 currentFilters = [];
                 params.query.filterQueries.forEach(fq => {
-                    if (!fq.optional) {
+                    if(!fq.optional) {
                         currentFilters.push(fq.filter);
                     } else {
                         let enabled = widgetStorage.widgetOptions && widgetStorage.widgetOptions[params.query.creator] && widgetStorage.widgetOptions[params.query.creator].filters[fq.filter];
-                        if (typeof enabled == "undefined") enabled = fq.enabled;
-                        if (enabled) {
+                        if(typeof enabled == "undefined") enabled = fq.enabled;
+                        if(enabled) {
                             currentFilters.push(fq.filter);
                         }
                     }
                 });
 
-                if (lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
+                if(lastSimilarityQuery === currentSimilarityQuery && equalArrays(lastTks, tks) && equalArrays(lastFilters, currentFilters) && loadedPage >= page) return;
 
-                if (!append) {
+                if(!append) {
                     page = 0;
                     currentPage = 0;
                     noMoreData = false;
@@ -986,7 +897,7 @@ function SmartiWidget(element, _options) {
                 let queryParams = {};
 
                 //set default params
-                for (let property in params.query.defaults) {
+                for(let property in params.query.defaults) {
                     if (params.query.defaults.hasOwnProperty(property))
                         queryParams[property] = params.query.defaults[property];
                 }
@@ -1011,10 +922,10 @@ function SmartiWidget(element, _options) {
                     loadedPage = page;
 
                     let conversations = [];
-                    if (data.docs && data.docs.length) {
+                    if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
                             d.results.forEach(r => {
-                                if (r.messages.length) {
+                                if(r.messages.length) {
                                     let conversation = r.messages[0];
                                     conversation.cid = d.id;
                                     r.messages.slice(1).forEach(m => {
@@ -1044,9 +955,9 @@ function SmartiWidget(element, _options) {
 
                     noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
 
-                    if (typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
+                    if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
 
-                    if (append) {
+                    if(append) {
                         $.observable(params.templateData.results).insert(conversations);
                     } else {
                         $.observable(params.templateData.results).refresh(conversations);
@@ -1055,34 +966,26 @@ function SmartiWidget(element, _options) {
                     $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
                     $.observable(params.templateData).setProperty("loading", false);
 
-                    if (params.elem.height() <= widgetBody.innerHeight()) {
-                        if (params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
                         loadNextPage();
                     } else {
-                        if (params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
                     }
-                }, function (error) {
-                    if (error) {
+                }, function(error) {
+                    if(error) {
                         showError(error);
                     } else {
-                        showMsg({
-                            i18nObj: {
-                                code: 'smarti.result.no-response'
-                            },
-                            isError: true,
-                            dismissOnClick: true
-                        });
+                        showMsg({i18nObj: {code: 'smarti.result.no-response'}, isError: true, dismissOnClick: true});
                     }
                     $.observable(params.templateData).setProperty("loading", false);
                 });
-            } else if (params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
+            } else if(params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
 
-                $.observable(params.templateData).setProperty("msg", Utils.localize({
-                    code: 'smarti.source.not-supported'
-                }));
+                $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'smarti.source.not-supported'}));
                 return; // conversationmlt not supported anymore!
 
-                if (!append) {
+                if(!append) {
                     page = 0;
                     currentPage = 0;
                     noMoreData = false;
@@ -1106,7 +1009,7 @@ function SmartiWidget(element, _options) {
                     loadedPage = page;
                     noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
 
-                    if (data.docs && data.docs.length) {
+                    if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
                             d.templateType = "related.conversation";
                             d.answers.forEach(a => {
@@ -1115,7 +1018,7 @@ function SmartiWidget(element, _options) {
                         });
                     }
 
-                    if (append) {
+                    if(append) {
                         $.observable(params.templateData.results).insert(data.docs);
                     } else {
                         $.observable(params.templateData.results).refresh(data.docs);
@@ -1123,17 +1026,11 @@ function SmartiWidget(element, _options) {
 
                     $.observable(params.templateData).setProperty("loading", false);
 
-                }, function (error) {
-                    if (error) {
+                }, function(error) {
+                    if(error) {
                         showError(error);
                     } else {
-                        showMsg({
-                            i18nObj: {
-                                code: 'smarti.result.no-response'
-                            },
-                            isError: true,
-                            dismissOnClick: true
-                        });
+                        showMsg({i18nObj: {code: 'smarti.result.no-response'}, isError: true, dismissOnClick: true});
                     }
                     $.observable(params.templateData).setProperty("loading", false);
                 });
@@ -1141,7 +1038,7 @@ function SmartiWidget(element, _options) {
         }
 
         function loadNextPage() {
-            if (!noMoreData) {
+            if(!noMoreData) {
                 log.info("Load more:", params.query.creator);
                 currentPage++;
                 getResults(currentPage, true, true);
@@ -1162,11 +1059,7 @@ function SmartiWidget(element, _options) {
 
     function showMsg(options) {
         const toastrFunction = options.isError ? toastr.error : toastr.info;
-        toastrFunction(options.i18nObj ? Utils.localize(options.i18nObj) : options.msg, null, {
-            timeOut: 0,
-            extendedTimeOut: 0,
-            tapToDismiss: options.dismissOnClick || false
-        });
+        toastrFunction(options.i18nObj ? Utils.localize(options.i18nObj) : options.msg, null, {timeOut: 0, extendedTimeOut: 0, tapToDismiss: options.dismissOnClick || false});
     }
 
     function showError(options) {
@@ -1215,7 +1108,7 @@ function SmartiWidget(element, _options) {
         let filteredTokens = {};
         let uniqueTokens = tokens
             .filter((t) => {
-                if (filteredTokens[t.value]) return false;
+                if(filteredTokens[t.value]) return false;
                 filteredTokens[t.value] = true;
                 return true;
             })
@@ -1232,7 +1125,7 @@ function SmartiWidget(element, _options) {
 
         log.debug("Filtered tokens:", uniqueTokens);
 
-        if (widgetHeaderTagsTemplateData.include.length) {
+        if(widgetHeaderTagsTemplateData.include.length) {
             log.debug("Pinned tokens:", widgetHeaderTagsTemplateData.include);
             uniqueTokens = widgetHeaderTagsTemplateData.include.map(t => {
                 t.pinned = true;
@@ -1240,11 +1133,11 @@ function SmartiWidget(element, _options) {
             }).concat(uniqueTokens);
         }
 
-        if (data.context) {
+        if(data.context) {
             analyzedMessages = data.context.end - data.context.start - data.context.skipped;
         }
 
-        if (!initialized) {
+        if(!initialized) {
             widgetContent.empty();
             widgetMessage.empty();
 
@@ -1253,19 +1146,17 @@ function SmartiWidget(element, _options) {
 
                     let constructor;
 
-                    switch (template.type) {
+                    switch(template.type) {
                         case 'ir_latch':
-                            constructor = IrLatchWidget;
-                            break;
+                            constructor = IrLatchWidget;break;
                         case 'related.conversation':
-                            constructor = ConversationWidget;
-                            break;
+                            constructor = ConversationWidget;break;
                     }
 
                     const isRCSearch = query.creator.indexOf("queryBuilder:rocketchatsearch") > -1;
                     const isConversationMlt = query.creator.indexOf("queryBuilder:conversationmlt") > -1;
 
-                    if (
+                    if(
                         constructor &&
                         (!options.widget[query.creator] || !options.widget[query.creator].disabled) &&
                         !isConversationMlt
@@ -1274,15 +1165,7 @@ function SmartiWidget(element, _options) {
 
                         let params = {
                             elem: elem,
-                            templateData: {
-                                loading: false,
-                                results: [],
-                                total: 0,
-                                msg: "",
-                                tokensUsed: false,
-                                noMessages: false,
-                                isRCSearch
-                            },
+                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false, isRCSearch},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1291,9 +1174,9 @@ function SmartiWidget(element, _options) {
                             query: query
                         };
 
-                        if (template.type == "related.conversation") {
+                        if(template.type == "related.conversation") {
                             // filterQueries
-                            if (query.filterQueries) {
+                            if(query.filterQueries) {
                                 params.templateData.filters = query.filterQueries.filter(fq => {
                                     return fq.optional;
                                 });
@@ -1301,14 +1184,12 @@ function SmartiWidget(element, _options) {
                                     let enabled = widgetStorage.widgetOptions && widgetStorage.widgetOptions[params.query.creator] && widgetStorage.widgetOptions[params.query.creator].filters[fq.filter];
                                     fq.enabled = typeof enabled == "undefined" ? fq.enabled : enabled;
                                     try {
-                                        fq.label = Utils.localize({
-                                            code: fq.name
-                                        });
-                                    } catch (e) {
+                                        fq.label = Utils.localize({code: fq.name});
+                                    } catch(e) {
                                         let nameParts = fq.name.split(".");
                                         fq.label = nameParts[nameParts.length - 1];
                                     }
-                                    if (fq.name !== "filter.property.support_area") {
+                                    if(fq.name !== "filter.property.support_area") {
                                         fq.label += ": " + (fq.displayValue || fq.filter);
                                     }
                                 });
@@ -1317,7 +1198,7 @@ function SmartiWidget(element, _options) {
 
                         let config = options.widget[query.creator] || {};
 
-                        if (isRCSearch) {
+                        if(isRCSearch) {
                             $.observable(widgets).insert(0, new constructor(params, config));
                         } else {
                             $.observable(widgets).insert(new constructor(params, config));
@@ -1327,22 +1208,18 @@ function SmartiWidget(element, _options) {
                 });
             });
 
-            if (widgets.length > 0) {
+            if(widgets.length > 0) {
                 initNavTabs();
                 initialized = true;
             } else {
-                showMsg({
-                    i18nObj: {
-                        code: 'smarti.no-widgets'
-                    }
-                });
+                showMsg({i18nObj: {code:'smarti.no-widgets'}});
             }
         } else {
             $.each(widgets, (i, wgt) => {
                 // update widget queries
                 $.each(data.templates, (i, template) => {
                     $.each(template.queries, (j, query) => {
-                        if (wgt.params.query.creator == query.creator) {
+                        if(wgt.params.query.creator == query.creator) {
                             $.observable(wgt.params).setProperty("query", query);
                         }
                     });
@@ -1375,7 +1252,7 @@ function SmartiWidget(element, _options) {
 
     function readStorage() {
         let storageStr = localStorage.getItem('widgetStorage_' + localStorage.getItem('Meteor.userId') + '_' + options.channel);
-        if (storageStr) {
+        if(storageStr) {
             widgetStorage = JSON.parse(storageStr);
         } else {
             writeStorage();
@@ -1386,15 +1263,13 @@ function SmartiWidget(element, _options) {
         widgetStorage.tokens.userTokens = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.userTokens || [];
         widgetStorage.tokens.include = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.include || [];
         widgetStorage.tokens.exclude = widgetHeaderTagsTemplateData && widgetHeaderTagsTemplateData.exclude || [];
-        if (!widgetStorage.widgetOptions) widgetStorage.widgetOptions = {};
+        if(!widgetStorage.widgetOptions) widgetStorage.widgetOptions = {};
         widgets.forEach((w) => {
-            if (w && w.params.elem && w.queryCreator == "queryBuilder:conversationsearch") {
-                widgetStorage.widgetOptions[w.params.query.creator] = {
-                    filters: {}
-                };
+            if(w && w.params.elem && w.queryCreator == "queryBuilder:conversationsearch") {
+                widgetStorage.widgetOptions[w.params.query.creator] = {filters: {}};
                 w.params.templateData.filters.forEach(fq => {
                     let enabled = widgetStorage.widgetOptions[w.params.query.creator] && widgetStorage.widgetOptions[w.params.query.creator].filters[fq.filter];
-                    if (typeof enabled == "undefined") enabled = fq.enabled;
+                    if(typeof enabled == "undefined") enabled = fq.enabled;
                     widgetStorage.widgetOptions[w.params.query.creator].filters[fq.filter] = enabled;
                 });
             }
@@ -1618,30 +1493,20 @@ function SmartiWidget(element, _options) {
     };
     widgetHeaderTagsTemplate.link(tags, widgetHeaderTagsTemplateData);
 
-    let widgetHeaderTabsTemplateData = {
-        widgets: widgets,
-        selectedWidget: 0
-    };
+    let widgetHeaderTabsTemplateData = {widgets: widgets, selectedWidget: 0};
     widgetHeaderTabsTemplate.link(tabs, widgetHeaderTabsTemplateData);
 
-    let widgetHeaderInnerTabSearchTemplateData = {
-        containerTitle: ""
-    };
+    let widgetHeaderInnerTabSearchTemplateData = {containerTitle: ""};
     widgetHeaderInnerTabSearchTemplate.link(innerTabSearch, widgetHeaderInnerTabSearchTemplateData);
 
-    let widgetFooterPostButtonTemplateData = {
-        title: Utils.localize({
-            code: 'widget.conversation.post-selected',
-            args: [0]
-        })
-    };
+    let widgetFooterPostButtonTemplateData = {title: Utils.localize({code:'widget.conversation.post-selected', args:[0]})};
     widgetFooterPostButtonTemplate.link(footerPostButton, widgetFooterPostButtonTemplateData);
 
     let innerTabSearchInput = innerTabSearch.find('input');
     let innerTabSearchSubmit = innerTabSearch.find('#innerTabSearchSubmit');
 
     function adjustFooter() {
-        if (noChatCloseBtn) {
+        if(noChatCloseBtn) {
             widgetFooter.hide();
             footerPostButton.css('position', 'relative');
         } else {
@@ -1657,21 +1522,19 @@ function SmartiWidget(element, _options) {
         noChatCloseBtn = !$('#widgetFooter .help-request-actions').length;
         adjustFooter();
     });
-    footerObserver.observe(widgetFooter.get(0), {
-        childList: true
-    });
+    footerObserver.observe(widgetFooter.get(0), {childList: true});
 
     adjustFooter();
 
     //Smarti
 
     let smarti = new Smarti({
-        DDP: {
-            endpoint: options.socketEndpoint
-        },
-        tracker: tracker,
-        channel: options.channel
-    }); //TODO wait for connect?
+      DDP: {
+        endpoint: options.socketEndpoint
+      },
+      tracker: tracker,
+      channel: options.channel
+    });//TODO wait for connect?
 
     smarti.subscribe('smarti.data', (data) => {
         refreshWidgets(data);
@@ -1688,7 +1551,7 @@ function SmartiWidget(element, _options) {
     tabOpenButton.unbind('click.closeTracker');
 
     tabOpenButton.bind('click.closeTracker', () => {
-        if ($('.external-search-content').is(":visible")) {
+        if($('.external-search-content').is(":visible")) {
             tracker.trackEvent('sidebar.close');
         }
     });
@@ -1700,18 +1563,18 @@ function SmartiWidget(element, _options) {
         if (widgetBody.scrollTop() > 1) {
             // Hide title and filters only when the gained height is less than the overflowing height,
             // otherwise there will be no scrolling and the UI will reset right away!
-            if (widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height() + 10) {
+            if(widgetBody.prop('scrollHeight') - widgetBody.innerHeight() > widgetTitle.height() + innerTabFilter.height() + 10) {
                 widgetTitle.slideUp(200);
-                if (innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
+                if(innerTabFilter.hasClass('active')) innerTabFilter.slideUp(200);
             }
             widgetHeader.addClass('shadow');
         } else {
             widgetTitle.slideDown(200);
-            if (innerTabFilter.hasClass('active')) innerTabFilter.slideDown(200);
+            if(innerTabFilter.hasClass('active')) innerTabFilter.slideDown(200);
             widgetHeader.removeClass('shadow');
         }
 
-        if (Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
+        if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
             widgetFooter.removeClass('shadow');
         } else {
             widgetFooter.addClass('shadow');
@@ -1720,45 +1583,41 @@ function SmartiWidget(element, _options) {
 
     let sources = tabs.find('.sources');
 
-    tabs.on('click', '.more', function () {
+    tabs.on('click', '.more', function() {
         if (sources.hasClass('open')) {
             sources.slideUp(100).removeClass('open');
-            $(this).text(Utils.localize({
-                code: 'smarti.sources'
-            }));
+            $(this).text(Utils.localize({code: 'smarti.sources'}));
         } else {
             sources.slideDown(200).addClass('open');
             $(this).html('<i class="icon-cancel"></i>');
         }
     });
 
-    sources.on('click', 'li', function () {
+    sources.on('click', 'li', function() {
         let currentTab = tabs.find('.selected');
         let newTab = $(this);
 
-        if (!newTab.hasClass('selected')) {
+        if(!newTab.hasClass('selected')) {
             currentTab.removeClass('selected');
             newTab.addClass('selected');
 
             let currentWidget = currentTab.get(0) && $.view(currentTab).data;
             let newWidget = $.view(newTab).data;
 
-            if (currentWidget) currentWidget.params.elem.hide();
+            if(currentWidget) currentWidget.params.elem.hide();
             newWidget.params.elem.show();
 
 
-            if (newWidget.params.type === "related.conversation") {
+            if(newWidget.params.type === "related.conversation") {
                 innerTabSearch.removeClass('active');
                 innerTabSearch.slideUp(100);
 
-                if (newWidget.params.templateData.filters && newWidget.params.templateData.filters.length) {
-                    let widgetHeaderInnerTabFilterTemplateData = {
-                        filters: newWidget.params.templateData.filters
-                    };
+                if(newWidget.params.templateData.filters && newWidget.params.templateData.filters.length) {
+                    let widgetHeaderInnerTabFilterTemplateData = {filters: newWidget.params.templateData.filters};
                     widgetHeaderInnerTabFilterTemplate.link(innerTabFilter, widgetHeaderInnerTabFilterTemplateData);
 
                     innerTabFilter.addClass('active');
-                    if (widgetBody.scrollTop() > 1) {
+                    if(widgetBody.scrollTop() > 1) {
                         innerTabFilter.slideUp(100);
                     } else {
                         innerTabFilter.slideDown(100);
@@ -1768,7 +1627,7 @@ function SmartiWidget(element, _options) {
                 }
             } else {
                 //innerTabSearch.addClass('active');
-                if (widgetBody.scrollTop() > 1) {
+                if(widgetBody.scrollTop() > 1) {
                     innerTabSearch.slideUp(100);
                 } else {
                     //innerTabSearch.slideDown(100);
@@ -1785,18 +1644,18 @@ function SmartiWidget(element, _options) {
             //sources.slideUp(100).removeClass('open');
             //tabs.find('.more').text(Utils.localize({code: 'smarti.sources'}));
 
-            if (currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
+            if(currentWidget) currentWidget.params.elem.find('.selected').removeClass('selected');
             selectionCount = 0;
-            if (noChatCloseBtn) {
+            if(noChatCloseBtn) {
                 widgetFooter.slideUp(200);
             } else {
                 footerPostButton.css('transform', 'translateY(200%)');
             }
 
-            if (newWidget.params.elem.height() <= widgetBody.innerHeight()) {
+            if(newWidget.params.elem.height() <= widgetBody.innerHeight()) {
                 widgetFooter.removeClass("shadow");
             } else {
-                if (Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
+                if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
                     widgetFooter.removeClass("shadow");
                 } else {
                     widgetFooter.addClass("shadow");
@@ -1808,7 +1667,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.smarti-widget .selectMessage', function () {
+    widgetBody.on('click', '.smarti-widget .selectMessage', function() {
         let parent = $(this).parent().parent();
 
         if (parent.hasClass('selected')) {
@@ -1829,18 +1688,15 @@ function SmartiWidget(element, _options) {
         }
         */
 
-        if (selectionCount === 0) {
-            if (noChatCloseBtn) {
+        if(selectionCount === 0) {
+            if(noChatCloseBtn) {
                 widgetFooter.slideUp(200);
             } else {
                 footerPostButton.css('transform', 'translateY(200%)');
             }
         } else {
-            $.observable(widgetFooterPostButtonTemplateData).setProperty("title", Utils.localize({
-                code: 'widget.conversation.post-selected' + (selectionCount == 1 ? '' : '-all'),
-                args: [selectionCount]
-            }));
-            if (noChatCloseBtn) {
+            $.observable(widgetFooterPostButtonTemplateData).setProperty("title", Utils.localize({code:'widget.conversation.post-selected' + (selectionCount == 1 ? '' : '-all'), args:[selectionCount]}));
+            if(noChatCloseBtn) {
                 widgetFooter.slideDown(200);
             } else {
                 footerPostButton.css('transform', 'translateY(0)');
@@ -1848,7 +1704,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.convMessage.parent .context', function () {
+    widgetBody.on('click', '.convMessage.parent .context', function() {
         const $conversation = $(this).closest('.conversation');
         toggleConversation($conversation);
     });
@@ -1856,17 +1712,12 @@ function SmartiWidget(element, _options) {
     function toggleConversation($conversation) {
         function afterCollapse() {
             $conversation.removeClass('expanded');
-            $conversation.find('.context').text(Utils.localize({
-                code: 'widget.show_details'
-            }));
+            $conversation.find('.context').text(Utils.localize({code: 'widget.show_details'}));
         }
-
         function afterExpand() {
-            $conversation.find('.context').text(Utils.localize({
-                code: 'widget.hide_details'
-            }));
+            $conversation.find('.context').text(Utils.localize({code: 'widget.hide_details'}));
         }
-        if ($conversation.hasClass('expanded')) {
+        if($conversation.hasClass('expanded')) {
             $conversation.children('.beforeContextContainer').toggle(200, afterCollapse);
             $conversation.children('.afterContextContainer').toggle(200, afterCollapse);
         } else {
@@ -1879,27 +1730,22 @@ function SmartiWidget(element, _options) {
 
     function postItems(items) {
         function createTextMessage(text, conv) {
-            if (conv.parent.templateType === "related.conversation") {
+            if(conv.parent.templateType === "related.conversation") {
                 text = text + '\n>' + conv.parent.content.replace(/\r\n/g, "\n").replace(/\n/g, " ");
             } else {
                 text = text + '\n>' + (conv.parent.link ? '[' + conv.parent.title + '](' + conv.parent.link + ')' : conv.parent.title) + (conv.parent.description ? ': ' + conv.parent.description : '');
             }
             $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
-                text += createTextMessage('', {
-                    parent: conv.parent.messagesBefore[childIdx]
-                });
+                text += createTextMessage('', {parent : conv.parent.messagesBefore[childIdx]});
             });
             $.each(conv.selectedChildIndicesAfter, (i, childIdx) => {
-                text += createTextMessage('', {
-                    parent: conv.parent.messagesAfter[childIdx]
-                });
+                text += createTextMessage('', {parent : conv.parent.messagesAfter[childIdx]});
             });
             return text;
         }
-
         function buildAttachments(conv) {
             let attachment;
-            if (conv.parent.templateType === "related.conversation") {
+            if(conv.parent.templateType === "related.conversation") {
                 attachment = {
                     text: conv.parent.content,
                     attachments: [],
@@ -1907,14 +1753,10 @@ function SmartiWidget(element, _options) {
                     ts: conv.parent.time
                 };
                 $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
-                    attachment.attachments.push(buildAttachments({
-                        parent: conv.parent.messagesBefore[childIdx]
-                    }));
+                    attachment.attachments.push(buildAttachments({parent: conv.parent.messagesBefore[childIdx]}));
                 });
                 $.each(conv.selectedChildIndicesAfter, (i, childIdx) => {
-                    attachment.attachments.push(buildAttachments({
-                        parent: conv.parent.messagesAfter[childIdx]
-                    }));
+                    attachment.attachments.push(buildAttachments({parent: conv.parent.messagesAfter[childIdx]}));
                 });
             } else {
                 attachment = {
@@ -1927,30 +1769,23 @@ function SmartiWidget(element, _options) {
 
             return attachment;
         }
-        if (items && items.length) {
+        if(items && items.length) {
             let text;
-            if (items[0].parent.templateType === "related.conversation") {
-                if (items.length > 1) {
-                    text = Utils.localize({
-                        code: 'widget.conversation.answer.title_msgs'
-                    });
+            if(items[0].parent.templateType === "related.conversation") {
+                if(items.length > 1) {
+                    text = Utils.localize({code:'widget.conversation.answer.title_msgs'});
                 } else {
-                    text = Utils.localize({
-                        code: 'widget.conversation.answer.title' + (items[0].selectedChildIndicesBefore.length || items[0].selectedChildIndicesAfter.length ? '' : '_msg')
-                    });
+                    text = Utils.localize({code:'widget.conversation.answer.title' + (items[0].selectedChildIndicesBefore.length || items[0].selectedChildIndicesAfter.length ? '' : '_msg')});
                 }
             } else {
-                text = Utils.localize({
-                    code: "widget.latch.answer.title",
-                    args: [widgets[widgetHeaderTabsTemplateData.selectedWidget].params.query.displayTitle]
-                });
+                text = Utils.localize({code:"widget.latch.answer.title", args:[widgets[widgetHeaderTabsTemplateData.selectedWidget].params.query.displayTitle]});
             }
 
-            if (options.postings && (options.postings.type === 'suggestText' || options.postings.type === 'postText')) {
+            if(options.postings && (options.postings.type === 'suggestText' || options.postings.type === 'postText')) {
                 items.forEach(conv => {
                     text = createTextMessage(text, conv);
                 });
-                if (options.postings.type === 'suggestText') {
+                if(options.postings.type === 'suggestText') {
                     messageInputField.post(text);
                 } else {
                     smarti.post(text, [], null, showError);
@@ -1965,7 +1800,7 @@ function SmartiWidget(element, _options) {
         }
     }
 
-    widgetBody.on('click', '.rc-search-result .copy', function () {
+    widgetBody.on('click', '.rc-search-result .copy', function() {
         let parent = $(this).parent().parent().parent();
         let parentResultIndex = $.view(parent).getIndex();
         let text = parent.text().trim().split(/\n/g).map(l => l.trim()).join("\r\n") + "\r\n";
@@ -1973,7 +1808,7 @@ function SmartiWidget(element, _options) {
         tracker.trackEvent("rc.search.result.copy", parentResultIndex);
     });
 
-    widgetBody.on('click', '.rc-search-result .jump-link', function () {
+    widgetBody.on('click', '.rc-search-result .jump-link', function() {
         let parent = $(this).parent().parent().parent();
         let parentResultIndex = $.view(parent).getIndex();
         tracker.trackEvent("rc.search.result.jump", parentResultIndex);
@@ -1981,51 +1816,39 @@ function SmartiWidget(element, _options) {
 
     footerPostButton.click(() => {
         let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
-        if (currentWidget && currentWidget.params.elem) {
+        if(currentWidget && currentWidget.params.elem) {
             let selectedItems = [];
             currentWidget.params.elem.find('.conversation>.convMessage, .irl-result').each((idx, item) => {
                 let parentMessageData = $.view(item).data;
                 let parentIsSelected = $(item).hasClass('selected');
-                let conv = {
-                    parent: parentMessageData,
-                    selectedChildIndicesBefore: [],
-                    selectedChildIndicesAfter: []
-                };
-                if (parentIsSelected) selectedItems.push(conv);
+                let conv = {parent: parentMessageData, selectedChildIndicesBefore: [], selectedChildIndicesAfter: []};
+                if(parentIsSelected) selectedItems.push(conv);
 
                 let beforeContextContainer = $(item).closest('.conversation').children('.beforeContextContainer');
-                if (beforeContextContainer.length) {
+                if(beforeContextContainer.length) {
                     beforeContextContainer.find('.convMessage').each((idx, item) => {
                         let childData = $.view(item).data;
                         let childIndex = $.view(item).index;
-                        if ($(item).hasClass('selected')) {
-                            if (parentIsSelected) {
+                        if($(item).hasClass('selected')) {
+                            if(parentIsSelected) {
                                 conv.selectedChildIndicesBefore.push(childIndex);
                             } else {
-                                selectedItems.push({
-                                    parent: childData,
-                                    selectedChildIndicesBefore: [],
-                                    selectedChildIndicesAfter: []
-                                });
+                                selectedItems.push({parent: childData, selectedChildIndicesBefore: [], selectedChildIndicesAfter: []});
                             }
                         }
                     });
                 }
 
                 let afterContextContainer = $(item).closest('.conversation').children('.afterContextContainer');
-                if (afterContextContainer.length) {
+                if(afterContextContainer.length) {
                     afterContextContainer.find('.convMessage').each((idx, item) => {
                         let childData = $.view(item).data;
                         let childIndex = $.view(item).index;
-                        if ($(item).hasClass('selected')) {
-                            if (parentIsSelected) {
+                        if($(item).hasClass('selected')) {
+                            if(parentIsSelected) {
                                 conv.selectedChildIndicesAfter.push(childIndex);
                             } else {
-                                selectedItems.push({
-                                    parent: childData,
-                                    selectedChildIndicesBefore: [],
-                                    selectedChildIndicesAfter: []
-                                });
+                                selectedItems.push({parent: childData, selectedChildIndicesBefore: [], selectedChildIndicesAfter: []});
                             }
                         }
                     });
@@ -2038,7 +1861,7 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    widgetBody.on('click', '.smarti-widget .postAction', function () {
+    widgetBody.on('click', '.smarti-widget .postAction', function() {
         let selectedItems = [];
         let parent = $(this).parent().parent();
         let parentMessageData = $.view(parent).data;
@@ -2057,9 +1880,8 @@ function SmartiWidget(element, _options) {
 
     let searchTimeout = null;
     let searchTerms = [];
-
     function search(widgetIdx) {
-        if (searchTimeout) clearTimeout(searchTimeout);
+        if(searchTimeout) clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             searchTimeout = null;
 
@@ -2070,7 +1892,7 @@ function SmartiWidget(element, _options) {
             */
 
             widgets.forEach((w, idx) => {
-                if (w && w.params.elem && w.queryCreator != "queryBuilder:conversationmlt" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
+                if(w && w.params.elem && w.queryCreator != "queryBuilder:conversationmlt" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
                     w.getResults(0, idx == widgetHeaderTabsTemplateData.selectedWidget);
                 }
             });
@@ -2081,14 +1903,14 @@ function SmartiWidget(element, _options) {
         search(widgetHeaderTabsTemplateData.selectedWidget);
     });
     innerTabSearchInput.keydown((e) => {
-        if (e.which == 13) search(widgetHeaderTabsTemplateData.selectedWidget);
+        if(e.which == 13) search(widgetHeaderTabsTemplateData.selectedWidget);
     });
 
-    tags.on('click', '.action-remove', function () {
+    tags.on('click', '.action-remove', function() {
         let $li = $(this).closest('li');
         let tokenIdx = $.view($li).index;
         let tokenData = $.view($li).data;
-        if (typeof tokenData === "string") {
+        if(typeof tokenData === "string") {
             $.observable(widgetHeaderTagsTemplateData.userTokens).remove(tokenIdx);
         } else {
             $.observable(widgetHeaderTagsTemplateData.exclude).insert(tokenData.value.trim().toLowerCase());
@@ -2099,39 +1921,35 @@ function SmartiWidget(element, _options) {
         tracker.trackEvent('tag.remove', tokenIdx);
     });
 
-    tags.on('click', '.action-pin', function () {
+    tags.on('click', '.action-pin', function() {
         let $li = $(this).closest('li');
         let tokenIdx = $.view($li).index;
         let tokenData = $.view($li).data;
 
-        if ($li.hasClass('pinned')) {
+        if($li.hasClass('pinned')) {
             $.observable(tokenData).setProperty("pinned", false);
             let includeIdx = -1;
             widgetHeaderTagsTemplateData.include.some((t, idx) => {
-                if (t.value == tokenData.value) {
+                if(t.value == tokenData.value) {
                     includeIdx = idx;
                     return true;
                 }
                 return false;
             });
-            if (includeIdx > -1) $.observable(widgetHeaderTagsTemplateData.include).remove(includeIdx);
-            $(this).attr('title', Utils.localize({
-                code: 'widget.latch.query.pin'
-            }));
+            if(includeIdx > -1) $.observable(widgetHeaderTagsTemplateData.include).remove(includeIdx);
+            $(this).attr('title', Utils.localize({code: 'widget.latch.query.pin'}));
             $li.removeClass('pinned');
             tracker.trackEvent('tag.unpin', tokenIdx);
         } else {
             $.observable(tokenData).setProperty("pinned", true);
             $.observable(widgetHeaderTagsTemplateData.include).insert(tokenData);
-            $(this).attr('title', Utils.localize({
-                code: 'widget.latch.query.unpin'
-            }));
+            $(this).attr('title', Utils.localize({code: 'widget.latch.query.unpin'}));
             $li.addClass('pinned');
             tracker.trackEvent('tag.pin', tokenIdx);
         }
     });
 
-    tags.on('click', '.remove-all', function () {
+    tags.on('click', '.remove-all', function() {
         $.observable(widgetHeaderTagsTemplateData.userTokens).refresh([]);
         $.observable(widgetHeaderTagsTemplateData.include).refresh([]);
         widgetHeaderTagsTemplateData.tokens.forEach(t => {
@@ -2142,14 +1960,14 @@ function SmartiWidget(element, _options) {
         tracker.trackEvent('tag.remove-all');
     });
 
-    tags.on('click', '.reset-exclude', function () {
+    tags.on('click', '.reset-exclude', function() {
         $.observable(widgetHeaderTagsTemplateData.exclude).refresh([]);
         tracker.trackEvent('tag.reset-exclude');
         smarti.refresh(showError);
     });
 
-    tags.on('click', 'li.add', function () {
-        if (!$(this).hasClass('active')) {
+    tags.on('click', 'li.add', function() {
+        if(!$(this).hasClass('active')) {
             $(this).addClass('active').html(`<input type="text" id="newTagInput" placeholder="${Utils.localize({code: 'smarti.new-search-term'})}">`);
             tags.find('#newTagInput').focus();
         }
@@ -2157,17 +1975,17 @@ function SmartiWidget(element, _options) {
 
     $(tags).keydown((e) => {
         if (tags.find('li.add').hasClass('active')) {
-            if (e.which == 13) {
+            if(e.which == 13) {
                 const newTag = tags.find('#newTagInput').val().trim();
-                if (newTag != "") {
-                    if (widgetHeaderTagsTemplateData.tokens.map(t => t.value.toLowerCase()).concat(widgetHeaderTagsTemplateData.userTokens).indexOf(newTag.toLowerCase()) == -1) {
+                if(newTag != "") {
+                    if(widgetHeaderTagsTemplateData.tokens.map(t => t.value.toLowerCase()).concat(widgetHeaderTagsTemplateData.userTokens).indexOf(newTag.toLowerCase()) == -1) {
                         $.observable(widgetHeaderTagsTemplateData.userTokens).insert(newTag);
                     }
                     tags.find('li.add').html('<i class="icon-plus"></i>').removeClass('active');
                 }
                 tracker.trackEvent('tag.add', 0);
             }
-            if (e.which == 13 || e.which == 27) {
+            if(e.which == 13 || e.which == 27) {
                 tags.find('li.add').html('<i class="icon-plus"></i>').removeClass('active');
                 event.preventDefault();
                 event.stopPropagation();
@@ -2175,9 +1993,9 @@ function SmartiWidget(element, _options) {
         }
     });
 
-    innerTabFilter.on('click', '.filter', function () {
+    innerTabFilter.on('click', '.filter', function() {
         let filterData = $.view($(this)).data;
-        if ($(this).hasClass('enabled')) {
+        if($(this).hasClass('enabled')) {
             $.observable(filterData).setProperty("enabled", false);
         } else {
             $.observable(filterData).setProperty("enabled", true);
@@ -2185,13 +2003,13 @@ function SmartiWidget(element, _options) {
     });
 
     let scrollTimeout = null;
-    widgetBody.scroll(function () {
-        if (scrollTimeout) clearTimeout(scrollTimeout);
+    widgetBody.scroll(function() {
+        if(scrollTimeout) clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(() => {
             scrollTimeout = null;
-            if (Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
+            if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
                 let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
-                if (currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();
+                if(currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();
             }
         }, 500);
     });
@@ -2204,16 +2022,16 @@ function SmartiWidget(element, _options) {
     $.observable(widgetHeaderTagsTemplateData.tokens).observeAll(onDataChange);
     $.observable(widgetHeaderTagsTemplateData.userTokens).observeAll(onDataChange);
     $.observable(widgetHeaderTagsTemplateData.exclude).observeAll(onDataChange);
-    $.observable(widgetHeaderTagsTemplateData.include).observeAll(function () {
+    $.observable(widgetHeaderTagsTemplateData.include).observeAll(function() {
         writeStorage();
     });
 
     $.views.helpers({
         // helper method to highlight text
         hl: (text, noSearchTerms) => {
-            if (!text) return text;
+            if(!text) return text;
             let terms = widgetHeaderTagsTemplateData.tokens.map(t => t.value).concat(widgetHeaderTagsTemplateData.userTokens);
-            if (!noSearchTerms) terms = terms.concat(searchTerms);
+            if(!noSearchTerms) terms = terms.concat(searchTerms);
             terms = [...new Set(terms)]; // unique terms
             terms.forEach(t => {
                 text = text.replace(new RegExp(`(${escapeRegExp(t)})`, 'ig'), '<mark>$1</mark>');
@@ -2231,9 +2049,7 @@ function SmartiWidget(element, _options) {
 
 // custom timestamp to local string converter for jsrender/views
 $.views.converters("tls", (val) => {
-    return moment(val).format(Utils.localize({
-        code: 'smarti.date-format'
-    }));
+    return moment(val).format(Utils.localize({code: 'smarti.date-format'}));
 });
 
 // custom converter for RC message date and time display
@@ -2258,9 +2074,9 @@ function getSolrQuery(queryArray) {
 function getGoogleQuery(queryArray) {
     var terms = queryArray.join(' ').split(' ');
     var uniqueNames = [];
-    $.each(terms, function (i, el) {
-        var term = el.toLowerCase();
-        if ($.inArray(term, uniqueNames) === -1) uniqueNames.push(term);
+    $.each(terms, function(i, el){
+      var term = el.toLowerCase();
+      if($.inArray(term, uniqueNames) === -1) uniqueNames.push(term);
     });
     return uniqueNames.join(' ');
 }
