@@ -2132,7 +2132,9 @@ $.views.converters("tls", (val) => {
 
 // custom converter for RC message date and time display
 $.views.converters("rcdt", (val) => {
-    return moment(val).format(RocketChat.settings.get('Message_DateFormat') + ' - ' + RocketChat.settings.get('Message_TimeFormat'));
+    // We cannot use RocketChat.settings.get('Message_DateFormat') + ' - ' + RocketChat.settings.get('Message_TimeFormat') as format
+    // anymore, since the global RocketChat object is not exposed as of 1.0 - TODO: Read the setting via API
+    return moment(val).format('DD.MM.YY - HH:MM'); // hard coded format as workaround
 });
 
 function escapeRegExp(str) {
@@ -2161,10 +2163,28 @@ function getGoogleQuery(queryArray) {
     return uniqueNames.join(' ');
 }
 
-function getRCMessageLink(rid, mid) {
-    const room = RocketChat.models.Rooms.findOne({_id: rid});
-    const roomLink = room && RocketChat.roomTypes.getRouteLink(room.t, room);
-    return roomLink ? `${roomLink}?msg=${mid}` : '';
+function getRCMessageLink(room, messageId) {
+    // const subscription = RocketChat.models.Subscriptions.findOne({rid});
+    // const roomLink = RocketChat.roomTypes.getRouteLink(subscription.t, subscription);
+    // return roomLink ? `${roomLink}?msg=${mid}` : '';
+
+    // TODO: As of 1.0, there's no option to access the RocketChat client side. A dedicated API should be used.
+
+    // As a workaround, we'll re-implement the link construction logic implemented in RC
+    let roomTypePathComponent;
+    switch (room.t) {
+        case 'p':
+            roomTypePathComponent = 'group';
+            break;
+        case 'd':
+            roomTypePathComponent = 'direct';
+            break;
+        default:
+            roomTypePathComponent = 'channel';
+    }
+    const roomPath = `${roomTypePathComponent}/${room.name}`;
+
+    return messageId ? `${roomPath}?msg=${messageId}` : roomPath;
 }
 
 const getProp = (p, o) => p.reduce((xs, x) => (xs && xs[x]) ? xs[x] : null, o);
