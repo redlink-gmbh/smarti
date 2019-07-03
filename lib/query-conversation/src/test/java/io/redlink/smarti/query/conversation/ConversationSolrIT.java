@@ -34,14 +34,13 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -68,12 +67,12 @@ import static org.junit.Assert.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
 @ActiveProfiles("embedded")
-@EnableAutoConfiguration
 @ContextConfiguration(classes = {
         ConversationSolrIT.EmbeddedSolrConfiguration.class, SolrLibEmbeddedAutoconfiguration.class,
         ConversationService.class, ConversationIndexer.class, ConversationSearchService.class,
         SchedulerConfiguration.class})
 @EnableMongoRepositories(basePackageClasses={ConversationRepository.class})
+@EnableAutoConfiguration(exclude={SolrAutoConfiguration.class})
 public class ConversationSolrIT {
 
     @ClassRule
@@ -125,14 +124,15 @@ public class ConversationSolrIT {
         final Conversation conversation = buildConversation(client,"Servus Hasso, wie geht's denn so?");
 
         conversationService.update(client, conversation);
-        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
-
-        assertThat(countDocs(), Matchers.equalTo(docCount));
+        Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
+        //NOTE: uncompleted conversations are now indexed
+        assertThat(countDocs(), Matchers.greaterThan(docCount));
+        docCount = countDocs();
 
         conversation.getMeta().setStatus(ConversationMeta.Status.Complete);
         conversationService.update(client, conversation);
-        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
-        assertThat(countDocs(), Matchers.greaterThan(docCount));
+        Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
+        assertThat(countDocs(), Matchers.equalTo(docCount));
     }
 
     @Test
@@ -151,11 +151,11 @@ public class ConversationSolrIT {
         conversationService.update(client, conversation1);
         conversationService.update(client, conversation2);
 
-        Thread.sleep(2 * conversationIndexer.config.getCommitWithin());
+        Thread.sleep(2 * conversationIndexer.indexConfig.getCommitWithin());
 
         assertThat(countDocs(), Matchers.equalTo(4L));
 
-        ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, null);
+        ConversationMltQueryBuilder hassoMlt = new ConversationMltQueryBuilder(solrServer, conversationCore, conversationIndexer.indexConfig, null);
 
         // TODO does not make sense to build a query without a template...
         // hassoMlt.doBuildQuery(null, null, conversation3);
@@ -198,7 +198,7 @@ public class ConversationSolrIT {
 
         SearchResult<ConversationSearchService.ConversationResult> result = searchService.search(client,query);
 
-        assertEquals(2, result.getNumFound());
+        assertEquals(3, result.getNumFound()); //now includes conversation5 as !complete conversations are now also indexed!
         assertEquals(1, result.getDocs().get(0).getResults().size()); //one result
         assertEquals(2, result.getDocs().get(0).getResults().get(0).getMessages().size()); //but with matches in 2 messages
         assertEquals(1, result.getDocs().get(1).getResults().size());

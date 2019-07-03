@@ -24,8 +24,14 @@ import io.redlink.nlp.model.AnalyzedText;
 import io.redlink.nlp.model.NlpAnnotations;
 import io.redlink.nlp.model.Token;
 import io.redlink.nlp.model.util.NlpUtils;
+import io.redlink.smarti.model.Analysis;
+import io.redlink.smarti.model.Conversation;
+import io.redlink.smarti.processing.SmartiAnnotations;
+import io.redlink.smarti.lib.solr.iterms.SolrInterestingTermsUtils;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,6 +42,8 @@ import org.apache.solr.common.util.NamedList;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static io.redlink.smarti.processor.keyword.intrestingterms.InterestingTermsConst.INTERESTING_TERM;
 
@@ -104,69 +112,63 @@ public abstract class InterestingTermExtractor extends Processor {
             log.debug("language '{}' not supported by {}", language, getName());
             return; //nothing to do
         }
-        log.debug("extract interestingTerms for {}[language: {}, fieldLang: {}, fields: {}]",getName(), language, similarityFields.getKey(), similarityFields.getValue());
         SolrQuery mltQuery = mltConfig.createMltQuery(language);
-        for(String field : similarityFields.getValue()){
-            if(StringUtils.isNotBlank(field)){
-                mltQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS,field);
-            }
+        similarityFields.getValue().stream()
+            .filter(StringUtils::isNoneBlank)
+            .forEach(field -> mltQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS,field));
+        log.debug("extract interestingTerms for {}[language: {}, fieldLang: {}, mltQuery: {}]",getName(), language, similarityFields.getKey(), mltQuery);
+
+        Analysis analysis = processingData.getAnnotation(SmartiAnnotations.ANALYSIS_ANNOTATION);
+        Conversation conversation = processingData.getAnnotation(SmartiAnnotations.CONVERSATION_ANNOTATION);
+        try {
+            beforeSimilarity(mltQuery, analysis, conversation);
+        }catch (SimilarityNotSupportedException e) {
+            log.warn("Similarity is not supported for this analysis");
+            return;
         }
-        MltRequest mltRequest = new MltRequest(mltQuery, at.getSpan());
+        //TODO: add callback that allows to add filters to the MLT query based on the analysis
+        
+
+        //we need to lookup words we consider candidates (AJD and N)
+        Map<String,List<Token>> wordMap = new HashMap<>();
+        StreamSupport.stream(Spliterators.spliteratorUnknownSize(at.getTokens(), Spliterator.ORDERED),false)
+            .filter(t -> NlpUtils.isNoun(t) || NlpUtils.isAdjective(t))
+            .forEach(t -> addTerm(wordMap, t.getSpan(), locale, t));
+
         log.trace("MLT Request: query:{} | text: {}", mltQuery, at.getSpan());
-        NamedList<Object> response;
         try (SolrClient client = getClient()){
-            response = client.request(mltRequest);
+            SolrInterestingTermsUtils.extractInterestingTerms(client, mltQuery, at.getSpan())
+            .flatMap(wc -> wc.getWords().stream()
+                    .filter(wordMap::containsKey)
+                    .map(w -> new ImmutablePair<>(w, wc.getRelevance())))
+            .collect(Collectors.toMap(Pair::getKey, Pair::getValue, (v1,v2) -> Math.max(v1, v2)))
+            .forEach((word, relevance) -> {
+                wordMap.getOrDefault(word,Collections.emptyList()).stream()
+                    .forEach(token -> {
+                        Value<InterestingTerm> value = Value.value(new InterestingTerm(getKey(), word), relevance);
+                        log.trace("mark {} as {}", token, value);
+                        token.addValue(INTERESTING_TERM, value);
+                    });
+            });
         } catch (SolrServerException | IOException e) {
             log.warn("Unable to search for interesting terms for {} with {} ({}: {})", processingData, getName(),
                     e.getClass().getSimpleName(), e.getMessage());
             log.debug("Stacktrace:", e);
             return;
         }
-        
-        NamedList<Object> interestingTermList = (NamedList<Object>)response.get("interestingTerms");
-        if(interestingTermList.size() < 1) { //no interesting terms
-            log.debug("No interesting Terms found");
-            return;
-        }
-        Map<String,List<Token>> termMap = new HashMap<>();
-        for(Iterator<Token> tokens = at.getTokens(); tokens.hasNext(); ){
-            Token token = tokens.next();
-            if(NlpUtils.isNoun(token) || NlpUtils.isAdjective(token)){
-                //register for the span, stem and lemma
-                new HashSet<>(Arrays.asList(token.getSpan(), NlpUtils.getStem(token), NlpUtils.getLemma(token)))
-                    .forEach(key -> addTerm(termMap,key,locale, token));
-            } //else ignore words with other POS tags
-            
-        }
-        List<Entry<String,Float>> interestingTerms = new LinkedList<>();
-        float maxBoost = 0; //search for the highest boost for normalization [0..1]
-        for(Iterator<Entry<String,Object>> terms = interestingTermList.iterator(); terms.hasNext();){
-            Entry<String,Object> e = terms.next();
-            String term = e.getKey();
-            float boost = ((Number)e.getValue()).floatValue();
-            if(boost > maxBoost){
-                maxBoost = boost;
-            }
-            interestingTerms.add(new ImmutablePair<String,Float>(term, boost));
-        }
-        log.debug("Solr MLT interesting Terms: {}", interestingTerms);
-        for(Entry<String,Float> term : interestingTerms){
-            String termKey = term.getKey();
-            int fieldSepIdx = termKey.indexOf(':');
-            String termName = fieldSepIdx > 0 ? termKey.substring(fieldSepIdx+1, termKey.length()) : termKey;
-            List<Token> termTokens = termMap.get(termName);
-            if(termTokens != null){
-                for(Token token : termTokens){
-                    Value<InterestingTerm> value = Value.value(new InterestingTerm(getKey(), termName), term.getValue()/maxBoost);
-                    token.addValue(INTERESTING_TERM, value);
-                    log.trace("mark {} as interesting Term {}", token, value);
-                }
-            }
-        }
-        
-
     }
-    
+
+    /**
+     * Callback that allows implementations to modify the similarity query.
+     * The base implementation is empty
+     * based on the analysis (e.g. add filters based on the {@link Analysis#getClient() client}
+     * @param mltQuery the Solr MLT query used for the similarity
+     * @param analysis the analysis
+     * @param conversation the analysed conversation
+     */
+    protected void beforeSimilarity(SolrQuery mltQuery, Analysis analysis, Conversation conversation) throws SimilarityNotSupportedException {
+    }
+
     private void addTerm(Map<String, List<Token>> termMap, String stem, Locale locale, Token token) {
         if(stem == null){
             return;
@@ -203,6 +205,18 @@ public abstract class InterestingTermExtractor extends Processor {
             }
         }
         return languages;
+    }
+    
+    public static class SimilarityNotSupportedException extends RuntimeException {
+        
+        private static final long serialVersionUID = -3140358965019251641L;
+
+        public SimilarityNotSupportedException(){
+            super();
+        }
+        public SimilarityNotSupportedException(String message){
+            super(message);
+        }
     }
     
 }

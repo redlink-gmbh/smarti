@@ -30,6 +30,8 @@
     <logger name="io.redlink.smarti" level="DEBUG" />
     <logger name="io.redlink.smarti.query" level="TRACE" />
     
+    
+    <logger name="io.redlink.smarti.query.conversation.ConversationContextUtils" level="TRACE"/>
 
     <root level="WARN">
         <appender-ref ref="STDOUT" />

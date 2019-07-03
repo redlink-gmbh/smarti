@@ -17,6 +17,7 @@
 
 package io.redlink.smarti.query.conversation;
 
+import io.redlink.smarti.lib.solr.iterms.SolrInterestingTermsUtils;
 import io.redlink.smarti.model.*;
 import io.redlink.smarti.model.config.ComponentConfiguration;
 import io.redlink.smarti.services.TemplateRegistry;
@@ -28,15 +29,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.util.NamedList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import com.google.common.util.concurrent.AtomicDouble;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -45,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 import static io.redlink.smarti.query.conversation.ConversationSearchService.DEFAULT_CONTEXT_AFTER;
@@ -67,8 +63,8 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     @Autowired
     public ConversationSearchQueryBuilder(SolrCoreContainer solrServer, 
             @Qualifier(ConversationIndexConfiguration.CONVERSATION_INDEX) SolrCoreDescriptor conversationCore,
-            TemplateRegistry registry) {
-        super(CREATOR_NAME, solrServer, conversationCore, registry);
+            ConversationIndexerConfig indexConfig, TemplateRegistry registry) {
+        super(CREATOR_NAME, indexConfig, solrServer, conversationCore, registry);
     }
 
 //    @Override
@@ -127,7 +123,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     protected ConversationSearchQuery buildQuery(ComponentConfiguration conf, Template intent, Conversation conversation, Analysis analysis) {
         List<Token> keywords = getTokens(ROLE_KEYWORD, intent, analysis);
         List<Token> terms = getTokens(ROLE_TERM, intent, analysis);
-        int contextStart = ConversationContextUtils.getContextStart(conversation.getMessages(),
+        int contextStart = ConversationContextUtils.getContextStart(indexConfig, conversation.getMessages(),
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE);
 
         final ConversationSearchQuery query = new ConversationSearchQuery(getCreatorName(conf));
@@ -226,7 +222,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
     
     private String buildContextQuery(Conversation conv, ComponentConfiguration conf) throws IOException, SolrServerException{
         String context = conv.getMessages().subList(
-                ConversationContextUtils.getContextStart(conv.getMessages(), 
+                ConversationContextUtils.getContextStart(indexConfig, conv.getMessages(), 
                 MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_AGE, MAX_AGE),
                 conv.getMessages().size()).stream()
             .filter(m -> !MapUtils.getBoolean(m.getMetadata(), Message.Metadata.SKIP_ANALYSIS, false))
@@ -244,7 +240,7 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         final SolrQuery solrQuery = new SolrQuery();
         //search interesting terms in the conversations (as those do not have overlapping
         //contexts as messages)
-        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_CONVERSATION));
+        solrQuery.addFilterQuery(String.format("%s:%s", FIELD_TYPE, TYPE_MESSAGE));
         //respect client filters
         addClientFilter(solrQuery, conv);
         //and also property related filters
@@ -253,47 +249,17 @@ public class ConversationSearchQueryBuilder extends ConversationQueryBuilder {
         if(conf.getConfiguration(CONFIG_KEY_COMPLETED_ONLY, DEFAULT_COMPLETED_ONLY)){
             addCompletedFilter(solrQuery);
         }
-        //we do not want any results
-        solrQuery.setRows(0);
         //we search for interesting terms in the MLT Context field
-        solrQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS, FIELD_MLT_CONTEXT);
-        solrQuery.add(MoreLikeThisParams.BOOST,String.valueOf(true));
-        solrQuery.add(MoreLikeThisParams.INTERESTING_TERMS,"details");
+        solrQuery.add(MoreLikeThisParams.SIMILARITY_FIELDS, FIELD_MESSAGE);
         solrQuery.add(MoreLikeThisParams.MAX_QUERY_TERMS, String.valueOf(10));
         solrQuery.add(MoreLikeThisParams.MIN_WORD_LEN, String.valueOf(3));
         
         log.trace("InterestingTerms QueryParams: {}", solrQuery);
         
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
-            NamedList<Object> response = solrClient.request(new ConversationMltRequest(solrQuery, context));
-            NamedList<Object> interestingTermList = (NamedList<Object>)response.get("interestingTerms");
-            if(interestingTermList == null || interestingTermList.size() < 1) { //no interesting terms
-                return null;
-            } else {
-                //Do make it easier to combine context params with other ensure that the maximum boost is 1.0
-                AtomicDouble norm = new AtomicDouble(-1);
-                return StreamSupport.stream(interestingTermList.spliterator(), false)
-                    .sorted((a,b) -> Double.compare(((Number)b.getValue()).doubleValue(), ((Number)a.getValue()).doubleValue()))
-                    .map(e -> {
-                        //NOTE: we need to query escape the value of the term as the returned
-                        // interesting terms are not!
-                        final String term;
-                        int fieldSepIdx = e.getKey().indexOf(':'); //check if their 
-                        if(fieldSepIdx >= 0){
-                            term = e.getKey().substring(0, fieldSepIdx + 1) + 
-                                    ClientUtils.escapeQueryChars(e.getKey().substring(fieldSepIdx + 1));
-                        } else {
-                            term = ClientUtils.escapeQueryChars(e.getKey());
-                        }
-                        if(norm.doubleValue() < 0) {
-                            norm.set(1d/((Number)e.getValue()).doubleValue());
-                            return term;
-                        } else {
-                            return term + '^' + (((Number)e.getValue()).floatValue() * norm.floatValue());
-                        }
-                    })
-                    .collect(Collectors.joining(" OR "));
-            }
+            return SolrInterestingTermsUtils.extractInterestingTerms(solrClient, solrQuery, context)
+                .map(cw -> cw.getSolrTerm() +'^'+cw.getRelevance())
+                .collect(Collectors.joining(" OR "));
         } catch (SolrException solrEx) { //related to #2258 - make code more robust to unexpected errors
             if(log.isDebugEnabled()){
                 log.warn("Unable to build ContextQuery using solrQuery: {} and context: '{}'", 

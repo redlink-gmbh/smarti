@@ -40,8 +40,10 @@ import java.net.URISyntaxException;
 @SpringBootApplication
 @ComponentScan(
         basePackageClasses = Application.class,
-        basePackages = {"io.redlink.nlp"})
-@EnableMongoRepositories(basePackageClasses = Application.class)
+        basePackages = {"io.redlink.nlp", "io.redlink.utils.spring"})
+@EnableMongoRepositories(
+        basePackageClasses = Application.class,
+        basePackages = {"io.redlink.utils.spring"})
 @EnableMongoAuditing //needed for @CreatedDate and @LastModifiedDate
 @EnableAutoConfiguration(exclude = SolrAutoConfiguration.class)
 @EnableConfigurationProperties

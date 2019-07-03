@@ -21,7 +21,7 @@
 
     <groupId>io.redlink.smarti</groupId>
     <artifactId>smarti</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>smarti</name>
@@ -92,16 +92,12 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
 
-        <spring.boot.version>1.5.17.RELEASE</spring.boot.version>
-        <!-- spring.data.version>1.10.6.RELEASE</spring.data.version --> 
-        <spring.version>4.3.20.RELEASE</spring.version>
+        <spring.boot.version>1.5.19.RELEASE</spring.boot.version>
 
-        <solr.version>6.6.2</solr.version>
-        <!-- solr-text-tagger version needs to be in sync with solr.version
-             (see: https://github.com/OpenSextant/SolrTextTagger/blob/master/CHANGES.md) -->
-        <solr.text.tagger.version>2.4</solr.text.tagger.version>
-        <solrlib.version>0.5.0</solrlib.version>
+        <solr.version>7.5.0</solr.version>
+        <solrlib.version>1.0.0</solrlib.version>
         <redlinknlp.version>2.0.0-SNAPSHOT</redlinknlp.version>
+        <redlink.springcomp.version>1.0.0-SNAPSHOT</redlink.springcomp.version>
 
         <springfox.version>2.7.0</springfox.version>
         <swagger.version>1.5.13</swagger.version>
@@ -111,13 +107,18 @@
         <npm.version>5.6.0</npm.version>
 
         <redlink.logback.extension>1.0-SNAPSHOT</redlink.logback.extension>
+        <mockito.version>1.10.19</mockito.version>
+        
+        <!-- Version overrides from spring-boot-dependencies -->
+        <!-- NOTE: check those after a spring spring.boot.version update -->
+        <dropwizard-metrics.version>3.2.6</dropwizard-metrics.version> <!-- required by solr 7.5.0 -->
     </properties>
 
     <scm>
         <connection>scm:git:https://github.com/redlink-gmbh/smarti.git</connection>
         <developerConnection>scm:git:git@github.com:redlink-gmbh/smarti.git</developerConnection>
         <url>https://github.com/redlink-gmbh/smarti/src</url>
-        <tag>smarti-0.8.0</tag>
+        <tag>smarti-0.8.0-RC1</tag>
     </scm>
     <issueManagement>
         <system>github</system>
@@ -187,7 +188,6 @@
             <dependency>
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>commons-logging</groupId>
@@ -208,9 +208,9 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-			    <artifactId>spring-boot-starter-data-mongodb</artifactId>
+                <artifactId>spring-boot-starter-data-mongodb</artifactId>
                 <version>${spring.boot.version}</version>
-			</dependency>
+            </dependency>
 
             <dependency>
                 <groupId>io.redlink.utils</groupId>
@@ -218,6 +218,11 @@
                 <version>1.0.2-SNAPSHOT</version>
             </dependency>
 
+	        <dependency> <!-- some things still use commons-lang -->
+	            <groupId>commons-lang</groupId>
+	            <artifactId>commons-lang</artifactId>
+	            <version>2.6</version>
+	        </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
@@ -225,10 +230,10 @@
             </dependency>
 
             <dependency>
-			    <groupId>org.apache.commons</groupId>
-			    <artifactId>commons-collections4</artifactId>
-			    <version>4.1</version>
-			</dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>4.1</version>
+            </dependency>
 
             <dependency>
                 <groupId>commons-validator</groupId>
@@ -254,21 +259,52 @@
                 <version>3.6.1</version>
             </dependency>
 
-	        <dependency>
-	            <groupId>com.google.guava</groupId>
-	            <artifactId>guava</artifactId>
-	            <version>20.0</version><!-- solr is incompatible with 21+ -->
-	        </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>20.0</version><!-- solr is incompatible with 21+ -->
+            </dependency>
 
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-core</artifactId>
                 <version>${solr.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j-impl</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-solrj</artifactId>
                 <version>${solr.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-ganglia</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-graphite</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jetty9</artifactId>
+                <version>${dropwizard-metrics.version}</version>
+            </dependency>
+            <dependency> <!-- Solr requires a newer version as Spring Boot -->
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-jvm</artifactId>
+                <version>${dropwizard-metrics.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.redlink.solrlib</groupId>
@@ -280,11 +316,22 @@
                 <artifactId>solrlib-api</artifactId>
                 <version>${solrlib.version}</version>
             </dependency>
-            
+            <dependency>
+                <groupId>io.redlink.solrlib</groupId>
+                <artifactId>solrlib-embedded</artifactId>
+                <version>${solrlib.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.opensextant</groupId>
                 <artifactId>solr-text-tagger</artifactId>
                 <version>${solr.text.tagger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.redlink.utils.spring</groupId>
+                <artifactId>exectoken</artifactId>
+                <version>${redlink.springcomp.version}</version>
             </dependency>
 
             <dependency>
@@ -297,6 +344,13 @@
                 <artifactId>logback-ext-jackson</artifactId>
                 <version>${redlink.logback.extension}</version>
             </dependency>
+            
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockito.version}</version>
+            </dependency>
+            
         </dependencies>
     </dependencyManagement>
 
@@ -556,18 +610,18 @@
                     <version>2.8.2</version>
                 </plugin>
                 <plugin>
-			        <groupId>org.apache.maven.plugins</groupId>
-			        <artifactId>maven-failsafe-plugin</artifactId>
-			        <version>2.19.1</version>
-			        <executions>
-			            <execution>
-			                <goals>
-			                    <goal>integration-test</goal>
-			                    <goal>verify</goal>
-			                </goals>
-			            </execution>
-			        </executions>
-			    </plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>2.19.1</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>

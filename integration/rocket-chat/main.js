@@ -48,7 +48,7 @@ let Logger = function(prefix) {
     return this.logger;
 };
 
-let log = Logger("SmartiWidget");
+let log = new Logger("SmartiWidget");
 
 const Utils = {
     getAvatarUrl : (id) => {
@@ -321,8 +321,8 @@ function Smarti(options) {
     }
 
     function query(params, success, failure) {
-        log.debug(`Get query builder result for conversation with [id: ${params.conversationId}, templateIndex: ${params.template}, creatorName: ${params.creator}, start: ${params.start}}`);
-      const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start]);
+        log.debug(`Get query builder result for conversation with [id: ${params.conversationId}, templateIndex: ${params.template}, creatorName: ${params.creator}, start: ${params.start}}, rows: ${params.rows}}`);
+      const msgid = ddp.method("getQueryBuilderResult",[params.conversationId, params.template, params.creator, params.start, params.rows]);
       ddp.on("result", (message) => {
           if(message.id === msgid) {
               if (message.error) {
@@ -710,7 +710,7 @@ function SmartiWidget(element, _options) {
         let lastFilters = [];
         let currentFilters = [];
         let currentPage = 0;
-        let loadedPage = 0;
+        let loadedPage = -1;
         let noMoreData = false;
 
         function refresh() {
@@ -736,6 +736,8 @@ function SmartiWidget(element, _options) {
 
                 queryTerms = tks.length ? tks : queryTerms;
 
+                let useQuery = params.query.contextQuery && !tks.length;
+
                 currentSimilarityQuery = params.query.similarityQuery;
 
                 let context = {"uid": Meteor.userId(), "rid": Session.get("openedRoom")};
@@ -752,6 +754,10 @@ function SmartiWidget(element, _options) {
                 let start = pageSize ? page * pageSize : 0;
 
                 $.observable(params.templateData).setProperty("loading", true);
+
+                if(!append) {
+                    $.observable(params.templateData.results).refresh([]);
+                }
 
                 lastQueryTerms = queryTerms;
 
@@ -770,7 +776,17 @@ function SmartiWidget(element, _options) {
 
                 lastContext = context;
 
-                smarti.rcSearch([queryTerms.join(" "), context, payload], (data) => {
+                payload.custom = {};
+                if(params.query.params.excludeCurrentChannel && params.query.params.channel_id) {
+                    payload.custom["excl.room"] = [params.query.params.channel_id];
+                } else if(params.query.contextMsgs) {
+                    payload.custom["excl.msg"] = params.query.contextMsgs;
+                }
+                if(useQuery) { // use query with boosting instead of text
+                    payload.custom.query = getSolrQueryWithBoost(params.query.contextQuery);
+                }
+
+                smarti.rcSearch([useQuery ? "" : queryTerms.join(" "), context, payload], (data) => {
                     log.debug("RC search results:", data);
 
                     loadedPage = page;
@@ -826,24 +842,21 @@ function SmartiWidget(element, _options) {
 
                     tracker.trackEvent(params.query.creator, messages.length);
 
-                    noMoreData = !data.docs || !data.docs.length || typeof data.numFound == "undefined" || (params.templateData.results.length + data.docs.length) == data.numFound;
+                    noMoreData = !data.docs || !data.docs.length || typeof data.numFound == "undefined" || (params.templateData.results.length + data.docs.length) >= data.numFound;
 
                     if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
 
-                    if(append) {
-                        $.observable(params.templateData.results).insert(messages);
-                    } else {
-                        $.observable(params.templateData.results).refresh(messages);
-                    }
+                    $.observable(params.templateData.results).insert(messages);
+
                     $.observable(params.templateData).setProperty("tokensUsed", queryTerms.length > 0);
                     $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
                     $.observable(params.templateData).setProperty("loading", false);
 
                     if(params.elem.height() <= widgetBody.innerHeight()) {
-                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                        if(params.elem.prevAll().length === widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
                         loadNextPage();
                     } else {
-                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                        if(params.elem.prevAll().length === widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
                     }
                 }, function(error) {
                     if(error) {
@@ -953,7 +966,7 @@ function SmartiWidget(element, _options) {
 
                     tracker.trackEvent(params.query.creator, conversations.length);
 
-                    noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
+                    noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) >= data.numFound;
 
                     if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
 
@@ -967,10 +980,10 @@ function SmartiWidget(element, _options) {
                     $.observable(params.templateData).setProperty("loading", false);
 
                     if(params.elem.height() <= widgetBody.innerHeight()) {
-                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                        if(params.elem.prevAll().length === widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
                         loadNextPage();
                     } else {
-                        if(params.elem.prevAll().length == widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                        if(params.elem.prevAll().length === widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
                     }
                 }, function(error) {
                     if(error) {
@@ -982,8 +995,7 @@ function SmartiWidget(element, _options) {
                 });
             } else if(params.query.creator.indexOf("queryBuilder:conversationmlt") > -1) {
 
-                $.observable(params.templateData).setProperty("msg", Utils.localize({code: 'smarti.source.not-supported'}));
-                return; // conversationmlt not supported anymore!
+                if(loadedPage >= page) return;
 
                 if(!append) {
                     page = 0;
@@ -996,36 +1008,93 @@ function SmartiWidget(element, _options) {
 
                 $.observable(params.templateData).setProperty("loading", true);
 
-                smarti.query({
+                let queryParams = {
                     conversationId: params.id,
                     template: params.tempid,
                     creator: params.query.creator,
                     start: start,
                     rows: pageSize
-                }, (data) => {
+                };
 
-                    tracker.trackEvent(params.query.creator, data.docs && data.docs.length);
+                //set default params
+                for(let property in params.query.defaults) {
+                    if (params.query.defaults.hasOwnProperty(property))
+                        queryParams[property] = params.query.defaults[property];
+                }
+
+                log.debug("queryParams:", queryParams);
+
+                smarti.query(queryParams, (data) => {
+                    log.debug("Conversation MLT results:", data);
 
                     loadedPage = page;
-                    noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) == data.numFound;
 
+                    let conversations = [];
                     if(data.docs && data.docs.length) {
                         data.docs.forEach(d => {
-                            d.templateType = "related.conversation";
-                            d.answers.forEach(a => {
-                                a.templateType = "related.conversation";
+                            let conversation = {};
+                            let mainIdx = 0;
+                            d.section.some((m, idx) => {
+                                if(d.messageIds.indexOf(m.messageIds[0]) > -1) {
+                                    conversation = m;
+                                    conversation.cid = d.conversationId;
+                                    conversation.rid = d.channelId;
+                                    conversation.time = conversation.timestamp;
+                                    delete conversation.timestamp;
+                                    mainIdx = idx;
+                                    return true;
+                                } else {
+                                    return false;
+                                }
                             });
+
+                            conversation.templateType = "related.conversation";
+                            conversation.isConversationMlt = true;
+
+                            conversation.messagesBefore = [];
+                            conversation.messagesAfter = [];
+
+                            d.section.forEach((m, idx) => {
+                                if(d.messageIds.indexOf(m.messageIds[0]) === -1) {
+                                    m.templateType = "related.conversation";
+                                    m.time = m.timestamp;
+                                    delete m.timestamp;
+                                    if(idx < mainIdx) {
+                                        conversation.messagesBefore.push(m);
+                                    } else {
+                                        conversation.messagesAfter.push(m);
+                                    }
+                                }
+                            });
+
+                            conversation.messagesCnt = conversation.messagesBefore.length + conversation.messagesAfter.length;
+
+                            conversation.messageLink = getRCMessageLink(conversation.rid, conversation.messageIds[0]);
+
+                            conversations.push(conversation);
                         });
                     }
 
-                    if(append) {
-                        $.observable(params.templateData.results).insert(data.docs);
-                    } else {
-                        $.observable(params.templateData.results).refresh(data.docs);
-                    }
+                    tracker.trackEvent(params.query.creator, conversations.length);
 
+                    noMoreData = !data.docs || !data.docs.length || (params.templateData.results.length + data.docs.length) >= data.numFound;
+
+                    if(typeof data.numFound != "undefined") $.observable(params.templateData).setProperty("total", data.numFound);
+
+                    if(append) {
+                        $.observable(params.templateData.results).insert(conversations);
+                    } else {
+                        $.observable(params.templateData.results).refresh(conversations);
+                    }
+                    $.observable(params.templateData).setProperty("noMessages", analyzedMessages <= 0);
                     $.observable(params.templateData).setProperty("loading", false);
 
+                    if(params.elem.height() <= widgetBody.innerHeight()) {
+                        if(params.elem.prevAll().length === widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.removeClass('shadow');
+                        loadNextPage();
+                    } else {
+                        if(params.elem.prevAll().length === widgetHeaderTabsTemplateData.selectedWidget) widgetFooter.addClass('shadow');
+                    }
                 }, function(error) {
                     if(error) {
                         showError(error);
@@ -1044,8 +1113,6 @@ function SmartiWidget(element, _options) {
                 getResults(currentPage, true, true);
             }
         }
-
-        getResults(currentPage);
 
         return {
             params,
@@ -1158,14 +1225,13 @@ function SmartiWidget(element, _options) {
 
                     if(
                         constructor &&
-                        (!options.widget[query.creator] || !options.widget[query.creator].disabled) &&
-                        !isConversationMlt
+                        (!options.widget[query.creator] || !options.widget[query.creator].disabled)
                     ) {
                         let elem = $('<div class="smarti-widget">').hide().appendTo(widgetContent);
 
                         let params = {
                             elem: elem,
-                            templateData: {loading: false, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false, isRCSearch},
+                            templateData: {loading: true, results: [], total: 0, msg: "", tokensUsed: false, noMessages: false, isRCSearch, isConversationMlt},
                             id: data.conversation,
                             slots: template.slots,
                             type: template.type,
@@ -1174,7 +1240,7 @@ function SmartiWidget(element, _options) {
                             query: query
                         };
 
-                        if(template.type == "related.conversation") {
+                        if(template.type === "related.conversation") {
                             // filterQueries
                             if(query.filterQueries) {
                                 params.templateData.filters = query.filterQueries.filter(fq => {
@@ -1363,8 +1429,8 @@ function SmartiWidget(element, _options) {
                                         </div>
                                         <div class="title"></div>
                                         <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
-                                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
-                                        <div class="selectMessage"></div>
+                                        {^{if !~root.isConversationMlt}}<div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>{{/if}}
+                                        {^{if !~root.isConversationMlt}}<div class="selectMessage"></div>{{/if}}
                                     </div>
                                 </div>
                             {{/for}}
@@ -1376,6 +1442,7 @@ function SmartiWidget(element, _options) {
                                 {{tls:time}}
                                 {^{if isTopRated}}<span class="topRated">Top</span>{{/if}}
                                 {^{if messagesCnt}}<span class="context">${Utils.localize({code: 'widget.show_details'})}</span>{{/if}}
+                                {^{if ~root.isConversationMlt && messageLink}}<a class="jump-link" data-link="href{:messageLink}" title="${Utils.localize({code: 'rc.search.jump'})}"><i class="icon-link-ext"></i></a>{{/if}}
                             </div>
                             <div class="title"></div>
                             <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
@@ -1393,8 +1460,8 @@ function SmartiWidget(element, _options) {
                                         </div>
                                         <div class="title"></div>
                                         <div class="text"><p>{{:~hl(~he(content || ''), true)}}</p></div>
-                                        <div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>
-                                        <div class="selectMessage"></div>
+                                        {^{if !~root.isConversationMlt}}<div class="postAction">${Utils.localize({code: 'widget.post-message'})}</div>{{/if}}
+                                        {^{if !~root.isConversationMlt}}<div class="selectMessage"></div>{{/if}}
                                     </div>
                                 </div>
                             {{/for}}
@@ -1624,6 +1691,7 @@ function SmartiWidget(element, _options) {
                     }
                 } else {
                     innerTabFilter.slideUp(100);
+                    innerTabFilter.removeClass('active');
                 }
             } else {
                 //innerTabSearch.addClass('active');
@@ -1731,7 +1799,11 @@ function SmartiWidget(element, _options) {
     function postItems(items) {
         function createTextMessage(text, conv) {
             if(conv.parent.templateType === "related.conversation") {
-                text = text + '\n>' + conv.parent.content.replace(/\r\n/g, "\n").replace(/\n/g, " ");
+                if(conv.parent.isConversationMlt && conv.parent.messageLink) {
+                    text = text + '\n' + location.origin + conv.parent.messageLink;
+                } else {
+                    text = text + '\n>' + conv.parent.content.replace(/\r\n/g, "\n").replace(/\n/g, " ");
+                }
             } else {
                 text = text + '\n>' + (conv.parent.link ? '[' + conv.parent.title + '](' + conv.parent.link + ')' : conv.parent.title) + (conv.parent.description ? ': ' + conv.parent.description : '');
             }
@@ -1748,10 +1820,12 @@ function SmartiWidget(element, _options) {
             if(conv.parent.templateType === "related.conversation") {
                 attachment = {
                     text: conv.parent.content,
-                    attachments: [],
                     bot: 'assistify',
-                    ts: conv.parent.time
+                    ts: Math.round(conv.parent.time / 1000)
                 };
+                if(conv.selectedChildIndicesBefore.length || conv.selectedChildIndicesAfter.length) {
+                    attachment.attachments = [];
+                }
                 $.each(conv.selectedChildIndicesBefore, (i, childIdx) => {
                     attachment.attachments.push(buildAttachments({parent: conv.parent.messagesBefore[childIdx]}));
                 });
@@ -1781,7 +1855,11 @@ function SmartiWidget(element, _options) {
                 text = Utils.localize({code:"widget.latch.answer.title", args:[widgets[widgetHeaderTabsTemplateData.selectedWidget].params.query.displayTitle]});
             }
 
-            if(options.postings && (options.postings.type === 'suggestText' || options.postings.type === 'postText')) {
+            if(options.postings && (
+                options.postings.type === 'suggestText' ||
+                options.postings.type === 'postText' ||
+                (options.postings.type === 'postRichText' && items[0].parent.isConversationMlt)
+            )) {
                 items.forEach(conv => {
                     text = createTextMessage(text, conv);
                 });
@@ -1892,7 +1970,7 @@ function SmartiWidget(element, _options) {
             */
 
             widgets.forEach((w, idx) => {
-                if(w && w.params.elem && w.queryCreator != "queryBuilder:conversationmlt" && (typeof widgetIdx != "number" || idx == widgetIdx)) {
+                if(w && (typeof widgetIdx != "number" || idx == widgetIdx)) {
                     w.getResults(0, idx == widgetHeaderTabsTemplateData.selectedWidget);
                 }
             });
@@ -2009,7 +2087,7 @@ function SmartiWidget(element, _options) {
             scrollTimeout = null;
             if(Math.round(widgetBody.prop('scrollHeight')) == Math.round(widgetBody.innerHeight() + widgetBody.scrollTop())) {
                 let currentWidget = widgets[widgetHeaderTabsTemplateData.selectedWidget];
-                if(currentWidget.queryCreator != "queryBuilder:conversationmlt") currentWidget.loadNextPage();
+                currentWidget.loadNextPage();
             }
         }, 500);
     });
@@ -2068,7 +2146,11 @@ function equalArrays(a, b) {
 }
 
 function getSolrQuery(queryArray) {
-    return queryArray.map(q => '"' + q.replace(/[\\"]/g) + '"', '').join(' ');
+    return queryArray.map(q => '"' + q.replace(/[\\"]/g, '') + '"').join(' ');
+}
+
+function getSolrQueryWithBoost(queryArray) {
+    return queryArray.map(q => '"' + q.term.replace(/[\\"]/g, '') + '"^' + q.relevance).join(' ');
 }
 
 function getGoogleQuery(queryArray) {

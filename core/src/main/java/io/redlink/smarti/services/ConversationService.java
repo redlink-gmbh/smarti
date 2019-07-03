@@ -207,6 +207,7 @@ public class ConversationService {
     }
 
     private Conversation publishSaveEvent(Conversation conversation) {
+        log.trace("publish save event for {}", conversation);
         eventPublisher.publishEvent(StoreServiceEvent.save(conversation.getId(), conversation.getMeta().getStatus(), this));
         return conversation;
     }

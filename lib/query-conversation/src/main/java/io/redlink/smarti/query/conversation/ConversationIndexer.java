@@ -17,35 +17,46 @@
 
 package io.redlink.smarti.query.conversation;
 
-import static io.redlink.smarti.model.Message.Metadata.SKIP_ANALYSIS;
 import static io.redlink.smarti.query.conversation.ConversationIndexConfiguration.*;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-
-import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -63,10 +74,10 @@ import com.google.common.collect.Iterators;
 
 import io.redlink.smarti.api.event.StoreServiceEvent;
 import io.redlink.smarti.api.event.StoreServiceEvent.Operation;
-import io.redlink.smarti.cloudsync.ConversationCloudSync;
-import io.redlink.smarti.cloudsync.ConversationCloudSync.ConversytionSyncCallback;
-import io.redlink.smarti.cloudsync.ConversationCloudSync.SyncData;
-import io.redlink.smarti.cloudsync.ConversationCloudSync.IndexingStatus;
+import io.redlink.smarti.cloudsync.ConversationIndexSync;
+import io.redlink.smarti.cloudsync.ConversationIndexSync.ConversytionSyncCallback;
+import io.redlink.smarti.cloudsync.ConversationIndexSync.SyncData;
+import io.redlink.smarti.cloudsync.ConversationIndexSync.IndexingStatus;
 import io.redlink.smarti.model.Context;
 import io.redlink.smarti.model.Conversation;
 import io.redlink.smarti.model.ConversationMeta;
@@ -75,6 +86,9 @@ import io.redlink.smarti.model.Message;
 import io.redlink.smarti.services.ConversationService;
 import io.redlink.solrlib.SolrCoreContainer;
 import io.redlink.solrlib.SolrCoreDescriptor;
+import io.redlink.utils.spring.exectoken.ExecutionLockedException;
+import io.redlink.utils.spring.exectoken.ExecutionToken;
+import io.redlink.utils.spring.exectoken.ExecutionTokenService;
 
 @Component
 @EnableConfigurationProperties(ConversationIndexerConfig.class)
@@ -83,6 +97,21 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
+    //We do not want an dependency to solr-core just to have a check if we run
+    //on an embedded Solr server. So we load the class by name.
+    //If we can not find the Class we will anyway use an external SolrServer
+    private static Class<?> EMBEDDED_SOLR_CLASS;
+    static {
+        Class<?> clazz = null;
+        try {
+            clazz = ConversationIndexer.class.getClassLoader()
+                    .loadClass("org.apache.solr.client.solrj.embedded.EmbeddedSolrServer");
+        } catch (ClassNotFoundException e) {
+            // looks like the EmbeddedSolrServer is not in classpath
+            //   so we will use an remote SolrServer ...
+        }
+        EMBEDDED_SOLR_CLASS = clazz;
+    }
     
     //TODO: make configurable
     private static final Set<String> NOT_INDEXED_META_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
@@ -117,7 +146,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     private SolrCoreDescriptor conversationCore;
     
     @Autowired(required=false)
-    private ConversationCloudSync cloudSync;
+    private ConversationIndexSync indexSync;
     
     private ConversationIndexTask indexTask;
 
@@ -132,59 +161,83 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     @Value("${smarti.index.rebuildOnStartup:false}")
     private boolean rebuildOnStartup = false;
 
-    protected final ConversationIndexerConfig config;
+    protected final ConversationIndexerConfig indexConfig;
+    
+    protected final ExecutionTokenService executionTokenService;
     
     @Autowired
     public ConversationIndexer(ConversationIndexerConfig config, SolrCoreContainer solrServer, ConversationService storeService, 
-            TaskScheduler taskScheduler){
-        this.config = config;
+            TaskScheduler taskScheduler, Optional<ExecutionTokenService> executionTokenService){
+        this.indexConfig = config;
         this.solrServer = solrServer;
         this.conversationService = storeService;
         this.taskScheduler = taskScheduler;
         this.indexerPool = Executors.newSingleThreadExecutor(
                 new BasicThreadFactory.Builder().namingPattern("conversation-indexing-thread-%d").daemon(true).build());
+        this.executionTokenService = executionTokenService.orElse(null);
     }
     
     @EventListener(ContextRefreshedEvent.class)
-    protected void startup() {
+    protected void startup() throws IOException, SolrServerException {
         log.info("sync conversation index on startup");
-        indexTask = cloudSync == null ? null : new ConversationIndexTask(cloudSync);
+        indexTask = indexSync == null ? null : new ConversationIndexTask(indexSync);
         if(indexTask != null){
             log.info("initialize ConversationIndex after startup ...");
             Date syncDate = null; //null triggers a full rebuild (default)
             if(!rebuildOnStartup){
                 try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-                    //search for conversations indexed with an earlier version of the index
-                    SolrQuery query = new SolrQuery("*:*");
-                    query.addFilterQuery(String.format("!%s:%s",FIELD_INDEX_VERSION,CONVERSATION_INDEX_VERSION));
-                    query.setRows(0); //we only need the count
-                    if(solr.query(query).getResults().getNumFound()  > 0){
+                    if(isIndexOutdated(solr)) {
+                        //can only happen on a softeare release (on
                         log.info("conversation index contains documents indexed with an outdated version - full re-build required");
                         solr.deleteByQuery("*:*");
                         solr.commit();
                         solr.optimize(); //required as some schema changes will cause exceptions without this on reindexing
-                    } else { //partial update possible. Search for the last sync date ...
-                        query = new SolrQuery("*:*");
-                        query.addSort(FIELD_SYNC_DATE, ORDER.desc);
-                        query.setFields(FIELD_SYNC_DATE);
-                        query.setRows(1);
-                        query.setStart(0);
-                        QueryResponse result = solr.query(query);
-                        if(result.getResults() != null && result.getResults().getNumFound() > 0){
-                            syncDate = (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
-                            log.info("Perform partial update of conversation index (lastSync date:{})", syncDate);
-                        }
                     }
-                } catch (IOException | SolrServerException e) {
+                    syncDate = getIndexSyncDate(solr);
+                } catch (final IOException | SolrServerException e) {
                     log.warn("Updating Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
                     log.debug("STACKTRACE:",e);
+                    throw e;
                 }
             } else {
                 log.info("full re-build on startup required via configuration");
             }
             indexTask.setLastSync(syncDate);
+            //check if we need to be in cloud-sync mode
+            if(indexConfig.getEmbedded() != null) { //mode is manually configured
+                indexTask.setEmbeddedMode(indexConfig.getEmbedded());
+            } else if(EMBEDDED_SOLR_CLASS != null)
+            try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)){
+                indexTask.setEmbeddedMode(EMBEDDED_SOLR_CLASS.isAssignableFrom(solrClient.getClass()));
+            } catch (final IOException | SolrServerException e) {
+                log.warn("Loading Conversation index on startup failed ({} - {})", e.getClass().getSimpleName(), e.getMessage());
+                log.debug("STACKTRACE:",e);
+                throw e;
+            } else { //not configured and EmbeddedSolrServer is not in classpath
+                indexTask.setEmbeddedMode(false); 
+            }
+            log.info("embedded Mode: {}", indexTask.isEmbeddedMode());
+            if(!indexTask.isEmbeddedMode() && executionTokenService == null) {
+                throw new IllegalStateException("When using a remote SolrServer the ExecutionTokenService is required!");
+            }
             indexerPool.execute(indexTask);
+            
+            //now setup the correct scheduled sync tasks depending on the embedded mode
+            if(indexTask.isEmbeddedMode()) {
+                log.info("initializing CouldSync as an EmbeddedSolrServer is configured (cloud sync persiod: {})", indexConfig.getSyncDelay());
+                //start the recurring scheduled tasks
+                this.taskScheduler.scheduleAtFixedRate(this::syncIndex, indexConfig.getSyncDelay());
+            } else {
+                log.info("initializing with external Solr Server (index symc cron: {})", 
+                        indexConfig.getSyncCron() == null ? "deactivated" : indexConfig.getSyncCron());
+                if(indexConfig.getSyncCron() != null) {
+                    this.taskScheduler.schedule(this::syncIndex, indexConfig.getSyncCron());
+                }
+            }
+            
         } else { //manual initialization (performs a full re-index to be up-to-date)
+            log.warn("The conversationIndexSync is NOT available. Index Syncronization is disable and a "
+                    + "full rebuilt of the conversation index is performed at startup!");
             Iterators.partition(conversationService.listConversationIDs().iterator(), 100).forEachRemaining(
                     ids -> {
                         ids.stream()
@@ -192,16 +245,42 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                                 .forEach(c -> indexConversation(c, false));
                     });
         }
-        
-        //start the recurring scheduled tasks
-        this.taskScheduler.scheduleAtFixedRate(this::syncIndex, config.getSyncDelay());
-        if(config.getReindexCron() != null){
-            log.info("Rebuild Index Cron: ", config.getReindexCron());
-            this.taskScheduler.schedule(this::rebuildIndex, config.getReindexCron());
+
+        if(indexConfig.getReindexCron() != null){
+            log.info("Rebuild Index Cron: ", indexConfig.getReindexCron());
+            this.taskScheduler.schedule(this::rebuildIndex, indexConfig.getReindexCron());
         } else {
             log.info("Rebuild Index Cron: disabled");
         }
         
+    }
+    
+    private boolean isIndexOutdated(SolrClient solr) throws IOException, SolrServerException{
+        SolrQuery query = new SolrQuery("*:*");
+        query.addFilterQuery(String.format("%s:[* TO %s}",FIELD_INDEX_VERSION,CONVERSATION_INDEX_VERSION));
+        query.setRows(0); //we only need the count
+        return solr.query(query).getResults().getNumFound()  > 0;
+        
+    }
+    
+    /**
+     * Queries the Index to determine the last sync date
+     * @return the last sync date or <code>null</code> if a full rebuild is required
+     * @throws IOException
+     * @throws SolrServerException
+     */
+    private Date getIndexSyncDate(SolrClient solr) throws IOException, SolrServerException {
+        SolrQuery query = new SolrQuery("*:*");
+        query.addSort(FIELD_SYNC_DATE, ORDER.desc);
+        query.setFields(FIELD_SYNC_DATE);
+        query.setRows(1);
+        query.setStart(0);
+        QueryResponse result = solr.query(query);
+        if(result.getResults() != null && result.getResults().getNumFound() > 0){
+            return (Date)result.getResults().get(0).getFieldValue(FIELD_SYNC_DATE);
+        } else {
+            return null;
+        }
     }    
     
     
@@ -213,10 +292,8 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     protected void conversationUpdated(StoreServiceEvent storeEvent){
         log.debug("StoreServiceEvent for {}", storeEvent.getConversationId());
         if(storeEvent.getOperation() == Operation.SAVE){
-            if(storeEvent.getConversationStatus() == Status.Complete){
-                log.debug("  - SAVE operation of a COMPLETED conversation[id: {}]", storeEvent.getConversationId());
-                indexConversation(conversationService.getConversation(storeEvent.getConversationId()), true);
-            } //else we do not index uncompleted conversations
+            log.debug("  - SAVE operation of a {} conversation[id: {}]", storeEvent.getConversationId(), storeEvent.getConversationStatus());
+            indexConversation(conversationService.getConversation(storeEvent.getConversationId()), true);
         } else if(storeEvent.getOperation() == Operation.DELETE){
             log.debug("  - DELETE operation for conversation[id:{}]", storeEvent.getConversationId());
             removeConversation(storeEvent.getConversationId(), true);
@@ -234,7 +311,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     }
     public void removeConversation(ObjectId conversationId, boolean commit) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            solr.deleteByQuery(getDeleteQuery(conversationId), config.getCommitWithin());
+            solr.deleteByQuery(getConversationDeleteQuery(conversationId), indexConfig.getCommitWithin());
             if(commit){
                 solr.commit();
             }
@@ -247,13 +324,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
     @Override
     public void updateConversation(Conversation conversation, Date syncDate) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            SolrInputDocument doc = toSolrInputDocument(conversation);
-            if(doc != null){
-                doc.setField(FIELD_SYNC_DATE, syncDate);
-                solr.add(doc, config.getCommitWithin());
-            } else { //remove from index
-                solr.deleteByQuery(getDeleteQuery(conversation),config.getCommitWithin());
-            }
+            indexConversationAndMessages(solr, conversation, syncDate);
         } catch (IOException | SolrServerException e) {
             log.warn("Unable to index Conversation {} ({}: {})",conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
             log.debug("STACKTRACE",e);
@@ -262,12 +333,7 @@ public class ConversationIndexer implements ConversytionSyncCallback {
 
     public void indexConversation(Conversation conversation, boolean commit) {
         try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
-            SolrInputDocument doc = toSolrInputDocument(conversation);
-            if(doc != null){
-                solr.add(doc, config.getCommitWithin());
-            } else { //remove from index
-                solr.deleteByQuery(getDeleteQuery(conversation), config.getCommitWithin());
-            }
+            indexConversationAndMessages(solr, conversation, null);
             if(commit){
                 solr.commit();
             }
@@ -277,16 +343,67 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }        
     }
 
-    private String getDeleteQuery(Conversation conversation) {
-        return getDeleteQuery(conversation.getId());
+    private void indexConversationAndMessages(SolrClient solr, Conversation conversation, Date syncDate)
+            throws SolrServerException, IOException {
+        SolrInputDocument doc = toSolrInputDocument(conversation, syncDate);
+        if(doc != null){ //we want to index this conversation
+            List<String> convCtx = indexMessages(solr, conversation, syncDate);
+            if(CollectionUtils.isEmpty(convCtx)) {
+                //we want the content of the messages also stored with the conversation 
+                //(e.g. for highlighting, content based recommendations ...)
+                doc.addField(FIELD_MESSAGES, convCtx);
+            }
+            solr.add(doc, indexConfig.getCommitWithin());
+        } else { //remove from conversation AND all messages from the index
+            solr.deleteByQuery(getConversationDeleteQuery(conversation), indexConfig.getCommitWithin());
+        }
+    }
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s 
+     * for the parsed conversation (incl. docs for messages and the conversation itself
+     * Messages of the parsed conversation
+     * @param conversation
+     * @return
+     */
+    private String getConversationDeleteQuery(Conversation conversation) {
+        return getConversationDeleteQuery(conversation.getId());
     }
 
-    private String getDeleteQuery(ObjectId conversationId) {
-        return String.format("%s:%s OR %s:%s", FIELD_ID, conversationId.toHexString(), 
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s 
+     * for the parsed conversation (incl. docs for messages and the conversation itself
+     * Messages of the parsed conversation id
+     * @param conversation
+     * @return
+     */
+    private String getConversationDeleteQuery(ObjectId conversationId) {
+        return String.format("%s:%s OR %s:%s", 
+                FIELD_ID, conversationId.toHexString(), 
+                FIELD_CONVERSATION_ID, conversationId.toHexString());
+    }
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s for
+     * Messages of the parsed conversation
+     * @param conversation
+     * @return
+     */
+    private String getMessagesDeleteQuery(Conversation conversation) {
+        return getMessagesDeleteQuery(conversation.getId());
+    }
+    /**
+     * Getter for the delete query that deletes all {@link SolrDocument}s for
+     * Messages of the parsed conversation id
+     * @param conversation
+     * @return
+     */
+    private String getMessagesDeleteQuery(ObjectId conversationId) {
+        return String.format("%s:%s AND (%s:%s OR %s:%s)", 
+                FIELD_TYPE, TYPE_MESSAGE,
+                FIELD_ID, conversationId.toHexString(), 
                 FIELD_CONVERSATION_ID, conversationId.toHexString());
     }
 
-    private SolrInputDocument toSolrInputDocument(Conversation conversation) {
+    private SolrInputDocument toSolrInputDocument(Conversation conversation, Date syncDate) {
         final SolrInputDocument solrConversation = new SolrInputDocument();
 
         solrConversation.setField(FIELD_ID, conversation.getId().toHexString());
@@ -307,57 +424,124 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         if(!conversation.getMessages().isEmpty()) {
             solrConversation.setField(FIELD_START_TIME, conversation.getMessages().get(0).getTime());
             solrConversation.setField(FIELD_END_TIME, conversation.getMessages().get(conversation.getMessages().size() -1).getTime());
-
-            List<SolrInputDocument> messages = new ArrayList<>(conversation.getMessages().size());
-            Message prevMessage = null;
-            SolrInputDocument prevSolrInputDoc = null;
-            for (int i = 0; i < conversation.getMessages().size(); i++) {
-                final Message m = conversation.getMessages().get(i);
-                if (!m.isPrivate() && !MapUtils.getBoolean(m.getMetadata(), SKIP_ANALYSIS, false)) {
-                    if ((prevMessage != null) && (prevSolrInputDoc != null)
-                            && Objects.equals(m.getUser(), prevMessage.getUser()) // Same user
-                            && Objects.equals(m.getOrigin(), prevMessage.getOrigin()) // "same" user
-                            && m.getTime().before(DateUtils.addSeconds(prevMessage.getTime(), config.getMessage().getMergeTimeout()))) { // within X seconds
-                        // merge messages;
-                        prevSolrInputDoc = mergeSolrUInputDoc(prevSolrInputDoc, toSolrInputDocument(m, i, conversation));
-
-                        messages.remove(messages.size() - 1);
-                    } else {
-                        prevSolrInputDoc = toSolrInputDocument(m, i, conversation);
-                    }
-                    messages.add(prevSolrInputDoc);
-                    prevMessage = m;
-
-                }
-            }
-            messages.forEach(m -> {
-                //we want the content of the messages also stored with the conversation (e.g. for highlighting)
-                solrConversation.addField(FIELD_MESSAGES, m.getFieldValues(FIELD_MESSAGE));
-                //in addition store the content of the conversation also in the Solr MLT field
-                solrConversation.addField(FIELD_MLT_CONTEXT, m.getFieldValues(FIELD_MESSAGE));
-            });
-            solrConversation.addChildDocuments(messages);
+        }
+        if(syncDate != null) {
+            solrConversation.setField(FIELD_SYNC_DATE, syncDate);
         }
 
         return solrConversation;
     }
 
-
+    /**
+     * Indexes the messages of the conversation in their own solr documents and returns the
+     * text of the {@link ConversationIndexerConfig#getConvCtxSize()} messages to be used
+     * later as contextual content when indexing the conversation
+     * @param client the solr client used to index the messages
+     * @param conversation the conversation
+     * @return the {@link ConversationIndexerConfig#getConvCtxSize()} messages to be used
+     * later as contextual content when indexing the conversation
+     */
+    private List<String> indexMessages(SolrClient client, Conversation conversation, Date syncDate) {
+        //(1) delete all messages for this conversation first (so that we do not keep anthem messages in the index)
+        try {
+            client.deleteByQuery(getMessagesDeleteQuery(conversation));
+        } catch (IOException | SolrServerException e) {
+            log.warn("Unable to delete messages of Conversation {} before reindexing ({}: {})", conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
+            log.debug("STACKTRACE",e);
+        }
+        AtomicInteger idx = new AtomicInteger();
+        return ListUtils.union( //we need the sections and append messages.size() to also index the remainder
+                ConversationContextUtils.getContextSections(indexConfig, conversation.getMessages().iterator(),
+                    0, //we do not have any offset as we process all messages at once
+                    MIN_CONTEXT_LENGTH, CONTEXT_LENGTH,MIN_INCL_MSGS, MAX_INCL_MSGS),
+                Collections.singletonList(conversation.getMessages().size())).stream()
+            .filter(secEnd -> secEnd > idx.get()) //filter empty sections
+            .flatMap(secEnd -> {
+                int startIdx = idx.getAndSet(secEnd);
+                return indexSection(client, conversation, conversation.getMessages().subList(startIdx, secEnd), startIdx, secEnd, syncDate);
+            })
+            .map(doc -> doc.getFieldValue(FIELD_MESSAGE))
+            .filter(Objects::nonNull).map(String::valueOf)
+            .collect(lastN(indexConfig.getConvCtxSize()));
+    }
     
-    private SolrInputDocument toSolrInputDocument(Message message, int i, Conversation conversation) {
+    private Stream<SolrInputDocument> indexSection(SolrClient client, Conversation conversation, List<Message> section, int startIdx, int endIdx, Date syncDate){
+        Set<String> msgDocIds = new HashSet<>();
+        Set<String> msgIds = new HashSet<>();
+        List<String> context = new LinkedList<String>();
+        AtomicInteger idx = new AtomicInteger(startIdx);
+        String sectionId = conversation.getId().toHexString() + '_' + startIdx + '-' + endIdx;
+        List<Pair<Integer,Message>> toIndex = section.stream()
+            .map(m -> new ImmutablePair<>(idx.getAndIncrement(), m))
+            .filter(p -> indexConfig.isMessageIndexed(p.right))
+            .map(p -> {
+                msgDocIds.add(getSolrDocId(conversation, p.getRight()));
+                if(p.getRight().getId() != null) {
+                    msgIds.add(p.getRight().getId());
+                }
+                if(StringUtils.isNotBlank(p.getRight().getContent())) {
+                    context.add(p.getRight().getContent());
+                }
+                return p;
+            })
+            .collect(Collectors.toCollection(LinkedList::new)); //collect as we need the contextual information
+        toIndex.add(null); //add an EOS indicator
+        
+        //Index Documents and merge messages within this section!
+        MutablePair<Message, SolrInputDocument> prev = new MutablePair<>();
+        return toIndex.stream()
+            .map(current -> { //filter messages we can merge with the previous
+                final SolrInputDocument cur;
+                if(current != null && indexConfig.isMessageMerged(prev.left, current.getRight())) { // merged?
+                    mergeSolrInputDoc(prev.right, current.getLeft(), current.getRight());
+                    cur = null;
+                } else { //includes current == null (EOS)
+                    cur = prev.right; //the prev. SolrDoc is complete ... index it
+                    if(current != null) { //not EOS ...
+                        //create a new SolrInputDocument for this message
+                        prev.right = toSolrInputDocument(current.getRight(), current.getLeft(), conversation, syncDate);
+                        //add fields for the message context
+                        prev.right.setField(FIELD_MESSAGE_CONTEXT_START, startIdx);
+                        prev.right.setField(FIELD_MESSAGE_CONTEXT_END, endIdx);
+                        prev.right.setField(FIELD_MESSAGE_CONTEXT, context);
+                        prev.right.setField(FIELD_MESSAGE_CONTEXT_IDS, msgDocIds);
+                        prev.right.setField(FIELD_MESSAGE_CONTEXT_MSG_IDS, msgIds);
+                        prev.right.setField(FIELD_MESSAGE_CONTEXT_ID, sectionId);
+                    }
+                }
+                if(current != null) { //Not EOS
+                    prev.left = current.getRight();
+                }
+                return cur;
+            })
+            .filter(Objects::nonNull) //filter null values present for the first or merged documents
+            .map(doc -> { //index the documents (as side effect)
+                try {
+                    client.add(doc, indexConfig.getCommitWithin());
+                    return doc;
+                } catch (IOException | SolrServerException e) {
+                    log.warn("Unable to index Message {} of Conversation {} ({}: {})", doc.getFieldValue(FIELD_MESSAGE_IDS), conversation.getId(), e.getClass().getSimpleName(), e.getMessage());
+                    log.debug("STACKTRACE",e);
+                    return null;
+                }
+            })
+            .filter(Objects::nonNull);
+    }
+    
+    private SolrInputDocument toSolrInputDocument(Message message, int idx, Conversation conv, Date syncDate) {
+        if(message == null) {
+            return null;
+        }
         final SolrInputDocument solrMsg = new SolrInputDocument();
-        String id = new StringBuilder(conversation.getId().toHexString()).append('_')
-                //we prefer to use the messageId but some system might not provide a such so we have a fallback
-                //to the index within the conversation
-                .append(StringUtils.isNoneBlank(message.getId()) ? message.getId() : String.valueOf(i)).toString();
-        solrMsg.setField(FIELD_ID, id);
-        solrMsg.setField(FIELD_CONVERSATION_ID, conversation.getId());
+        solrMsg.setField(FIELD_ID, getSolrDocId(conv, message));
+        solrMsg.setField(FIELD_CONVERSATION_ID, conv.getId().toHexString());
         solrMsg.setField(FIELD_MESSAGE_IDS, message.getId());
-        solrMsg.setField(FIELD_MESSAGE_IDXS, i);
+        solrMsg.setField(FIELD_MESSAGE_IDXS, idx);
+        solrMsg.setField(FIELD_MESSAGE_IDX_START, idx); //the start idx (used for sorting
         //#150 index the current version of the index so that we can detect the need of a
         //full re-index after a software update on startup
         solrMsg.setField(FIELD_INDEX_VERSION, CONVERSATION_INDEX_VERSION);
-        solrMsg.setField(FIELD_COMPLETED, conversation.getMeta().getStatus() == ConversationMeta.Status.Complete);
+        solrMsg.setField(FIELD_COMPLETED, conv.getMeta().getStatus() == ConversationMeta.Status.Complete);
         solrMsg.setField(FIELD_TYPE, TYPE_MESSAGE);
         if (message.getUser() != null) {
             solrMsg.setField(FIELD_USER_ID, message.getUser().getId());
@@ -365,28 +549,26 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }
 
         //add owner and context information
-        solrMsg.setField(FIELD_OWNER, conversation.getOwner().toHexString());
-        addContextFields(solrMsg, conversation);
+        solrMsg.setField(FIELD_OWNER, conv.getOwner().toHexString());
+        addContextFields(solrMsg, conv);
 
         solrMsg.setField(FIELD_MESSAGE, message.getContent());
         solrMsg.setField(FIELD_TIME, message.getTime());
         solrMsg.setField(FIELD_VOTE, message.getVotes());
 
         //message context (for context based similarity search)
-        int[] context = ConversationContextUtils.getMessageContext(conversation.getMessages(), i, 
-                MIN_CONTEXT_LENGTH, CONTEXT_LENGTH, MIN_INCL_MSGS, MAX_INCL_MSGS, MIN_INCL_BEFORE, MIN_INCL_AFTER, 
-                MIN_AGE, MAX_AGE);
-        solrMsg.setField(FIELD_MESSAGE_CONTEXT_START, context[0]);
-        solrMsg.setField(FIELD_MESSAGE_CONTEXT_END, context[1]);
-        for(Message ctxMsg : conversation.getMessages().subList(context[0], context[1])){
-            if(!ctxMsg.isPrivate()){
-                solrMsg.addField(FIELD_MLT_CONTEXT, ctxMsg.getContent());
-            } //else do not use private messages - not even as context!
-        }
-        
+
         // TODO: Add keywords, links, ...
 
+        if(syncDate != null) {
+            solrMsg.setField(FIELD_SYNC_DATE, syncDate);
+        }
+        
         return solrMsg;
+    }
+
+    public static String getSolrDocId(Conversation conversation, Message message) {
+        return new StringBuilder(conversation.getId().toHexString()).append('_').append(message.getId()).toString();
     }
     
     private void addContextFields(final SolrInputDocument solrDoc, Conversation conversation) {
@@ -416,11 +598,11 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }
     }
 
-    private SolrInputDocument mergeSolrUInputDoc(SolrInputDocument prev, SolrInputDocument current) {
-        prev.setField(FIELD_MESSAGE, String.format("%s%n%s", prev.getFieldValue(FIELD_MESSAGE), current.getFieldValue(FIELD_MESSAGE)));
-        prev.addField(FIELD_MESSAGE_IDS, current.getFieldValue(FIELD_MESSAGE_IDS));
-        prev.addField(FIELD_MESSAGE_IDXS, current.getFieldValue(FIELD_MESSAGE_IDXS));
-        prev.setField(FIELD_VOTE, Integer.parseInt(String.valueOf(prev.getFieldValue(FIELD_VOTE))) + Integer.parseInt(String.valueOf(current.getFieldValue(FIELD_VOTE))));
+    private SolrInputDocument mergeSolrInputDoc(SolrInputDocument prev, int curIdx, Message curMsg) {
+        prev.setField(FIELD_MESSAGE, String.format("%s%n%s", prev.getFieldValue(FIELD_MESSAGE), curMsg.getContent()));
+        prev.addField(FIELD_MESSAGE_IDS, curMsg.getId());
+        prev.addField(FIELD_MESSAGE_IDXS, curIdx);
+        prev.setField(FIELD_VOTE, (Integer)prev.getFieldValue(FIELD_VOTE) + curMsg.getVotes());
         return prev;
     }
 
@@ -469,9 +651,9 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         }
     }
     
-    private class ConversationIndexTask implements Runnable {
+    class ConversationIndexTask implements Runnable {
 
-        final ConversationCloudSync cloudSync;
+        final ConversationIndexSync convIndexSync;
         final Lock lock = new ReentrantLock();
         
         AtomicBoolean active = new AtomicBoolean(false);
@@ -482,11 +664,20 @@ public class ConversationIndexer implements ConversytionSyncCallback {
         
         boolean fullRebuild = false;
         private Exception error;
+        private boolean embeddedMode;
         
-        ConversationIndexTask(ConversationCloudSync cloudSync) {
-            this.cloudSync = cloudSync;
+        ConversationIndexTask(ConversationIndexSync cloudSync) {
+            this.convIndexSync = cloudSync;
         }
         
+        public void setEmbeddedMode(boolean embeddedMode) {
+            this.embeddedMode = embeddedMode;
+        }
+        
+        public boolean isEmbeddedMode() {
+            return embeddedMode;
+        }
+
         public boolean isActive() {
             return active.get();
         }
@@ -552,15 +743,28 @@ public class ConversationIndexer implements ConversytionSyncCallback {
             }
         }
         
-        public ConversationCloudSync getCloudSync() {
-            return cloudSync;
+        public ConversationIndexSync getCloudSync() {
+            return convIndexSync;
         }
         
         @Override
         public void run() {
+            if(embeddedMode) {
+                performSync();
+            } else {
+                try (ExecutionToken et = executionTokenService.obtain(getClass().getName(), Duration.ofHours(12))){
+                    performSync();
+                } catch (ExecutionLockedException e) {
+                    log.info("skipping execution as ExecutionToken is already taken");
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+        }
+
+        private void performSync() {
             active.set(true);
             try {
-                final Date nextSync;
                 lock.lock();
                 try {
                     completed.set(false);
@@ -568,24 +772,36 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                     if(fullRebuild){
                         lastSync = null;
                         fullRebuild = false;
-                    }
+                    } else if(!embeddedMode){
+                        //in remote mode several instances work with the Solr index so
+                        //we need to query for the sync date beforehand
+                        try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
+                            lastSync = getIndexSyncDate(solr);
+                            log.trace("retrieved syncDate: {}", lastSync == null ? null : lastSync.toInstant());
+                        } catch (IOException | SolrServerException e) {
+                            log.warn("Unable to query for syncDate of ConversationIndex ({} - {}):"
+                                    + " will use the old syncDate {}", e.getClass().getSimpleName(), 
+                                    e.getMessage(), lastSync == null ? null : lastSync.toInstant());
+                        }
+                    } //else embedded mode ... use the current lastSync for the update
                 } finally {
                     lock.unlock();
                 }
                 SyncData syncData;
                 indexingStatus = new IndexingStatus();
                 if(lastSync == null){
-                    log.debug("start full rebuild of Index using {}", cloudSync);
-                    syncData = cloudSync.syncAll(ConversationIndexer.this, indexingStatus);
+                    log.debug("start full rebuild of Index using {}", convIndexSync);
+                    syncData = convIndexSync.syncAll(ConversationIndexer.this, indexingStatus);
                     try (SolrClient solr = solrServer.getSolrClient(conversationCore)){
                         log.debug("optimize Index after the full rebuild");
                         solr.optimize(); //optimize after a full rebuild
+                        log.debug("optimize completed");
                     } catch (IOException | SolrServerException e) {/* ignore*/}
                 } else {
                     if(log.isTraceEnabled()){
                         log.trace("update Index with changes after {}", lastSync == null ? null : lastSync.toInstant());
                     }
-                    syncData = cloudSync.sync(ConversationIndexer.this, lastSync, indexingStatus);
+                    syncData = convIndexSync.sync(ConversationIndexer.this, lastSync, indexingStatus);
                 }
                 if(syncData.getCount() > 0){
                     log.debug("performed {} updates in the Conversation Index - {}", syncData.getCount(), syncData);
@@ -607,7 +823,20 @@ public class ConversationIndexer implements ConversytionSyncCallback {
                 active.set(false);
             }
         }
-        
     }
-
+    /*
+     * see https://stackoverflow.com/a/30477722/3932024
+     */
+    public static <T> Collector<T, ?, List<T>> lastN(int n) {
+        return Collector.<T, Deque<T>, List<T>>of(ArrayDeque::new, (acc, t) -> {
+            if(acc.size() == n)
+                acc.pollFirst();
+            acc.add(t);
+        }, (acc1, acc2) -> {
+            while(acc2.size() < n && !acc1.isEmpty()) {
+                acc2.addFirst(acc1.pollLast());
+            }
+            return acc2;
+        }, ArrayList::new);
+    }
 }

@@ -33,7 +33,7 @@ public class ConversationIndexConfiguration {
      * The current conversation index version. Needs to be increased on schema.xml
      * or software updates that do require a full re-index
      */
-    public static final int CONVERSATION_INDEX_VERSION = 7; //v7 for reduced stored fields
+    public static final int CONVERSATION_INDEX_VERSION = 8; //v7 for reduced stored fields
     
     public static final String FIELD_ID = "id";
     /**
@@ -49,6 +49,7 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_USER_ID = "user_id";
     public static final String FIELD_USER_NAME = "user_name";
     public static final String FIELD_CONTEXT = "context";
+    public static final String FIELD_TEXT = "text";
     public static final String FIELD_ENVIRONMENT = "environment";
     public static final String FIELD_DOMAIN = "domain";
     public static final String FIELD_MESSAGE_COUNT = "message_count";
@@ -57,8 +58,13 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_CONVERSATION_ID = "conversation_id";
     public static final String FIELD_MESSAGE_IDS = "message_ids";
     public static final String FIELD_MESSAGE_IDXS = "message_idxs";
-    public static final String FIELD_MESSAGE_CONTEXT_START = "message_mlt_context_start_idx";
-    public static final String FIELD_MESSAGE_CONTEXT_END = "message_mlt_context_end_idx";
+    public static final String FIELD_MESSAGE_IDX_START = "message_idx_start";
+    public static final String FIELD_MESSAGE_CONTEXT_ID = "message_ctx_id";
+    public static final String FIELD_MESSAGE_CONTEXT = "message_ctx";
+    public static final String FIELD_MESSAGE_CONTEXT_IDS = "message_ctx_ids";
+    public static final String FIELD_MESSAGE_CONTEXT_MSG_IDS = "message_ctx_msg_ids";
+    public static final String FIELD_MESSAGE_CONTEXT_START = "message_ctx_start_idx";
+    public static final String FIELD_MESSAGE_CONTEXT_END = "message_ctx_end_idx";
     
     public static final String FIELD_SYNC_DATE = "sync_date";
     /**
@@ -71,10 +77,6 @@ public class ConversationIndexConfiguration {
     public static final String FIELD_MESSAGES = "messages";
     public static final String FIELD_TIME = "time";
     public static final String FIELD_VOTE = "vote";
-    /**
-     * Field containing interesting terms configured for MLT queries
-     */
-    public static final String FIELD_INTERESTING_TERMS = "iterms";
     
     public static final String FIELD_MODIFIED = "modified";
     
@@ -90,8 +92,6 @@ public class ConversationIndexConfiguration {
     public static String getMetaField(String key) {
         return META_FIELD_PREFIX + key;
     }
-    
-    public static final String FIELD_MLT_CONTEXT = "mlt_context";
     
     @Bean(name=CONVERSATION_INDEX)
     protected SolrCoreDescriptor getConversationCoreDescriptor() throws IOException {

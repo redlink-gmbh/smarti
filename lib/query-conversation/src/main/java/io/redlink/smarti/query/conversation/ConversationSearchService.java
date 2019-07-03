@@ -95,10 +95,10 @@ public class ConversationSearchService {
     }
 
     public SearchResult<ConversationResult> search(Set<ObjectId> clients, MultiValueMap<String, String> queryParams) throws IOException {
-
+        log.debug("search[clients: {}, params:{}", clients, queryParams);
         final ModifiableSolrParams solrParams = new ModifiableSolrParams(toListOfStringArrays(queryParams, PARAM_EXCLUDES));
         solrParams.set(CommonParams.QT, "/query");
-        solrParams.add(CommonParams.FL, FIELD_ID,FIELD_MESSAGE_IDS,FIELD_CONVERSATION_ID,"score");
+        solrParams.add(CommonParams.FL, FIELD_ID,FIELD_MESSAGE_IDS,FIELD_CONVERSATION_ID,FIELD_MESSAGE, "score");
         if (clients != null) {
             if (clients.isEmpty()) {
               return new SearchResult<>();
@@ -109,7 +109,7 @@ public class ConversationSearchService {
         }
         solrParams.add(CommonParams.FQ, String.format("%s:\"%s\"", FIELD_TYPE, TYPE_MESSAGE));
         solrParams.set(GroupParams.GROUP, "true");
-        solrParams.set(GroupParams.GROUP_FIELD, "_root_");
+        solrParams.set(GroupParams.GROUP_FIELD, FIELD_CONVERSATION_ID);
         solrParams.set(GroupParams.GROUP_TOTAL_COUNT, "true");
         if (queryParams.containsKey(PARAM_FULL_TEXT_QUERY)) {
             List<String> searchTerms = queryParams.get(PARAM_FULL_TEXT_QUERY);
@@ -129,7 +129,6 @@ public class ConversationSearchService {
         try (SolrClient solrClient = solrServer.getSolrClient(conversationCore)) {
 
             final QueryResponse queryResponse = solrClient.query(solrParams);
-
 
             return fromQueryResponse(queryResponse, (g) -> readConversation(g, ctxBefore, ctxAfter));
 

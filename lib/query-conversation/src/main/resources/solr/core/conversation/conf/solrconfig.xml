@@ -18,7 +18,7 @@
 
 <config>
 
-    <luceneMatchVersion>6.1.0</luceneMatchVersion>
+    <luceneMatchVersion>7.5.0</luceneMatchVersion>
     <dataDir>${solr.data.dir:}</dataDir>
     <schemaFactory class="ClassicIndexSchemaFactory"/>
     <directoryFactory name="DirectoryFactory"
@@ -53,7 +53,7 @@
     </updateHandler>
 
     <query>
-        <maxBooleanClauses>1024</maxBooleanClauses>
+        <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
         <filterCache class="solr.FastLRUCache"
                      size="512"
@@ -70,14 +70,12 @@
                        initialSize="512"
                        autowarmCount="0"/>
 
-        <cache name="perSegFilter"
-               class="solr.search.LRUCache"
-               size="10"
-               initialSize="0"
-               autowarmCount="10"
-               regenerator="solr.NoOpRegenerator" />
-
-        <enableLazyFieldLoading>false</enableLazyFieldLoading>
+        <fieldValueCache class="solr.FastLRUCache"
+                         size="512"
+                         autowarmCount="128"
+                         showItems="32" />
+                         
+        <enableLazyFieldLoading>true</enableLazyFieldLoading>
 
         <queryResultWindowSize>20</queryResultWindowSize>
         <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
@@ -86,8 +84,9 @@
         <maxWarmingSearchers>2</maxWarmingSearchers>
     </query>
 
-    <requestDispatcher handleSelect="false" >
-        <requestParsers enableRemoteStreaming="true"
+    <requestDispatcher handleSelect="true" >
+        <requestParsers enableRemoteStreaming="false"
+                        enableStreamBody="true"
                         multipartUploadLimitInKB="2048000"
                         formdataUploadLimitInKB="2048"
                         addHttpRequestToContext="false"/>
@@ -122,6 +121,7 @@
 
     <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
         <lst name="defaults">
+            <str name="echoParams">explicit</str>
             <str name="mlt.fl">text</str>
             <str name="mlt.mintf">1</str>
             <str name="mlt.mindf">1</str>

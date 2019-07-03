@@ -2,12 +2,9 @@ package io.redlink.smarti.webservice;
 
 import static java.nio.file.Files.createTempDirectory;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,10 +27,11 @@ import io.redlink.smarti.repositories.AnalysisRepository;
 import io.redlink.smarti.repositories.AuthTokenRepository;
 import io.redlink.smarti.services.AnalysisService;
 import io.redlink.smarti.services.AuthTokenService;
-import io.redlink.smarti.services.AuthenticationService;
 
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.bson.types.ObjectId;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -50,17 +48,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.WebMvcAutoConfiguration.WebMvcAutoConfigurationAdapter.FaviconConfiguration;
+import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.core.annotation.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -78,10 +72,8 @@ import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 
 import io.redlink.smarti.Application;
-import io.redlink.smarti.health.MongoHealthCheck;
 import io.redlink.smarti.health.MongoHealthCheck.DbVersion;
 import io.redlink.smarti.model.ConversationMeta.Status;
 import io.redlink.smarti.model.Message.Origin;
@@ -107,7 +99,9 @@ import io.redlink.solrlib.spring.boot.autoconfigure.SolrLibProperties;
 @SpringBootTest
 @ContextConfiguration(classes={Application.class,ConversationWebserviceIT.EmbeddedSolrConfiguration.class, ConversationWebserviceIT.SmartiDbVersionInitializer.class})
 @ActiveProfiles("test")
-@EnableAutoConfiguration
+//@WebAppConfiguration
+//@EnableMongoRepositories(basePackageClasses={ConversationRepository.class, ClientRepository.class, ConfigurationRepo.class})
+@EnableAutoConfiguration(exclude={SolrAutoConfiguration.class})
 public class ConversationWebserviceIT {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -830,20 +824,36 @@ public class ConversationWebserviceIT {
                 .andExpect(jsonPath("[0].origin").value("System"))
                 .andExpect(jsonPath("[0].state").value("Suggested"))
                 .andExpect(jsonPath("[0].type").value("Person"))
-                .andExpect(jsonPath("[1].value").value("München"))
+                //NOTE: With InterestingTerms for historic conversations now activated we do find Peter Tester
+                //      also as Keyword!
+                .andExpect(jsonPath("[1].value").value("Peter Tester"))
                 .andExpect(jsonPath("[1].messageIdx").value(0))
-                .andExpect(jsonPath("[1].start").value(31))
-                .andExpect(jsonPath("[1].end").value(38))
+                .andExpect(jsonPath("[1].start").value(14))
+                .andExpect(jsonPath("[1].end").value(26))
                 .andExpect(jsonPath("[1].origin").value("System"))
                 .andExpect(jsonPath("[1].state").value("Suggested"))
-                .andExpect(jsonPath("[1].type").value("Place"))
-                .andExpect(jsonPath("[2].value").value("Berlin"))
+                .andExpect(jsonPath("[1].type").value("Keyword"))
+                .andExpect(jsonPath("[2].value").value("München nach Berlin"))
                 .andExpect(jsonPath("[2].messageIdx").value(0))
-                .andExpect(jsonPath("[2].start").value(44))
+                .andExpect(jsonPath("[2].start").value(31))
                 .andExpect(jsonPath("[2].end").value(50))
                 .andExpect(jsonPath("[2].origin").value("System"))
                 .andExpect(jsonPath("[2].state").value("Suggested"))
-                .andExpect(jsonPath("[2].type").value("Place"));
+                .andExpect(jsonPath("[2].type").value("Keyword"))
+                .andExpect(jsonPath("[3].value").value("München"))
+                .andExpect(jsonPath("[3].messageIdx").value(0))
+                .andExpect(jsonPath("[3].start").value(31))
+                .andExpect(jsonPath("[3].end").value(38))
+                .andExpect(jsonPath("[3].origin").value("System"))
+                .andExpect(jsonPath("[3].state").value("Suggested"))
+                .andExpect(jsonPath("[3].type").value("Place"))
+                .andExpect(jsonPath("[4].value").value("Berlin"))
+                .andExpect(jsonPath("[4].messageIdx").value(0))
+                .andExpect(jsonPath("[4].start").value(44))
+                .andExpect(jsonPath("[4].end").value(50))
+                .andExpect(jsonPath("[4].origin").value("System"))
+                .andExpect(jsonPath("[4].state").value("Suggested"))
+                .andExpect(jsonPath("[4].type").value("Place"));
         
         //Assert that an analysis is stored
         Assert.assertEquals(1, analysisRepository.count());
@@ -1148,8 +1158,8 @@ public class ConversationWebserviceIT {
         //Assert that tokens are NOT NULL but empty
         Assert.assertNotNull(analysis.getTokens());
         Assert.assertTrue(analysis.getTokens().size() > 0);
-        //Assert that Bern is extracted 2 times
-        Assert.assertEquals(2, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
+        //Assert that Bern is extracted 2x2 times (2 mentions, each time as Location and Keyword)
+        Assert.assertEquals(4, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
         //Templates need also t0 be NOT NULL and NOT empty!
         Assert.assertNotNull(analysis.getTemplates());
         Assert.assertTrue(analysis.getTemplates().size() > 0);
@@ -1190,11 +1200,117 @@ public class ConversationWebserviceIT {
         //Assert that tokens are NOT NULL but empty
         Assert.assertNotNull(analysis.getTokens());
         Assert.assertTrue(analysis.getTokens().size() > 0);
-        //Assert that Bern is extracted only once as the 2nd message was deleted
-        Assert.assertEquals(1, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
+        //Assert that Bern is extracted only once as the 2nd message was deleted (2 results -> keyword and entity)
+        Assert.assertEquals(2, analysis.getTokens().stream().filter(t -> Objects.equals("Bern", t.getValue())).count());
         //Templates need also t0 be NOT NULL and NOT empty!
         Assert.assertNotNull(analysis.getTemplates());
         Assert.assertTrue(analysis.getTemplates().size() > 0);
+    }
+    
+    /**
+     * This tests constructs a dataset for the MLT search that allows to validate that the search does NOT
+     * return overlapping sections of a conversation
+     * @throws Exception
+     */
+    @Test
+    public void testConversationMltSearch() throws Exception {
+        User alois = new User("alois.tester");
+        alois.setDisplayName("Alois Tester");
+        alois.setEmail("alois.tester@test.org");
+        User regina = new User("regina.tester");
+        regina.setDisplayName("Regina Tester");
+        regina.setEmail("regina.tester@test.org");
+        User lea = new User("lea.tester");
+        lea.setDisplayName("Lea Tester");
+        lea.setEmail("Lea.tester@test.org");
+        User jan = new User("jan.tester");
+        jan.setDisplayName("Jan Tester");
+        jan.setEmail("Jan.tester@test.org");
+        
+        Date ctxDate = DateUtils.addMonths(new Date(), -11);
+        
+        List<List<Triple<User,Date,String>>> conversaitonsData = new LinkedList<>();
+        conversaitonsData.add(Arrays.asList(
+                new ImmutableTriple<>(alois, ctxDate, "Wie kann in eine Komponente mit Abhängigkeiten testen?"),
+                new ImmutableTriple<>(lea, DateUtils.addMinutes(ctxDate, 5), "Einfach die @ContextConfiguration richtig configurieren"),
+                new ImmutableTriple<>(alois, DateUtils.addMinutes(ctxDate, 6), "Danke"),
+                new ImmutableTriple<>(alois, DateUtils.addSeconds(DateUtils.addMinutes(ctxDate, 6),5), "Hast Du ein Beispiel?"),
+                new ImmutableTriple<>(lea, DateUtils.addSeconds(DateUtils.addMinutes(ctxDate, 6),10), "Klar."),
+                new ImmutableTriple<>(lea, DateUtils.addSeconds(DateUtils.addMinutes(ctxDate, 6),20), "Ich such schnell eines"),
+                new ImmutableTriple<>(lea, DateUtils.addMinutes(ctxDate, 10),
+                        "@RunWith(SpringJUnit4ClassRunner.class)\n" + 
+                        "@SpringBootTest\n" +
+                        "@ContextConfiguration(classes={MyService.class, RequiredService.class, RequiredConfiguration.class})\n" +
+                        "@EnableAutoConfiguration\n" + 
+                        "public class YourIntegrationTest"),
+                new ImmutableTriple<>(alois, DateUtils.addMinutes(ctxDate, 11), "Ahh, jetzt kenn ich mich aus"),
+                new ImmutableTriple<>(alois, DateUtils.addSeconds(DateUtils.addMinutes(ctxDate, 11),5), "Danke!"),
+                
+                new ImmutableTriple<>(jan, DateUtils.addHours(ctxDate, 1), "Wo gehen wir heute Mittagessen?"),
+                new ImmutableTriple<>(lea, DateUtils.addSeconds(DateUtils.addHours(ctxDate, 1),10), "In der Kantine gibt es nicht gescheites :("),
+                new ImmutableTriple<>(regina, DateUtils.addSeconds(DateUtils.addHours(ctxDate, 1),15), "Was haltet Ihr von Pizza?"),
+                new ImmutableTriple<>(alois, DateUtils.addSeconds(DateUtils.addHours(ctxDate, 1),20), "Pizza ist ok"),
+                new ImmutableTriple<>(lea, DateUtils.addSeconds(DateUtils.addHours(ctxDate, 1),25), "Wär auch dabei"),
+                new ImmutableTriple<>(jan, DateUtils.addSeconds(DateUtils.addHours(ctxDate, 1),35), "Na dann auf zur Pizzabude!"),
+                
+                new ImmutableTriple<>(alois, DateUtils.addHours(ctxDate, 2), "Noch eine Frage"),
+                new ImmutableTriple<>(alois, DateUtils.addSeconds(DateUtils.addHours(ctxDate, 2),10), "Wie bekomm ich die Services dann in der Testklasse?"),
+                new ImmutableTriple<>(jan, DateUtils.addMinutes(DateUtils.addHours(ctxDate, 2),3), 
+                        "Alles was in der @ContextConfiguration angegeben ist kann man einfach mit @Autowired injecten"),
+                new ImmutableTriple<>(alois, DateUtils.addMinutes(DateUtils.addHours(ctxDate, 2),4), "Danke Jan, da hätte ich selber auch draufkommen können ...")));
+        
+        ctxDate = DateUtils.addMonths(ctxDate, 2); //two month later ...
+        conversaitonsData.add(Arrays.asList(
+                new ImmutableTriple<>(regina, ctxDate, "Alois, irgendwie ist der IntegrationTest für MyService kaputt."),
+                new ImmutableTriple<>(alois, DateUtils.addMinutes(ctxDate, 1), "Echt?"),
+                new ImmutableTriple<>(alois, DateUtils.addSeconds(DateUtils.addMinutes(ctxDate, 1),15), "Was habt ihr schlimmes gemacht :("),
+                new ImmutableTriple<>(regina, DateUtils.addMinutes(ctxDate, 2), "Ich gar nichts. Der Test sagt nur, dass die Spring Applikation nicht mehr hoch kommt"),
+                new ImmutableTriple<>(alois, DateUtils.addMinutes(ctxDate, 3), "mmm ... hat wer eine Idee?"),
+                new ImmutableTriple<>(jan, DateUtils.addMinutes(ctxDate, 5), "Ach verdammt ich hab gestern eine neue Dependency zum MyService hinzugefügt. "
+                        + "Habe wohl vergessen das in die @ContextConfiguration einzutragen."),
+                new ImmutableTriple<>(jan, DateUtils.addSeconds(DateUtils.addMinutes(ctxDate, 5),15), 
+                        "Warte ich erledige das schnell!"),
+                new ImmutableTriple<>(jan, DateUtils.addMinutes(ctxDate, 10), 
+                        "So habs gepushed. Regina: sollte also wieder funktionieren!"),
+                new ImmutableTriple<>(regina, DateUtils.addMinutes(ctxDate, 11), 
+                        "Super dann teste ich gleich wieder"),
+                new ImmutableTriple<>(regina, DateUtils.addMinutes(ctxDate, 14), 
+                        "Danke Jan, jetzt ist alles wieder grün")));
+        
+        List<Conversation> conversations = new LinkedList<>();
+        int i = 0;
+        for(List<Triple<User,Date,String>> conversationData : conversaitonsData) {
+            String channel = "test-channel-" + i++;
+            Conversation conversation = new Conversation();
+            //conversation.setChannelId(channel);
+            conversation.setOwner(client.getId());
+            conversation.setMeta(new ConversationMeta());
+            conversation.getMeta().setStatus(Status.Ongoing);
+            conversation.getMeta().setProperty(ConversationMeta.PROP_CHANNEL_ID, channel);
+            conversation.getMeta().setProperty(ConversationMeta.PROP_SUPPORT_AREA, "test");
+            conversation.getMeta().setProperty(ConversationMeta.PROP_TAGS, "testing");
+            conversation.setContext(new Context());
+            conversation.getContext().setDomain("test-domain");
+            conversation.getContext().setContextType("text-context");
+            conversation.getContext().setEnvironment("environment-test", "true");
+            conversation.setUser(conversationData.get(0).getLeft()); //user of the first message is the conversation user
+            int m = 0;
+            for(Triple<User,Date,String> msgData : conversationData) {
+                Message msg = new Message(channel + "msg-" + m++);
+                msg.setContent(msgData.getRight());
+                msg.setUser(msgData.getLeft());
+                msg.setOrigin(Origin.User);
+                msg.setTime(msgData.getMiddle());
+                conversation.getMessages().add(msg);
+            }
+            conversations.add(conversationService.update(client, conversation));
+        }
+        conversations.forEach(c -> conversationService.completeConversation(c));
+        
+        //TODO: maybe we do not need to wait for indexing
+        TimeUnit.SECONDS.sleep(5);
+        
+
     }
     
     @Test
@@ -1347,8 +1463,8 @@ public class ConversationWebserviceIT {
         String supportArea2 = "integration test";
         Map<String,List<String>> supportAreaMessages = new HashMap<>();
         supportAreaMessages.put(supportArea1, Arrays.asList(
-                "Wie kann in eine Komponente mit Abhängigkeiten testen?",
-                "Wie definiere ich die jenigen Spring Komponenten welche ich für einen Test benötige",
+                "Eine Banane hat nicht mit diesem Context zu tun",
+                "Wie definiere ich die jenigen Spring Komponenten welche ich für einen Unit Test benötige",
                 "Funktioniert das automatische Binden von Komponenten bei Unit Tests?",
                 "Kann ich Komponenten auch im @BeforeClass verwenden?",
                 "Werden Spring Komponenten für mehrere Unit Tests wiederverwendet?",
@@ -1454,7 +1570,7 @@ public class ConversationWebserviceIT {
         String[] expectedResults = new String[]{
                 conversations.get(5).getId().toHexString(),
                 conversations.get(4).getId().toHexString(),
-                conversations.get(2).getId().toHexString()};
+                conversations.get(1).getId().toHexString()};
         Conversation bestResult = conversations.get(5);
         Message bestMessage = bestResult.getMessages().get(0);
         
@@ -1466,20 +1582,27 @@ public class ConversationWebserviceIT {
                 .content(conversationJson))
                 .andDo(MockMvcResultHandlers.print())
                 .andExpect(MockMvcResultMatchers.status().is(200))
-                .andExpect(jsonPath("numFound").value(5)) //5 of 6 have words in common
+                .andExpect(jsonPath("numFound").value(4)) //4 of 6 have words in common
                 .andExpect(jsonPath("start").value(0))
                 .andExpect(jsonPath("pageSize").value(3))
                 .andExpect(jsonPath("docs").isArray())
                 .andExpect(jsonPath("docs[*].conversationId",Matchers.contains(expectedResults)))
                 .andExpect(jsonPath("docs[0].replySuggestion").value(bestMessage.getContent()))
-                .andExpect(jsonPath("docs[0].content").value(bestMessage.getContent()))
                 .andExpect(jsonPath("docs[0].score").isNumber())
-                .andExpect(jsonPath("docs[0].messageId").value(bestMessage.getId()))
+                .andExpect(jsonPath("docs[0].messageIds", Matchers.contains(bestMessage.getId())))
                 .andExpect(jsonPath("docs[0].userName").value(bestMessage.getUser().getDisplayName()))
-                .andExpect(jsonPath("docs[0].messageIdx").value(0))
+                .andExpect(jsonPath("docs[0].messageIdxs",Matchers.contains(0)))
                 .andExpect(jsonPath("docs[0].votes").value(0))
                 .andExpect(jsonPath("docs[0].timestamp").value(bestMessage.getTime().getTime()))
-                .andExpect(jsonPath("docs[0].creator").value(query.getCreator()));
+                .andExpect(jsonPath("docs[0].creator").value(query.getCreator()))
+                .andExpect(jsonPath("docs[0].section").isArray())
+                .andExpect(jsonPath("docs[0].section[0].content").value(bestMessage.getContent()))
+                .andExpect(jsonPath("docs[0].section[0].messageIds", Matchers.contains(bestMessage.getId())))
+                .andExpect(jsonPath("docs[0].section[0].messageIdxs",Matchers.contains(0)))
+                .andExpect(jsonPath("docs[0].section[0].userName").value(bestMessage.getUser().getDisplayName()))
+                .andExpect(jsonPath("docs[0].section[0].timestamp").value(bestMessage.getTime().getTime()))
+                .andExpect(jsonPath("docs[0].section[0].votes").value(0))
+                ;
         
     }
     
