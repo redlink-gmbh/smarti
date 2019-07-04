@@ -171,6 +171,7 @@ workflows:
               only:
                 - develop
                 - master
+                - /release.*/
       - publish-docker:
           requires:
             - build
