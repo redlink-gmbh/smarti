@@ -42,7 +42,7 @@ if [ ${BRANCH} = master ]
       # publish a new "latest"-file in order to make new clients be created with it
       aws s3 cp ${BUILD_FILE} s3://${AWS_BUCKET}/redlink/assistify-smarti-latest.rpm --region ${AWS_REGION} --acl bucket-owner-full-control
   else
-    if [[ ${BRANCH} == develop ]] || [[ ${BRANCH} == "release/"* ]]
+    if [[ ${BRANCH} == develop ]] || [[ ${BRANCH} == "release"* ]]
       then
         TARGET_ENVIRONMENT=test
     fi

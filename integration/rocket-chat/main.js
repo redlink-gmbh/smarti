@@ -809,7 +809,7 @@ function SmartiWidget(element, _options) {
                             messages.push({
                                 _id: m._id,
                                 rid: m.rid,
-                                messageLink: getRCMessageLink(m.rid, m._id),
+                                messageLink: getRCMessageLink(m.r, m._id),
                                 content: m.text[0],
                                 time: m.created,
                                 username: m.username,

@@ -146,10 +146,14 @@ jobs:
                     echo "pushed assistify/smarti:develop"
                 else
                   if [[ ${CIRCLE_BRANCH} == master ]]
-                  then
-                    docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:latest
-                    docker push assistify/smarti:latest
-                    echo "pushed assistify/smarti:latest"
+                    then
+                      docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:latest
+                      docker push assistify/smarti:latest
+                      echo "pushed assistify/smarti:latest"
+                  else
+                    docker tag redlinkgmbh/smarti:${SMARTI_VERSION} assistify/smarti:${SMARTI_VERSION}
+                    docker push assistify/smarti:${SMARTI_VERSION}
+                    echo "pushed assistify/smarti:${SMARTI_VERSION}"
                   fi
                 fi
               fi
@@ -171,6 +175,7 @@ workflows:
               only:
                 - develop
                 - master
+                - /release.*/
       - publish-docker:
           requires:
             - build
