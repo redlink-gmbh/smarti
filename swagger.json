@@ -1,0 +1,2409 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "the smart in assistify",
+    "version" : "0.8.1",
+    "title" : "Smarti",
+    "contact" : {
+      "name" : "redlink GmbH",
+      "url" : "http://redlink.at",
+      "email" : "hello@redlink.co"
+    },
+    "license" : {
+      "name" : "Apache 2.0",
+      "url" : "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+  },
+  "tags" : [ {
+    "name" : "conversation"
+  } ],
+  "paths" : {
+    "/admin/conversation" : {
+      "get" : {
+        "summary" : "list conversations",
+        "description" : "",
+        "operationId" : "adminListConversations",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "owner",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int32"
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int32"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/PagedConversationList"
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/export" : {
+      "get" : {
+        "summary" : "export conversations",
+        "description" : "",
+        "operationId" : "exportConversations",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "owner",
+          "in" : "query",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Configuration"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/import" : {
+      "post" : {
+        "summary" : "import conversations",
+        "description" : "",
+        "operationId" : "importConversations",
+        "consumes" : [ "multipart/form-data" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "owner",
+          "in" : "query",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "replace",
+          "in" : "query",
+          "required" : false,
+          "type" : "boolean"
+        }, {
+          "name" : "file",
+          "in" : "formData",
+          "required" : true,
+          "type" : "file"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/index" : {
+      "post" : {
+        "summary" : "re-indexes conversations for all clients. Requires ADMIN permissions",
+        "description" : "",
+        "operationId" : "reindexConversation",
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/{conversationId}" : {
+      "get" : {
+        "summary" : "retrieve a conversation",
+        "description" : "",
+        "operationId" : "adminGetConversation",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/{conversationId}/expiry" : {
+      "put" : {
+        "summary" : "set/update the status of the conversation",
+        "description" : "",
+        "operationId" : "setExpiry",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/{conversationId}/message/{messageId}" : {
+      "put" : {
+        "summary" : "edit/update a message",
+        "description" : "",
+        "operationId" : "adminUpdateMessage",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "messageId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Message"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "delete a message",
+        "description" : "",
+        "operationId" : "adminDeleteMessage",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "messageId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      }
+    },
+    "/admin/conversation/{conversationId}/status/{newStatus}" : {
+      "put" : {
+        "summary" : "set/update the status of the conversation",
+        "description" : "",
+        "operationId" : "setConversationStatus",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "newStatus",
+          "in" : "path",
+          "required" : true,
+          "type" : "string",
+          "enum" : [ "New", "Ongoing", "Complete" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      }
+    },
+    "/auth" : {
+      "get" : {
+        "summary" : "retrieve current user details",
+        "description" : "",
+        "operationId" : "getUser",
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/UserDetailsResponse"
+            }
+          }
+        }
+      }
+    },
+    "/auth/check" : {
+      "get" : {
+        "summary" : "check login",
+        "description" : "check if the provided login is already taken",
+        "operationId" : "checkLoginExists",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "login",
+          "in" : "query",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "boolean"
+            }
+          }
+        }
+      }
+    },
+    "/auth/recover" : {
+      "post" : {
+        "summary" : "password recover",
+        "description" : "recover password: either start or complete the password recovery process",
+        "operationId" : "recoverPassword",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "user",
+          "in" : "query",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    },
+    "/auth/signup" : {
+      "post" : {
+        "summary" : "signup",
+        "description" : "create a new account",
+        "operationId" : "signUp",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/UserDetailsResponse"
+            }
+          }
+        }
+      }
+    },
+    "/client" : {
+      "get" : {
+        "summary" : "list clients",
+        "description" : "",
+        "operationId" : "listClients",
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Client"
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary" : "creates/updates a client",
+        "description" : "",
+        "operationId" : "storeClient",
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Client"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Client"
+            }
+          }
+        }
+      }
+    },
+    "/client/{id}" : {
+      "get" : {
+        "summary" : "get a client",
+        "description" : "",
+        "operationId" : "getClient",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Client"
+            }
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "delete a client",
+        "description" : "",
+        "operationId" : "deleteClient",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    },
+    "/client/{id}/config" : {
+      "get" : {
+        "summary" : "get a client config",
+        "description" : "",
+        "operationId" : "getClientConfiguration",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Component Configuration"
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary" : "creates/updates a client config",
+        "description" : "",
+        "operationId" : "storeConfig",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Configuration"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Component Configuration"
+            }
+          }
+        }
+      }
+    },
+    "/client/{id}/token" : {
+      "get" : {
+        "summary" : "retireve auth-tokens for a client",
+        "description" : "",
+        "operationId" : "listAuthTokens",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "array",
+              "uniqueItems" : true,
+              "items" : {
+                "$ref" : "#/definitions/AuthToken"
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "summary" : "create an auth-token",
+        "description" : "",
+        "operationId" : "createAuthToken",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/AuthToken"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/AuthToken"
+            }
+          }
+        }
+      }
+    },
+    "/client/{id}/token/{token}" : {
+      "put" : {
+        "summary" : "update an auth-token",
+        "description" : "",
+        "operationId" : "updateAuthToken",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "token",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/AuthToken"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/AuthToken"
+            }
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "revoke an auth-token",
+        "description" : "",
+        "operationId" : "revokeAuthToken",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "token",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    },
+    "/client/{id}/user" : {
+      "post" : {
+        "summary" : "create user",
+        "description" : "create a new user and assign it to the client",
+        "operationId" : "createClientUser",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/SmartiUserData"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/SmartiUserData"
+            }
+          }
+        }
+      }
+    },
+    "/client/{id}/user/{user}" : {
+      "put" : {
+        "summary" : "assign user",
+        "description" : "assign an existing user with the client",
+        "operationId" : "addClientUser",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "user",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/SmartiUserData"
+            }
+          }
+        }
+      },
+      "delete" : {
+        "summary" : "remove user",
+        "description" : "unassign a user from the client",
+        "operationId" : "removeClientUser",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "user",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    },
+    "/config" : {
+      "get" : {
+        "summary" : "retrieve list of the basic configurations",
+        "description" : "",
+        "operationId" : "getConfigurationComponents",
+        "produces" : [ "application/json" ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Component Configuration"
+            }
+          }
+        }
+      }
+    },
+    "/conversation" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "list conversations",
+        "description" : "Lists conversations. Supports pagination (default 10conversation per page)",
+        "operationId" : "listConversations",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          },
+          "collectionFormat" : "multi"
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "description" : "The page number (NOTE that `0` is the first page - 0-indexed)",
+          "required" : false,
+          "type" : "integer",
+          "default" : 0,
+          "format" : "int32"
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "description" : "The number of elements on a single page",
+          "required" : false,
+          "type" : "integer",
+          "default" : 10,
+          "format" : "int32"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/PagedConversationList"
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "conversation" ],
+        "summary" : "create a conversation",
+        "description" : "Create a new Conversation.\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "createConversation",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "in" : "body",
+          "name" : "conversation",
+          "description" : "Optionally the conversation to create. If not present an empty conversation will be created",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/ConversationData"
+          }
+        }, {
+          "name" : "analysis",
+          "in" : "query",
+          "description" : "If enabled the analysis of the conversation is included in the response. This requires the request to wait for the analysis to be completed. In case a `callback` is supported and provided the analysis results will be POST to this URI instead. In any case requests supporting is parameter will start analysis and cache the results for improved response times on subsequent `GET /conversation/{id}/analysis` requests.",
+          "required" : true,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "201" : {
+            "description" : "conversation created",
+            "schema" : {
+              "$ref" : "#/definitions/ConversationData"
+            }
+          }
+        }
+      }
+    },
+    "/conversation/search" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "search for a conversation",
+        "description" : "Search for a conversation. Besides simple text-queries, you can pass in arbitrary solr query parameter.",
+        "operationId" : "searchConversations",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          },
+          "collectionFormat" : "multi"
+        }, {
+          "name" : "text",
+          "in" : "query",
+          "description" : "fulltext search",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The results of the search",
+            "schema" : {
+              "$ref" : "#/definitions/ConversationSearchResult"
+            }
+          },
+          "503" : {
+            "description" : "If conversation search is not supported"
+          }
+        }
+      }
+    },
+    "/conversation/search-message" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "search for messages",
+        "description" : "Search for messages. You can pass in arbitrary solr query parameter (`q` for the query, `fq` for filters, facets, grouping, highligts, ...). Results represent messages. \n\n Fields include: \n* `id`: the id of the conversation \n* `message_id`: the id of the message \n* `meta_*`: meta fields set for the conversation ( e.g. `meta_channel_id` for the channel id)\n* `user_id`: the id of the user that was sending the message\n* `time`: the time when the message was sent\n* `message`: the content of the message",
+        "operationId" : "searchMessage",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          },
+          "collectionFormat" : "multi"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/SearchResult"
+            }
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "Retrieve a conversation",
+        "description" : "Retrieves a conversation based on the `conversationId`. If `analysis` is enabled the analysis results will be included in the response",
+        "operationId" : "getConversation",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "analysis",
+          "in" : "query",
+          "description" : "If enabled the analysis of the conversation is included in the response. This requires the request to wait for the analysis to be completed.",
+          "required" : true,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/ConversationData"
+            }
+          },
+          "400" : {
+            "description" : "in case `analysis=true` the request requires a single client to bespecified to calculate the analysis for. If the authenticated user is assigend to multiple clients and theparameter `client` is not specified a `400 Bad Request` is triggered"
+          },
+          "404" : {
+            "description" : "if no conversation with the parsed id is present or not accessible by the authenticated user"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "conversation" ],
+        "summary" : "delete a conversation",
+        "description" : "",
+        "operationId" : "deleteConversation",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          },
+          "404" : {
+            "description" : "if no conversation with the parsed id is present or not accessible by the authenticated user"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/analysis" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "analysis a conversation",
+        "description" : "retrieve the analysis results for a conversation referenced by the `conversationId`. Theanalysis includes extraceted tokens, templates and query suggestions based on those templates.\n\nIf a `callback` is provided, the request will return immediatly with `202 Accepted` and the results will be `POST {callback}` as soon as available.",
+        "operationId" : "getAnalysis",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the analysis results (if no `callback` uri is provided)",
+            "schema" : {
+              "$ref" : "#/definitions/Analysis"
+            }
+          },
+          "202" : {
+            "description" : "accepted (no content). The analysis results are POST'ed to the provided `callback`"
+          },
+          "400" : {
+            "description" : "Analysis results are client specific. So a single client MUST BE selected by the request. If the authenticated user is assigend to multiple clients and the parameter `client` is not specified a `400 Bad Request` is triggered"
+          },
+          "404" : {
+            "description" : "if the conversation is not found or the authenticated user does not have access"
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "conversation" ],
+        "summary" : "re-run analysis based on updated tokens/slot-assignments",
+        "description" : "Allows to re-run the extraction of templates and generation of queries based on a parsed analysis. This allows users to remove, reject, confirm or add new Tokens. Those changesare considered when updating templates and generating queries. \n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "rerunAnalysis",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Analysis"
+          }
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the analysis results (if no `callback` uri is provided)",
+            "schema" : {
+              "$ref" : "#/definitions/Analysis"
+            }
+          },
+          "202" : {
+            "description" : "accepted (no content). The analysis results are POST'ed to the provided `callback`"
+          },
+          "400" : {
+            "description" : "Analysis results are client specific. So a single client MUST BE selected by the request. If the authenticated user is assigend to multiple clients and the parameter `client` is not specified a `400 Bad Request` is triggered"
+          },
+          "404" : {
+            "description" : "if the conversation is not found or the authenticated user does not have access"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/analysis/template" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "get the (query-)templates in the conversation",
+        "description" : "Returns the templates of the analysis (sync or async - if callback is present)\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "getTemplates",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The templates (sync)",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Template"
+              }
+            }
+          },
+          "202" : {
+            "description" : "Accepted (aync): The Templates are POST'ed to the callback URI instead"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/analysis/template/{templateIdx}" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "get a query template",
+        "description" : "Returns the template of the analysis (sync or async - if callback is present)\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "getTemplate",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "templateIdx",
+          "in" : "path",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int32"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The templates (sync)",
+            "schema" : {
+              "$ref" : "#/definitions/Template"
+            }
+          },
+          "202" : {
+            "description" : "Accepted (aync): The Template is POST'ed to the callback URI instead",
+            "schema" : {
+              "$ref" : "#/definitions/Template"
+            }
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/analysis/template/{templateIdx}/result/{creator}" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "get inline-results for the selected template and query creator",
+        "description" : "",
+        "operationId" : "getResultsGET",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "templateIdx",
+          "in" : "path",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int32"
+        }, {
+          "name" : "creator",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The search results",
+            "schema" : {
+              "$ref" : "#/definitions/InlineSearchResult"
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "conversation" ],
+        "summary" : "get inline-results for the selected template from the query creator",
+        "description" : "Gets inline results for the selected template based on the parsed analysis object.",
+        "operationId" : "getResultsPOST",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "templateIdx",
+          "in" : "path",
+          "required" : true,
+          "type" : "integer",
+          "format" : "int32"
+        }, {
+          "name" : "creator",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Analysis"
+          }
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The search results",
+            "schema" : {
+              "$ref" : "#/definitions/InlineSearchResult"
+            }
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/analysis/token" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "get the extracted tokes in the conversation",
+        "description" : "Returns the tokens of the analysis (sync or async - if callback is present)\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "getTokens",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The tokens (sync)",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Token"
+              }
+            }
+          },
+          "202" : {
+            "description" : "Accepted (aync): If a callback is provided, the Tokens are POST'ed tothe callback URI instead"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/message" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "list the messages in a conversation",
+        "description" : "retrieves all messages in the accessed conversation",
+        "operationId" : "listMessages",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/Message"
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "conversation" ],
+        "summary" : "create a new message",
+        "description" : "this appends the provided message to the conversation. It is the responsibility of the client to ensurethat a messageId passed in is unique. It the client cannot guarantee that, it MUST leave the messageId empty/null.\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "appendMessage",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Message"
+          }
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Message"
+            }
+          },
+          "201" : {
+            "description" : "message created",
+            "schema" : {
+              "$ref" : "#/definitions/Message"
+            }
+          },
+          "404" : {
+            "description" : "conversation not found"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/message/{msgId}" : {
+      "get" : {
+        "tags" : [ "conversation" ],
+        "summary" : "retrieve a message",
+        "description" : "",
+        "operationId" : "getMessage",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "msgId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Message"
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "conversation" ],
+        "summary" : "update/replace a message",
+        "description" : "fully replace a message.\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "updateMessage",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "msgId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "$ref" : "#/definitions/Message"
+          }
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "message updated",
+            "schema" : {
+              "$ref" : "#/definitions/Message"
+            }
+          },
+          "404" : {
+            "description" : "conversation or message not found"
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "conversation" ],
+        "summary" : "delete a message",
+        "description" : "delete a message and re-run analysis based on the new conversation.\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "deleteMessage",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "msgId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "deleted (no content)",
+            "schema" : {
+              "type" : "object"
+            }
+          },
+          "404" : {
+            "description" : "conversation or message not found"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/message/{msgId}/{field}" : {
+      "put" : {
+        "tags" : [ "conversation" ],
+        "summary" : "update/modify a specific filed of the message",
+        "description" : "Sets the property of the Message to the parsed value\n\nSupported fields include <ul> \n* `time`: value must be a Date, long time or an ISO date/time \n* `origin`: value must be an member of the Orign enumeration \n* `content` value must be a String` \n* `private` value is interpreted as boolean` \n* `votes` value must be an integer` \n* `metadata.*` any metadata field \n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "modifyMessageField",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "msgId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "field",
+          "in" : "path",
+          "description" : "the field to update",
+          "required" : true,
+          "type" : "string",
+          "enum" : [ "time", "origin", "content", "private", "votes", "metadata.*" ]
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "description" : "the new value",
+          "required" : true,
+          "schema" : {
+            "type" : "object"
+          }
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "field updated Message",
+            "schema" : {
+              "$ref" : "#/definitions/Message"
+            }
+          },
+          "400" : {
+            "description" : "if the value is not valid for the field"
+          },
+          "404" : {
+            "description" : "if the conversation or message was not found"
+          }
+        }
+      }
+    },
+    "/conversation/{conversationId}/{field}" : {
+      "put" : {
+        "tags" : [ "conversation" ],
+        "summary" : "update/modify a specific field",
+        "description" : "Sets a single property in the Conversation to the value parsed in the payload.\n\nSupported fields include:\n* `context.contextType`\n* `context.domain`\n* `context.environment.*` and the shortcut `environment.*`\n* `meta.status` with the shortcut `status`\n* `meta.*` with the shortcut `*`: however note that `meta.*` is required for field names that would be mapped to other services of the conversation service.\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "modifyConversationField",
+        "consumes" : [ "application/json" ],
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "field",
+          "in" : "path",
+          "description" : "the field to update",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*",
+          "enum" : [ "context.contextType", "context.domain", "context.environment.*", "meta.status", "meta.*" ]
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "description" : "the new value for the field",
+          "required" : true,
+          "schema" : {
+            "type" : "object"
+          }
+        }, {
+          "name" : "analysis",
+          "in" : "query",
+          "description" : "If enabled the analysis of the conversation is included in the response. This requires the request to wait for the analysis to be completed. In case a `callback` is supported and provided the analysis results will be POST to this URI instead. In any case requests supporting is parameter will start analysis and cache the results for improved response times on subsequent `GET /conversation/{id}/analysis` requests.",
+          "required" : true,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "field updated (sync)",
+            "schema" : {
+              "$ref" : "#/definitions/ConversationData"
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "conversation" ],
+        "summary" : "deletes the specific field",
+        "description" : "Deleting a single property in the Conversation.\n\nSupported fields include:\n* `context.contextType`\n* `context.domain`\n* `context.environment.*` and the shortcut `environment.*`\n* `meta.status` with the shortcut `status`\n* `meta.*` with the shortcut `*`: however note that `meta.*` is required for field names that would be mapped to other services of the conversation service.\n\nIf a `callback` is provided, the request will trigger an callback with analysis results for the parsed conversation soon as those are available. This callback provides the same information as a subsequent call to `GET /conversation/{id}/analysis`.",
+        "operationId" : "deleteConversationField",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "conversationId",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "field",
+          "in" : "path",
+          "description" : "the field to delete",
+          "required" : true,
+          "type" : "string",
+          "pattern" : ".*",
+          "enum" : [ "context.contextType", "context.domain", "context.environment.*", "meta.status", "meta.*" ]
+        }, {
+          "name" : "client",
+          "in" : "query",
+          "description" : "If the authentication (by user or auth-token) allows access to multiple clients this parameter allows to  specify the clients to be considered for processing the request (intersection of assigend to the user and parsed). For processing of some requests only a single client is supported in those cases a `400 BAD_REQUST` response will be triggered in cases where multiple clients are selected",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "analysis",
+          "in" : "query",
+          "description" : "If enabled the analysis of the conversation is included in the response. This requires the request to wait for the analysis to be completed. In case a `callback` is supported and provided the analysis results will be POST to this URI instead. In any case requests supporting is parameter will start analysis and cache the results for improved response times on subsequent `GET /conversation/{id}/analysis` requests.",
+          "required" : true,
+          "type" : "boolean",
+          "default" : false
+        }, {
+          "name" : "callback",
+          "in" : "query",
+          "description" : "URI where to POST the Analysis results as soon as they are available (async processing)",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "projection",
+          "in" : "query",
+          "description" : "Not yet implemented! Will allow to select different projections over the returned data",
+          "required" : false,
+          "type" : "string",
+          "enum" : [ "idOnly" ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "field deleted (sync)",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      }
+    },
+    "/legacy/rocket.chat" : {
+      "get" : {
+        "summary" : "find conversation by channel_id",
+        "description" : "",
+        "operationId" : "findConversation",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "client_id",
+          "in" : "query",
+          "required" : false,
+          "type" : "string"
+        }, {
+          "name" : "channel_id",
+          "in" : "query",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "$ref" : "#/definitions/Conversation"
+            }
+          }
+        }
+      }
+    },
+    "/user/{login}/password" : {
+      "put" : {
+        "summary" : "update password",
+        "description" : "",
+        "operationId" : "setPassword",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "login",
+          "in" : "path",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "in" : "body",
+          "name" : "body",
+          "required" : false,
+          "schema" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : {
+              "type" : "object"
+            }
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions" : {
+    "basic" : {
+      "type" : "basic"
+    },
+    "token" : {
+      "type" : "apiKey",
+      "name" : "X-Auth-Token",
+      "in" : "header"
+    }
+  },
+  "definitions" : {
+    "Analysis" : {
+      "type" : "object",
+      "required" : [ "templates", "tokens" ],
+      "properties" : {
+        "conversation" : {
+          "type" : "string",
+          "readOnly" : true
+        },
+        "date" : {
+          "type" : "string",
+          "format" : "date-time",
+          "readOnly" : true
+        },
+        "context" : {
+          "$ref" : "#/definitions/AnalysisContext"
+        },
+        "tokens" : {
+          "type" : "array",
+          "description" : "extracted tokens",
+          "items" : {
+            "$ref" : "#/definitions/Token"
+          }
+        },
+        "templates" : {
+          "type" : "array",
+          "description" : "Templates for possible queries",
+          "items" : {
+            "$ref" : "#/definitions/Template"
+          }
+        }
+      },
+      "description" : "The analysis of a conversation based on the configuration of a client"
+    },
+    "AnalysisContext" : {
+      "type" : "object",
+      "properties" : {
+        "start" : {
+          "type" : "integer",
+          "format" : "int32",
+          "readOnly" : true
+        },
+        "end" : {
+          "type" : "integer",
+          "format" : "int32",
+          "readOnly" : true
+        },
+        "skipped" : {
+          "type" : "integer",
+          "format" : "int32"
+        }
+      },
+      "description" : "The analysis context provides information about the section of a channel analysed."
+    },
+    "AuthToken" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "readOnly" : true
+        },
+        "token" : {
+          "type" : "string"
+        },
+        "label" : {
+          "type" : "string"
+        },
+        "created" : {
+          "type" : "string",
+          "format" : "date-time"
+        }
+      }
+    },
+    "Client" : {
+      "type" : "object",
+      "required" : [ "name" ],
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "readOnly" : true
+        },
+        "name" : {
+          "type" : "string",
+          "example" : "demo-client"
+        },
+        "description" : {
+          "type" : "string",
+          "example" : "Dieser Client wird nur für die Demo verwendet."
+        },
+        "lastUpdate" : {
+          "type" : "string",
+          "format" : "date-time",
+          "readOnly" : true
+        }
+      }
+    },
+    "Component Configuration" : {
+      "type" : "object",
+      "required" : [ "type" ],
+      "properties" : {
+        "name" : {
+          "type" : "string",
+          "description" : "The name of this configuration. MUST BE unique within configurations for the same type.Typically derived from the displayName by removing spaces and none alpha numeric chars"
+        },
+        "displayName" : {
+          "type" : "string",
+          "description" : "The display name of the component. Used to derive the name by removing spaces and nonealpha numeric chars."
+        },
+        "type" : {
+          "type" : "string",
+          "description" : "the type identifies the component to consume this configuration"
+        },
+        "enabled" : {
+          "type" : "boolean",
+          "description" : "if this configuration is enabled/disabled. Intended to be used for deactivating a configuration without deleting it."
+        },
+        "unbound" : {
+          "type" : "boolean",
+          "description" : "if <code>true</code> the configuration can not be applied as the component referenced by by the <code>type</code> value is not active.",
+          "readOnly" : true
+        }
+      },
+      "description" : "The configuration for a component. Configurations can haveadditional fields with arbitrary values."
+    },
+    "Configuration" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "string"
+        },
+        "client" : {
+          "type" : "string"
+        },
+        "created" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "modified" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "config" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/definitions/Component Configuration"
+            }
+          }
+        }
+      }
+    },
+    "Context" : {
+      "type" : "object",
+      "properties" : {
+        "contextType" : {
+          "type" : "string"
+        },
+        "environmentType" : {
+          "type" : "string"
+        },
+        "domain" : {
+          "type" : "string"
+        },
+        "environment" : {
+          "type" : "object",
+          "additionalProperties" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "description" : "conversation context"
+    },
+    "Conversation" : {
+      "type" : "object",
+      "required" : [ "messages", "user" ],
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "readOnly" : true
+        },
+        "meta" : {
+          "$ref" : "#/definitions/ConversationMeta"
+        },
+        "user" : {
+          "$ref" : "#/definitions/User"
+        },
+        "messages" : {
+          "type" : "array",
+          "description" : "List of Messages",
+          "items" : {
+            "$ref" : "#/definitions/Message"
+          }
+        },
+        "context" : {
+          "$ref" : "#/definitions/Context"
+        },
+        "lastModified" : {
+          "type" : "string",
+          "format" : "date-time",
+          "readOnly" : true
+        }
+      },
+      "description" : "a conversation, the central entitiy in smarti"
+    },
+    "ConversationData" : {
+      "type" : "object",
+      "required" : [ "messages", "user" ],
+      "properties" : {
+        "id" : {
+          "type" : "string"
+        },
+        "meta" : {
+          "description" : "metadata",
+          "$ref" : "#/definitions/ConversationMeta"
+        },
+        "user" : {
+          "$ref" : "#/definitions/User"
+        },
+        "messages" : {
+          "type" : "array",
+          "description" : "List of Messages",
+          "items" : {
+            "$ref" : "#/definitions/Message"
+          }
+        },
+        "context" : {
+          "description" : "conversation context",
+          "$ref" : "#/definitions/Context"
+        },
+        "analysis" : {
+          "$ref" : "#/definitions/Analysis"
+        },
+        "lastModified" : {
+          "type" : "string",
+          "format" : "date-time"
+        }
+      }
+    },
+    "ConversationMeta" : {
+      "type" : "object",
+      "properties" : {
+        "status" : {
+          "type" : "string",
+          "example" : "New",
+          "enum" : [ "New", "Ongoing", "Complete" ]
+        }
+      },
+      "description" : "conversation metadata. Supports strings and array of strings as values. Well known keysinclude: 'support_area', 'token', 'channel_id', 'channel', 'tags'"
+    },
+    "ConversationResult" : {
+      "type" : "object",
+      "properties" : {
+        "results" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/MessageResult"
+          }
+        },
+        "lastModified" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "user" : {
+          "$ref" : "#/definitions/User"
+        },
+        "meta" : {
+          "$ref" : "#/definitions/ConversationMeta"
+        },
+        "context" : {
+          "$ref" : "#/definitions/Context"
+        },
+        "id" : {
+          "type" : "string"
+        }
+      },
+      "description" : "A conversation with results for the parsed query. \n\n Includes information about theconversation (`id`, `lastModified`, `context`, `meta`, `user`) and the `results` defining sectionsin the conversation releated to the query."
+    },
+    "ConversationSearchResult" : {
+      "type" : "object",
+      "properties" : {
+        "numFound" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "start" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "pageSize" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "maxScore" : {
+          "type" : "number",
+          "format" : "float"
+        },
+        "docs" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/ConversationResult"
+          }
+        }
+      }
+    },
+    "InlineSearchResult" : {
+      "type" : "object",
+      "properties" : {
+        "numFound" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "start" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "pageSize" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "maxScore" : {
+          "type" : "number",
+          "format" : "float"
+        },
+        "docs" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Result"
+          }
+        }
+      }
+    },
+    "Message" : {
+      "type" : "object",
+      "required" : [ "content", "id" ],
+      "properties" : {
+        "id" : {
+          "type" : "string"
+        },
+        "time" : {
+          "type" : "string",
+          "format" : "date-time"
+        },
+        "origin" : {
+          "type" : "string",
+          "description" : "origin of the message",
+          "enum" : [ "User", "Agent", "Bot" ]
+        },
+        "content" : {
+          "type" : "string",
+          "description" : "message content"
+        },
+        "user" : {
+          "$ref" : "#/definitions/User"
+        },
+        "votes" : {
+          "type" : "integer",
+          "format" : "int32",
+          "description" : "votes for this message - how often this message was considered helpful"
+        },
+        "metadata" : {
+          "type" : "object",
+          "description" : "message metadata",
+          "additionalProperties" : {
+            "type" : "object"
+          }
+        },
+        "private" : {
+          "type" : "boolean"
+        }
+      }
+    },
+    "MessageResult" : {
+      "type" : "object",
+      "properties" : {
+        "messages" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Message"
+          }
+        },
+        "before" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Message"
+          }
+        },
+        "after" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Message"
+          }
+        },
+        "score" : {
+          "type" : "number",
+          "format" : "float"
+        }
+      },
+      "description" : "Represents a section in the conversation releated to the quiery"
+    },
+    "PagedConversationList" : {
+      "type" : "object",
+      "properties" : {
+        "totalPages" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "totalElements" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "sort" : {
+          "$ref" : "#/definitions/Sort"
+        },
+        "first" : {
+          "type" : "boolean"
+        },
+        "last" : {
+          "type" : "boolean"
+        },
+        "numberOfElements" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "size" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "content" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Conversation"
+          }
+        },
+        "number" : {
+          "type" : "integer",
+          "format" : "int32"
+        }
+      }
+    },
+    "Query" : {
+      "type" : "object",
+      "required" : [ "creator", "displayTitle", "url" ],
+      "properties" : {
+        "creator" : {
+          "type" : "string",
+          "description" : "queryCreator"
+        },
+        "created" : {
+          "type" : "string",
+          "format" : "date-time",
+          "description" : "created",
+          "readOnly" : true
+        },
+        "displayTitle" : {
+          "type" : "string",
+          "description" : "name of the service"
+        },
+        "confidence" : {
+          "type" : "number",
+          "format" : "float"
+        },
+        "url" : {
+          "type" : "string",
+          "description" : "query url"
+        },
+        "inlineResultSupport" : {
+          "type" : "boolean",
+          "description" : "supports inline results"
+        },
+        "state" : {
+          "type" : "string",
+          "enum" : [ "Suggested", "Confirmed", "Rejected" ]
+        }
+      }
+    },
+    "Result" : {
+      "type" : "object",
+      "required" : [ "creator" ],
+      "properties" : {
+        "replySuggestion" : {
+          "type" : "string",
+          "description" : "reply"
+        },
+        "creator" : {
+          "type" : "string"
+        }
+      }
+    },
+    "SearchResult" : {
+      "type" : "object",
+      "properties" : {
+        "numFound" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "start" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "pageSize" : {
+          "type" : "integer",
+          "format" : "int64"
+        },
+        "maxScore" : {
+          "type" : "number",
+          "format" : "float"
+        },
+        "docs" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object"
+          }
+        }
+      }
+    },
+    "Slot" : {
+      "type" : "object",
+      "required" : [ "role", "tokenIndex" ],
+      "properties" : {
+        "role" : {
+          "type" : "string"
+        },
+        "tokenType" : {
+          "type" : "string",
+          "readOnly" : true,
+          "enum" : [ "Date", "Topic", "Entity", "Place", "Organization", "Person", "Product", "Attribute", "Term", "Keyword", "Other" ]
+        },
+        "required" : {
+          "type" : "boolean"
+        },
+        "tokenIndex" : {
+          "type" : "integer",
+          "format" : "int32"
+        },
+        "inquiryMessage" : {
+          "type" : "string"
+        }
+      },
+      "description" : "A slot of a template (e.g. departure <time> of a travel planing template)"
+    },
+    "SmartiUserData" : {
+      "type" : "object",
+      "required" : [ "clients" ],
+      "properties" : {
+        "login" : {
+          "type" : "string",
+          "example" : "user1",
+          "readOnly" : true
+        },
+        "roles" : {
+          "type" : "array",
+          "uniqueItems" : true,
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "clients" : {
+          "type" : "array",
+          "uniqueItems" : true,
+          "items" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "Sort" : {
+      "type" : "object"
+    },
+    "Template" : {
+      "type" : "object",
+      "required" : [ "slots" ],
+      "properties" : {
+        "type" : {
+          "type" : "string",
+          "readOnly" : true
+        },
+        "slots" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Slot"
+          }
+        },
+        "probability" : {
+          "type" : "number",
+          "format" : "float"
+        },
+        "state" : {
+          "type" : "string",
+          "example" : "Confirmed",
+          "enum" : [ "Suggested", "Confirmed", "Rejected" ]
+        },
+        "queries" : {
+          "type" : "array",
+          "items" : {
+            "$ref" : "#/definitions/Query"
+          }
+        }
+      }
+    },
+    "Token" : {
+      "type" : "object",
+      "required" : [ "end", "messageIdx", "origin", "start", "state", "type", "value" ],
+      "properties" : {
+        "messageIdx" : {
+          "type" : "integer",
+          "format" : "int32",
+          "description" : "message-index"
+        },
+        "start" : {
+          "type" : "integer",
+          "format" : "int32",
+          "description" : "start-position"
+        },
+        "end" : {
+          "type" : "integer",
+          "format" : "int32",
+          "description" : "end-position"
+        },
+        "origin" : {
+          "type" : "string",
+          "example" : "User",
+          "description" : "origin",
+          "enum" : [ "System", "Agent", "User" ]
+        },
+        "state" : {
+          "type" : "string",
+          "example" : "Confirmed",
+          "enum" : [ "Suggested", "Confirmed", "Rejected" ]
+        },
+        "value" : {
+          "type" : "object"
+        },
+        "type" : {
+          "type" : "string",
+          "enum" : [ "Date", "Topic", "Entity", "Place", "Organization", "Person", "Product", "Attribute", "Term", "Keyword", "Other" ]
+        },
+        "hints" : {
+          "type" : "array",
+          "uniqueItems" : true,
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "confidence" : {
+          "type" : "number",
+          "format" : "float"
+        }
+      }
+    },
+    "User" : {
+      "type" : "object",
+      "properties" : {
+        "id" : {
+          "type" : "string",
+          "description" : "unique ID",
+          "readOnly" : true
+        },
+        "displayName" : {
+          "type" : "string"
+        },
+        "phoneNumber" : {
+          "type" : "string"
+        },
+        "email" : {
+          "type" : "string"
+        },
+        "homeTown" : {
+          "type" : "string"
+        }
+      },
+      "description" : "a user - taking part in a conversation"
+    },
+    "UserDetailsResponse" : {
+      "type" : "object",
+      "properties" : {
+        "login" : {
+          "type" : "string"
+        },
+        "roles" : {
+          "type" : "array",
+          "uniqueItems" : true,
+          "items" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+  }
+}
