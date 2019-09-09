@@ -22,11 +22,7 @@
     <parent>
         <groupId>io.redlink.smarti</groupId>
         <artifactId>smarti</artifactId>
-<<<<<<< HEAD
         <version>0.9.0-SNAPSHOT</version>
-=======
-        <version>0.8.2-SNAPSHOT</version>
->>>>>>> release_0.8.1
     </parent>
 
     <artifactId>smarti-db-migrator</artifactId>
