@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.apache.commons.collections4.ClosureUtils;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -57,6 +58,10 @@ public class SolrInterestingTermsUtils {
     private static final Logger log = LoggerFactory.getLogger(SolrInterestingTermsUtils.class);
     
     public static Stream<ContextWord> extractInterestingTerms(SolrClient solrClient, SolrQuery solrQuery, String context) throws SolrServerException, IOException {
+        //NOTE: by default we use the query time analyzer to avoid char offset changes by the FlattenGraphFactory
+        return extractInterestingTerms(solrClient, solrQuery, context, true);
+    }
+    public static Stream<ContextWord> extractInterestingTerms(SolrClient solrClient, SolrQuery solrQuery, String context, boolean queryAnalyzer) throws SolrServerException, IOException {
         if(ArrayUtils.isEmpty(solrQuery.getMoreLikeThisFields())){
             throw new IllegalArgumentException("The parsed SolrQuery MUST HAVE the param '" 
                     + MoreLikeThisParams.SIMILARITY_FIELDS + "' set!");
@@ -92,7 +97,7 @@ public class SolrInterestingTermsUtils {
                 .collect(Collectors.toList());
             //build an Index of {field,term} -> [<AnalysisInfo>]
             final WordAnalysisIdx waIdx = new WordAnalysisIdx();
-            analyseTerm(solrClient, ctxTerms.stream().map(ContextTerm::getField).collect(Collectors.toSet()), context)
+            analyseTerm(solrClient, ctxTerms.stream().map(ContextTerm::getField).collect(Collectors.toSet()), context, queryAnalyzer)
                 .forEach((field,terms) -> waIdx.add(field,terms));
             //now we can get the actual words for the Terms returned by the Solr MLT interesting Terms element
             log.debug("write contextQueryTerms");
@@ -114,20 +119,39 @@ public class SolrInterestingTermsUtils {
      * @throws SolrServerException
      */
     public static Map<String,List<WordAnalysis>> analyseTerm(SolrClient client, Set<String> fields, String text) throws SolrException, IOException, SolrServerException {
+        return analyseTerm(client, fields, text, false);
+    }
+    /**
+     * This method allows to analyse the parsed text with the Solr Analyser of the parsed field name.
+     * This is useful when one needs to match Solr terms (from the inverted index) with sections of
+     * the text or Terms and Keywords extracted from that text
+     * @param client the SolrClient used to execute the requests
+     * @param field the Solr field
+     * @param text the text to analyse
+     * @param queryAnalyzer if <code>true</code> the query time analyzer will be used. Otherwise the index time analyzer is used
+     * @throws SolrException
+     * @throws IOException
+     * @throws SolrServerException
+     */
+    public static Map<String,List<WordAnalysis>> analyseTerm(SolrClient client, Set<String> fields, String text, boolean queryAnalyzer) throws SolrException, IOException, SolrServerException {
         FieldAnalysisRequest request = new FixedFieldAnalysisRequest();
         request.setFieldNames(new ArrayList<>(fields));
-        request.setFieldValue(text);
+        if(queryAnalyzer) {
+            request.setQuery(text);
+        } //else {
+        request.setFieldValue(text); //field value is required :(
+        //}
+        
         FieldAnalysisResponse respone = request.process(client);
         Map<String,List<WordAnalysis>> fieldAnalysis = new HashMap<>();
         respone.getAllFieldNameAnalysis().forEach(e -> {
             org.apache.solr.client.solrj.response.FieldAnalysisResponse.Analysis analysis = e.getValue();
             final AnalysisPhase result; //the analysis result is the output of the last AnalysisPhase
-            if(analysis.getIndexPhases() instanceof List){ //in current SolrJ this is a list 
-                result = ((List<AnalysisPhase>)analysis.getIndexPhases()).get(analysis.getIndexPhasesCount() - 1);
+            Iterable<AnalysisPhase> phrases = queryAnalyzer ? analysis.getQueryPhases() : analysis.getIndexPhases();
+            if(phrases instanceof List){ //in current SolrJ this is a list 
+                result = ((List<AnalysisPhase>)phrases).get(((List) phrases).size() - 1);
             } else { //but provide a fallback if not ...
-                AnalysisPhase phase = null;
-                for(Iterator<AnalysisPhase> it = analysis.getIndexPhases().iterator(); it.hasNext(); phase = it.next());
-                result = phase;
+                result = IteratorUtils.forEachButLast(phrases.iterator(), ClosureUtils.nopClosure());
             }
             fieldAnalysis.put(e.getKey(), result.getTokens().stream()
                     .map(t -> createWordAnalysis(t,text))
