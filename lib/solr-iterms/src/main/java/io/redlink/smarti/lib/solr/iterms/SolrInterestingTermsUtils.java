@@ -160,6 +160,90 @@ public class SolrInterestingTermsUtils {
         return fieldAnalysis;
     }
     /**
+     * Gets the tokens of the parsed text that are indexed by Solr based in the field configurations. The returned map
+     * uses the field as key and returns the list of tokens as value. <p>
+     * This will remove parts of the text that are not indexed in Solr (e.g. stop words)
+     * @param client the {@link SolrClient} used to send the {@link FieldAnalysisRequest} to
+     * @param fields the fields used to analyze the parsed text
+     * @param text the text to analyze
+     * @param queryAnalyzer <code>true</code> to use the query time analyzer <code>false</code> for the index time analyzer
+     * @return the map with the field as key and the list of indexed tokens as value.
+     * @throws SolrException
+     * @throws IOException
+     * @throws SolrServerException
+     */
+    public static Map<String,List<String>> getIndexedTokens(SolrClient client, Set<String> fields, String text, boolean queryAnalyzer) throws SolrException, IOException, SolrServerException {
+    
+        FieldAnalysisRequest request = new FixedFieldAnalysisRequest();
+        request.setFieldNames(new ArrayList<>(fields));
+        if(queryAnalyzer) {
+            request.setQuery(text);
+        } //else {
+        request.setFieldValue(text); //field value is required :(
+        //}
+        Map<String,List<String>> fieldTokens = new HashMap<>();
+        FieldAnalysisResponse respone = request.process(client);
+        respone.getAllFieldNameAnalysis().forEach(e -> {
+            org.apache.solr.client.solrj.response.FieldAnalysisResponse.Analysis analysis = e.getValue();
+            fieldTokens.put(e.getKey(), parseTokens(text, analysis, queryAnalyzer));
+        });
+        return fieldTokens;
+    }
+    /**
+     * Gets the tokens of the parsed text that are indexed by Solr based on the configuration of the parsed field. <p>
+     * This will remove parts of the text that are not indexed in Solr (e.g. stop words)
+     * @param client the {@link SolrClient} used to send the {@link FieldAnalysisRequest} to
+     * @param field the name of the field used to analyze the parsed text
+     * @param text the text to analyze
+     * @param queryAnalyzer <code>true</code> to use the query time analyzer <code>false</code> for the index time analyzer
+     * @return the indexed tokens as present in the parsed text (NOT the terms as stored in the inverted index)
+     * @throws SolrException
+     * @throws IOException
+     * @throws SolrServerException
+     */
+    public static List<String> getIndexedTokens(SolrClient client, String field, String text, boolean queryAnalyzer) throws SolrException, IOException, SolrServerException {
+        
+        FieldAnalysisRequest request = new FixedFieldAnalysisRequest();
+        request.setFieldNames(Collections.singletonList(field));
+        if(queryAnalyzer) {
+            request.setQuery(text);
+        } //else {
+        request.setFieldValue(text); //field value is required :(
+        //}
+        FieldAnalysisResponse respone = request.process(client);
+        return parseTokens(text, respone.getFieldNameAnalysis(field), queryAnalyzer);
+    }
+    
+    private static List<String> parseTokens(String text,
+            org.apache.solr.client.solrj.response.FieldAnalysisResponse.Analysis analysis, boolean queryAnalyzer) {
+        List<String> tokens = new LinkedList<>();
+        final AnalysisPhase result; //the analysis result is the output of the last AnalysisPhase
+        Iterable<AnalysisPhase> phrases = queryAnalyzer ? analysis.getQueryPhases() : analysis.getIndexPhases();
+        if(phrases instanceof List){ //in current SolrJ this is a list 
+            result = ((List<AnalysisPhase>)phrases).get(((List) phrases).size() - 1);
+        } else { //but provide a fallback if not ...
+            result = IteratorUtils.forEachButLast(phrases.iterator(), ClosureUtils.nopClosure());
+        }
+        int end = 0;
+        int start = 0;
+        int pos = -1;
+        
+        for(TokenInfo ti : result.getTokens()){
+            if(ti.getStart() >= end && ti.getEnd() > end) {
+                //new Token
+                tokens.add(text.substring(ti.getStart(), ti.getEnd()));
+                start = ti.getStart();
+                end = ti.getEnd();
+                pos = ti.getPosition();
+            } else if(ti.getEnd() > end && ti.getPosition() == pos) {
+                //longer token with the same position as the current
+                tokens.set(tokens.size()-1, text.substring(start, ti.getEnd()));
+                end = ti.getEnd();
+            }
+        }
+        return tokens;
+    }
+    /**
      * Helper class holding a lookup table for analyzed words (field:term) to words in the analyzed text
      * @author Rupert Westenthaler
      *
