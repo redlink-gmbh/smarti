@@ -11,7 +11,7 @@
     "js-md5": "^0.4.2",
     "jsviews": "^0.9.90",
     "localize": "^0.4.7",
-    "lodash": "^4.17.4",
+    "lodash": "^4.17.13",
     "moment": "^2.20.1",
     "style-loader": "^0.18.2",
     "toastr": "^2.1.4"
