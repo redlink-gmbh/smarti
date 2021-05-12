@@ -96,7 +96,7 @@
         <!-- spring.data.version>1.10.6.RELEASE</spring.data.version --> 
         <spring.version>4.3.20.RELEASE</spring.version>
 
-        <solr.version>6.6.2</solr.version>
+        <solr.version>8.8.2</solr.version>
         <!-- solr-text-tagger version needs to be in sync with solr.version
              (see: https://github.com/OpenSextant/SolrTextTagger/blob/master/CHANGES.md) -->
         <solr.text.tagger.version>2.4</solr.text.tagger.version>
